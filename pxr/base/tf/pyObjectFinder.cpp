@@ -16,8 +16,6 @@ using std::type_info;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
 static TfStaticData<TfTypeInfoMap<Tf_PyObjectFinderBase const *> > _finders;
 
 
@@ -26,13 +24,13 @@ void Tf_RegisterPythonObjectFinderInternal(std::type_info const &type,
     _finders->Set(type, finder);
 }
 
-object Tf_FindPythonObject(void const *objPtr, std::type_info const &type) {
+nanobind::object Tf_FindPythonObject(void const *objPtr, std::type_info const &type) {
     Tf_PyObjectFinderBase const *finder = 0;
     if (Tf_PyObjectFinderBase const **x = _finders->Find(type))
         finder = *x;
     if (finder)
         return finder->Find(objPtr);
-    return object();
+    return nanobind::object();
 }
     
 

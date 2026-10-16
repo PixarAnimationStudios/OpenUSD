@@ -6,166 +6,120 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/ar/pyResolverContext.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/usd/ar/asset.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/to_python_converter.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
+#include <nanobind/nanobind.h>
+#include <algorithm>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-// Data structure for exposing ArAsset objects exposed via ArResolver APIs to
-// Python.
-class Ar_PyAsset
+namespace {
+
+nb::object
+_GetBuffer(const Ar_PyAsset& self)
 {
-public:
-    // Create a Python representation of the given \c ArAsset resource.
-    // \param asset \c ArAsset for which to create a Python representation.
-    Ar_PyAsset(std::shared_ptr<ArAsset> asset)
-        : _asset(asset)
-        {}
-
-    // Return a buffer with the contents of the asset, or None if the data could
-    // not be read.
-    object GetBuffer() const
-    {
-        if (!_asset) {
-            TfPyThrowRuntimeError("Unable to access invalid asset");
-        }
-
-        std::shared_ptr<const char> buffer;
-        size_t bufferSize = 0;
-        {
-            TF_PY_ALLOW_THREADS_IN_SCOPE();
-            buffer = _asset->GetBuffer();
-            bufferSize = _asset->GetSize();
-        }
-
-        if (!buffer) {
-            return {};
-        }
-
-        // Create a Python bytes object from the buffer:
-        return object(handle<>(
-                PyBytes_FromStringAndSize(buffer.get(), bufferSize)));
+    if (!self._asset) {
+        TfPyThrowRuntimeError("Unable to access invalid asset");
     }
 
-    // Reads the specifed amount of data from the underlying ArAsset at the
-    // given offset
-    object Read(size_t count, size_t offset)
+    std::shared_ptr<const char> buffer;
+    size_t bufferSize = 0;
     {
-        size_t assetSize = GetSize();
-        if (offset >= assetSize) {
-            TfPyThrowValueError("Invalid read offset");
-        }
-
-        // Prevent allocating a buffer larger than the amount of data that
-        // we can read from the asset
-        count = std::min(count, assetSize - offset);
-
-        PyObject *pyBytes = PyBytes_FromStringAndSize(NULL, count);
-        char *buffer = PyBytes_AsString(pyBytes);
-        size_t bytesRead = 0;
-
-        {
-            TF_PY_ALLOW_THREADS_IN_SCOPE();
-            bytesRead = _asset->Read(buffer, count, offset);
-        }
-
-        if (bytesRead != count) {
-            // If we did not read all the bytes we are after, truncate the allocated
-            // buffer to avoid returning extra data.
-            if (_PyBytes_Resize(&pyBytes, bytesRead) == -1) {
-                TfPyThrowRuntimeError("Failed to read Asset data");
-            }
-        }
-
-        return object(handle<>(pyBytes));
-    }
-
-    // Returns the size of the underlying ArAsset
-    size_t GetSize() const {
-        if (!_asset) {
-            TfPyThrowRuntimeError("Unable to access invalid asset");
-        }
-
         TF_PY_ALLOW_THREADS_IN_SCOPE();
-        return _asset->GetSize();
+        buffer = self._asset->GetBuffer();
+        bufferSize = self._asset->GetSize();
     }
 
-    // Checks validity of this object.
-    bool __bool__() const
-    {
-        return _asset != nullptr;
+    if (!buffer) {
+        return nb::none();
     }
 
-    // Enter the Python Context Manager for the representation of the ArAsset.
-    void __enter__() const
+    return nb::steal<nb::object>(
+        PyBytes_FromStringAndSize(buffer.get(), bufferSize));
+}
+
+size_t
+_GetSize(const Ar_PyAsset& self)
+{
+    if (!self._asset) {
+        TfPyThrowRuntimeError("Unable to access invalid asset");
+    }
+
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+    return self._asset->GetSize();
+}
+
+nb::object
+_Read(Ar_PyAsset& self, size_t count, size_t offset)
+{
+    const size_t assetSize = _GetSize(self);
+    if (offset >= assetSize) {
+        TfPyThrowValueError("Invalid read offset");
+    }
+
+    // Prevent allocating a buffer larger than the amount of data that
+    // we can read from the asset
+    count = std::min(count, assetSize - offset);
+
+    PyObject *pyBytes = PyBytes_FromStringAndSize(NULL, count);
+    char *buffer = PyBytes_AsString(pyBytes);
+    size_t bytesRead = 0;
+
     {
-        if (!_asset) {
-            TfPyThrowRuntimeError("Unable to access invalid asset");
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        bytesRead = self._asset->Read(buffer, count, offset);
+    }
+
+    if (bytesRead != count) {
+        // If we did not read all the bytes we are after, truncate the allocated
+        // buffer to avoid returning extra data.
+        if (_PyBytes_Resize(&pyBytes, bytesRead) == -1) {
+            TfPyThrowRuntimeError("Failed to read Asset data");
         }
     }
 
-    // Exit the Python Context Manager for the representation of the ArAsset.
-    void __exit__(const object&, const object&, const object&)
-    {
-        _asset.reset();
-    }
+    return nb::steal<nb::object>(pyBytes);
+}
 
-    static void RegisterConversions() {
-        // to-python
-        to_python_converter<std::shared_ptr<ArAsset>, Ar_PyAsset>();
-        //from-python
-        converter::registry::push_back(&_convertible, &_construct,
-            pxr_boost::python::type_id<std::shared_ptr<ArAsset>>());
-    }
+} // anonymous namespace
 
-    // to-python conversion of std::shared_ptr<ArAsset>.
-    static PyObject *convert(const std::shared_ptr<ArAsset> &asset) {
-        return incref(object(Ar_PyAsset{asset}).ptr());
-    }
-
-private:
-    static void* _convertible(PyObject *obj_ptr) {
-        extract<Ar_PyAsset> extractor(obj_ptr);
-        return extractor.check() ? obj_ptr : nullptr;
-    }
-
-    static void _construct(PyObject *obj_ptr,
-                           converter::rvalue_from_python_stage1_data *data) 
-    {
-        void *storage = ((converter::rvalue_from_python_storage<
-                          std::shared_ptr<ArAsset>>*)data)->storage.bytes;
-        Ar_PyAsset pyAsset = extract<Ar_PyAsset>(obj_ptr);
-        new (storage) std::shared_ptr<ArAsset>(std::move(pyAsset._asset));
-        data->convertible = storage;
-    }
-
-    std::shared_ptr<ArAsset> _asset;
-};
-
-void wrapAsset()
+void wrapAsset(nanobind::module_& m)
 {
     typedef Ar_PyAsset This;
 
-    class_<This>
-        ("Ar_PyAsset", no_init)
-        .def("GetBuffer", &This::GetBuffer)
-        .def("GetSize", &This::GetSize)
-        .def("Read", &This::Read, (arg("count"), arg("offset")))
+    nb::class_<This>(m, "Ar_PyAsset")
+        .def("GetBuffer", &_GetBuffer)
+        .def("GetSize", &_GetSize)
+        .def("Read", &_Read, nb::arg("count"), nb::arg("offset"))
 
-        .def("__bool__", &This::__bool__)
-        .def("__enter__", &This::__enter__, return_self<>())
-        .def("__exit__", &This::__exit__)
+        .def("__bool__", [](const This& self) {
+            return self._asset != nullptr;
+        })
+        .def("__enter__", [](nb::object self) {
+            if (!nb::cast<This&>(self)._asset) {
+                TfPyThrowRuntimeError("Unable to access invalid asset");
+            }
+            return self;
+        })
+        .def("__exit__", [](This& self, nb::handle, nb::handle, nb::handle) {
+            self._asset.reset();
+        }, nb::arg().none(), nb::arg().none(), nb::arg().none())
         ;
 
-    Ar_PyAsset::RegisterConversions();
+    Tf_PyRegisterCustomToPythonConverter(
+        typeid(std::shared_ptr<ArAsset>),
+        +[](void const *p) -> PyObject * {
+            auto const &src = *static_cast<std::shared_ptr<ArAsset> const *>(p);
+            if (!src) {
+                Py_RETURN_NONE;
+            }
+            return nb::detail::type_caster_base<Ar_PyAsset>::from_cpp(
+                       Ar_PyAsset(src), nb::rv_policy::move, nullptr)
+                .ptr();
+        });
 }

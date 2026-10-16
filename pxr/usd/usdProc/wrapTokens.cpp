@@ -5,18 +5,23 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/tf/pyUtils.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 #include "pxr/usd/usdProc/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return UsdProcTokens->name.GetString(); });
+    cls.def_prop_ro_static(#name, [](nanobind::handle) { return UsdProcTokens->name.GetString(); }, nanobind::rv_policy::copy);
 
-void wrapUsdProcTokens()
+void wrapUsdProcTokens(nanobind::module_ &m)
 {
-    pxr_boost::python::class_<UsdProcTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
+    nanobind::class_<UsdProcTokensType> cls(m, "Tokens");
+    cls.def("__init__", [](nanobind::args, nanobind::kwargs) {
+        TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+    });
     _ADD_TOKEN(cls, proceduralSystem);
     _ADD_TOKEN(cls, GenerativeProcedural);
 }

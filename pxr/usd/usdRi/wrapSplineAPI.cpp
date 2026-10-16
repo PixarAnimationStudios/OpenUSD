@@ -14,15 +14,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -31,7 +30,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdRiSplineAPI &self)
@@ -59,42 +57,35 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdRiSplineAPI()
+void wrapUsdRiSplineAPI(nb::module_ &m)
 {
     typedef UsdRiSplineAPI This;
 
-    UsdRiSplineAPI_CanApplyResult::Wrap<UsdRiSplineAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdRiSplineAPI_CanApplyResult::WrapNb<UsdRiSplineAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("SplineAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "SplineAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -125,39 +116,38 @@ namespace {
 
 static UsdAttribute
 _CreateInterpolationAttr(UsdRiSplineAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInterpolationAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
 static UsdAttribute
 _CreatePositionsAttr(UsdRiSplineAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePositionsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateValuesAttr(UsdRiSplineAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateValuesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
 
-static pxr_boost::python::tuple 
+static nb::tuple 
 _Validate(const UsdRiSplineAPI &self) {
     std::string reason;
     bool result = self.Validate(&reason);
-    return pxr_boost::python::make_tuple(result, reason);
+    return nb::make_tuple(result, reason);
 }
-
 
 WRAP_CUSTOM {
     typedef UsdRiSplineAPI This;
     _class
-        .def(init<const UsdPrim &, const TfToken &,
+        .def(nb::init<const UsdPrim &, const TfToken &,
              const SdfValueTypeName &, bool>())
-        .def(init<const UsdSchemaBase &, const TfToken &,
+        .def(nb::init<const UsdSchemaBase &, const TfToken &,
              const SdfValueTypeName &, bool>())
 
         .def("GetValuesTypeName", &This::GetValuesTypeName)
@@ -166,20 +156,20 @@ WRAP_CUSTOM {
              &This::GetInterpolationAttr)
         .def("CreateInterpolationAttr",
              &_CreateInterpolationAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         .def("GetPositionsAttr",
              &This::GetPositionsAttr)
         .def("CreatePositionsAttr",
              &_CreatePositionsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         .def("GetValuesAttr",
              &This::GetValuesAttr)
         .def("CreateValuesAttr",
              &_CreateValuesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
         .def("Validate", &_Validate)
         ;

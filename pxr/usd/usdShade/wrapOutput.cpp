@@ -11,39 +11,42 @@
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
+
+namespace nb = nanobind;
 
 using std::vector;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
 static bool
-_Set(const UsdShadeOutput &self, object val, const UsdTimeCode &time) 
+_Set(const UsdShadeOutput &self, nb::handle val, const UsdTimeCode &time) 
 {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
-static object
+static nb::object
 _GetConnectedSources(const UsdShadeOutput &self)
 {
     SdfPathVector invalidSourcePaths;
     UsdShadeOutput::SourceInfoVector sources =
         self.GetConnectedSources(&invalidSourcePaths);
-    return pxr_boost::python::make_tuple(
+    return nb::make_tuple(
         std::vector<UsdShadeConnectionSourceInfo>(sources.begin(), sources.end()),
         invalidSourcePaths);
 }
 
-static object
+static nb::object
 _GetConnectedSource(const UsdShadeOutput &self)
 {
     UsdShadeConnectableAPI source;
@@ -51,9 +54,9 @@ _GetConnectedSource(const UsdShadeOutput &self)
     UsdShadeAttributeType  sourceType;
     
     if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
-        return pxr_boost::python::make_tuple(source, sourceName, sourceType);
+        return nb::make_tuple(source, sourceName, sourceType);
     } else {
-        return object();
+        return nb::none();
     }
 }
 
@@ -67,8 +70,7 @@ _GetRawConnectedSourcePaths(const UsdShadeOutput &self)
 
 } // anonymous namespace 
 
-
-void wrapUsdShadeOutput()
+void wrapUsdShadeOutput(nanobind::module_ &m)
 {
     typedef UsdShadeOutput Output;
 
@@ -94,87 +96,86 @@ void wrapUsdShadeOutput()
     bool (Output::*CanConnect_1)(
         UsdAttribute const &) const = &Output::CanConnect;
 
-    class_<Output>("Output")
-        .def(init<UsdAttribute>(arg("attr")))
-        .def(self==self)
-        .def(self!=self)
-        .def(!self)
+    nb::class_<Output>(m, "Output")
+        .def(nb::init<>())
+        .def(nb::init<UsdAttribute>(), nb::arg("attr"))
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__hash__", [](const Output &self) { return hash_value(self.GetAttr()); })
+        .def("__bool__", [](const Output &self) { return bool(self); })
 
         .def("GetFullName", &Output::GetFullName,
-                return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetBaseName", &Output::GetBaseName)
         .def("GetPrim", &Output::GetPrim)
         .def("GetTypeName", &Output::GetTypeName)
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Set", _Set, nb::arg("value").none(), nb::arg("time")=UsdTimeCode::Default())
         .def("SetRenderType", &Output::SetRenderType,
-             (arg("renderType")))
+             nb::arg("renderType"))
         .def("GetRenderType", &Output::GetRenderType)
         .def("HasRenderType", &Output::HasRenderType)
 
         .def("GetSdrMetadata", &Output::GetSdrMetadata)
         .def("GetSdrMetadataByKey", &Output::GetSdrMetadataByKey,
-             (arg("key")))
+             nb::arg("key"))
 
         .def("SetSdrMetadata", &Output::SetSdrMetadata,
-             (arg("sdrMetadata")))
+             nb::arg("sdrMetadata"))
         .def("SetSdrMetadataByKey", &Output::SetSdrMetadataByKey,
-             (arg("key"), arg("value")))
+             nb::arg("key"), nb::arg("value"))
 
         .def("HasSdrMetadata", &Output::HasSdrMetadata)
         .def("HasSdrMetadataByKey", &Output::HasSdrMetadataByKey,
-             (arg("key")))
+             nb::arg("key"))
 
         .def("ClearSdrMetadata", &Output::ClearSdrMetadata)
         .def("ClearSdrMetadataByKey", 
-             &Output::ClearSdrMetadataByKey, (arg("key")))
+             &Output::ClearSdrMetadataByKey, nb::arg("key"))
 
         .def("GetAttr", &Output::GetAttr,
-                return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("CanConnect", CanConnect_1,
-            (arg("source")))
+            nb::arg("source"))
 
         .def("ConnectToSource", ConnectToSource_5,
-            (arg("source"),
-             arg("mod")=UsdShadeConnectionModification::Replace))
+            nb::arg("source"),
+            nb::arg("mod")=UsdShadeConnectionModification::Replace)
         .def("ConnectToSource", ConnectToSource_1,
-            (arg("source"), arg("sourceName"), 
-             arg("sourceType")=UsdShadeAttributeType::Output,
-             arg("typeName")=SdfValueTypeName()))
+            nb::arg("source"), nb::arg("sourceName"), 
+            nb::arg("sourceType")=UsdShadeAttributeType::Output,
+            nb::arg("typeName")=SdfValueTypeName())
         .def("ConnectToSource", ConnectToSource_2,
-            (arg("sourcePath")))
+            nb::arg("sourcePath"))
         .def("ConnectToSource", ConnectToSource_3,
-            (arg("sourceInput")))
+            nb::arg("sourceInput"))
         .def("ConnectToSource", ConnectToSource_4,
-            (arg("sourceOutput")))
+            nb::arg("sourceOutput"))
 
         .def("SetConnectedSources", &Output::SetConnectedSources)
 
         .def("GetConnectedSources", _GetConnectedSources)
         .def("GetConnectedSource", _GetConnectedSource)
         .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths,
-            return_value_policy<TfPySequenceToList>())
+            nb::rv_policy::copy)
         .def("HasConnectedSource", &Output::HasConnectedSource)
         .def("IsSourceConnectionFromBaseMaterial", 
              &Output::IsSourceConnectionFromBaseMaterial)
         .def("DisconnectSource", &Output::DisconnectSource,
-             (arg("sourceAttr")=UsdAttribute()))
+             nb::arg("sourceAttr")=UsdAttribute())
         .def("ClearSources", &Output::ClearSources)
         .def("ClearSource", &Output::ClearSource)
 
         .def("GetValueProducingAttributes",
              &Output::GetValueProducingAttributes,
-             (arg("shaderOutputsOnly")=false))
+             nb::arg("shaderOutputsOnly")=false)
 
-        .def("IsOutput", &Output::IsOutput)
-        .staticmethod("IsOutput")
+        .def_static("IsOutput", &Output::IsOutput)
         ;
 
-    implicitly_convertible<Output, UsdAttribute>();
+    nb::implicitly_convertible<Output, UsdAttribute>();
+    nb::implicitly_convertible<Output, UsdProperty>();
+    nb::implicitly_convertible<Output, UsdObject>();
 
-    to_python_converter<
-        std::vector<Output>,
-        TfPySequenceToPython<std::vector<Output> > >();
 }
-
 

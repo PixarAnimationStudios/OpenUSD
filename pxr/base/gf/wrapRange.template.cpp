@@ -19,18 +19,15 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -41,124 +38,71 @@ static string _Repr({{ RNG }} const &self) {
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
 
-static {{ RNG }} __truediv__(const {{ RNG }} &self, double value)
-{
-    return self / value;
-}
-
-static {{ RNG }}& __itruediv__({{ RNG }} &self, double value)
-{
-    return self /= value;
-}
-
 static size_t __hash__({{ RNG }} const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 
-void wrapRange{{ SUFFIX }}()
-{    
-    object getMin = make_function(&{{ RNG }}::GetMin,
-                                  return_value_policy<return_by_value>());
-
-    object getMax = make_function(&{{ RNG }}::GetMax,
-                                  return_value_policy<return_by_value>());
-
-    class_<{{ RNG }}> cls("Range{{ SUFFIX }}", init<>());
+void wrapRange{{ SUFFIX }}(nanobind::module_ &m)
+{
+    nanobind::class_<{{ RNG }}> cls(m, "Range{{ SUFFIX }}");
     cls
-        .def(init<{{ RNG }}>())
-        .def(init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
-
+        .def(nanobind::init<>())
+        .def(nanobind::init<{{ RNG }}>())
+        .def(nanobind::init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
 {% for S in SCALARS if S != SCL %}
-        .def(init<{{ RNGNAME(DIM, S) }}>())
+        .def(nanobind::init<{{ RNGNAME(DIM, S) }}>())
 {% endfor %}
-        
         .def(TfTypePythonClass())
-
-        .def_readonly("dimension", _dimension)
-        
-        .add_property("min", getMin, &{{ RNG }}::SetMin)
-        .add_property("max", getMax, &{{ RNG }}::SetMax)
-
-        .def("GetMin", getMin)
-        .def("GetMax", getMax)
-
+        .def_ro_static("dimension", &_dimension)
+        .def_prop_rw("min", &{{ RNG }}::GetMin, &{{ RNG }}::SetMin,
+                     nanobind::rv_policy::copy)
+        .def_prop_rw("max", &{{ RNG }}::GetMax, &{{ RNG }}::SetMax,
+                     nanobind::rv_policy::copy)
+        .def("GetMin", &{{ RNG }}::GetMin, nanobind::rv_policy::copy)
+        .def("GetMax", &{{ RNG }}::GetMax, nanobind::rv_policy::copy)
         .def("GetSize", &{{ RNG }}::GetSize)
         .def("GetMidpoint", &{{ RNG }}::GetMidpoint)
-    
         .def("SetMin", &{{ RNG }}::SetMin)
         .def("SetMax", &{{ RNG }}::SetMax)
-    
         .def("IsEmpty", &{{ RNG }}::IsEmpty)
-    
         .def("SetEmpty", &{{ RNG }}::SetEmpty)
-
-        .def("Contains", (bool ({{ RNG }}::*)({{ MINMAXPARM }}) const)
-             &{{ RNG }}::Contains)
-        .def("Contains", (bool ({{ RNG }}::*)(const {{ RNG }} &) const)
-             &{{ RNG }}::Contains)
-    
-        .def("GetUnion", &{{ RNG }}::GetUnion)
-        .staticmethod("GetUnion")
-    
-        .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)({{ MINMAXPARM }}))
-             &{{ RNG }}::UnionWith, return_self<>())
-        .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))
-             &{{ RNG }}::UnionWith, return_self<>())
-    
-        .def("GetIntersection", &{{ RNG }}::GetIntersection)
-        .staticmethod("GetIntersection")
-    
-        .def("IntersectWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))
-             &{{ RNG }}::IntersectWith, return_self<>())
-    
+        .def("Contains", (bool ({{ RNG }}::*)({{ MINMAXPARM }}) const)&{{ RNG }}::Contains)
+        .def("Contains", (bool ({{ RNG }}::*)(const {{ RNG }} &) const)&{{ RNG }}::Contains)
+        .def_static("GetUnion", &{{ RNG }}::GetUnion)
+        .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)({{ MINMAXPARM }}))&{{ RNG }}::UnionWith,
+             nanobind::rv_policy::reference)
+        .def("UnionWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))&{{ RNG }}::UnionWith,
+             nanobind::rv_policy::reference)
+        .def_static("GetIntersection", &{{ RNG }}::GetIntersection)
+        .def("IntersectWith", (const {{ RNG }} & ({{ RNG }}::*)(const {{ RNG }} &))&{{ RNG }}::IntersectWith,
+             nanobind::rv_policy::reference)
         .def("GetDistanceSquared", &{{ RNG }}::GetDistanceSquared)
-    
-        .def(str(self))
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self /= double())
-        .def(self + self)
-        .def(self - self)
-        .def(double() * self)
-        .def(self * double())
-        .def(self / double())
+        .def("__str__", [](const {{ RNG }} &self) { return TfStringify(self); })
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self /= double())
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(double() * nanobind::self)
+        .def(nanobind::self * double())
+        .def(nanobind::self / double())
 {% for S in SCALARS if S != SCL %}
-        .def(self == {{ RNGNAME(DIM, S) }}())
-        .def(self != {{ RNGNAME(DIM, S) }}())
+        .def(nanobind::self == {{ RNGNAME(DIM, S) }}())
+        .def(nanobind::self != {{ RNGNAME(DIM, S) }}())
 {% endfor %}
-        .def(self == self)
-        .def(self != self)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
-
 {% if DIM == 2 %}
         .def("GetCorner", &{{ RNG }}::GetCorner)
         .def("GetQuadrant", &{{ RNG }}::GetQuadrant)
-        .def_readonly("unitSquare", &{{ RNG }}::UnitSquare)
+        .def_ro_static("unitSquare", &{{ RNG }}::UnitSquare)
 {% elif DIM == 3 %}
         .def("GetCorner", &{{ RNG }}::GetCorner)
         .def("GetOctant", &{{ RNG }}::GetOctant)
-        .def_readonly("unitCube", &{{ RNG }}::UnitCube)
+        .def_ro_static("unitCube", &{{ RNG }}::UnitCube)
 {% endif %}
-        
         ;
-    to_python_converter<std::vector<{{ RNG }}>,
-        TfPySequenceToPython<std::vector<{{ RNG }}> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
-
 }

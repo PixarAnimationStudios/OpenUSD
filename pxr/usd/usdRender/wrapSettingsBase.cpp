@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,49 +40,49 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateResolutionAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateResolutionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int2), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePixelAspectRatioAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePixelAspectRatioAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAspectRatioConformPolicyAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateAspectRatioConformPolicyAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDataWindowNDCAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDataWindowNDCAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float4), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInstantaneousShutterAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInstantaneousShutterAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisableMotionBlurAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisableMotionBlurAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisableDepthOfFieldAttr(UsdRenderSettingsBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisableDepthOfFieldAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
@@ -92,82 +98,78 @@ _Repr(const UsdRenderSettingsBase &self)
 
 } // anonymous namespace
 
-void wrapUsdRenderSettingsBase()
+void wrapUsdRenderSettingsBase(nb::module_ &m)
 {
     typedef UsdRenderSettingsBase This;
 
-    class_<This, bases<UsdTyped> >
-        cls("SettingsBase");
+    nb::class_<This, UsdTyped> cls(m, "SettingsBase");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetResolutionAttr",
              &This::GetResolutionAttr)
         .def("CreateResolutionAttr",
              &_CreateResolutionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetPixelAspectRatioAttr",
              &This::GetPixelAspectRatioAttr)
         .def("CreatePixelAspectRatioAttr",
              &_CreatePixelAspectRatioAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetAspectRatioConformPolicyAttr",
              &This::GetAspectRatioConformPolicyAttr)
         .def("CreateAspectRatioConformPolicyAttr",
              &_CreateAspectRatioConformPolicyAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDataWindowNDCAttr",
              &This::GetDataWindowNDCAttr)
         .def("CreateDataWindowNDCAttr",
              &_CreateDataWindowNDCAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInstantaneousShutterAttr",
              &This::GetInstantaneousShutterAttr)
         .def("CreateInstantaneousShutterAttr",
              &_CreateInstantaneousShutterAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDisableMotionBlurAttr",
              &This::GetDisableMotionBlurAttr)
         .def("CreateDisableMotionBlurAttr",
              &_CreateDisableMotionBlurAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDisableDepthOfFieldAttr",
              &This::GetDisableDepthOfFieldAttr)
         .def("CreateDisableDepthOfFieldAttr",
              &_CreateDisableDepthOfFieldAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetCameraRel",

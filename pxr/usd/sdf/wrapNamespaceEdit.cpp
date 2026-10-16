@@ -11,19 +11,14 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/init.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/str.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <functional>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -138,48 +133,42 @@ _AddOldAndNew3(
 static
 bool
 _TranslateCanEdit(
-    const object& canEdit,
+    const nanobind::object& canEdit,
     const SdfNamespaceEdit& edit,
     std::string* whyNot)
 {
-    if (TfPyIsNone(canEdit)) {
+    if (canEdit.is_none()) {
         return true;
     }
 
-    object result = TfPyCall<object>(canEdit)(edit);
+    nanobind::object result = TfPyCall<nanobind::object>(canEdit)(edit);
 
     // We expect the result to be True or a tuple (False, str).  We'll
     // also accept for success a tuple (True, str) and we'll ignore the
     // string.  We'll also accept for failure just a str.
-    {
-        extract<tuple> e(result);
-        if (e.check()) {
-            tuple tupleResult = e();
-            if (len(tupleResult) != 2) {
-                TfPyThrowValueError("expected a 2-tuple");
-            }
-            str whyNotResult = extract<str>(tupleResult[1]);
-            if (extract<bool>(tupleResult[0])) {
-                return true;
-            }
-            else {
-                if (whyNot) {
-                    *whyNot = extract<std::string>(whyNotResult);
-                }
-                return false;
-            }
+    if (nanobind::isinstance<nanobind::tuple>(result)) {
+        nanobind::tuple tupleResult = nanobind::cast<nanobind::tuple>(result);
+        if (nanobind::len(tupleResult) != 2) {
+            TfPyThrowValueError("expected a 2-tuple");
         }
-    }
-    {
-        extract<str> whyNotResult(result);
-        if (whyNotResult.check()) {
+        std::string whyNotStr = nanobind::cast<std::string>(tupleResult[1]);
+        if (nanobind::cast<bool>(tupleResult[0])) {
+            return true;
+        }
+        else {
             if (whyNot) {
-                *whyNot = extract<std::string>(whyNotResult);
+                *whyNot = whyNotStr;
             }
             return false;
         }
     }
-    if (!extract<bool>(result)) {
+    if (nanobind::isinstance<nanobind::str>(result)) {
+        if (whyNot) {
+            *whyNot = nanobind::cast<std::string>(result);
+        }
+        return false;
+    }
+    if (!nanobind::cast<bool>(result)) {
         // Need a string on failure.
         TfPyThrowValueError("expected a 2-tuple");
     }
@@ -187,11 +176,11 @@ _TranslateCanEdit(
 }
 
 static
-tuple
+nanobind::tuple
 _Process(
     const SdfBatchNamespaceEdit& x,
-    const object& hasObjectAtPath,
-    const object& canEdit,
+    const nanobind::object& hasObjectAtPath,
+    const nanobind::object& canEdit,
     bool fixBackpointers)
 {
     namespace ph = std::placeholders;
@@ -200,7 +189,7 @@ _Process(
     SdfNamespaceEditVector edits;
     SdfNamespaceEditDetailVector details;
     bool result;
-    if (TfPyIsNone(hasObjectAtPath)) {
+    if (hasObjectAtPath.is_none()) {
         result = x.Process(&edits, SdfBatchNamespaceEdit::HasObjectAtPath(),
                            std::bind(&_TranslateCanEdit, canEdit,
                                      ph::_1, ph::_2),
@@ -213,64 +202,72 @@ _Process(
                            &details, fixBackpointers);
     }
     if (result) {
-        return make_tuple(object(true), object(edits));
+        return nanobind::make_tuple(true, nanobind::cast(edits));
     }
     else {
-        return make_tuple(object(false), object(details));
+        return nanobind::make_tuple(false, nanobind::cast(details));
     }
 }
 
 void
-wrapNamespaceEditDetail()
+wrapNamespaceEditDetail(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef SdfNamespaceEditDetail This;
 
     // Wrap SdfNamespaceEditDetail.
-    scope s =
-    class_<This>("NamespaceEditDetail", no_init)
-        .def(init<>())
-        .def(init<This::Result, const SdfNamespaceEdit&, const std::string&>())
+    nb::class_<This> s(m, "NamespaceEditDetail");
+    s
+        .def(nb::init<>())
+        .def(nb::init<This::Result, const SdfNamespaceEdit&, const std::string&>())
         .def("__str__", &_StringifyEditDetail)
         .def("__repr__", &_ReprEditDetail)
-        .def_readwrite("result", &This::result)
-        .def_readwrite("edit", &This::edit)
-        .def_readwrite("reason", &This::reason)
-        .def(self == self)
-        .def(self != self)
+        .def_rw("result", &This::result)
+        .def_rw("edit", &This::edit)
+        .def_rw("reason", &This::reason)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
 
     // Wrap SdfNamespaceEditDetail::Result.
-    TfPyWrapEnum<This::Result>();
+    TfNbWrapEnum<This::Result>(s);
 
     // Wrap SdfNamespaceEditDetailVector.
-    to_python_converter<SdfNamespaceEditDetailVector,
-                        TfPySequenceToPython<SdfNamespaceEditDetailVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfNamespaceEditDetailVector,
         TfPyContainerConversions::variable_capacity_policy>();
 }
 
 void
-wrapBatchNamespaceEdit()
+wrapBatchNamespaceEdit(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef SdfBatchNamespaceEdit This;
 
-    class_<This>("BatchNamespaceEdit", no_init)
-        .def(init<>())
-        .def(init<const This&>())
-        .def(init<const SdfNamespaceEditVector&>())
+    nb::class_<This>(m, "BatchNamespaceEdit")
+        .def(nb::init<>())
+        .def(nb::init<const This&>())
+        .def(nb::init<const SdfNamespaceEditVector&>())
         .def("__str__", &_StringifyBatchEdit)
         .def("__repr__", &_ReprBatchEdit)
         .def("Add", &_AddEdit)
         .def("Add", &_AddOldAndNew2)
         .def("Add", &_AddOldAndNew3)
-        .add_property("edits",
-            make_function(&This::GetEdits,
-                          return_value_policy<return_by_value>()))
-        .def("Process", &_Process,
-            (arg("hasObjectAtPath"),
-             arg("canEdit"),
-             arg("fixBackpointers") = true))
+        .def_prop_ro("edits", &This::GetEdits, nb::rv_policy::copy)
+        .def("Process",
+            [](const SdfBatchNamespaceEdit& x,
+               nb::handle hasObjectAtPath,
+               nb::handle canEdit,
+               bool fixBackpointers) {
+                return _Process(
+                    x,
+                    nb::borrow<nb::object>(hasObjectAtPath),
+                    nb::borrow<nb::object>(canEdit),
+                    fixBackpointers);
+            },
+            nb::arg("hasObjectAtPath").none(),
+            nb::arg("canEdit").none(),
+            nb::arg("fixBackpointers") = true)
         ;
 }
 
@@ -280,43 +277,38 @@ static SdfNamespaceEdit::Index _same  = SdfNamespaceEdit::Same;
 } // anonymous namespace 
 
 void
-wrapNamespaceEdit()
+wrapNamespaceEdit(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef SdfNamespaceEdit This;
 
-    class_<This>("NamespaceEdit", no_init)
-        .def(init<>())
-        .def(init<const This::Path&, const This::Path&,
-                  optional<This::Index> >())
+    nb::class_<This>(m, "NamespaceEdit")
+        .def(nb::init<>())
+        .def(nb::init<const This::Path&, const This::Path&, This::Index>(),
+             nb::arg("currentPath"), nb::arg("newPath"),
+             nb::arg("index") = SdfNamespaceEdit::AtEnd)
         .def("__str__", &_StringifyEdit)
         .def("__repr__", &_ReprEdit)
-        .def_readwrite("currentPath", &This::currentPath)
-        .def_readwrite("newPath", &This::newPath)
-        .def_readwrite("index", &This::index)
-        .def_readonly("atEnd", &_atEnd)
-        .def_readonly("same", &_same)
-        .def(self == self)
-        .def(self != self)
+        .def_rw("currentPath", &This::currentPath)
+        .def_rw("newPath", &This::newPath)
+        .def_rw("index", &This::index)
+        .def_ro_static("atEnd", &_atEnd)
+        .def_ro_static("same", &_same)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        .def("Remove", &This::Remove)
-        .staticmethod("Remove")
-        .def("Rename", &This::Rename)
-        .staticmethod("Rename")
-        .def("Reorder", &This::Reorder)
-        .staticmethod("Reorder")
-        .def("Reparent", &This::Reparent)
-        .staticmethod("Reparent")
-        .def("ReparentAndRename", &This::ReparentAndRename)
-        .staticmethod("ReparentAndRename")
+        .def_static("Remove", &This::Remove)
+        .def_static("Rename", &This::Rename)
+        .def_static("Reorder", &This::Reorder)
+        .def_static("Reparent", &This::Reparent)
+        .def_static("ReparentAndRename", &This::ReparentAndRename)
         ;
 
     // Wrap SdfNamespaceEditVector.
-    to_python_converter<SdfNamespaceEditVector,
-                        TfPySequenceToPython<SdfNamespaceEditVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfNamespaceEditVector,
         TfPyContainerConversions::variable_capacity_policy>();
 
-    wrapNamespaceEditDetail();
-    wrapBatchNamespaceEdit();
+    wrapNamespaceEditDetail(m);
+    wrapBatchNamespaceEdit(m);
 }

@@ -7,14 +7,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLod/screenSizeHeuristicQuery.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static
 double
@@ -55,7 +53,7 @@ _WrapComputeLOD2(const UsdLodScreenSizeHeuristicQuery& query,
 }
 
 static
-pxr_boost::python::tuple
+nb::tuple
 _WrapComputeLOD3(const UsdLodScreenSizeHeuristicQuery& query,
                  const GfFrustum& frustum,
                  const GfMatrix4d& transform,
@@ -66,43 +64,35 @@ _WrapComputeLOD3(const UsdLodScreenSizeHeuristicQuery& query,
     double lod = query.ComputeLOD(frustum, transform,
                                   prevSize, hysteresis,
                                   &sizeOut);
-    return pxr_boost::python::make_tuple(lod, sizeOut);
+    return nb::make_tuple(lod, sizeOut);
 }
 
-static
-UsdLodScreenSizeHeuristicQuery*
-_WrapInit(const std::string& lodDomain,
-          const GfRange3d& extent,
-          const std::string& projectionMethod,
-          const VtFloatArray& thresholds,
-          const VtFloatArray& blendThresholds)
-{
-    return new UsdLodScreenSizeHeuristicQuery(
-        TfToken(lodDomain), extent, TfToken(projectionMethod),
-        thresholds, blendThresholds);
-}
-
-void wrapScreenSizeHeuristicQuery()
+void wrapScreenSizeHeuristicQuery(nb::module_ &m)
 {
     typedef UsdLodScreenSizeHeuristicQuery This;
 
-    class_<This, bases<UsdLodHeuristicQuery>>("ScreenSizeHeuristicQuery")
-
+    nb::class_<This, UsdLodHeuristicQuery>(m, "ScreenSizeHeuristicQuery")
+        .def(nb::init<>())
+        .def(nb::init<const UsdLodScreenSizeHeuristicQuery&>())
         .def("__init__",
-             make_constructor(&_WrapInit,
-                              default_call_policies(),
-                              (arg("lodDomain"),
-                               arg("extent") = GfRange3d(),
-                               arg("projectionMethod") = std::string(),
-                               arg("thresholds") = VtFloatArray(),
-                               arg("blendThresholds") = VtFloatArray())))
-        .def(init<>())
+             +[](This* self,
+                 const std::string& lodDomain,
+                 const GfRange3d& extent,
+                 const std::string& projectionMethod,
+                 const VtFloatArray& thresholds,
+                 const VtFloatArray& blendThresholds) {
+                 new (self) This(TfToken(lodDomain), extent,
+                                 TfToken(projectionMethod),
+                                 thresholds, blendThresholds);
+             },
+             nb::arg("lodDomain"),
+             nb::arg("extent") = GfRange3d(),
+             nb::arg("projectionMethod") = std::string(),
+             nb::arg("thresholds") = VtFloatArray(),
+             nb::arg("blendThresholds") = VtFloatArray())
 
-        .def(init<const UsdLodScreenSizeHeuristicQuery&>())
-
-        .def_readwrite(
-            "extent", &UsdLodScreenSizeHeuristicQuery::extent)
-        .add_property(
+        .def_rw("extent", &UsdLodScreenSizeHeuristicQuery::extent)
+        .def_prop_rw(
             "projectionMethod",
             +[](const This& self) {
                  return self.projectionMethod.GetString();
@@ -110,31 +100,28 @@ void wrapScreenSizeHeuristicQuery()
             +[](This& self, const std::string& value) {
                  self.projectionMethod = TfToken(value);
              })
-        .def_readwrite(
-            "thresholds", &UsdLodScreenSizeHeuristicQuery::thresholds)
-        .def_readwrite(
-            "blendThresholds",
-            &UsdLodScreenSizeHeuristicQuery::blendThresholds)
+        .def_rw("thresholds", &UsdLodScreenSizeHeuristicQuery::thresholds)
+        .def_rw("blendThresholds", &UsdLodScreenSizeHeuristicQuery::blendThresholds)
 
         .def("ComputeScreenSize",
              &_WrapComputeScreenSize1,
-             (arg("frustum"),
-              arg("transform")))
+             nb::arg("frustum"),
+             nb::arg("transform"))
         .def("ComputeScreenSize",
              &_WrapComputeScreenSize2,
-             (arg("frustum"),
-              arg("transform"),
-              arg("prevSize"),
-              arg("hysteresis")))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("prevSize"),
+             nb::arg("hysteresis"))
         .def("ComputeLOD", &_WrapComputeLOD1,
-             arg("size"))
+             nb::arg("size"))
         .def("ComputeLOD", &_WrapComputeLOD2,
-             (arg("frustum"),
-              arg("transform")))
+             nb::arg("frustum"),
+             nb::arg("transform"))
         .def("ComputeLOD", &_WrapComputeLOD3,
-             (arg("frustum"),
-              arg("transform"),
-              arg("prevSize"),
-              arg("hysteresis")))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("prevSize"),
+             nb::arg("hysteresis"))
         ;
 }

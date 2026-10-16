@@ -11,30 +11,33 @@
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/object.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
 
+namespace nb = nanobind;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
-static object
+static nb::object
 _HasAuthoredVariantSelection(const UsdVariantSet &self)
 {
     string value;
     if (self.HasAuthoredVariantSelection(&value))
-        return object(value);
-    return object();
+        return nb::cast(value);
+    return nb::none();
 }
 
 static vector<string>
@@ -52,47 +55,51 @@ _GetVariantEditContext(const UsdVariantSet &self, const SdfLayerHandle &layer) {
 
 } // anonymous namespace 
 
-void wrapUsdVariantSets()
+void wrapUsdVariantSets(nb::module_ &m)
 {
-    class_<UsdVariantSet>("VariantSet", no_init)
+    nb::class_<UsdVariantSet>(m, "VariantSet")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddVariant", &UsdVariantSet::AddVariant,
-             (arg("variantName"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("GetVariantNames", &UsdVariantSet::GetVariantNames,
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("variantName"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("GetVariantNames", &UsdVariantSet::GetVariantNames)
         .def("HasAuthoredVariant", &UsdVariantSet::HasAuthoredVariant)
         .def("GetVariantSelection", &UsdVariantSet::GetVariantSelection)
         .def("HasAuthoredVariantSelection", _HasAuthoredVariantSelection)
         .def("SetVariantSelection", &UsdVariantSet::SetVariantSelection,
-             arg("variantName"))
+             nb::arg("variantName"))
         .def("ClearVariantSelection", &UsdVariantSet::ClearVariantSelection)
         .def("BlockVariantSelection", &UsdVariantSet::BlockVariantSelection)
         .def("GetVariantEditTarget", &UsdVariantSet::GetVariantEditTarget,
-             arg("layer")=SdfLayerHandle())
+             nb::arg("layer")=SdfLayerHandle())
         .def("GetVariantEditContext", _GetVariantEditContext,
-             arg("layer")=SdfLayerHandle())
+             nb::arg("layer")=SdfLayerHandle())
         .def("GetPrim", &UsdVariantSet::GetPrim, 
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetName", &UsdVariantSet::GetName, 
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("IsValid", &UsdVariantSet::IsValid)
-        .def(!self)
+        .def(!nb::self)
         ;
 
-    class_<UsdVariantSets>("VariantSets", no_init)
+    nb::class_<UsdVariantSets>(m, "VariantSets")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddVariantSet", &UsdVariantSets::AddVariantSet,
-             (arg("variantSetName"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("GetNames", _GetNames, return_value_policy<TfPySequenceToList>())
+             nb::arg("variantSetName"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("GetNames", _GetNames)
         .def("GetVariantSet", &UsdVariantSets::GetVariantSet,
-             arg("variantSetName"))
+             nb::arg("variantSetName"))
         .def("HasVariantSet", &UsdVariantSets::HasVariantSet,
-             arg("variantSetName"))
+             nb::arg("variantSetName"))
         .def("GetVariantSelection", &UsdVariantSets::GetVariantSelection,
-             arg("variantSetName"))
+             nb::arg("variantSetName"))
         .def("SetSelection", &UsdVariantSets::SetSelection,
-             (arg("variantSetName"), arg("variantName")))
-        .def("GetAllVariantSelections", &UsdVariantSets::GetAllVariantSelections, 
-             return_value_policy<TfPyMapToDictionary>())
+             nb::arg("variantSetName"), nb::arg("variantName"))
+        .def("GetAllVariantSelections", &UsdVariantSets::GetAllVariantSelections)
         ;
 }

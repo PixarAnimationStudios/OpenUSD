@@ -8,46 +8,47 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUI/attributeHints.h"
 #include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdUIAttributeHints()
+void wrapUsdUIAttributeHints(nanobind::module_ &m)
 {
     using This = UsdUIAttributeHints;
 
-    class_<This, bases<UsdUIPropertyHints>>
-        clsObj("AttributeHints");
+    nb::class_<This, UsdUIPropertyHints> clsObj(m, "AttributeHints");
     clsObj
-        .def(init<UsdAttribute>(arg("attr")))
+        .def(nb::init<>())
+        .def(nb::init<const UsdAttribute &>(), nb::arg("attr"))
 
         .def("GetAttribute",
              &This::GetAttribute,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetValueLabels",
              &This::GetValueLabels)
         .def("SetValueLabels",
              &This::SetValueLabels,
-             arg("labels"))
+             nb::arg("labels"))
 
         .def("GetValueLabelsOrder",
              &This::GetValueLabelsOrder)
         .def("SetValueLabelsOrder",
              &This::SetValueLabelsOrder,
-             arg("order"))
+             nb::arg("order"))
 
         .def("ApplyValueLabel",
              &This::ApplyValueLabel,
-             arg("label"))
+             nb::arg("label"))
         ;
 
     TfPyRegisterStlSequencesFromPython<This>();
-    to_python_converter<
-        std::vector<This>,
-        TfPySequenceToPython<std::vector<This>>>();
 }

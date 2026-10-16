@@ -11,6 +11,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Utils );
-    TF_WRAP( HydraObserver );
+    TF_WRAP_NB( Utils );
+    TF_WRAP_NB( HydraObserver );
 }

@@ -9,31 +9,39 @@
 #include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdPrimTypeInfo()
+void wrapUsdPrimTypeInfo(nb::module_ &m)
 {
     typedef UsdPrimTypeInfo This;
-    class_<This, noncopyable>("PrimTypeInfo", no_init)
+    nb::class_<This>(m, "PrimTypeInfo")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("GetTypeName", &This::GetTypeName,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetSchemaType", &This::GetSchemaType,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetSchemaTypeName", &This::GetSchemaTypeName,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetPrimDefinition", &This::GetPrimDefinition,
-             return_internal_reference<>())
-        .def(self == self)
-        .def(self != self)
+             nb::rv_policy::reference_internal)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        .def("GetEmptyPrimType", &This::GetEmptyPrimType,
-             return_internal_reference<>())
-        .staticmethod("GetEmptyPrimType")
+        .def_static("GetEmptyPrimType", &This::GetEmptyPrimType,
+             nb::rv_policy::reference)
         ;
 }

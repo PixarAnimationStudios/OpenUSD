@@ -5,25 +5,46 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/set.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usd/usdUtils/authoring.h"
 
 #include "pxr/usd/sdf/layer.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyContainerConversions.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
+
+static SdfPathSet
+_ExtractPathSet(const nb::iterable &paths)
+{
+    SdfPathSet result;
+    for (nb::handle item : paths) {
+        result.insert(nb::cast<SdfPath>(item));
+    }
+    return result;
+}
+
+static SdfPathVector
+_ExtractPathVector(const nb::iterable &paths)
+{
+    SdfPathVector result;
+    for (nb::handle item : paths) {
+        result.push_back(nb::cast<SdfPath>(item));
+    }
+    return result;
+}
 
 static 
 std::vector<UsdCollectionAPI> 
 _WrapUsdUtilsCreateCollections(
-    const pxr_boost::python::list &assignments, 
+    const nb::list &assignments, 
     const UsdPrim &usdPrim, 
     const double minInclusionRatio, 
     const unsigned int maxNumExcludesBelowInclude,
@@ -31,20 +52,15 @@ _WrapUsdUtilsCreateCollections(
 {
     // Create an stl vector with the required data from the python list.
     std::vector<std::pair<TfToken, SdfPathSet>> assignmentsVec;
-    size_t nPairs = len(assignments);
+    size_t nPairs = nb::len(assignments);
     assignmentsVec.resize(nPairs);
 
     for(size_t i = 0; i < nPairs; ++i) {
-        tuple pair = extract<tuple>(assignments[i]);
-        TfToken collName = extract<TfToken>(pair[0]);
-        list pathList = extract<list>(pair[1]);
+        nb::tuple pair = nb::cast<nb::tuple>(assignments[i]);
+        TfToken collName = nb::cast<TfToken>(pair[0]);
+        nb::iterable pathList = nb::cast<nb::iterable>(pair[1]);
 
-        SdfPathSet includedPaths; 
-        size_t numPaths = len(pathList);
-        for (size_t pathIdx = 0; pathIdx < numPaths ; ++pathIdx) {
-            SdfPath includedPath = extract<SdfPath>(pathList[pathIdx]);
-            includedPaths.insert(includedPath);
-        }
+        SdfPathSet includedPaths = _ExtractPathSet(pathList);
         assignmentsVec[i] = std::make_pair(collName, includedPaths);
     }
 
@@ -54,59 +70,73 @@ _WrapUsdUtilsCreateCollections(
 }
 
 static 
-object
+nb::tuple
 _WrapUsdUtilsComputeCollectionIncludesAndExcludes(
-    const SdfPathSet &includedRootPaths, 
+    const nb::iterable &includedRootPaths, 
     const UsdStageWeakPtr &usdStage,
     double minInclusionRatio,
     const unsigned int maxNumExcludesBelowInclude,
     const unsigned int minIncludeExcludeCollectionSize,
-    const SdfPathVector &pathsToIgnore)
+    const nb::iterable &pathsToIgnore)
 {
     // The pathsToIgnore parameter is an SdfPathVector instead of an SdfPathSet
     // because we have to convert it into a hash set anyways. This lets us
     // accept both Python sets and lists, but without creating a temporary
     // std::set.
     UsdUtilsPathHashSet pathsToIgnoreSet;
-    pathsToIgnoreSet.insert(pathsToIgnore.begin(), pathsToIgnore.end());
+    for (nb::handle item : pathsToIgnore) {
+        pathsToIgnoreSet.insert(nb::cast<SdfPath>(item));
+    }
 
     SdfPathVector pathsToInclude;
     SdfPathVector pathsToExclude;
 
-    UsdUtilsComputeCollectionIncludesAndExcludes(includedRootPaths, 
+    UsdUtilsComputeCollectionIncludesAndExcludes(
+        _ExtractPathSet(includedRootPaths), 
         usdStage, &pathsToInclude, &pathsToExclude, minInclusionRatio, 
         maxNumExcludesBelowInclude, minIncludeExcludeCollectionSize,
         pathsToIgnoreSet);
 
-    return pxr_boost::python::make_tuple(pathsToInclude, pathsToExclude);
+    return nb::make_tuple(pathsToInclude, pathsToExclude);
 }
 
-void wrapAuthoring()
+static UsdCollectionAPI
+_WrapUsdUtilsAuthorCollection(
+    const TfToken &collectionName, 
+    const UsdPrim &usdPrim, 
+    const nb::iterable &pathsToInclude,
+    const nb::iterable &pathsToExclude)
 {
-    def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
-        (arg("source"), arg("destination"), arg("skipSublayers") = false,
-         arg("bakeUnauthoredFallbacks") = false ));
+    return UsdUtilsAuthorCollection(
+        collectionName, usdPrim,
+        _ExtractPathVector(pathsToInclude),
+        _ExtractPathVector(pathsToExclude));
+}
 
-    def("ComputeCollectionIncludesAndExcludes", 
+void wrapAuthoring(nanobind::module_ &m)
+{
+    m.def("CopyLayerMetadata", UsdUtilsCopyLayerMetadata, 
+        nb::arg("source"), nb::arg("destination"), nb::arg("skipSublayers") = false,
+        nb::arg("bakeUnauthoredFallbacks") = false);
+
+    m.def("ComputeCollectionIncludesAndExcludes", 
         &_WrapUsdUtilsComputeCollectionIncludesAndExcludes,
-        (arg("includedRootPaths"), arg("usdStage"), 
-         arg("minInclusionRatio")=0.75, 
-         arg("maxNumExcludesBelowInclude")=5u,
-         arg("minIncludeExcludeCollectionSize")=3u,
-         arg("pathsToIgnore")=SdfPathVector()));
+        nb::arg("includedRootPaths"), nb::arg("usdStage"), 
+        nb::arg("minInclusionRatio")=0.75, 
+        nb::arg("maxNumExcludesBelowInclude")=5u,
+        nb::arg("minIncludeExcludeCollectionSize")=3u,
+        nb::arg("pathsToIgnore")=SdfPathVector());
 
-    def("AuthorCollection", UsdUtilsAuthorCollection, 
-        (arg("collectionName"), arg("usdPrim"), arg("pathsToInclude"), 
-         arg("pathsToExclude")=SdfPathSet()));
+    m.def("AuthorCollection", &_WrapUsdUtilsAuthorCollection, 
+        nb::arg("collectionName"), nb::arg("usdPrim"), nb::arg("pathsToInclude"), 
+        nb::arg("pathsToExclude")=SdfPathSet());
 
-    def ("CreateCollections", _WrapUsdUtilsCreateCollections,
-        pxr_boost::python::return_value_policy<TfPySequenceToList>(),
-        (arg("assignments"), arg("usdPrim"), 
-         arg("minInclusionRatio")=0.75, 
-         arg("maxNumExcludesBelowInclude")=5u,
-         arg("minIncludeExcludeCollectionSize")=3u));
+    m.def("CreateCollections", _WrapUsdUtilsCreateCollections,
+        nb::arg("assignments"), nb::arg("usdPrim"), 
+        nb::arg("minInclusionRatio")=0.75, 
+        nb::arg("maxNumExcludesBelowInclude")=5u,
+        nb::arg("minIncludeExcludeCollectionSize")=3u);
 
-    def("GetDirtyLayers", UsdUtilsGetDirtyLayers,
-        (arg("stage"), arg("includeClipLayers")=true),
-        return_value_policy<TfPySequenceToList>());
+    m.def("GetDirtyLayers", UsdUtilsGetDirtyLayers,
+        nb::arg("stage"), nb::arg("includeClipLayers")=true);
 }

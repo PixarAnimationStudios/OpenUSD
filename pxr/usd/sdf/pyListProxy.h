@@ -12,14 +12,17 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/listProxy.h"
+#include "pxr/usd/sdf/pySpec.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <stdexcept>
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/slice.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,9 +43,14 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace pxr_boost::python;
+        namespace nb = nanobind;
 
-        class_<Type>(_GetName().c_str(), no_init)
+        nb::handle scope = TfPyGetCurrentNanobindModule();
+        if (!scope.is_valid()) {
+            scope = nb::borrow(PyImport_AddModule("pxr.Sdf"));
+        }
+
+        nb::class_<Type>(scope, _GetName().c_str())
             .def("__str__", &This::_GetStr)
             .def("__len__", &Type::size)
             .def("__getitem__", &This::_GetItemIndex)
@@ -53,8 +61,9 @@ private:
             .def("__delitem__", &This::_DelItemSlice)
             .def("__delitem__", &Type::Remove)
             .def("count", &Type::Count)
-            .def("copy", &Type::operator value_vector_type,
-                 return_value_policy<TfPySequenceToList>())
+            .def("copy", [](const Type& x) {
+                return static_cast<value_vector_type>(x);
+            })
             .def("index", &This::_FindIndex)
             .def("clear", &Type::clear)
             .def("insert", &This::_Insert)
@@ -63,21 +72,24 @@ private:
             .def("replace", &Type::Replace)
             .def("ApplyList", &Type::ApplyList)
             .def("ApplyEditsToList", &This::_ApplyEditsToList)
-            .add_property("expired", &This::_IsExpired)
-            .add_static_property("invalidIndex", &This::_GetInvalidIndex)
-            .def(self == self)
-            .def(self != self)
-            .def(self <  self)
-            .def(self <= self)
-            .def(self >  self)
-            .def(self >= self)
-            .def(self == other<value_vector_type>())
-            .def(self != other<value_vector_type>())
-            .def(self <  other<value_vector_type>())
-            .def(self <= other<value_vector_type>())
-            .def(self >  other<value_vector_type>())
-            .def(self >= other<value_vector_type>())
+            .def_prop_ro("expired", &This::_IsExpired)
+            .def_prop_ro_static("invalidIndex", [](nb::handle) {
+                return This::_GetInvalidIndex();
+            })
+            .def(nb::self == nb::self)
+            .def(nb::self != nb::self)
+            .def(nb::self <  nb::self)
+            .def(nb::self <= nb::self)
+            .def(nb::self >  nb::self)
+            .def(nb::self >= nb::self)
+            .def(nb::self == value_vector_type())
+            .def(nb::self != value_vector_type())
+            .def(nb::self <  value_vector_type())
+            .def(nb::self <= value_vector_type())
+            .def(nb::self >  value_vector_type())
+            .def(nb::self >= value_vector_type())
             ;
+
     }
 
     static std::string _GetName()
@@ -102,24 +114,15 @@ private:
         return x[TfPyNormalizeIndex(index, x._GetSize(), true)];
     }
 
-    static pxr_boost::python::list _GetItemSlice(const Type& x,
-                                             const pxr_boost::python::slice& index)
+    static nanobind::list _GetItemSlice(const Type& x,
+                                        const nanobind::slice& index)
     {
-        using namespace pxr_boost::python;
-
-        list result;
+        nanobind::list result;
 
         if (x._Validate()) {
-            try {
-                slice::range<typename Type::const_iterator> range =
-                    index.get_indicies(x.begin(), x.end());
-                for (; range.start != range.stop; range.start += range.step) {
-                    result.append(*range.start);
-                }
-                result.append(*range.start);
-            }
-            catch (const std::invalid_argument&) {
-                // Ignore.
+            auto [start, stop, step, count] = index.compute(x._GetSize());
+            for (size_t i = 0; i < count; ++i, start += step) {
+                result.append(nanobind::cast(x[start]));
             }
         }
 
@@ -131,35 +134,27 @@ private:
         x[TfPyNormalizeIndex(index, x._GetSize(), true)] = value;
     }
 
-    static void _SetItemSlice(Type& x, const pxr_boost::python::slice& index,
+    static void _SetItemSlice(Type& x, const nanobind::slice& index,
                               const value_vector_type& values)
     {
-        using namespace pxr_boost::python;
-
         if (! x._Validate()) {
             return;
         }
 
-        // Get the range and the number of items in the slice.
-        size_t start, step, count;
-        try {
-            slice::range<typename Type::iterator> range =
-                index.get_indicies(x.begin(), x.end());
-            start = range.start - x.begin();
-            step  = range.step;
-            count = 1 + (range.stop - range.start) / range.step;
-        }
-        catch (const std::invalid_argument&) {
-            // Empty range.
-            extract<int> e(index.start());
-            start = e.check() ? TfPyNormalizeIndex(e(), x._GetSize(), true) : 0;
-            step  = 0;
-            count = 0;
+        auto [start, stop, step, count] = index.compute(x._GetSize());
+        if (count == 0) {
+            int s = 0;
+            if (nanobind::try_cast<int>(index.attr("start"), s)) {
+                start = TfPyNormalizeIndex(s, x._GetSize(), true);
+            } else {
+                start = 0;
+            }
+            step = 0;
         }
 
-        if (TfPyIsNone(index.step())) {
+        if (TfPyIsNone(index.attr("step"))) {
             // Replace contiguous sequence with values.
-            x._Edit(start, count, values);
+            x._Edit(static_cast<size_t>(start), count, values);
         }
         else {
             // Replace exactly the selected items.
@@ -170,11 +165,12 @@ private:
                                    values.size(), count).c_str());
             }
             else if (step == 1) {
-                x._Edit(start, count, values);
+                x._Edit(static_cast<size_t>(start), count, values);
             }
             else {
                 SdfChangeBlock block;
-                for (size_t i = 0, j = start; i != count; j += step, ++i) {
+                for (size_t i = 0, j = static_cast<size_t>(start);
+                     i != count; j += step, ++i) {
                     x._Edit(j, 1, value_vector_type(1, values[i]));
                 }
             }
@@ -187,33 +183,24 @@ private:
                 1, value_vector_type());
     }
 
-    static void _DelItemSlice(Type& x, const pxr_boost::python::slice& index)
+    static void _DelItemSlice(Type& x, const nanobind::slice& index)
     {
-        using namespace pxr_boost::python;
-
         if (x._Validate()) {
-            try {
-                // Get the range and the number of items in the slice.
-                slice::range<typename Type::iterator> range =
-                    index.get_indicies(x.begin(), x.end());
-                size_t start = range.start - x.begin();
-                size_t step  = range.step;
-                size_t count = 1 + (range.stop - range.start) / range.step;
-
+            auto [start, stop, step, count] = index.compute(x._GetSize());
+            if (count > 0) {
                 // Erase items.
                 if (step == 1) {
-                    x._Edit(start, count, value_vector_type());
+                    x._Edit(static_cast<size_t>(start), count,
+                            value_vector_type());
                 }
                 else {
                     SdfChangeBlock block;
                     value_vector_type empty;
-                    for (size_t j = start; count > 0; j += step - 1, --count) {
-                        x._Edit(j, 1, empty);
+                    for (Py_ssize_t j = start; count > 0;
+                         j += step - 1, --count) {
+                        x._Edit(static_cast<size_t>(j), 1, empty);
                     }
                 }
-            }
-            catch (const std::invalid_argument&) {
-                // Empty slice -- do nothing.
             }
         }
     }

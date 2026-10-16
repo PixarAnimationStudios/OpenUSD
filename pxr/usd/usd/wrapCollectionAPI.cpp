@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,35 +41,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateExpansionRuleAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExpansionRuleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIncludeRootAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIncludeRootAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMembershipExpressionAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMembershipExpressionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->PathExpression), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModeAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCollectionAttr(UsdCollectionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCollectionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Opaque), writeSparsely);
 }
@@ -101,99 +107,91 @@ _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 
 } // anonymous namespace
 
-void wrapUsdCollectionAPI()
+void wrapUsdCollectionAPI(nb::module_ &m)
 {
     typedef UsdCollectionAPI This;
 
-    UsdCollectionAPI_CanApplyResult::Wrap<UsdCollectionAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdCollectionAPI_CanApplyResult::WrapNb<UsdCollectionAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("CollectionAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "CollectionAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
         .def(TfTypePythonClass())
 
-        .def("Get",
+        .def_static("Get",
             (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             (UsdCollectionAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
-        .staticmethod("Get")
+            nb::arg("prim"), nb::arg("name"))
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<UsdCollectionAPI>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+             nb::rv_policy::copy)
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetExpansionRuleAttr",
              &This::GetExpansionRuleAttr)
         .def("CreateExpansionRuleAttr",
              &_CreateExpansionRuleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIncludeRootAttr",
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
              &_CreateIncludeRootAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMembershipExpressionAttr",
              &This::GetMembershipExpressionAttr)
         .def("CreateMembershipExpressionAttr",
              &_CreateMembershipExpressionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModeAttr",
              &This::GetModeAttr)
         .def("CreateModeAttr",
              &_CreateModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetCollectionAttr",
              &This::GetCollectionAttr)
         .def("CreateCollectionAttr",
              &_CreateCollectionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetIncludesRel",
@@ -205,8 +203,7 @@ void wrapUsdCollectionAPI()
              &This::GetExcludesRel)
         .def("CreateExcludesRel",
              &This::CreateExcludesRel)
-        .def("IsCollectionAPIPath", _WrapIsCollectionAPIPath)
-            .staticmethod("IsCollectionAPIPath")
+        .def_static("IsCollectionAPIPath", _WrapIsCollectionAPIPath)
         .def("__repr__", ::_Repr)
     ;
 
@@ -232,21 +229,17 @@ void wrapUsdCollectionAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/external/boost/python/tuple.hpp"
-
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 
 namespace {
 
-static object _WrapValidate(const UsdCollectionAPI &coll) {
+static nb::tuple _WrapValidate(const UsdCollectionAPI &coll) {
     std::string reason; 
     bool valid = coll.Validate(&reason);
-    return pxr_boost::python::make_tuple(valid, reason);
+    return nb::make_tuple(valid, reason);
 }
 
 WRAP_CUSTOM {
-
-    scope s_query = _class;
 
     using MQuery = UsdCollectionMembershipQuery;
     using This = UsdCollectionAPI;
@@ -254,40 +247,37 @@ WRAP_CUSTOM {
     MQuery (This::*_ComputeMembershipQuery)() const = 
         &This::ComputeMembershipQuery;
 
-    scope collectionAPI = _class 
-        .def(init<UsdPrim, TfToken>())
+    _class 
+        .def(nb::init<UsdPrim, TfToken>())
 
-        .def("GetCollection", 
+        .def_static("GetCollection", 
              (UsdCollectionAPI(*)(const UsdPrim &prim, 
                                   const TfToken &name))
                 &This::GetCollection,
-             (arg("prim"), arg("name")))
-        .def("GetCollection", 
+             nb::arg("prim"), nb::arg("name"))
+        .def_static("GetCollection", 
              (UsdCollectionAPI(*)(const UsdStagePtr &stage, 
                                   const SdfPath &collectionPath))
                 &This::GetCollection,
-             (arg("stage"), arg("collectionPath")))
-            .staticmethod("GetCollection")
+             nb::arg("stage"), nb::arg("collectionPath"))
 
-        .def("GetAllCollections", &This::GetAllCollections, 
-             arg("prim"), return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetAllCollections")
+        .def_static("GetAllCollections", &This::GetAllCollections, 
+             nb::arg("prim"),
+             nb::rv_policy::copy)
 
         .def("GetName", &This::GetName)
         .def("GetCollectionPath", &This::GetCollectionPath)
 
-        .def("GetNamedCollectionPath", 
+        .def_static("GetNamedCollectionPath", 
              &This::GetNamedCollectionPath,
-             (arg("prim"), arg("collectionName")))
-            .staticmethod("GetNamedCollectionPath")
+             nb::arg("prim"), nb::arg("collectionName"))
 
         .def("ResolveCompleteMembershipExpression",
              (SdfPathExpression (This::*)() const)
              &This::ResolveCompleteMembershipExpression)
 
-        .def("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
-            arg("baseName"))
-            .staticmethod("IsSchemaPropertyBaseName")
+        .def_static("IsSchemaPropertyBaseName", &This::IsSchemaPropertyBaseName,
+            nb::arg("baseName"))
 
         .def("ComputeMembershipQuery", _ComputeMembershipQuery)
 
@@ -296,26 +286,23 @@ WRAP_CUSTOM {
         .def("IsInRelationshipsMode", &This::IsInRelationshipsMode)
         .def("IsInExpressionMode", &This::IsInExpressionMode)
 
-        .def("IncludePath", &This::IncludePath, arg("pathToInclude"))
-        .def("ExcludePath", &This::ExcludePath, arg("pathToExclude"))
+        .def("IncludePath", &This::IncludePath, nb::arg("pathToInclude"))
+        .def("ExcludePath", &This::ExcludePath, nb::arg("pathToExclude"))
 
         .def("Validate", &_WrapValidate)
 
-        .def("ComputeIncludedObjects", &This::ComputeIncludedObjects, 
-             (arg("query"), arg("stage"), 
-              arg("predicate")=UsdPrimDefaultPredicate),
-             return_value_policy<TfPySequenceToList>())
-             .staticmethod("ComputeIncludedObjects")
+        .def_static("ComputeIncludedObjects", &This::ComputeIncludedObjects, 
+             nb::arg("query"), nb::arg("stage"), 
+              nb::arg("predicate")=UsdPrimDefaultPredicate,
+             nb::rv_policy::copy)
 
-        .def("ComputeIncludedPaths", &This::ComputeIncludedPaths, 
-             (arg("query"), arg("stage"), 
-              arg("predicate")=UsdPrimDefaultPredicate),
-             return_value_policy<TfPySequenceToList>())
-             .staticmethod("ComputeIncludedPaths")
+        .def_static("ComputeIncludedPaths", &This::ComputeIncludedPaths, 
+             nb::arg("query"), nb::arg("stage"), 
+              nb::arg("predicate")=UsdPrimDefaultPredicate,
+             nb::rv_policy::copy)
 
-        .def("CanContainPropertyName", 
-                This::CanContainPropertyName, arg("name"))
-        .staticmethod("CanContainPropertyName")
+        .def_static("CanContainPropertyName", 
+                This::CanContainPropertyName, nb::arg("name"))
 
         .def("ResetCollection", &This::ResetCollection)
         .def("BlockCollection", &This::BlockCollection)

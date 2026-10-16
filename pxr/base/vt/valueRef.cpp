@@ -199,22 +199,3 @@ VtMutableValueRef::_FailSwap(std::type_info const &t)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-
-namespace PXR_BOOST_NAMESPACE::python::converter {
-
-arg_rvalue_from_python<VtValueRef>::arg_rvalue_from_python(PyObject* obj)
-    : base_type(obj)
-{
-}
-
-VtValueRef &
-arg_rvalue_from_python<VtValueRef>::operator()() {
-    optValueRef = VtValueRef { base_type::operator()() };
-    return *optValueRef;
-}
-
-} // namespace PXR_BOOST_NAMESPACE::python::converter
-
-#endif // PXR_PYTHON_SUPPORT_ENABLED

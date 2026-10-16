@@ -8,21 +8,16 @@
 #include "pxr/imaging/pxOsd/meshTopology.h"
 #include "pxr/imaging/pxOsd/meshTopologyValidation.h"
 
-#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/iterator.hpp"
-#include "pxr/external/boost/python/operators.hpp"
 
 #include <sstream>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static std::string
 _InvalidationRepr(
@@ -50,29 +45,29 @@ _ValidationRepr(
     return repr.str();
 }
 
-static PxOsdMeshTopologyValidation::Invalidation
-_InvalidationInit(
-    PxOsdMeshTopologyValidation::Code code, std::string const& message)
-{
-    return {code, message};
-}
-
 void
-wrapMeshTopologyValidation()
+wrapMeshTopologyValidation(nb::module_& m)
 {
     using This = PxOsdMeshTopologyValidation;
 
-    class_<This> cls("MeshTopologyValidation", init<>());
-    cls.def(!self);
-    {
-        scope obj = cls;
-        TfPyWrapEnum<This::Code, true>();
-        class_<This::Invalidation>("Invalidation", no_init)
-            .def("__init__", &::_InvalidationInit)
-            .def_readwrite("code", &This::Invalidation::code)
-            .def_readwrite("message", &This::Invalidation::message)
-            .def("__repr__", &::_InvalidationRepr);
-    }
+    nb::class_<This> cls(m, "MeshTopologyValidation");
+    cls.def(nb::init<>());
+    cls.def("__bool__", [](const This& self) {
+        return !(!self);
+    });
+    TfNbWrapEnum<This::Code, true>(cls);
+    nb::class_<This::Invalidation>(cls, "Invalidation")
+        .def("__init__", [](This::Invalidation* self,
+                            This::Code code,
+                            std::string const& message) {
+            new (self) This::Invalidation{code, message};
+        })
+        .def_rw("code", &This::Invalidation::code)
+        .def_rw("message", &This::Invalidation::message)
+        .def("__repr__", &::_InvalidationRepr);
     cls.def("__repr__", &::_ValidationRepr);
-    cls.def("__iter__", iterator<This>());
+    cls.def("__iter__", [](const This& self) {
+        return nb::make_iterator(
+            nb::type<This>(), "Iterator", self.begin(), self.end());
+    }, nb::keep_alive<0, 1>());
 }

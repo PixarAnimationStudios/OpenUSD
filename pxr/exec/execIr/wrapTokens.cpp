@@ -5,18 +5,21 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 #include "pxr/exec/execIr/tokens.h"
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return ExecIrTokens->name.GetString(); });
+    cls.def_prop_ro_static(#name, [](nb::handle) { return ExecIrTokens->name.GetString(); });
 
-void wrapExecIrTokens()
+void wrapExecIrTokens(nb::module_ &m)
 {
-    pxr_boost::python::class_<ExecIrTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
+    nb::class_<ExecIrTokensType> cls(m, "Tokens");
     _ADD_TOKEN(cls, avarsDefaultSpace);
     _ADD_TOKEN(cls, avarsRotationOrder);
     _ADD_TOKEN(cls, avarsRspin);

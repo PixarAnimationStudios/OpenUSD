@@ -4,10 +4,6 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_by_value.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolverContext.h"
@@ -15,8 +11,6 @@
 #include "pxr/base/tf/pyUtils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static std::string
 _Repr(const ArDefaultResolverContext& ctx)
@@ -36,22 +30,23 @@ _Hash(const ArDefaultResolverContext& ctx)
     return hash_value(ctx);
 }
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+
 void
-wrapDefaultResolverContext()
+wrapDefaultResolverContext(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = ArDefaultResolverContext;
 
-    class_<This>
-        ("DefaultResolverContext", no_init)
-        .def(init<>())
-        .def(init<const std::vector<std::string>&>(
-                arg("searchPaths")))
+    nb::class_<This>(m, "DefaultResolverContext")
+        .def(nb::init<>())
+        .def(nb::init<const std::vector<std::string>&>(),
+             nb::arg("searchPaths"))
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        .def("GetSearchPath", &This::GetSearchPath,
-             return_value_policy<return_by_value>())
+        .def("GetSearchPath", &This::GetSearchPath)
 
         .def("__str__", &This::GetAsString)
         .def("__repr__", &_Repr)

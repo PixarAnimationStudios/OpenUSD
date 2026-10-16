@@ -9,13 +9,9 @@
 
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/raw_function.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -23,23 +19,23 @@ namespace {
 // python.
 struct Tf_PySingleton {};
 
-static object
-_GetSingletonInstance(object const &classObj) {
-
+static nanobind::object
+_GetSingletonInstance(nanobind::object const &classObj,
+                      nanobind::args,
+                      nanobind::kwargs) {
     // Try to get existing instance from this class.
-    object instance = classObj.attr("__dict__").attr("get")("__instance");
+    nanobind::object instance =
+        classObj.attr("__dict__").attr("get")("__instance", nanobind::none());
 
-    if (TfPyIsNone(instance)) {
-        // Create instance.  Use our first base class in the method resolution
-        // order (mro) to create it.
-        instance = TfPyGetClassObject
-            <Tf_PySingleton>().attr("__mro__")[1].attr("__new__")(classObj);
+    if (instance.is_none()) {
+        // Create instance.
+        instance = nanobind::inst_alloc_zero(classObj);
 
         // Store singleton instance in class.
-        setattr(classObj, "__instance", instance);
+        nanobind::setattr(classObj, "__instance", instance);
 
         // If there's an 'init' method, call it.
-        if (!TfPyIsNone(getattr(instance, "init", object())))
+        if (!nanobind::getattr(instance, "init", nanobind::none()).is_none())
             instance.attr("init")();
     }
 
@@ -47,15 +43,12 @@ _GetSingletonInstance(object const &classObj) {
     return instance;
 }
 
-
-// Need an init method that accepts any arguments and does nothing.
-static object _DummyInit(tuple const &, dict const &) { return object(); }
-
 } // anonymous namespace 
 
-void wrapSingleton() {
-    class_<Tf_PySingleton>("Singleton", no_init)
-        .def("__new__", _GetSingletonInstance).staticmethod("__new__")
-        .def("__init__", raw_function(_DummyInit))
+void wrapSingleton(nanobind::module_ &m) {
+    namespace nb = nanobind;
+    nb::class_<Tf_PySingleton>(m, "Singleton", nb::dynamic_attr())
+        .def_static("__new__", _GetSingletonInstance)
+        .def("__init__", [](nb::handle, nb::args, nb::kwargs) {})
         ;
 }

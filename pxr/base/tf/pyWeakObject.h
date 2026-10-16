@@ -17,8 +17,8 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/object.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -32,14 +32,14 @@ struct Tf_PyWeakObject : public TfWeakBase
 public:
     typedef Tf_PyWeakObject This;
 
-    static Tf_PyWeakObjectPtr GetOrCreate(pxr_boost::python::object const &obj);
-    pxr_boost::python::object GetObject() const;
+    static Tf_PyWeakObjectPtr GetOrCreate(nanobind::handle obj);
+    nanobind::object GetObject() const;
     void Delete();
     
 private:
-    explicit Tf_PyWeakObject(pxr_boost::python::object const &obj);
+    explicit Tf_PyWeakObject(nanobind::handle obj);
 
-    pxr_boost::python::handle<> _weakRef;
+    nanobind::object _weakRef;
 
     // The address of the referent, cached at construction for use as the
     // registry key.  A weak reference is cleared before its callback runs, so

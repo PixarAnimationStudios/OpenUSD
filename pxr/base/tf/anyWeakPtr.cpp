@@ -141,11 +141,11 @@ TfAnyWeakPtr::GetType() const
 }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-pxr_boost::python::api::object
+TfPyObjWrapper
 TfAnyWeakPtr::_GetPythonObject() const
 {
     TfPyLock pyLock;
-    return _Get()->GetPythonObject().Get();
+    return _Get()->GetPythonObject();
 }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 

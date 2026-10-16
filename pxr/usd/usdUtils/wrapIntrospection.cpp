@@ -5,16 +5,17 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/usdUtils/introspection.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,11 +35,11 @@ _WrapUsdUtilsComputeUsdStageStats_2(const UsdStageWeakPtr &stage) {
 
 } // anonymous namespace 
 
-void wrapIntrospection()
+void wrapIntrospection(nanobind::module_ &m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("UsdStageStatsKeys", UsdUtilsUsdStageStatsKeys, 
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "UsdStageStatsKeys", UsdUtilsUsdStageStatsKeys, 
                              USDUTILS_USDSTAGE_STATS);
 
-    def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
-    def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
+    m.def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_1);
+    m.def("ComputeUsdStageStats", _WrapUsdUtilsComputeUsdStageStats_2);
 }

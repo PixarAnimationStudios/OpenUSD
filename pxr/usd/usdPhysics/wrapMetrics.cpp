@@ -10,29 +10,28 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapMetrics()
+void wrapMetrics(nanobind::module_ &m)
 {
-    def("GetStageKilogramsPerUnit", UsdPhysicsGetStageKilogramsPerUnit, 
-            arg("stage"));
-    def("StageHasAuthoredKilogramsPerUnit", 
-            UsdPhysicsStageHasAuthoredKilogramsPerUnit, arg("stage"));
-    def("SetStageKilogramsPerUnit", UsdPhysicsSetStageKilogramsPerUnit, 
-        (arg("stage"), arg("metersPerUnit")));
-    def("MassUnitsAre", UsdPhysicsMassUnitsAre, 
-        (arg("authoredUnits"), arg("standardUnits"), arg("epsilon")=1e-5));
+    m.def("GetStageKilogramsPerUnit", UsdPhysicsGetStageKilogramsPerUnit, 
+          nb::arg("stage"));
+    m.def("StageHasAuthoredKilogramsPerUnit", 
+          UsdPhysicsStageHasAuthoredKilogramsPerUnit, nb::arg("stage"));
+    m.def("SetStageKilogramsPerUnit", UsdPhysicsSetStageKilogramsPerUnit, 
+          nb::arg("stage"), nb::arg("metersPerUnit"));
+    m.def("MassUnitsAre", UsdPhysicsMassUnitsAre, 
+          nb::arg("authoredUnits"), nb::arg("standardUnits"), nb::arg("epsilon") = 1e-5);
 
-    pxr_boost::python::class_<UsdPhysicsMassUnits>
-        cls("MassUnits", pxr_boost::python::no_init);
+    nb::class_<UsdPhysicsMassUnits> cls(m, "MassUnits");
     cls
-        .def_readonly("kilograms", UsdPhysicsMassUnits::kilograms)
-        .def_readonly("grams", UsdPhysicsMassUnits::grams)
-        .def_readonly("slugs", UsdPhysicsMassUnits::slugs);
+        .def_ro_static("kilograms", &UsdPhysicsMassUnits::kilograms)
+        .def_ro_static("grams", &UsdPhysicsMassUnits::grams)
+        .def_ro_static("slugs", &UsdPhysicsMassUnits::slugs);
+
 }

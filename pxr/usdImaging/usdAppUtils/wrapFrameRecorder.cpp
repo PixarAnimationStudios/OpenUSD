@@ -7,28 +7,26 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
+namespace nb = nanobind;
 
 void
-wrapFrameRecorder()
+wrapFrameRecorder(nanobind::module_ &m)
 {
     using This = UsdAppUtilsFrameRecorder;
 
-    scope s = class_<This, noncopyable>("FrameRecorder")
-        .def(init<>())
-        .def(init<const TfToken&, bool, bool>(
-            (arg("rendererPluginId") = TfToken(),
-             arg("gpuEnabled") = true,
-             arg("drawModeEnabled") = true)))
+    nb::class_<This>(m, "FrameRecorder")
+        .def(nb::init<>())
+        .def(nb::init<const TfToken&, bool, bool>(),
+             nb::arg("rendererPluginId") = TfToken(),
+             nb::arg("gpuEnabled") = true,
+             nb::arg("drawModeEnabled") = true)
         .def("GetCurrentRendererId", &This::GetCurrentRendererId)
         .def("SetActiveRenderPassPrimPath",
             &This::SetActiveRenderPassPrimPath)
@@ -42,13 +40,13 @@ wrapFrameRecorder()
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
         .def("SetPrimaryCameraPrimPath", &This::SetPrimaryCameraPrimPath)
         .def("SetIncludedPurposes", &This::SetIncludedPurposes,
-             (arg("purposes")))
+             nb::arg("purposes"))
         .def(
             "Record",
             &This::Record,
-            (arg("stage"),
-             arg("usdCamera"),
-             arg("timeCode"),
-             arg("outputImagePath")))
+            nb::arg("stage"),
+            nb::arg("usdCamera"),
+            nb::arg("timeCode"),
+            nb::arg("outputImagePath"))
     ;
 }

@@ -13,6 +13,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Camera);
-    TF_WRAP(FrameRecorder);
+    TF_WRAP_NB(Camera);
+    TF_WRAP_NB(FrameRecorder);
 }

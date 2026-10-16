@@ -14,15 +14,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -31,7 +30,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdProfilesClaimsAPI &self)
@@ -59,42 +57,35 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdProfilesClaimsAPI()
+void wrapUsdProfilesClaimsAPI(nb::module_ &m)
 {
     typedef UsdProfilesClaimsAPI This;
 
-    UsdProfilesClaimsAPI_CanApplyResult::Wrap<UsdProfilesClaimsAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdProfilesClaimsAPI_CanApplyResult::WrapNb<UsdProfilesClaimsAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ClaimsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ClaimsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -123,51 +114,51 @@ void wrapUsdProfilesClaimsAPI()
 
 namespace {
 
-static object
+static nb::tuple
 _IsCompatibleWith(const UsdProfilesClaimsAPI& self, const TfToken& profile)
 {
     std::set<UsdProfileRegistry::CapabilityResult> results;
     UsdProfileRegistry::QueryStatus status =
         self.IsCompatibleWith(profile, &results);
-    list pyResults;
+    nb::list pyResults;
     for (const auto& r : results)
-        pyResults.append(r);
-    return make_tuple(status, pyResults);
+        pyResults.append(nb::cast(r));
+    return nb::make_tuple(status, pyResults);
 }
 
 WRAP_CUSTOM {
     _class
         .def("GetProfilesInfo",    &UsdProfilesClaimsAPI::GetProfilesInfo)
         .def("SetProfilesInfo",    &UsdProfilesClaimsAPI::SetProfilesInfo,
-             arg("info"))
+             nb::arg("info"))
 
         .def("GetCapabilityUsages",  &UsdProfilesClaimsAPI::GetCapabilityUsages)
         .def("SetCapabilityUsages",  &UsdProfilesClaimsAPI::SetCapabilityUsages,
-             arg("usages"))
+             nb::arg("usages"))
         .def("SetCapabilityUsage",   &UsdProfilesClaimsAPI::SetCapabilityUsage,
-             (arg("capability"), arg("degradationClass")))
+             nb::arg("capability"), nb::arg("degradationClass"))
         .def("GetCapabilityUsage",   &UsdProfilesClaimsAPI::GetCapabilityUsage,
-             arg("capability"))
+             nb::arg("capability"))
 
         .def("GetCompatibleProfiles",
              &UsdProfilesClaimsAPI::GetCompatibleProfiles,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("SetProfileCompatible",
              &UsdProfilesClaimsAPI::SetProfileCompatible,
-             arg("profile"))
+             nb::arg("profile"))
         .def("SetProfileCompatibleWithExceptions",
              &UsdProfilesClaimsAPI::SetProfileCompatibleWithExceptions,
-             (arg("profile"), arg("exceptions")))
+             nb::arg("profile"), nb::arg("exceptions"))
         .def("GetProfileExceptions",
              &UsdProfilesClaimsAPI::GetProfileExceptions,
-             arg("profile"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("profile"),
+             nb::rv_policy::copy)
         .def("ClearProfileCompatibility",
              &UsdProfilesClaimsAPI::ClearProfileCompatibility,
-             arg("profile"))
+             nb::arg("profile"))
 
         .def("IsCompatibleWith", &_IsCompatibleWith,
-             arg("profile"))
+             nb::arg("profile"))
 
         .def("PopulateCapabilityUsages",
              &UsdProfilesClaimsAPI::PopulateCapabilityUsages)

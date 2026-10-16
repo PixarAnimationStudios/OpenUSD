@@ -11,7 +11,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(ScreenWindowParameters);
-    TF_WRAP(ConformWindow);
-    TF_WRAP(Framing);
+    TF_WRAP_NB(ScreenWindowParameters);
+    TF_WRAP_NB(ConformWindow);
+    TF_WRAP_NB(Framing);
 }

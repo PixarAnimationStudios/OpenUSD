@@ -10,24 +10,25 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/enum.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdCommon()
+void wrapUsdCommon(nb::module_ &m)
 {
-    def("Describe", (std::string (*)(const UsdObject &)) UsdDescribe);
-    def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
-    def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
+    m.def("Describe", (std::string (*)(const UsdObject &)) UsdDescribe);
+    m.def("Describe", (std::string (*)(const UsdStageWeakPtr &)) UsdDescribe);
+    m.def("Describe", (std::string (*)(const UsdStageCache &)) UsdDescribe);
 
-    TfPyWrapEnum<UsdListPosition>();
-    TfPyWrapEnum<UsdLoadPolicy>();
-    enum_<UsdSchemaKind>("SchemaKind")
+    TfNbWrapEnum<UsdListPosition>(m);
+    TfNbWrapEnum<UsdLoadPolicy>(m);
+    nb::enum_<UsdSchemaKind> schemaKindEnum(m, "SchemaKind");
+    schemaKindEnum
         .value("Invalid", UsdSchemaKind::Invalid)
         .value("AbstractBase", UsdSchemaKind::AbstractBase)
         .value("AbstractTyped", UsdSchemaKind::AbstractTyped)

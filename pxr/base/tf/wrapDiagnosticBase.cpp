@@ -9,42 +9,32 @@
 
 #include "pxr/base/tf/diagnosticBase.h"
 
-#include "pxr/external/boost/python/class.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
 
-void wrapDiagnosticBase()
+void wrapDiagnosticBase(nanobind::module_& m)
 {
     using This = TfDiagnosticBase;
 
-    class_<This>("_DiagnosticBase", no_init)
-        .add_property("sourceFileName",
-                      make_function(&This::GetSourceFileName,
-                                    return_value_policy<return_by_value>()),
-                      "The source file name that the error was posted from.")
+    nanobind::class_<This>(m, "_DiagnosticBase")
+        .def_prop_ro("sourceFileName", &This::GetSourceFileName,
+                     "The source file name that the error was posted from.")
 
-        .add_property("sourceLineNumber", &This::GetSourceLineNumber,
-                      "The source line number that the error was posted from.")
+        .def_prop_ro("sourceLineNumber", &This::GetSourceLineNumber,
+                     "The source line number that the error was posted from.")
 
-        .add_property("commentary",
-                      make_function(&This::GetCommentary,
-                                    return_value_policy<return_by_value>()),
-                      "The commentary string describing this error.")
+        .def_prop_ro("commentary", &This::GetCommentary,
+                     "The commentary string describing this error.")
 
-        .add_property("sourceFunction",
-                      make_function(&This::GetSourceFunction,
-                                    return_value_policy<return_by_value>()),
-                      "The source function that the error was posted from.")
+        .def_prop_ro("sourceFunction", &This::GetSourceFunction,
+                     "The source function that the error was posted from.")
 
-        .add_property("diagnosticCode", &This::GetDiagnosticCode,
-                      "The diagnostic code posted.")
+        .def_prop_ro("diagnosticCode", &This::GetDiagnosticCode,
+                     "The diagnostic code posted.")
 
-        .add_property("diagnosticCodeString",
-                      make_function(&This::GetDiagnosticCodeAsString,
-                                    return_value_policy<return_by_value>()),
-                      "The error code posted for this error, as a string.")
+        .def_prop_ro("diagnosticCodeString", &This::GetDiagnosticCodeAsString,
+                     "The error code posted for this error, as a string.")
         ;
-
 }

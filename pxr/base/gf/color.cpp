@@ -13,6 +13,7 @@
 #include "pxr/base/tf/type.h"
 #include "nc/nanocolor.h"
 #include "colorSpace_data.h"
+#include <algorithm>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE

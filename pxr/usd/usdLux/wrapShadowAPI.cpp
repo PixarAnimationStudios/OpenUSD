@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,35 +41,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateShadowEnableAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShadowEnableAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowColorAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShadowColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowDistanceAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShadowDistanceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowFalloffAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShadowFalloffAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShadowFalloffGammaAttr(UsdLuxShadowAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShadowFalloffGammaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -94,77 +100,70 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdLuxShadowAPI()
+void wrapUsdLuxShadowAPI(nb::module_ &m)
 {
     typedef UsdLuxShadowAPI This;
 
-    UsdLuxShadowAPI_CanApplyResult::Wrap<UsdLuxShadowAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdLuxShadowAPI_CanApplyResult::WrapNb<UsdLuxShadowAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ShadowAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ShadowAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetShadowEnableAttr",
              &This::GetShadowEnableAttr)
         .def("CreateShadowEnableAttr",
              &_CreateShadowEnableAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShadowColorAttr",
              &This::GetShadowColorAttr)
         .def("CreateShadowColorAttr",
              &_CreateShadowColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShadowDistanceAttr",
              &This::GetShadowDistanceAttr)
         .def("CreateShadowDistanceAttr",
              &_CreateShadowDistanceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShadowFalloffAttr",
              &This::GetShadowFalloffAttr)
         .def("CreateShadowFalloffAttr",
              &_CreateShadowFalloffAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShadowFalloffGammaAttr",
              &This::GetShadowFalloffGammaAttr)
         .def("CreateShadowFalloffGammaAttr",
              &_CreateShadowFalloffGammaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -197,22 +196,22 @@ namespace {
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(nb::init<UsdShadeConnectableAPI>(), nb::arg("connectable"))
         .def("ConnectableAPI", &UsdLuxShadowAPI::ConnectableAPI)
 
         .def("CreateOutput", &UsdLuxShadowAPI::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdLuxShadowAPI::GetOutput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetOutput", &UsdLuxShadowAPI::GetOutput, nb::arg("name"))
         .def("GetOutputs", &UsdLuxShadowAPI::GetOutputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored")=true),
+             nb::rv_policy::copy)
 
         .def("CreateInput", &UsdLuxShadowAPI::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdLuxShadowAPI::GetInput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetInput", &UsdLuxShadowAPI::GetInput, nb::arg("name"))
         .def("GetInputs", &UsdLuxShadowAPI::GetInputs,
-             (arg("onlyAuthored")=true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored")=true),
+             nb::rv_policy::copy)
         ;
 }
 

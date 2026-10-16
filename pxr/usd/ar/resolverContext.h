@@ -49,6 +49,11 @@ struct ArIsContextObject
 template <class Context> 
 std::string ArGetDebugString(const Context& context); 
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+AR_API
+TfPyObjWrapper Ar_GetPythonObj(const std::type_info&, void const*);
+#endif
+
 // Metafunctions for determining if a variadic list of objects
 // are valid for use with the ArResolverContext c'tor.
 class ArResolverContext;
@@ -305,9 +310,8 @@ private:
 
         virtual TfPyObjWrapper GetPythonObj() const
         {
- #ifdef PXR_PYTHON_SUPPORT_ENABLED
-            TfPyLock lock;
-            return pxr_boost::python::object(_context);
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+            return Ar_GetPythonObj(typeid(Context), &_context);
 #else
             return {};
 #endif
@@ -330,6 +334,11 @@ private:
     std::vector<std::shared_ptr<_Untyped>> _contexts;
 };
 
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+AR_API
+TfPyObjWrapper Ar_GetPythonObj(const std::type_info&, void const*);
+#endif
 
 // Default implementation for streaming out held contexts.
 AR_API

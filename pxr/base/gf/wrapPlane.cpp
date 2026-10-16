@@ -14,19 +14,11 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,69 +27,74 @@ static string _Repr(GfPlane const &self) {
         TfPyRepr(self.GetDistanceFromOrigin()) + ")";
 }
 
-static object _FitPlaneToPoints(const std::vector<GfVec3d>& points) {
-    GfPlane plane;
-    return GfFitPlaneToPoints(points, &plane) ? object(plane) : object();
-}
-
 } // anonymous namespace 
 
-void wrapPlane()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
+
+void wrapPlane(nanobind::module_ &m)
 {    
     typedef GfPlane This;
 
-    object getNormal = make_function(&This::GetNormal,
-                                     return_value_policy<return_by_value>());
+    m.def("FitPlaneToPoints", [](const std::vector<GfVec3d>& points) -> nanobind::object {
+        GfPlane plane;
+        return GfFitPlaneToPoints(points, &plane) ? nanobind::cast(plane) : nanobind::none();
+    });
 
-    def( "FitPlaneToPoints", _FitPlaneToPoints );
+    nanobind::class_<This>(m, "Plane")
+        .def(nanobind::init<>())
+        .def(nanobind::init<const GfVec3d &, double>())
+        .def(nanobind::init<const GfVec3d &, const GfVec3d &>())
+        .def(nanobind::init<const GfVec3d &, const GfVec3d &, const GfVec3d &>())
+        .def(nanobind::init<const GfVec4d &>())
 
-    class_<This>( "Plane", init<>() )
-        .def(init< const GfVec3d &, double >())
-        .def(init< const GfVec3d &, const GfVec3d & >())
-        .def(init< const GfVec3d &, const GfVec3d &, const GfVec3d & >())
-        .def(init< const GfVec4d & >())
+        .def(TfTypePythonClass())
 
-        .def( TfTypePythonClass() )
+        .def("Set", [](This &self, const GfVec3d &normal, double distanceToOrigin) -> This& {
+            self.Set(normal, distanceToOrigin);
+            return self;
+        }, nanobind::rv_policy::reference)
+        .def("Set", [](This &self, const GfVec3d &normal, const GfVec3d &point) -> This& {
+            self.Set(normal, point);
+            return self;
+        }, nanobind::rv_policy::reference)
+        .def("Set", [](This &self, const GfVec3d &p0, const GfVec3d &p1, const GfVec3d &p2) -> This& {
+            self.Set(p0, p1, p2);
+            return self;
+        }, nanobind::rv_policy::reference)
+        .def("Set", [](This &self, const GfVec4d &eqn) -> This& {
+            self.Set(eqn);
+            return self;
+        }, nanobind::rv_policy::reference)
 
-        .def("Set", (void (This::*)(const GfVec3d &, double))
-             &This::Set, return_self<>())
-        .def("Set", (void (This::*)(const GfVec3d &, const GfVec3d &))
-             &This::Set, return_self<>())
-        .def("Set", (void (This::*)( const GfVec3d &, const GfVec3d &,
-                                     const GfVec3d & ))
-             &This::Set, return_self<>())
-        .def("Set", (void (This::*)(const GfVec4d &))
-             &This::Set, return_self<>())
+        .def_prop_ro("normal", &This::GetNormal, nanobind::rv_policy::copy)
+        .def_prop_ro("distanceFromOrigin", &This::GetDistanceFromOrigin)
 
-        .add_property( "normal", getNormal)
-        .add_property( "distanceFromOrigin", &This::GetDistanceFromOrigin )
+        .def("GetDistance", &This::GetDistance)
+        .def("GetDistanceFromOrigin", &This::GetDistanceFromOrigin)
+        .def("GetNormal", &This::GetNormal, nanobind::rv_policy::copy)
+        .def("GetEquation", &This::GetEquation)
+        .def("Project", &This::Project)
 
-        .def( "GetDistance", &This::GetDistance )
-        .def( "GetDistanceFromOrigin", &This::GetDistanceFromOrigin )
-        .def( "GetNormal", getNormal)
-        .def( "GetEquation", &This::GetEquation )
-        .def( "Project", &This::Project )
+        .def("Transform", &This::Transform, nanobind::rv_policy::reference)
 
-        .def( "Transform", &This::Transform, return_self<>() )
+        .def("Reorient", [](This &self, const GfVec3d &p) -> This& {
+            self.Reorient(p);
+            return self;
+        }, nanobind::rv_policy::reference)
 
-        .def( "Reorient", &This::Reorient, return_self<>() )
+        .def("IntersectsPositiveHalfSpace",
+             (bool (This::*)(const GfRange3d &) const)&This::IntersectsPositiveHalfSpace)
 
-        .def( "IntersectsPositiveHalfSpace",
-              (bool (This::*)( const GfRange3d & ) const)
-              &This::IntersectsPositiveHalfSpace )
+        .def("IntersectsPositiveHalfSpace",
+             (bool (This::*)(const GfVec3d &) const)&This::IntersectsPositiveHalfSpace)
 
-        .def( "IntersectsPositiveHalfSpace",
-              (bool (This::*)( const GfVec3d & ) const)
-              &This::IntersectsPositiveHalfSpace )
-
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
 
         .def("__repr__", _Repr)
-        
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
-    
 }

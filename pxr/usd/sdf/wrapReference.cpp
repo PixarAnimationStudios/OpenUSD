@@ -8,9 +8,14 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
@@ -18,7 +23,7 @@ using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -63,14 +68,11 @@ static size_t __hash__(const SdfReference &self)
 
 } // anonymous namespace 
 
-void wrapReference()
+void wrapReference(nanobind::module_& m)
 {    
     using This = SdfReference;
 
     // Register conversion for python list <-> vector<SdfReference>
-    to_python_converter<
-        SdfReferenceVector,
-        TfPySequenceToPython<SdfReferenceVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfReferenceVector,
         TfPyContainerConversions::variable_capacity_policy >();
@@ -82,41 +84,34 @@ void wrapReference()
     //       first explicit reference, but would instead modify a temporary
     //       Sdf.Reference object.
 
-    class_<This>( "Reference" )
-        .def(init<const string &,
-                  const SdfPath &,
-                  const SdfLayerOffset &,
-                  const VtDictionary &>(
-            ( arg("assetPath") = string(),
-              arg("primPath") = SdfPath(),
-              arg("layerOffset") = SdfLayerOffset(),
-              arg("customData") = VtDictionary(0) ) ) )
-        .def(init<const This &>())
+    nb::class_<This>(m, "Reference")
+        .def(nb::init<const string &,
+                      const SdfPath &,
+                      const SdfLayerOffset &,
+                      const VtDictionary &>(),
+             nb::arg("assetPath") = string(),
+             nb::arg("primPath") = SdfPath(),
+             nb::arg("layerOffset") = SdfLayerOffset(),
+             nb::arg("customData") = VtDictionary(0))
+        .def(nb::init<const This &>())
 
-        .add_property("assetPath",
-            make_function(
-                &This::GetAssetPath, return_value_policy<return_by_value>()))
-        .add_property("primPath",
-            make_function(
-                &This::GetPrimPath, return_value_policy<return_by_value>()))
-        .add_property("layerOffset",
-            make_function(
-                &This::GetLayerOffset, return_value_policy<return_by_value>()))
-        .add_property("customData",
-            make_function(
-                &This::GetCustomData, return_value_policy<return_by_value>()))
+        .def_prop_ro("assetPath", &This::GetAssetPath)
+        .def_prop_ro("primPath", &This::GetPrimPath)
+        .def_prop_ro("layerOffset", &This::GetLayerOffset)
+        .def_prop_ro("customData", &This::GetCustomData)
 
         .def("IsInternal", &This::IsInternal)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self >= nb::self)
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
         ;
 
+    VtValueFromPython<SdfReference>();
 }

@@ -7,13 +7,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/plugin.h"
-#include "pxr/base/js/converter.h"
-#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/js/value.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/iterator.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
 #include <string>
 
 using std::string;
@@ -21,30 +19,58 @@ using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
-static dict
-_ConvertDict( const JsObject & dictionary )
-{
-    dict result;
-    TF_FOR_ALL(i, dictionary) {
-        const string & key = i->first;
-        const JsValue & val = i->second;
+static nanobind::dict _ConvertDict(const JsObject &dictionary);
 
-        result[key] = JsConvertToContainerType<object, dict>(val);
+static nanobind::object
+_ConvertValue(const JsValue &value)
+{
+    namespace nb = nanobind;
+    switch (value.GetType()) {
+    case JsValue::ObjectType:
+        return _ConvertDict(value.GetJsObject());
+    case JsValue::ArrayType: {
+        nb::list result;
+        for (const auto &elem : value.GetJsArray()) {
+            result.append(_ConvertValue(elem));
+        }
+        return result;
+    }
+    case JsValue::BoolType:
+        return nb::bool_(value.GetBool());
+    case JsValue::StringType:
+        return nb::cast(value.GetString());
+    case JsValue::RealType:
+        return nb::float_(value.GetReal());
+    case JsValue::IntType:
+        return value.IsUInt64() ? nb::int_(value.GetUInt64())
+                                : nb::int_(value.GetInt64());
+    case JsValue::NullType:
+        return nb::none();
+    default:
+        TF_CODING_ERROR("unknown value type");
+        return nb::none();
+    }
+}
+
+static nanobind::dict
+_ConvertDict(const JsObject &dictionary)
+{
+    nanobind::dict result;
+    TF_FOR_ALL(i, dictionary) {
+        result[i->first.c_str()] = _ConvertValue(i->second);
     }
     return result;
 }
 
-static dict
+static nanobind::dict
 _GetMetadata(PlugPluginPtr plugin)
 {
     return _ConvertDict(plugin->GetMetadata());
 }
 
-static dict
+static nanobind::dict
 _GetMetadataForType(PlugPluginPtr plugin, const TfType &type)
 {
     return _ConvertDict(plugin->GetMetadataForType(type));
@@ -52,46 +78,30 @@ _GetMetadataForType(PlugPluginPtr plugin, const TfType &type)
 
 } // anonymous namespace 
 
-void wrapPlugin()
+void wrapPlugin(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     typedef PlugPlugin This;
     typedef PlugPluginPtr ThisPtr;
 
-    class_<This, ThisPtr, noncopyable> ( "Plugin", no_init )
-        .def(TfPyWeakPtr())
-        .def("Load", &This::Load)
-
-        .add_property("isLoaded", &This::IsLoaded)
-        .add_property("isPythonModule", &This::IsPythonModule)
-        .add_property("isResource", &This::IsResource)
-
-        .add_property("metadata", _GetMetadata)
-
-        .add_property("name",
-                      make_function(&This::GetName,
-                                    return_value_policy<return_by_value>()))
-        .add_property("path",
-                      make_function(&This::GetPath,
-                                    return_value_policy<return_by_value>()))
-        .add_property("resourcePath",
-                      make_function(&This::GetResourcePath,
-                                    return_value_policy<return_by_value>()))
-
-        .def("GetMetadataForType", _GetMetadataForType)
+    nb::class_<This> cls(m, "Plugin",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbWeakPtr(cls);
+    cls.def("Load", &This::Load)
+        .def_prop_ro("isLoaded", &This::IsLoaded)
+        .def_prop_ro("isPythonModule", &This::IsPythonModule)
+        .def_prop_ro("isResource", &This::IsResource)
+        .def_prop_ro("metadata", &_GetMetadata)
+        .def_prop_ro("name", &This::GetName)
+        .def_prop_ro("path", &This::GetPath)
+        .def_prop_ro("resourcePath", &This::GetResourcePath)
+        .def("GetMetadataForType", &_GetMetadataForType)
         .def("DeclaresType", &This::DeclaresType,
-             (arg("type"), 
-              arg("includeSubclasses") = false))
-
+             nb::arg("type"),
+             nb::arg("includeSubclasses") = false)
         .def("MakeResourcePath", &This::MakeResourcePath)
         .def("FindPluginResource", &This::FindPluginResource,
-             (arg("path"), 
-              arg("verify") = true))
+             nb::arg("path"),
+             nb::arg("verify") = true)
         ;
-        TfPyRegisterStlSequencesFromPython<PlugPluginPtr>();
-
-    // The call to JsConvertToContainerType in _ConvertDict creates
-    // vectors of pxr_boost::python::objects for array values, so register
-    // a converter that turns that vector into a Python list.
-    pxr_boost::python::to_python_converter<std::vector<object>,
-        TfPySequenceToPython<std::vector<object> > >();
 }

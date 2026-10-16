@@ -8,24 +8,24 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/types.h"
 #include "pxr/base/tf/pyEnum.h"
-#include "pxr/base/tf/pyOptional.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/optional.h>
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 static
-object _WrapSplineSamplesPolylines(const TsSplineSamples<GfVec2d>& samples)
+nb::list _WrapSplineSamplesPolylines(const TsSplineSamples<GfVec2d>& samples)
 {
     TfPyLock lock;
-    pxr_boost::python::list pyPolylines;
+    nb::list pyPolylines;
     for (const auto& polyline : samples.polylines) {
-        pxr_boost::python::list pyPolyline;
+        nb::list pyPolyline;
         for (const auto& vertex : polyline) {
-            pyPolyline.append(vertex);
+            pyPolyline.append(nb::cast(vertex));
         }
         pyPolylines.append(pyPolyline);
     }
@@ -33,15 +33,15 @@ object _WrapSplineSamplesPolylines(const TsSplineSamples<GfVec2d>& samples)
 }
 
 static
-object _WrapSplineSamplesWithSourcesPolylines(
+nb::list _WrapSplineSamplesWithSourcesPolylines(
     const TsSplineSamplesWithSources<GfVec2d>& samples)
 {
     TfPyLock lock;
-    pxr_boost::python::list pyPolylines;
+    nb::list pyPolylines;
     for (const auto& polyline : samples.polylines) {
-        pxr_boost::python::list pyPolyline;
+        nb::list pyPolyline;
         for (const auto& vertex : polyline) {
-            pyPolyline.append(vertex);
+            pyPolyline.append(nb::cast(vertex));
         }
         pyPolylines.append(pyPolyline);
     }
@@ -49,33 +49,31 @@ object _WrapSplineSamplesWithSourcesPolylines(
 }
 
 static
-object _WrapSplineSamplesWithSourcesSources(
+nb::list _WrapSplineSamplesWithSourcesSources(
     const TsSplineSamplesWithSources<GfVec2d>& samples)
 {
-    return TfPyCopySequenceToList(samples.sources);
+    return TfNbSequenceToList(samples.sources);
 }
 
-void wrapSplineSamples()
+void wrapSplineSamples(nanobind::module_& m)
 {
-    class_<TsSplineSamples<GfVec2d>>("SplineSamples", no_init)
-
-        .add_property("polylines", &_WrapSplineSamplesPolylines)
-
+    nb::class_<TsSplineSamples<GfVec2d>>(m, "SplineSamples")
+        .def_prop_ro("polylines", &_WrapSplineSamplesPolylines)
         ;
 }
 
-void wrapSplineSamplesWithSources()
+void wrapSplineSamplesWithSources(nanobind::module_& m)
 {
-    class_<TsSplineSamplesWithSources<GfVec2d>>("SplineSamplesWithSources", no_init)
-
-        .add_property("polylines", &_WrapSplineSamplesWithSourcesPolylines)
-        .add_property("sources", &_WrapSplineSamplesWithSourcesSources)
-
+    nb::class_<TsSplineSamplesWithSources<GfVec2d>>(
+        m, "SplineSamplesWithSources")
+        .def_prop_ro("polylines", &_WrapSplineSamplesWithSourcesPolylines)
+        .def_prop_ro("sources", &_WrapSplineSamplesWithSourcesSources)
         ;
 }
 
-void wrapTypes()
+void wrapTypes(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     TfPyWrapEnum<TsInterpMode>();
     TfPyWrapEnum<TsCurveType>();
     TfPyWrapEnum<TsExtrapMode>();
@@ -83,53 +81,38 @@ void wrapTypes()
     TfPyWrapEnum<TsSplineSampleSource>();
     TfPyWrapEnum<TsTangentAlgorithm>();
 
-    class_<Ts_LoopParams>("_LoopParams")
+    nb::class_<Ts_LoopParams>(m, "_LoopParams")
+        .def(nb::init<>())
+        .def(nb::init<const Ts_LoopParams &>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        // Default init is not suppressed, so automatically generated.
-
-        .def(init<const Ts_LoopParams &>())
-        .def(self == self)
-        .def(self != self)
-
-        .def_readwrite("protoStart", &Ts_LoopParams::protoStart)
-        .def_readwrite("protoEnd", &Ts_LoopParams::protoEnd)
-        .def_readwrite("numPreLoops", &Ts_LoopParams::numPreLoops)
-        .def_readwrite("numPostLoops", &Ts_LoopParams::numPostLoops)
-        .def_readwrite("valueOffset", &Ts_LoopParams::valueOffset)
+        .def_rw("protoStart", &Ts_LoopParams::protoStart)
+        .def_rw("protoEnd", &Ts_LoopParams::protoEnd)
+        .def_rw("numPreLoops", &Ts_LoopParams::numPreLoops)
+        .def_rw("numPostLoops", &Ts_LoopParams::numPostLoops)
+        .def_rw("valueOffset", &Ts_LoopParams::valueOffset)
 
         .def("GetPrototypeInterval", &Ts_LoopParams::GetPrototypeInterval)
         .def("GetLoopedInterval", &Ts_LoopParams::GetLoopedInterval)
 
         ;
 
-    class_<TsExtrapolation>("Extrapolation")
+    nb::class_<TsExtrapolation>(m, "Extrapolation")
+        .def(nb::init<>())
+        .def(nb::init_implicit<TsExtrapMode>())
+        .def(nb::init<const TsExtrapolation &>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        // Default init is not suppressed, so automatically generated.
-
-        .def(init<TsExtrapMode>())
-        .def(init<const TsExtrapolation &>())
-        .def(self == self)
-        .def(self != self)
-
-        .def_readwrite("mode", &TsExtrapolation::mode)
-        .def_readwrite("slope", &TsExtrapolation::slope)
-
-        // def_readwrite expects a registered Python class for the member's
-        // type to return a reference on read, but loopBoundaryTime is an
-        // optional. So we manually register the read/write.
-        .add_property("loopBoundaryTime",
-            +[](const TsExtrapolation& self) {
-                return self.loopBoundaryTime;
-            },
-            +[](TsExtrapolation& self, const std::optional<double>& value) {
-                self.loopBoundaryTime = value;
-            })
+        .def_rw("mode", &TsExtrapolation::mode)
+        .def_rw("slope", &TsExtrapolation::slope)
+        .def_rw("loopBoundaryTime", &TsExtrapolation::loopBoundaryTime)
 
         .def("IsLooping", &TsExtrapolation::IsLooping)
 
         ;
 
-    wrapSplineSamples();
-    wrapSplineSamplesWithSources();
-
+    wrapSplineSamples(m);
+    wrapSplineSamplesWithSources(m);
 }

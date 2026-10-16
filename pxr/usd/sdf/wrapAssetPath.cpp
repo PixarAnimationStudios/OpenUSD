@@ -8,22 +8,14 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/raw_function.hpp"
-#include "pxr/external/boost/python/stl_iterator.hpp"
-
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 TF_REGISTRY_FUNCTION(VtValue)
 {
@@ -90,13 +82,10 @@ GetResolvedPath(SdfAssetPath const &ap) {
 // PEP 3102. Clients passing in 3 or more parameters are required to
 // use keywords to avoid confusion when using positional arguments about
 // which parameter corresponds to which path type.
-static object
-MakeAssetPath(tuple const& args, dict const& kwArgs)
+static void
+MakeAssetPath(SdfAssetPath *self, nanobind::args args, nanobind::kwargs kwArgs)
 {
-    object self = args[0];
-
-    const tuple posArgs(args.slice(1, _));
-    if (len(posArgs) > 0) {
+    if (nanobind::len(args) > 0) {
         TfPyThrowTypeError(
             "Use keyword arguments 'authoredPath', 'evaluatedPath', "
             "and/or 'resolvedPath'");
@@ -104,17 +93,17 @@ MakeAssetPath(tuple const& args, dict const& kwArgs)
     
     SdfAssetPathParams p;
 
-    for (stl_input_iterator<std::string> k(kwArgs.keys()), e; 
-            k != e; ++k) {
+    for (auto item : kwArgs) {
+        std::string k = nanobind::cast<std::string>(item.first);
 
-        if (*k == "authoredPath") {
-            p.Authored(extract<std::string>(kwArgs.get(*k, std::string())));
+        if (k == "authoredPath") {
+            p.Authored(nanobind::cast<std::string>(item.second));
         }
-        else if (*k == "evaluatedPath") {
-            p.Evaluated(extract<std::string>(kwArgs.get(*k, std::string())));
+        else if (k == "evaluatedPath") {
+            p.Evaluated(nanobind::cast<std::string>(item.second));
         }
-        else if (*k == "resolvedPath") {
-            p.Resolved(extract<std::string>(kwArgs.get(*k, std::string())));
+        else if (k == "resolvedPath") {
+            p.Resolved(nanobind::cast<std::string>(item.second));
         }
         else {
             TfPyThrowTypeError(
@@ -123,44 +112,46 @@ MakeAssetPath(tuple const& args, dict const& kwArgs)
         }
     }
 
-    return self.attr("__init__")(SdfAssetPath(p));
+    new (self) SdfAssetPath(p);
 }
 
 } // anonymous namespace 
 
-void wrapAssetPath()
+void wrapAssetPath(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef SdfAssetPath This;
 
-    class_<This>("AssetPath", init<>())
-        .def("__init__", raw_function(&MakeAssetPath))
-        .def(init<const This&>())
-        .def(init<const std::string &>(arg("authoredPath")))
-        .def(init<const std::string &, const std::string &>(
-                (arg("authoredPath"), arg("resolvedPath"))))
+    nb::class_<This>(m, "AssetPath")
+        .def(nb::init<>())
+        .def(nb::init<const This&>())
+        .def(nb::init<const std::string &>(), nb::arg("authoredPath"))
+        .def(nb::init<const std::string &, const std::string &>(),
+             nb::arg("authoredPath"), nb::arg("resolvedPath"))
+        .def("__init__", &MakeAssetPath)
 
         .def("__repr__", _Repr)
         .def("__bool__", _Nonzero)
         .def("__hash__", _Hash)
 
-        .def( self == self )
-        .def( self != self )
-        .def( self < self )
-        .def( self > self )
-        .def( self <= self )
-        .def( self >= self)
+        .def( nb::self == nb::self )
+        .def( nb::self != nb::self )
+        .def( nb::self < nb::self )
+        .def( nb::self > nb::self )
+        .def( nb::self <= nb::self )
+        .def( nb::self >= nb::self)
         .def("__str__", _Str)
 
-        .add_property("path", GetAssetPath)
-        .add_property("resolvedPath",
+        .def_prop_ro("path", GetAssetPath)
+        .def_prop_rw("resolvedPath",
             GetResolvedPath, &This::SetResolvedPath)
-        .add_property("authoredPath", 
+        .def_prop_rw("authoredPath", 
             GetAuthoredPath, &This::SetAuthoredPath)
-        .add_property("evaluatedPath", 
+        .def_prop_rw("evaluatedPath", 
             GetEvaluatedPath, &This::SetEvaluatedPath)
         ;
 
-    implicitly_convertible<std::string, This>();
+    nb::implicitly_convertible<std::string, This>();
 
     // Let python know about us, to enable assignment from python back to C++
     VtValueFromPython<SdfAssetPath>();

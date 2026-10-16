@@ -10,37 +10,34 @@
 #include "pxr/usd/usdShade/connectableAPI.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/enum.hpp"
+#include <nanobind/nanobind.h>
+
+#include "pxr/base/tf/pyEnum.h"
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdShadeTypes()
+void wrapUsdShadeTypes(nanobind::module_ &m)
 {
-    enum_<UsdShadeAttributeType>("AttributeType")
+    nb::enum_<UsdShadeAttributeType>(m, "AttributeType")
         .value("Invalid", UsdShadeAttributeType::Invalid)
         .value("Input", UsdShadeAttributeType::Input)
         .value("Output", UsdShadeAttributeType::Output)
         ;
 
-    enum_<UsdShadeConnectionModification>("ConnectionModification")
+    nb::enum_<UsdShadeConnectionModification>(m, "ConnectionModification")
         .value("Replace", UsdShadeConnectionModification::Replace)
         .value("Prepend", UsdShadeConnectionModification::Prepend)
         .value("Append", UsdShadeConnectionModification::Append)
         ;
 
-    to_python_converter<
-        UsdShadeAttributeVector,
-        TfPySequenceToPython<UsdShadeAttributeVector>>();
     TfPyContainerConversions::from_python_sequence<
         UsdShadeAttributeVector,
         TfPyContainerConversions::variable_capacity_policy>();
 
-    to_python_converter<
-        UsdShadeSourceInfoVector,
-        TfPySequenceToPython<UsdShadeSourceInfoVector>>();
     TfPyContainerConversions::from_python_sequence<
         UsdShadeSourceInfoVector,
         TfPyContainerConversions::variable_capacity_policy>();

@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,77 +41,77 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateModelDrawModeAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelDrawModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelApplyDrawModeAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelApplyDrawModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelDrawModeColorAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelDrawModeColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardGeometryAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardGeometryAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardVisibilityAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardVisibilityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureXPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureXPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureYPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureYPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureZPosAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureZPosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureXNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureXNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureYNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureYNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateModelCardTextureZNegAttr(UsdGeomModelAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureZNegAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
@@ -136,119 +142,112 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdGeomModelAPI()
+void wrapUsdGeomModelAPI(nb::module_ &m)
 {
     typedef UsdGeomModelAPI This;
 
-    UsdGeomModelAPI_CanApplyResult::Wrap<UsdGeomModelAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdGeomModelAPI_CanApplyResult::WrapNb<UsdGeomModelAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ModelAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ModelAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetModelDrawModeAttr",
              &This::GetModelDrawModeAttr)
         .def("CreateModelDrawModeAttr",
              &_CreateModelDrawModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelApplyDrawModeAttr",
              &This::GetModelApplyDrawModeAttr)
         .def("CreateModelApplyDrawModeAttr",
              &_CreateModelApplyDrawModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelDrawModeColorAttr",
              &This::GetModelDrawModeColorAttr)
         .def("CreateModelDrawModeColorAttr",
              &_CreateModelDrawModeColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardGeometryAttr",
              &This::GetModelCardGeometryAttr)
         .def("CreateModelCardGeometryAttr",
              &_CreateModelCardGeometryAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardVisibilityAttr",
              &This::GetModelCardVisibilityAttr)
         .def("CreateModelCardVisibilityAttr",
              &_CreateModelCardVisibilityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureXPosAttr",
              &This::GetModelCardTextureXPosAttr)
         .def("CreateModelCardTextureXPosAttr",
              &_CreateModelCardTextureXPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureYPosAttr",
              &This::GetModelCardTextureYPosAttr)
         .def("CreateModelCardTextureYPosAttr",
              &_CreateModelCardTextureYPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureZPosAttr",
              &This::GetModelCardTextureZPosAttr)
         .def("CreateModelCardTextureZPosAttr",
              &_CreateModelCardTextureZPosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureXNegAttr",
              &This::GetModelCardTextureXNegAttr)
         .def("CreateModelCardTextureXNegAttr",
              &_CreateModelCardTextureXNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureYNegAttr",
              &This::GetModelCardTextureYNegAttr)
         .def("CreateModelCardTextureYNegAttr",
              &_CreateModelCardTextureYNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetModelCardTextureZNegAttr",
              &This::GetModelCardTextureZNegAttr)
         .def("CreateModelCardTextureZNegAttr",
              &_CreateModelCardTextureZNegAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -277,17 +276,17 @@ void wrapUsdGeomModelAPI()
 
 namespace {
 
-static object
+static nb::object
 _GetExtentsHint(
         const UsdGeomModelAPI& self,
         const UsdTimeCode &time)
 {
     VtVec3fArray extents;
     if (!self.GetExtentsHint(&extents, time)) {
-        return object();
+        return nb::none();
     }
 
-    return object(extents);
+    return nb::cast(extents);
 }
 
 static bool
@@ -309,22 +308,22 @@ _SetExtentsHint(
 WRAP_CUSTOM {
     _class
         .def("GetExtentsHint", &_GetExtentsHint,
-                (arg("time")=UsdTimeCode::Default()))
+                (nb::arg("time")=UsdTimeCode::Default()))
         .def("SetExtentsHint", &_SetExtentsHint,
-                (arg("extents"),
-                 arg("time")=UsdTimeCode::Default()))
+                nb::arg("extents"),
+                 nb::arg("time")=UsdTimeCode::Default())
         .def("ComputeExtentsHint", &UsdGeomModelAPI::ComputeExtentsHint,
-                (arg("bboxCache")))
+                nb::arg("bboxCache"))
 
         .def("GetExtentsHintAttr", &UsdGeomModelAPI::GetExtentsHintAttr)
 
         .def("GetConstraintTarget", &UsdGeomModelAPI::GetConstraintTarget)
         .def("CreateConstraintTarget", &UsdGeomModelAPI::CreateConstraintTarget)
         .def("GetConstraintTargets", &UsdGeomModelAPI::GetConstraintTargets,
-            return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
         .def("ComputeModelDrawMode", &UsdGeomModelAPI::ComputeModelDrawMode,
-            (arg("parentDrawMode")=TfToken()))
+            (nb::arg("parentDrawMode")=TfToken()))
     ;
 }
 

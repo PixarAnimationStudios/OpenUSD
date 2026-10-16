@@ -12,9 +12,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     // Include non-schema classes here in the format TF_WRAP(CPP_class_name);
-    TF_WRAP( HeuristicQuery );
-    TF_WRAP( DistanceHeuristicQuery );
-    TF_WRAP( ScreenSizeHeuristicQuery );
+    TF_WRAP_NB( HeuristicQuery );
+    TF_WRAP_NB( DistanceHeuristicQuery );
+    TF_WRAP_NB( ScreenSizeHeuristicQuery );
     
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

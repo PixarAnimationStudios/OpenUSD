@@ -7,12 +7,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/cleanupEnabler.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -47,7 +45,7 @@ public:
     // The three extra arguments are required by the __enter__/__exit__
     // protocol, and can contain the python exception state if the
     // with-statement is exited by an exception.  We ignore them here.
-    void Exit(object const &, object const &, object const &)
+    void Exit(nanobind::args)
     {
         _state.reset();
     }
@@ -58,12 +56,13 @@ private :
 
 } // anonymous namespace 
 
-void wrapCleanupEnabler()
+void wrapCleanupEnabler(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef Sdf_PyCleanupEnabler This;
 
-    class_<This,noncopyable>("CleanupEnabler",
-        init<>())
+    nb::class_<This>(m, "CleanupEnabler")
+        .def(nb::init<>())
 
         // Callbacks for the python 'with' statement
         .def("__enter__", &This::Enter)

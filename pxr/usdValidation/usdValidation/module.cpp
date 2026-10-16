@@ -11,11 +11,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdValidationRegistry);
-    TF_WRAP(UsdValidationTimeRange);
-    TF_WRAP(UsdValidationValidator);
-    TF_WRAP(UsdValidationFixer);
-    TF_WRAP(UsdValidationError);
-    TF_WRAP(UsdValidationContext);
-    TF_WRAP(UsdValidationNotice);
+    TF_WRAP_NB(UsdValidationRegistry);
+    TF_WRAP_NB(UsdValidationTimeRange);
+    TF_WRAP_NB(UsdValidationValidator);
+    TF_WRAP_NB(UsdValidationFixer);
+    TF_WRAP_NB(UsdValidationError);
+    TF_WRAP_NB(UsdValidationContext);
+    TF_WRAP_NB(UsdValidationNotice);
 }

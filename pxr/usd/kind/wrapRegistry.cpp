@@ -7,35 +7,31 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/kind/registry.h"
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pySingleton.h"
 
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapRegistry()
+void wrapRegistry(nanobind::module_ &m)
 {
     typedef KindRegistry This;
-    typedef TfWeakPtr<KindRegistry> ThisPtr;
 
-   class_<This, ThisPtr, noncopyable>("Registry", no_init)
-        .def(TfPySingleton())
-        .def("HasKind", &This::HasKind)
-        .staticmethod("HasKind")
-        .def("GetAllKinds", &This::GetAllKinds,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllKinds")
-        .def("GetBaseKind", &This::GetBaseKind)
-        .staticmethod("GetBaseKind")
-        .def("IsA", &This::IsA)
-        .def("IsModel", &This::IsModel)
-        .def("IsGroup", &This::IsGroup)
-        .def("IsAssembly", &This::IsAssembly)
-        .def("IsComponent", &This::IsComponent)
-        .def("IsSubComponent", &This::IsSubComponent)
-        .staticmethod("IsA")
+    nanobind::class_<This> cls(
+        m, "Registry", nanobind::is_weak_referenceable(),
+        nanobind::dynamic_attr());
+    TfNbSingleton(cls);
+    cls
+        .def_static("HasKind", &This::HasKind)
+        .def_static("GetAllKinds", &This::GetAllKinds)
+        .def_static("GetBaseKind", &This::GetBaseKind)
+        .def_static("IsA", &This::IsA)
+        .def_static("IsModel", &This::IsModel)
+        .def_static("IsGroup", &This::IsGroup)
+        .def_static("IsAssembly", &This::IsAssembly)
+        .def_static("IsComponent", &This::IsComponent)
+        .def_static("IsSubComponent", &This::IsSubComponent)
         ;
 }

@@ -6,23 +6,23 @@
 //
 
 #include "pxr/pxr.h"
-
-#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/usdUtils/localizeAsset.h"
 
-#include "pxr/external/boost/python/def.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapLocalizeAsset()
+void wrapLocalizeAsset(nanobind::module_ &m)
 {
-    def("LocalizeAsset", UsdUtilsLocalizeAsset,
-            (arg("assetPath"),
-             arg("localizationDirectory"),
-             arg("editLayersInPlace") = false,
-             arg("processingFunc") = object()));
+    m.def("LocalizeAsset", UsdUtilsLocalizeAsset,
+            nb::arg("assetPath"),
+            nb::arg("localizationDirectory"),
+            nb::arg("editLayersInPlace") = false,
+            nb::arg("processingFunc").none() = nb::none());
 }

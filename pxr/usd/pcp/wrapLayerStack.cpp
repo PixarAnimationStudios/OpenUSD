@@ -9,17 +9,12 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python.hpp"
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -46,56 +41,50 @@ _GetLayerOffsets(const PcpLayerStack &layerStack)
 
 } // anonymous namespace 
 
-void wrapLayerStack()
+void wrapLayerStack(nanobind::module_ &m)
 {
-    class_<PcpLayerStack, PcpLayerStackPtr, noncopyable>
-        ("LayerStack", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .add_property("identifier", 
-                      make_function(&PcpLayerStack::GetIdentifier,
-                                    return_value_policy<return_by_value>()))
-        .add_property("layers", 
-                      make_function(&_GetLayerStackLayers,
-                                    return_value_policy<TfPySequenceToList>()))
-        .add_property("layerOffsets",
-                      make_function(&_GetLayerOffsets,
-                                    return_value_policy<TfPySequenceToList>()))
-        .add_property("layerTree", 
-                      make_function(&PcpLayerStack::GetLayerTree,
-                                    return_value_policy<return_by_value>()))
-        .add_property("sessionLayerTree", 
-                      make_function(&PcpLayerStack::GetSessionLayerTree,
-                                    return_value_policy<return_by_value>()))
-        .add_property("mutedLayers",
-                      make_function(&PcpLayerStack::GetMutedLayers,
-                                    return_value_policy<TfPySequenceToList>()))
-        .add_property("expressionVariables",
-                      make_function(&PcpLayerStack::GetExpressionVariables,
-                                    return_value_policy<return_by_value>()))
-        .add_property("expressionVariableDependencies",
-                      make_function(
-                          &PcpLayerStack::GetExpressionVariableDependencies,
-                          return_value_policy<TfPySequenceToList>()))
-        .add_property("relocatesSourceToTarget",
-                      make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
-                                    return_value_policy<return_by_value>()))
-        .add_property("relocatesTargetToSource",
-                      make_function(&PcpLayerStack::GetRelocatesTargetToSource,
-                                    return_value_policy<return_by_value>()))
-        .add_property("incrementalRelocatesSourceToTarget",
-                      make_function(
-                          &PcpLayerStack::GetIncrementalRelocatesSourceToTarget,
-                          return_value_policy<return_by_value>()))
-        .add_property("incrementalRelocatesTargetToSource",
-                      make_function(
-                          &PcpLayerStack::GetIncrementalRelocatesTargetToSource,
-                          return_value_policy<return_by_value>()))
-        .add_property("localErrors", 
-                      make_function(&PcpLayerStack::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
-        .add_property("pathsToPrimsWithRelocates", 
-              make_function(&PcpLayerStack::GetPathsToPrimsWithRelocates,
-                            return_value_policy<TfPySequenceToList>()))
+    namespace nb = nanobind;
+
+    nb::class_<PcpLayerStack> cls(
+        m, "LayerStack", nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbRefAndWeakPtr(cls);
+    cls
+        .def(TfTypePythonClass())
+        .def_prop_ro("identifier", &PcpLayerStack::GetIdentifier,
+                     nb::rv_policy::copy)
+        .def_prop_ro("layers", &_GetLayerStackLayers)
+        .def_prop_ro("layerOffsets", &_GetLayerOffsets)
+        .def_prop_ro("layerTree", &PcpLayerStack::GetLayerTree,
+                     nb::rv_policy::copy)
+        .def_prop_ro("sessionLayerTree", &PcpLayerStack::GetSessionLayerTree,
+                     nb::rv_policy::copy)
+        .def_prop_ro("mutedLayers", [](const PcpLayerStack &self) {
+            return TfNbSequenceToList(self.GetMutedLayers());
+        })
+        .def_prop_ro("expressionVariables",
+                     &PcpLayerStack::GetExpressionVariables,
+                     nb::rv_policy::copy)
+        .def_prop_ro("expressionVariableDependencies",
+                     [](const PcpLayerStack &self) {
+                         return TfNbSequenceToList(
+                             self.GetExpressionVariableDependencies());
+                     })
+        .def_prop_ro("relocatesSourceToTarget",
+                     &PcpLayerStack::GetRelocatesSourceToTarget,
+                     nb::rv_policy::copy)
+        .def_prop_ro("relocatesTargetToSource",
+                     &PcpLayerStack::GetRelocatesTargetToSource,
+                     nb::rv_policy::copy)
+        .def_prop_ro("incrementalRelocatesSourceToTarget",
+                     &PcpLayerStack::GetIncrementalRelocatesSourceToTarget,
+                     nb::rv_policy::copy)
+        .def_prop_ro("incrementalRelocatesTargetToSource",
+                     &PcpLayerStack::GetIncrementalRelocatesTargetToSource,
+                     nb::rv_policy::copy)
+        .def_prop_ro("localErrors", &PcpLayerStack::GetLocalErrors)
+        .def_prop_ro("pathsToPrimsWithRelocates",
+                     &PcpLayerStack::GetPathsToPrimsWithRelocates,
+                     nb::rv_policy::copy)
         // TODO: repr, eq, etc.
         ;
 }

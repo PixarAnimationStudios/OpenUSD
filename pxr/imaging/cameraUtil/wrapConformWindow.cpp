@@ -16,15 +16,14 @@
 #include "pxr/base/gf/frustum.h"
 
 #include "pxr/base/tf/pyEnum.h"
-
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 void
-wrapConformWindow()
+wrapConformWindow(nb::module_& m)
 {
     typedef GfRange2d (*Signature1)(
         const GfRange2d &, CameraUtilConformWindowPolicy, double);
@@ -44,20 +43,20 @@ wrapConformWindow()
     typedef void (*Signature6)(
         GfFrustum *, CameraUtilConformWindowPolicy, double);
 
-    def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature2)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
-    def("ConformedWindow", (Signature4)&CameraUtilConformedWindow,
-        (arg("window"), arg("policy"), arg("targetAspect")));
+    m.def("ConformedWindow", (Signature1)&CameraUtilConformedWindow,
+          nb::arg("window"), nb::arg("policy"), nb::arg("targetAspect"));
+    m.def("ConformedWindow", (Signature2)&CameraUtilConformedWindow,
+          nb::arg("window"), nb::arg("policy"), nb::arg("targetAspect"));
+    m.def("ConformedWindow", (Signature3)&CameraUtilConformedWindow,
+          nb::arg("window"), nb::arg("policy"), nb::arg("targetAspect"));
+    m.def("ConformedWindow", (Signature4)&CameraUtilConformedWindow,
+          nb::arg("window"), nb::arg("policy"), nb::arg("targetAspect"));
     
-    def("ConformWindow", (Signature5)&CameraUtilConformWindow,
-        (arg("camera"), arg("policy"), arg("targetAspect")));
+    m.def("ConformWindow", (Signature5)&CameraUtilConformWindow,
+          nb::arg("camera"), nb::arg("policy"), nb::arg("targetAspect"));
 
-    def("ConformWindow", (Signature6)&CameraUtilConformWindow,
-        (arg("frustum"), arg("policy"), arg("targetAspect")));
+    m.def("ConformWindow", (Signature6)&CameraUtilConformWindow,
+          nb::arg("frustum"), nb::arg("policy"), nb::arg("targetAspect"));
 
-    TfPyWrapEnum<CameraUtilConformWindowPolicy>();
+    TfNbWrapEnum<CameraUtilConformWindowPolicy>(m);
 }

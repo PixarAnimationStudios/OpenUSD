@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,28 +40,28 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateOrderAttr(UsdGeomNurbsCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrderAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateKnotsAttr(UsdGeomNurbsCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateKnotsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->DoubleArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRangesAttr(UsdGeomNurbsCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRangesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double2Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePointWeightsAttr(UsdGeomNurbsCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePointWeightsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->DoubleArray), writeSparsely);
 }
@@ -71,64 +77,59 @@ _Repr(const UsdGeomNurbsCurves &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomNurbsCurves()
+void wrapUsdGeomNurbsCurves(nb::module_ &m)
 {
     typedef UsdGeomNurbsCurves This;
 
-    class_<This, bases<UsdGeomCurves> >
-        cls("NurbsCurves");
+    nb::class_<This, UsdGeomCurves> cls(m, "NurbsCurves");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetOrderAttr",
              &This::GetOrderAttr)
         .def("CreateOrderAttr",
              &_CreateOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetKnotsAttr",
              &This::GetKnotsAttr)
         .def("CreateKnotsAttr",
              &_CreateKnotsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRangesAttr",
              &This::GetRangesAttr)
         .def("CreateRangesAttr",
              &_CreateRangesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetPointWeightsAttr",
              &This::GetPointWeightsAttr)
         .def("CreatePointWeightsAttr",
              &_CreatePointWeightsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

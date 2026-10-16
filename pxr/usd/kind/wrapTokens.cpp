@@ -11,8 +11,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapTokens()
+void wrapTokens(nanobind::module_ &m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", KindTokens,
-                             KIND_TOKENS);
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "Tokens", KindTokens,
+                              KIND_TOKENS);
 }

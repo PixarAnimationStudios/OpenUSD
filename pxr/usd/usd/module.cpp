@@ -11,53 +11,53 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdCommon);
-    TF_WRAP(UsdNotice);
-    TF_WRAP(UsdTimeCode);
-    TF_WRAP(UsdInterpolationType);
+    TF_WRAP_NB(UsdCommon);
+    TF_WRAP_NB(UsdNotice);
+    TF_WRAP_NB(UsdTimeCode);
+    TF_WRAP_NB(UsdInterpolationType);
 
     // UsdObject and its subclasses.
-    TF_WRAP(UsdObject); 
-    TF_WRAP(UsdProperty);
-    TF_WRAP(UsdAttribute);
-    TF_WRAP(UsdRelationship);
-    TF_WRAP(UsdPrim);
+    TF_WRAP_NB(UsdObject); 
+    TF_WRAP_NB(UsdProperty);
+    TF_WRAP_NB(UsdAttribute);
+    TF_WRAP_NB(UsdRelationship);
+    TF_WRAP_NB(UsdPrim);
 
     // Value types.
-    TF_WRAP(UsdEditTarget);
-    TF_WRAP(UsdEditContext);
-    TF_WRAP(UsdInherits);
-    TF_WRAP(UsdPayloads);
-    TF_WRAP(UsdPrimDefinition);
-    TF_WRAP(UsdPrimFlags);
-    TF_WRAP(UsdPrimTypeInfo);
-    TF_WRAP(UsdReferences);
-    TF_WRAP(UsdResolveTarget);
-    TF_WRAP(UsdSchemaRegistry);
-    TF_WRAP(UsdSpecializes);
-    TF_WRAP(UsdPrimRange);
-    TF_WRAP(UsdVariantSets);
+    TF_WRAP_NB(UsdEditTarget);
+    TF_WRAP_NB(UsdEditContext);
+    TF_WRAP_NB(UsdInherits);
+    TF_WRAP_NB(UsdPayloads);
+    TF_WRAP_NB(UsdPrimDefinition);
+    TF_WRAP_NB(UsdPrimFlags);
+    TF_WRAP_NB(UsdPrimTypeInfo);
+    TF_WRAP_NB(UsdReferences);
+    TF_WRAP_NB(UsdResolveTarget);
+    TF_WRAP_NB(UsdSchemaRegistry);
+    TF_WRAP_NB(UsdSpecializes);
+    TF_WRAP_NB(UsdPrimRange);
+    TF_WRAP_NB(UsdVariantSets);
 
     // SchemaBase.
-    TF_WRAP(UsdSchemaBase);
+    TF_WRAP_NB(UsdSchemaBase);
 
     // Stage and Stage Cache
-    TF_WRAP(UsdStage);
-    TF_WRAP(UsdStageCache);
-    TF_WRAP(UsdStageCacheContext);
-    TF_WRAP(UsdStageLoadRules);
-    TF_WRAP(UsdStagePopulationMask);
+    TF_WRAP_NB(UsdStage);
+    TF_WRAP_NB(UsdStageCache);
+    TF_WRAP_NB(UsdStageCacheContext);
+    TF_WRAP_NB(UsdStageLoadRules);
+    TF_WRAP_NB(UsdStagePopulationMask);
 
     // Miscellaenous classes
-    TF_WRAP(UsdAttributeLimits);
-    TF_WRAP(UsdAttributeQuery);
-    TF_WRAP(UsdCollectionMembershipQuery);
-    TF_WRAP(UsdNamespaceEditor);
-    TF_WRAP(UsdResolveInfo);
-    TF_WRAP(Version);
-    TF_WRAP(UsdPrimCompositionQueryArc);
-    TF_WRAP(UsdPrimCompositionQuery);
-    TF_WRAP(UsdFlattenUtils);
+    TF_WRAP_NB(UsdAttributeLimits);
+    TF_WRAP_NB(UsdAttributeQuery);
+    TF_WRAP_NB(UsdCollectionMembershipQuery);
+    TF_WRAP_NB(UsdNamespaceEditor);
+    TF_WRAP_NB(UsdResolveInfo);
+    TF_WRAP_NB(Version);
+    TF_WRAP_NB(UsdPrimCompositionQueryArc);
+    TF_WRAP_NB(UsdPrimCompositionQuery);
+    TF_WRAP_NB(UsdFlattenUtils);
 
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

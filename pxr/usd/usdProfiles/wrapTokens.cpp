@@ -5,18 +5,19 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/usd/usdProfiles/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return UsdProfilesTokens->name.GetString(); });
+namespace nb = nanobind;
 
-void wrapUsdProfilesTokens()
+#define _ADD_TOKEN(cls, name) \
+    cls.def_prop_ro_static(#name, +[](nb::object) { return UsdProfilesTokens->name.GetString(); });
+
+void wrapUsdProfilesTokens(nb::module_ &m)
 {
-    pxr_boost::python::class_<UsdProfilesTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
+    nb::class_<UsdProfilesTokensType> cls(m, "Tokens");
     _ADD_TOKEN(cls, enhancement);
     _ADD_TOKEN(cls, hard);
     _ADD_TOKEN(cls, soft);

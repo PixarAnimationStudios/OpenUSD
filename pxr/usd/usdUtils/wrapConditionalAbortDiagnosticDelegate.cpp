@@ -8,36 +8,37 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/conditionalAbortDiagnosticDelegate.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <iostream>
 #include <string>
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapConditionalAbortDiagnosticDelegate()
+void wrapConditionalAbortDiagnosticDelegate(nanobind::module_ &m)
 {
     using ErrorFilters = UsdUtilsConditionalAbortDiagnosticDelegateErrorFilters;
-    class_<ErrorFilters>("ConditionalAbortDiagnosticDelegateErrorFilters",
-            init<std::vector<std::string>, std::vector<std::string>>())
-        .def(init<>())
-        .def("GetCodePathFilters", &ErrorFilters::GetCodePathFilters, 
-                return_value_policy<TfPySequenceToList>())
-        .def("GetStringFilters", &ErrorFilters::GetStringFilters,
-                return_value_policy<TfPySequenceToList>())
+    nb::class_<ErrorFilters>(m, "ConditionalAbortDiagnosticDelegateErrorFilters")
+        .def(nb::init<std::vector<std::string>, std::vector<std::string>>())
+        .def(nb::init<>())
+        .def("GetCodePathFilters", [](const ErrorFilters& self) {
+            return TfNbSequenceToList(self.GetCodePathFilters());
+        })
+        .def("GetStringFilters", [](const ErrorFilters& self) {
+            return TfNbSequenceToList(self.GetStringFilters());
+        })
         .def("SetStringFilters", &ErrorFilters::SetStringFilters,
-                args("stringFilters"))
+                nb::arg("stringFilters"))
         .def("SetCodePathFilters", &ErrorFilters::SetCodePathFilters,
-                args("codePathFilters"));
+                nb::arg("codePathFilters"));
 
     using This = UsdUtilsConditionalAbortDiagnosticDelegate;
-    class_<This, noncopyable>("ConditionalAbortDiagnosticDelegate",
-            init<ErrorFilters, ErrorFilters>());
+    nb::class_<This>(m, "ConditionalAbortDiagnosticDelegate")
+        .def(nb::init<ErrorFilters, ErrorFilters>());
 }

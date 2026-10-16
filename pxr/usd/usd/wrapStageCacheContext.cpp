@@ -9,20 +9,22 @@
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 #include <functional>
 #include <memory>
-
-#include "pxr/external/boost/python.hpp"
-
 #include <vector>
 
+namespace nb = nanobind;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -47,7 +49,7 @@ struct Usd_PyStageCacheContext
     void __enter__() { _context.reset(_makeContext()); }
 
     // Drop the shared_ptr.
-    void __exit__(object, object, object) { _context.reset(); }
+    void __exit__(nb::args) { _context.reset(); }
 
 private:
 
@@ -57,9 +59,9 @@ private:
 
 } // anonymous namespace
 
-void wrapUsdStageCacheContext()
+void wrapUsdStageCacheContext(nb::module_ &m)
 {
-    TfPyWrapEnum<UsdStageCacheContextBlockType>();
+    TfNbWrapEnum<UsdStageCacheContextBlockType>(m);
 
     // The use of with_custodian_and_ward(_postcall) below let us bind python
     // object lifetimes together in such a way that we don't get dangling c++
@@ -69,20 +71,24 @@ void wrapUsdStageCacheContext()
     // Must ensure that the returned Wrapper objects below keep their cache
     // argument alive, otherwise the Wrappers could have dangling references to
     // their caches.
-    class_<Usd_NonPopulatingStageCacheWrapper>(
-        "_NonPopulatingStageCacheWrapper", no_init);
-    def("UseButDoNotPopulateCache", UsdUseButDoNotPopulateCache<UsdStageCache>,
-        with_custodian_and_ward_postcall<0, 1>());
+    nb::class_<Usd_NonPopulatingStageCacheWrapper>(
+        m, "_NonPopulatingStageCacheWrapper", nb::is_weak_referenceable())
+        .def("__init__", [](Usd_NonPopulatingStageCacheWrapper *) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        });
+    m.def("UseButDoNotPopulateCache", UsdUseButDoNotPopulateCache<UsdStageCache>,
+          nb::keep_alive<0, 1>());
 
     // The constructor needs to ensure that the wrapper arguments be kept alive
     // as long as the context is, to transitively keep their held cache objects
     // alive.
-    class_<Usd_PyStageCacheContext>("StageCacheContext", no_init)
-        .def(init<Usd_NonPopulatingStageCacheWrapper>()[
-                 with_custodian_and_ward<1, 2>()])
-        .def(init<UsdStageCache &>()[
-                 with_custodian_and_ward<1, 2>()])
-        .def(init<UsdStageCacheContextBlockType>())
+    nb::class_<Usd_PyStageCacheContext>(
+        m, "StageCacheContext", nb::is_weak_referenceable())
+        .def(nb::init<Usd_NonPopulatingStageCacheWrapper>(),
+             nb::keep_alive<1, 2>())
+        .def(nb::init<UsdStageCache &>(),
+             nb::keep_alive<1, 2>())
+        .def(nb::init<UsdStageCacheContextBlockType>())
         .def("__enter__", &Usd_PyStageCacheContext::__enter__)
         .def("__exit__", &Usd_PyStageCacheContext::__exit__)
         ;

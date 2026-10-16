@@ -12,43 +12,43 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( ArrayAssetPath );
-    TF_WRAP( ArrayPath );
-    TF_WRAP( ArrayPathExpression );
-    TF_WRAP( AssetPath );
-    TF_WRAP( ChangeBlock );
-    TF_WRAP( CleanupEnabler );
-    TF_WRAP( CopyUtils );
-    TF_WRAP( CrateInfo );
-    TF_WRAP( FileFormat );
-    TF_WRAP( Layer );
-    TF_WRAP( LayerOffset );
-    TF_WRAP( LayerTree );
-    TF_WRAP( NamespaceEdit );
-    TF_WRAP( Notice );
-    TF_WRAP( OpaqueValue );
-    TF_WRAP( Path );
-    TF_WRAP( PredicateExpression );
-    TF_WRAP( PathPattern );
-    TF_WRAP( PathExpression ); // needs PathPattern & PredicateExpression.
-    TF_WRAP( Payload );
-    TF_WRAP( PredicateFunctionResult );
-    TF_WRAP( Reference );
-    TF_WRAP( Types );
-    TF_WRAP( UsdFileFormat );
-    TF_WRAP( ValueType );
-    TF_WRAP( VariableExpression );
-    TF_WRAP( VariableExpressionAST );
-    TF_WRAP( ZipFile );
+    TF_WRAP_NB( Types );
+    TF_WRAP_NB( ArrayAssetPath );
+    TF_WRAP_NB( ArrayPath );
+    TF_WRAP_NB( ArrayPathExpression );
+    TF_WRAP_NB( AssetPath );
+    TF_WRAP_NB( ChangeBlock );
+    TF_WRAP_NB( CleanupEnabler );
+    TF_WRAP_NB( CopyUtils );
+    TF_WRAP_NB( CrateInfo );
+    TF_WRAP_NB( FileFormat );
+    TF_WRAP_NB( Layer );
+    TF_WRAP_NB( LayerOffset );
+    TF_WRAP_NB( LayerTree );
+    TF_WRAP_NB( NamespaceEdit );
+    TF_WRAP_NB( Notice );
+    TF_WRAP_NB( OpaqueValue );
+    TF_WRAP_NB( Path );
+    TF_WRAP_NB( PredicateExpression );
+    TF_WRAP_NB( PathPattern );
+    TF_WRAP_NB( PathExpression ); // needs PathPattern & PredicateExpression.
+    TF_WRAP_NB( Payload );
+    TF_WRAP_NB( PredicateFunctionResult );
+    TF_WRAP_NB( Reference );
+    TF_WRAP_NB( UsdFileFormat );
+    TF_WRAP_NB( ValueType );
+    TF_WRAP_NB( VariableExpression );
+    TF_WRAP_NB( VariableExpressionAST );
+    TF_WRAP_NB( ZipFile );
 
-    TF_WRAP( Spec );
-    TF_WRAP( VariantSpec );
-    TF_WRAP( VariantSetSpec );
+    TF_WRAP_NB( Spec );
+    TF_WRAP_NB( VariantSpec );
+    TF_WRAP_NB( VariantSetSpec );
 
-    TF_WRAP( PropertySpec );
-    TF_WRAP( AttributeSpec );
-    TF_WRAP( RelationshipSpec );
+    TF_WRAP_NB( PropertySpec );
+    TF_WRAP_NB( AttributeSpec );
+    TF_WRAP_NB( RelationshipSpec );
 
-    TF_WRAP( PrimSpec );
-    TF_WRAP( PseudoRootSpec );
+    TF_WRAP_NB( PrimSpec );
+    TF_WRAP_NB( PseudoRootSpec );
 }

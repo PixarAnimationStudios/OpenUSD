@@ -8,43 +8,44 @@
 
 #include <locale>
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/object.hpp"
 
 #include <string>
 #include <variant>
 
 #include "pxr/base/tf/envSetting.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 extern std::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const&);
 
-static pxr_boost::python::object
+static nanobind::object
 _GetEnvSettingByName(std::string const& name) {
     std::variant<int, bool, std::string> const *
         variantValue = Tf_GetEnvSettingByName(name);
 
     if (!variantValue) {
-        return pxr_boost::python::object();
+        return nanobind::none();
     } 
 
     if (std::string const *value = std::get_if<std::string>(variantValue)) {
-        return pxr_boost::python::object(*value);
+        return nanobind::cast(*value);
     } else if (bool const *value = std::get_if<bool>(variantValue)) {
-        return pxr_boost::python::object(*value);
+        return nanobind::cast(*value);
     } else if (int const *value = std::get_if<int>(variantValue)) {
-        return pxr_boost::python::object(*value); 
+        return nanobind::cast(*value); 
     } 
             
-    return pxr_boost::python::object();
+    return nanobind::none();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapEnvSetting() {
-    def("GetEnvSetting", &_GetEnvSettingByName);
+void wrapEnvSetting(nanobind::module_& m) {
+    m.def("GetEnvSetting", &_GetEnvSettingByName);
 }

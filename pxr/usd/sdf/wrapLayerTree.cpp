@@ -6,16 +6,14 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerTree.h"
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,30 +41,25 @@ _New(const SdfLayerHandle & layer,
 
 } // anonymous namespace 
 
-void wrapLayerTree()
+void wrapLayerTree(nanobind::module_ &m)
 {    
+    namespace nb = nanobind;
+
     // Register conversion for python list <-> SdfLayerTreeHandleVector
-    to_python_converter<SdfLayerTreeHandleVector,
-                        TfPySequenceToPython<SdfLayerTreeHandleVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfLayerTreeHandleVector,
         TfPyContainerConversions::
             variable_capacity_all_items_convertible_policy >();
 
-    class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, noncopyable>
-        ("LayerTree", "", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(&_NewEmpty))
-        .def(TfMakePyConstructor(&_NewNoOffset))
-        .def(TfMakePyConstructor(&_New))
-        .add_property("layer",
-                      make_function(&SdfLayerTree::GetLayer,
-                                    return_value_policy<return_by_value>()))
-        .add_property("offset",
-                      make_function(&SdfLayerTree::GetOffset,
-                                    return_value_policy<return_by_value>()))
-        .add_property("childTrees",
-            make_function(&SdfLayerTree::GetChildTrees,
-                          return_value_policy<TfPySequenceToList>()))
+    nb::class_<SdfLayerTree> cls(
+        m, "LayerTree", "", nb::is_weak_referenceable(), nb::dynamic_attr());
+    cls
+        .def(TfNbRefAndWeakPtr())
+        .def(TfNbMakePyConstructor(&_NewEmpty))
+        .def(TfNbMakePyConstructor(&_NewNoOffset))
+        .def(TfNbMakePyConstructor(&_New))
+        .def_prop_ro("layer", &SdfLayerTree::GetLayer, nb::rv_policy::copy)
+        .def_prop_ro("offset", &SdfLayerTree::GetOffset, nb::rv_policy::copy)
+        .def_prop_ro("childTrees", &SdfLayerTree::GetChildTrees, nb::rv_policy::copy)
         ;
 }

@@ -14,15 +14,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -31,7 +30,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdRiStatementsAPI &self)
@@ -59,42 +57,35 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdRiStatementsAPI()
+void wrapUsdRiStatementsAPI(nb::module_ &m)
 {
     typedef UsdRiStatementsAPI This;
 
-    UsdRiStatementsAPI_CanApplyResult::Wrap<UsdRiStatementsAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdRiStatementsAPI_CanApplyResult::WrapNb<UsdRiStatementsAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("StatementsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "StatementsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -145,46 +136,42 @@ WRAP_CUSTOM {
              (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const TfType &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
-             (arg("name"), arg("tfType"), arg("nameSpace")="user"))
+             nb::arg("name"), nb::arg("tfType"), nb::arg("nameSpace")="user")
         .def("CreateRiAttribute",
              (UsdAttribute (UsdRiStatementsAPI::*)(
                  const TfToken &, const std::string &, const std::string &))
              &UsdRiStatementsAPI::CreateRiAttribute,
-             (arg("name"), arg("riType"), arg("nameSpace")="user"))
+             nb::arg("name"), nb::arg("riType"), nb::arg("nameSpace")="user")
         .def("GetRiAttribute",
              &UsdRiStatementsAPI::GetRiAttribute,
-             (arg("name"), arg("nameSpace")="user"))
+             nb::arg("name"), nb::arg("nameSpace")="user")
         .def("GetRiAttributes", &UsdRiStatementsAPI::GetRiAttributes,
-             (arg("nameSpace")=""),
-             return_value_policy<TfPySequenceToList>())
-        .def("GetRiAttributeName",
-             UsdRiStatementsAPI::GetRiAttributeName, (arg("prop")))
-        .staticmethod("GetRiAttributeName")
-        .def("GetRiAttributeNameSpace",
-             &UsdRiStatementsAPI::GetRiAttributeNameSpace, (arg("prop")))
-        .staticmethod("GetRiAttributeNameSpace")
-        .def("IsRiAttribute", &UsdRiStatementsAPI::IsRiAttribute, (arg("prop")))
-        .staticmethod("IsRiAttribute")
-        .def("MakeRiAttributePropertyName",
-             &UsdRiStatementsAPI::MakeRiAttributePropertyName, (arg("attrName")))
-        .staticmethod("MakeRiAttributePropertyName")
+             nb::arg("nameSpace")="",
+             nb::rv_policy::copy)
+        .def_static("GetRiAttributeName",
+             &UsdRiStatementsAPI::GetRiAttributeName, nb::arg("prop"))
+        .def_static("GetRiAttributeNameSpace",
+             &UsdRiStatementsAPI::GetRiAttributeNameSpace, nb::arg("prop"))
+        .def_static("IsRiAttribute", &UsdRiStatementsAPI::IsRiAttribute, nb::arg("prop"))
+        .def_static("MakeRiAttributePropertyName",
+             &UsdRiStatementsAPI::MakeRiAttributePropertyName, nb::arg("attrName"))
         .def("SetCoordinateSystem", &UsdRiStatementsAPI::SetCoordinateSystem,
-             (arg("coordSysName")))
+             nb::arg("coordSysName"))
         .def("GetCoordinateSystem", &UsdRiStatementsAPI::GetCoordinateSystem)
         .def("HasCoordinateSystem", &UsdRiStatementsAPI::HasCoordinateSystem)
 
         .def("SetScopedCoordinateSystem",
              &UsdRiStatementsAPI::SetScopedCoordinateSystem,
-             (arg("coordSysName")))
+             nb::arg("coordSysName"))
         .def("GetScopedCoordinateSystem",
              &UsdRiStatementsAPI::GetScopedCoordinateSystem)
         .def("HasScopedCoordinateSystem",
              &UsdRiStatementsAPI::HasScopedCoordinateSystem)
 
         .def("GetModelCoordinateSystems", _GetModelCoordinateSystems,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetModelScopedCoordinateSystems", _GetModelScopedCoordinateSystems,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         ;
 }
 

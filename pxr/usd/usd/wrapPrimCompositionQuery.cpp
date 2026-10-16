@@ -8,32 +8,33 @@
 #include "pxr/usd/usd/primCompositionQuery.h"
 #include "pxr/usd/usd/resolveTarget.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/enum.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/scope.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 template <typename ProxyType>
-tuple
+nb::tuple
 _GetIntroducingListEditor(const UsdPrimCompositionQueryArc &arc)
 {
     ProxyType editor;
     typename ProxyType::value_type value;
     if (arc.GetIntroducingListEditor(&editor, &value)) {
-        return make_tuple(object(editor), object(value));
+        return nb::make_tuple(nb::cast(editor), nb::cast(value));
     }
     TF_CODING_ERROR("Failed to get list editor value for the given type of "
                     "of the composition arc");
-    return make_tuple(object(),object());
+    return nb::make_tuple(nb::none(), nb::none());
 }
 
-static tuple
+static nb::tuple
 _WrapGetIntroducingListEditor(const UsdPrimCompositionQueryArc &arc)
 {
     switch (arc.GetArcType()) {
@@ -47,13 +48,13 @@ _WrapGetIntroducingListEditor(const UsdPrimCompositionQueryArc &arc)
     case PcpArcTypeVariant:
         return _GetIntroducingListEditor<SdfNameEditorProxy>(arc);
     default:
-        return make_tuple(object(),object());
+        return nb::make_tuple(nb::none(), nb::none());
     }
 }
 
-void wrapUsdPrimCompositionQueryArc()
+void wrapUsdPrimCompositionQueryArc(nanobind::module_ &m)
 {
-    class_<UsdPrimCompositionQueryArc>("CompositionArc", no_init)
+    nb::class_<UsdPrimCompositionQueryArc>(m, "CompositionArc")
         .def("GetTargetNode", 
              &UsdPrimCompositionQueryArc::GetTargetNode)
         .def("GetIntroducingNode", 
@@ -76,38 +77,25 @@ void wrapUsdPrimCompositionQueryArc()
              &UsdPrimCompositionQueryArc::IsIntroducedInRootLayerPrimSpec)        
         .def("MakeResolveTargetUpTo", 
              &UsdPrimCompositionQueryArc::MakeResolveTargetUpTo,
-             arg("subLayer")=object())
+             nb::arg("subLayer")=SdfLayerHandle())
         .def("MakeResolveTargetStrongerThan", 
              &UsdPrimCompositionQueryArc::MakeResolveTargetStrongerThan,
-             arg("subLayer")=object())    ;
+             nb::arg("subLayer")=SdfLayerHandle())
+    ;
 }
 
-void wrapUsdPrimCompositionQuery()
+void wrapUsdPrimCompositionQuery(nanobind::module_ &m)
 {
     using This = UsdPrimCompositionQuery;
         
-    scope s = class_<This>
-        ("PrimCompositionQuery", no_init)
-        .def(init<const UsdPrim &>(arg("prim")))
-        .def(init<const UsdPrim &, const This::Filter &>((arg("prim"), arg("filter"))))
-        .def("GetDirectReferences", &This::GetDirectReferences,
-             return_value_policy<return_by_value>())
-            .staticmethod("GetDirectReferences")
-        .def("GetDirectInherits", &This::GetDirectInherits)
-            .staticmethod("GetDirectInherits")
-        .def("GetDirectRootLayerArcs", &This::GetDirectRootLayerArcs)
-            .staticmethod("GetDirectRootLayerArcs")
-        .add_property("filter", &This::GetFilter, &This::SetFilter)
-        .def("GetCompositionArcs", &This::GetCompositionArcs,
-             return_value_policy<TfPySequenceToList>())
-    ;
+    nb::class_<This> cls(m, "PrimCompositionQuery");
 
-    enum_<This::ArcIntroducedFilter>("ArcIntroducedFilter")
+    nb::enum_<This::ArcIntroducedFilter>(cls, "ArcIntroducedFilter")
         .value("All", This::ArcIntroducedFilter::All)
         .value("IntroducedInRootLayerStack", This::ArcIntroducedFilter::IntroducedInRootLayerStack)
         .value("IntroducedInRootLayerPrimSpec", This::ArcIntroducedFilter::IntroducedInRootLayerPrimSpec)
     ;
-    enum_<This::ArcTypeFilter>("ArcTypeFilter")
+    nb::enum_<This::ArcTypeFilter>(cls, "ArcTypeFilter")
         .value("All", This::ArcTypeFilter::All)
         .value("Reference", This::ArcTypeFilter::Reference)
         .value("Payload", This::ArcTypeFilter::Payload)
@@ -122,25 +110,36 @@ void wrapUsdPrimCompositionQuery()
         .value("NotVariant", This::ArcTypeFilter::NotVariant)
         .value("NotRelocate", This::ArcTypeFilter::NotRelocate)
     ;
-    enum_<This::DependencyTypeFilter>("DependencyTypeFilter")
+    nb::enum_<This::DependencyTypeFilter>(cls, "DependencyTypeFilter")
         .value("All", This::DependencyTypeFilter::All)
         .value("Direct", This::DependencyTypeFilter::Direct)
         .value("Ancestral", This::DependencyTypeFilter::Ancestral)
     ;
-    enum_<This::HasSpecsFilter>("HasSpecsFilter")
+    nb::enum_<This::HasSpecsFilter>(cls, "HasSpecsFilter")
         .value("All", This::HasSpecsFilter::All)
         .value("HasSpecs", This::HasSpecsFilter::HasSpecs)
         .value("HasNoSpecs", This::HasSpecsFilter::HasNoSpecs)
     ;
 
-    class_<This::Filter>("Filter")
-        .def(init<>())
-        .def_readwrite("arcIntroducedFilter", &This::Filter::arcIntroducedFilter)
-        .def_readwrite("arcTypeFilter", &This::Filter::arcTypeFilter)
-        .def_readwrite("dependencyTypeFilter", &This::Filter::dependencyTypeFilter)
-        .def_readwrite("hasSpecsFilter", &This::Filter::hasSpecsFilter)
-        .def(self == self)
-        .def(self != self)
+    nb::class_<This::Filter>(cls, "Filter")
+        .def(nb::init<>())
+        .def_rw("arcIntroducedFilter", &This::Filter::arcIntroducedFilter)
+        .def_rw("arcTypeFilter", &This::Filter::arcTypeFilter)
+        .def_rw("dependencyTypeFilter", &This::Filter::dependencyTypeFilter)
+        .def_rw("hasSpecsFilter", &This::Filter::hasSpecsFilter)
+        .def("__eq__", [](This::Filter &self, const This::Filter &rhs) { return self == rhs; })
+        .def("__ne__", [](This::Filter &self, const This::Filter &rhs) { return self != rhs; })
     ;
 
+    cls
+        .def(nb::init<const UsdPrim &>(), nb::arg("prim"))
+        .def(nb::init<const UsdPrim &, const This::Filter &>(),
+             nb::arg("prim"), nb::arg("filter"))
+        .def_static("GetDirectReferences", &This::GetDirectReferences)
+        .def_static("GetDirectInherits", &This::GetDirectInherits)
+        .def_static("GetDirectRootLayerArcs", &This::GetDirectRootLayerArcs)
+        .def_prop_rw("filter", &This::GetFilter, &This::SetFilter)
+        .def("GetCompositionArcs", &This::GetCompositionArcs)
+    ;
 }
+

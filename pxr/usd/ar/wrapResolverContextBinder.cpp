@@ -4,17 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/object.hpp"
-
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/ar/pyResolverContext.h"
 
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -37,9 +34,9 @@ public:
     }
 
     bool Exit(
-        pxr_boost::python::object& /* exc_type */,
-        pxr_boost::python::object& /* exc_val  */,
-        pxr_boost::python::object& /* exc_tb   */)
+        nanobind::handle /* exc_type */,
+        nanobind::handle /* exc_val  */,
+        nanobind::handle /* exc_tb   */)
     {
         _binder.reset(0);
         // Re-raise exceptions.
@@ -54,13 +51,15 @@ private:
 } // anonymous namespace 
 
 void
-wrapResolverContextBinder()
+wrapResolverContextBinder(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     typedef _PyResolverContextBinder This;
 
-    class_<This, noncopyable>
-        ("ResolverContextBinder", init<const ArResolverContext&>())
+    nb::class_<This>(m, "ResolverContextBinder")
+        .def(nb::init<const ArResolverContext&>())
         .def("__enter__", &This::Enter)
-        .def("__exit__", &This::Exit)
+        .def("__exit__", &This::Exit,
+             nb::arg().none(), nb::arg().none(), nb::arg().none())
         ;
 }

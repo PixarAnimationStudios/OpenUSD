@@ -15,9 +15,9 @@
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/base/tf/pyInterpreter.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <mutex>
@@ -27,10 +27,6 @@
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-using namespace pxr_boost::python;
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 static unsigned int
 _CheckResultInEnv(const string & envName, const string & envVal)
@@ -59,21 +55,19 @@ _CheckResultInOsEnviron(const string & envName, const string & envVal)
     TfPyLock lock;
 
     string cmd = TfStringPrintf("os.environ['%s']", envName.c_str());
-    handle<> wrappedResult = TfPyRunString(cmd, Py_eval_input);
+    nanobind::object wrappedResult = TfPyRunString(cmd, Py_eval_input);
 
-    if (!wrappedResult) {
+    if (!wrappedResult.is_valid()) {
         printf("ERROR: Python returned no result.\n");
         return 1;
     }
 
-    extract<string> getString(wrappedResult.get());
-
-    if (!getString.check()) {
+    string result;
+    if (!nanobind::try_cast<string>(wrappedResult, result)) {
         printf("ERROR: Python returned non-string result.\n");
         return 1;
     }
 
-    string result = getString();
     if (result != envVal) {
         printf("ERROR: Expected '%s', got '%s'.\n",
                envVal.c_str(),
@@ -96,21 +90,19 @@ _CheckResultNotInOsEnviron(const string & envName)
     TfPyLock lock;
 
     string cmd = TfStringPrintf("'%s' not in os.environ", envName.c_str());
-    handle<> wrappedResult = TfPyRunString(cmd, Py_eval_input);
+    nanobind::object wrappedResult = TfPyRunString(cmd, Py_eval_input);
 
-    if (!wrappedResult) {
+    if (!wrappedResult.is_valid()) {
         printf("ERROR: Python returned no result.\n");
         return 1;
     }
 
-    extract<bool> getBool(wrappedResult.get());
-
-    if (!getBool.check()) {
+    bool result = false;
+    if (!nanobind::try_cast<bool>(wrappedResult, result)) {
         printf("ERROR: Python returned non-bool result.\n");
         return 1;
     }
 
-    bool result = getBool();
     if (!result) {
         printf("ERROR: Expected key '%s' not appear in os.environ.\n",
                envName.c_str());

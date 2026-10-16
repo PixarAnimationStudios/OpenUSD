@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,14 +41,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateImplementationSourceAttr(UsdShadeNodeDefAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateImplementationSourceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIdAttr(UsdShadeNodeDefAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIdAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -73,56 +79,49 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdShadeNodeDefAPI()
+void wrapUsdShadeNodeDefAPI(nb::module_ &m)
 {
     typedef UsdShadeNodeDefAPI This;
 
-    UsdShadeNodeDefAPI_CanApplyResult::Wrap<UsdShadeNodeDefAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdShadeNodeDefAPI_CanApplyResult::WrapNb<UsdShadeNodeDefAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("NodeDefAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "NodeDefAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetImplementationSourceAttr",
              &This::GetImplementationSourceAttr)
         .def("CreateImplementationSourceAttr",
              &_CreateImplementationSourceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIdAttr",
              &This::GetIdAttr)
         .def("CreateIdAttr",
              &_CreateIdAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -151,47 +150,47 @@ void wrapUsdShadeNodeDefAPI()
 
 namespace {
 
-static object 
+static nb::object 
 _WrapGetShaderId(const UsdShadeNodeDefAPI &shader)
 {
     TfToken id;
     if (shader.GetShaderId(&id)) {
-        return object(id);
+        return nb::cast(id);
     }
-    return object();
+    return nb::none();
 }
 
-static object 
+static nb::object 
 _WrapGetSourceAsset(const UsdShadeNodeDefAPI &shader,
                     const TfToken &sourceType)
 {
     SdfAssetPath asset;
     if (shader.GetSourceAsset(&asset, sourceType)) {
-        return object(asset);
+        return nb::cast(asset);
     }
-    return object();
+    return nb::none();
 }
 
-static object
+static nb::object
 _WrapGetSourceAssetSubIdentifier(const UsdShadeNodeDefAPI &shader,
                     const TfToken &sourceType)
 {
     TfToken subIdentifier;
     if (shader.GetSourceAssetSubIdentifier(&subIdentifier, sourceType)) {
-        return object(subIdentifier);
+        return nb::cast(subIdentifier);
     }
-    return object();
+    return nb::none();
 }
 
-static object 
+static nb::object 
 _WrapGetSourceCode(const UsdShadeNodeDefAPI &shader,
                    const TfToken &sourceType)
 {
     std::string code;
     if (shader.GetSourceCode(&code, sourceType)) {
-        return object(code);
+        return nb::cast(code);
     }
-    return object();
+    return nb::none();
 }
 
 WRAP_CUSTOM {
@@ -199,32 +198,32 @@ WRAP_CUSTOM {
         .def("GetImplementationSource", &UsdShadeNodeDefAPI::GetImplementationSource)
         .def("SetShaderId", &UsdShadeNodeDefAPI::SetShaderId)
         .def("SetSourceAsset", &UsdShadeNodeDefAPI::SetSourceAsset,
-            (arg("sourceAsset"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("sourceAsset"), 
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("SetSourceAssetSubIdentifier",
             &UsdShadeNodeDefAPI::SetSourceAssetSubIdentifier,
-            (arg("subIdentifier"),
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("subIdentifier"),
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("SetSourceCode", &UsdShadeNodeDefAPI::SetSourceCode,
-            (arg("sourceCode"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("sourceCode"), 
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetShaderId", _WrapGetShaderId)
         .def("GetSourceAsset", _WrapGetSourceAsset, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceAssetSubIdentifier", _WrapGetSourceAssetSubIdentifier,
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceCode", _WrapGetSourceCode, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceTypes", 
              &UsdShadeNodeDefAPI::GetSourceTypes)
         .def("GetShaderNodeForShadingSystem", 
              &UsdShadeNodeDefAPI::GetShaderNodeForShadingSystem,
-             (arg("system")),
-             return_internal_reference<>())
+             nb::arg("system"),
+             nb::rv_policy::reference_internal)
         .def("GetShaderNodeForSourceType", 
              &UsdShadeNodeDefAPI::GetShaderNodeForSourceType,
-             (arg("sourceType")),
-             return_internal_reference<>())
+             nb::arg("sourceType"),
+             nb::rv_policy::reference_internal)
         ;
 }
 

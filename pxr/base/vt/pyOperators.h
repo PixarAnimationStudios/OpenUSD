@@ -10,6 +10,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
+#include "pxr/base/tf/pySafePython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -24,6 +28,7 @@ struct _ArrayPyOpHelp {
     static auto __sub__(T l, T r) { return l - r; }
     static auto __mul__(T l, T r) { return l * r; }
     static auto __div__(T l, T r) { return l / r; }
+    static auto __truediv__(T l, T r) { return l / r; }
     static auto __mod__(T l, T r) { return l % r; }
 };
 
@@ -35,6 +40,7 @@ struct _ArrayPyOpHelp<bool> {
     static bool __sub__(bool l, bool r) { return l ^ r; }
     static bool __mul__(bool l, bool r) { return l & r; }
     static bool __div__(bool l, bool r) { return l; }
+    static bool __truediv__(bool l, bool r) { return l; }
     static bool __mod__(bool l, bool r) { return false; }
 };
 
@@ -53,11 +59,11 @@ struct _ArrayPyOpHelp<bool> {
 // VtArray<RetElem>.
 #define VTOPERATOR_WRAP_PYTYPE_BASE(op, method, pytype, isRightVer)          \
     template <typename T> static                                             \
-    auto method##pytype(VtArray<T> vec, pytype obj)                          \
+    auto method##pytype(VtArray<T> vec, nanobind::pytype obj)                \
     {                                                                        \
         using RetElem = decltype(                                            \
             _ArrayPyOpHelp<T>:: op (std::declval<T>(), std::declval<T>()));  \
-        size_t length = len(obj);                                            \
+        size_t length = nanobind::len(obj);                                  \
         if (length != vec.size()) {                                          \
             TfPyThrowValueError("Non-conforming inputs for operator "        \
                                 #method);                                    \
@@ -65,15 +71,14 @@ struct _ArrayPyOpHelp<bool> {
         }                                                                    \
         VtArray<RetElem> ret(vec.size());                                    \
         for (size_t i = 0; i < length; ++i) {                                \
-            if (!extract<T>(obj[i]).check())                                 \
+            T elem{};                                                        \
+            if (!Vt_TryExtractElement<T>(obj[i], &elem))                     \
                 TfPyThrowValueError("Element is of incorrect type.");        \
             if (isRightVer) {                                                \
-                ret[i] = _ArrayPyOpHelp<T>:: op (                            \
-                    (T)extract<T>(obj[i]), vec[i]);                          \
+                ret[i] = _ArrayPyOpHelp<T>:: op (elem, vec[i]);              \
             }                                                                \
             else {                                                           \
-                ret[i] = _ArrayPyOpHelp<T>:: op (                            \
-                    vec[i], (T)extract<T>(obj[i]));                          \
+                ret[i] = _ArrayPyOpHelp<T>:: op (vec[i], elem);              \
             }                                                                \
         }                                                                    \
         return ret;                                                          \
@@ -104,27 +109,27 @@ struct _ArrayPyOpHelp<bool> {
     VTOPERATOR_WRAP_PYTYPE_R(lmethod,rmethod,list)                
 
 // to be used to actually declare the wrapping with def() on the class
-#define VTOPERATOR_WRAPDECLARE_BASE(op,method,rettype)      \
-    .def(self op self)                                      \
-    .def(self op Type())                                    \
-    .def(Type() op self)                                    \
-    .def(#method,method##tuple<rettype>)                    \
-    .def(#method,method##list<rettype>)                      
+#define VTOPERATOR_WRAPDECLARE_BASE(op,method,rettype)                         \
+    .def(nanobind::self op nanobind::self)                                     \
+    .def(nanobind::self op Type())                                             \
+    .def(Type() op nanobind::self)                                             \
+    .def(#method, method##tuple<rettype>, nanobind::is_operator())             \
+    .def(#method, method##list<rettype>, nanobind::is_operator())
 
-#define VTOPERATOR_WRAPDECLARE(op,lmethod,rmethod)          \
-    VTOPERATOR_WRAPDECLARE_BASE(op,lmethod,Type)            \
-    .def(#rmethod,rmethod##tuple<Type>)                     \
-    .def(#rmethod,rmethod##list<Type>)                
+#define VTOPERATOR_WRAPDECLARE(op,lmethod,rmethod)                             \
+    VTOPERATOR_WRAPDECLARE_BASE(op,lmethod,Type)                               \
+    .def(#rmethod, rmethod##tuple<Type>, nanobind::is_operator())              \
+    .def(#rmethod, rmethod##list<Type>, nanobind::is_operator())
 
 // array OP pytype
 // pytype OP array
 #define VTOPERATOR_WRAP_PYTYPE_BOOL(func,pytype,op)         \
         VTOPERATOR_WRAP_PYTYPE_BOOL_BASE(func,              \
-            VtArray<T> const &vec, pytype const &obj,       \
-            (vec[i] op (T)extract<T>(obj[i])) )             \
+            VtArray<T> const &vec, nanobind::pytype const &obj, \
+            (vec[i] op Vt_ExtractElementOrThrow<T>(obj[i])) ) \
         VTOPERATOR_WRAP_PYTYPE_BOOL_BASE(func,              \
-            pytype const &obj,VtArray<T> const &vec,        \
-            ((T)extract<T>(obj[i]) op vec[i]) )             
+            nanobind::pytype const &obj, VtArray<T> const &vec, \
+            (Vt_ExtractElementOrThrow<T>(obj[i]) op vec[i]) )             
 
 #define VTOPERATOR_WRAP_BOOL(func,op)                       \
         VTOPERATOR_WRAP_PYTYPE_BOOL(func,list,op)           \

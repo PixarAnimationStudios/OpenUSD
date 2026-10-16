@@ -8,19 +8,20 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/tsTest_Types.h"
 #include "pxr/base/ts/spline.h"
-#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/vt/value.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <sstream>
 #include <string>
 #include <cstdio>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 
 // Return a full-precision python repr for a double value.
@@ -60,24 +61,17 @@ _TestTsSplineToVtValueFromPython(VtValue val) {
     return val.UncheckedGet<TsSpline>();
 }
 
-void wrapTsTest_Types()
+void wrapTsTest_Types(nb::module_ &m)
 {
-    class_<TsTest_Sample>("TsTest_Sample")
-        // Default init is not suppressed, so automatically created.
-        .def(init<double, double>())
-        .def(init<const TsTest_Sample&>())
+    nb::class_<TsTest_Sample>(m, "TsTest_Sample")
+        .def(nb::init<>())
+        .def(nb::init<double, double>())
+        .def(nb::init<const TsTest_Sample&>())
         .def("__repr__", &_SampleRepr)
-        .def_readwrite("time", &TsTest_Sample::time)
-        .def_readwrite("value", &TsTest_Sample::value)
+        .def_rw("time", &TsTest_Sample::time)
+        .def_rw("value", &TsTest_Sample::value)
         ;
 
-    def("_TestTsSplineToVtValueFromPython", 
+    m.def("_TestTsSplineToVtValueFromPython", 
         _TestTsSplineToVtValueFromPython);
-
-    to_python_converter<
-        TsTest_SampleVec,
-        TfPySequenceToPython<TsTest_SampleVec>>();
-    TfPyContainerConversions::from_python_sequence<
-        TsTest_SampleVec,
-        TfPyContainerConversions::variable_capacity_policy>();
 }

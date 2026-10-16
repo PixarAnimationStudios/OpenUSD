@@ -7,8 +7,12 @@
 /// \file wrapStitchClips.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usd/usdUtils/stitchClips.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -17,16 +21,16 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
 template <typename T>
 T
-_ConvertWithDefault(const object obj, const T& def)
+_ConvertWithDefault(const nb::object obj, const T& def)
 {
-    if (!TfPyIsNone(obj)) {
-        return extract<T>(obj);
+    if (!obj.is_none()) {
+        return nb::cast<T>(obj);
     } 
         
     return def;
@@ -36,10 +40,10 @@ bool
 _ConvertStitchClips(const SdfLayerHandle& resultLayer,
                     const std::vector<std::string>& clipLayerFiles,
                     const SdfPath& clipPath,
-                    const object pyStartFrame,
-                    const object pyEndFrame,
-                    const object pyInterpolateMissingClipValues,
-                    const object pyClipSet)
+                    const nb::object pyStartFrame,
+                    const nb::object pyEndFrame,
+                    const nb::object pyInterpolateMissingClipValues,
+                    const nb::object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
@@ -74,9 +78,9 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
                            const double startFrame,
                            const double endFrame,
                            const double stride,
-                           const object pyActiveOffset,
-                           const object pyInterpolateMissingClipValues,
-                           const object pyClipSet)
+                           const nb::object pyActiveOffset,
+                           const nb::object pyInterpolateMissingClipValues,
+                           const nb::object pyClipSet)
 {
     const auto clipSet 
         = _ConvertWithDefault(pyClipSet, UsdClipsAPISetNames->default_);
@@ -93,49 +97,49 @@ _ConvertStitchClipTemplate(const SdfLayerHandle& resultLayer,
 
 } // anonymous namespace 
 
-void wrapStitchClips()
+void wrapStitchClips(nanobind::module_ &m)
 {
-    def("StitchClips",
+    m.def("StitchClips",
         _ConvertStitchClips, 
-        (arg("resultLayer"), 
-         arg("clipLayerFiles"), 
-         arg("clipPath"), 
-         arg("startFrame")=object(),
-         arg("endFrame")=object(),
-         arg("interpolateMissingClipValues")=object(),
-         arg("clipSet")=object()));
+        nb::arg("resultLayer"), 
+        nb::arg("clipLayerFiles"), 
+        nb::arg("clipPath"), 
+        nb::arg("startFrame").none() = nb::none(),
+        nb::arg("endFrame").none() = nb::none(),
+        nb::arg("interpolateMissingClipValues").none() = nb::none(),
+        nb::arg("clipSet").none() = nb::none());
 
-    def("StitchClipsTopology",
+    m.def("StitchClipsTopology",
         _ConvertStitchClipsTopology,
-        (arg("topologyLayer"),
-         arg("clipLayerFiles")));
+        nb::arg("topologyLayer"),
+        nb::arg("clipLayerFiles"));
 
-    def("StitchClipsManifest",
+    m.def("StitchClipsManifest",
         UsdUtilsStitchClipsManifest,
-        (arg("manifestLayer"), 
-         arg("topologyLayer"), 
-         arg("clipPath"),
-         arg("clipLayerFiles")));
+        nb::arg("manifestLayer"), 
+        nb::arg("topologyLayer"), 
+        nb::arg("clipPath"),
+        nb::arg("clipLayerFiles"));
 
-    def("StitchClipsTemplate",
+    m.def("StitchClipsTemplate",
         _ConvertStitchClipTemplate,
-        (arg("resultLayer"),
-         arg("topologyLayer"),
-         arg("manifestLayer"),
-         arg("clipPath"),
-         arg("templatePath"),
-         arg("startTimeCode"),
-         arg("endTimeCode"),
-         arg("stride"),
-         arg("activeOffset")=object(),
-         arg("interpolateMissingClipValues")=object(),
-         arg("clipSet")=object()));
+        nb::arg("resultLayer"),
+        nb::arg("topologyLayer"),
+        nb::arg("manifestLayer"),
+        nb::arg("clipPath"),
+        nb::arg("templatePath"),
+        nb::arg("startTimeCode"),
+        nb::arg("endTimeCode"),
+        nb::arg("stride"),
+        nb::arg("activeOffset").none() = nb::none(),
+        nb::arg("interpolateMissingClipValues").none() = nb::none(),
+        nb::arg("clipSet").none() = nb::none());
 
-    def("GenerateClipTopologyName",
+    m.def("GenerateClipTopologyName",
         _ConvertGenerateClipTopologyName,
-        (arg("rootLayerName")));
+        nb::arg("rootLayerName"));
 
-    def("GenerateClipManifestName",
+    m.def("GenerateClipManifestName",
         UsdUtilsGenerateClipManifestName,
-        (arg("rootLayerName")));
+        nb::arg("rootLayerName"));
 }

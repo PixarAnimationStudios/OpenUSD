@@ -7,49 +7,50 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUI/objectHints.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdUIObjectHints()
+void wrapUsdUIObjectHints(nanobind::module_ &m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "HintKeys", UsdUIHintKeys, USDUI_HINT_KEYS);
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "HintKeys", UsdUIHintKeys, USDUI_HINT_KEYS);
 
     using This = UsdUIObjectHints;
 
-    class_<This> clsObj("ObjectHints");
+    nb::class_<This> clsObj(m, "ObjectHints");
     clsObj
-        .def(init<UsdObject>(arg("obj")))
+        .def(nb::init<>())
+        .def(nb::init<const UsdObject &>(), nb::arg("obj"))
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("GetObject", &This::GetObject,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetDisplayName", &This::GetDisplayName)
         .def("SetDisplayName", &This::SetDisplayName,
-             arg("name"))
+             nb::arg("name"))
 
         .def("GetHidden", &This::GetHidden)
         .def("SetHidden", &This::SetHidden,
-             arg("hidden"))
+             nb::arg("hidden"))
         ;
 
     TfPyRegisterStlSequencesFromPython<This>();
-    to_python_converter<
-        std::vector<This>,
-        TfPySequenceToPython<std::vector<This>>>();
 }

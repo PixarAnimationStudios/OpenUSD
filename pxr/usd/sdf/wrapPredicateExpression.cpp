@@ -10,16 +10,12 @@
 #include "pxr/base/tf/pySignatureExt.h" // wrap lvalue-ref-qualified mem fns.
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 #include "pxr/usd/sdf/predicateExpression.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/suite/indexing/vector_indexing_suite.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 using PredExpr = SdfPredicateExpression;
 
@@ -34,40 +30,41 @@ _Repr(SdfPredicateExpression const &self) {
     }
 }
                            
-void wrapPredicateExpression()
+void wrapPredicateExpression(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
+
     TfPyFunctionFromPython<void (PredExpr::Op, int)> {};
     TfPyFunctionFromPython<void (PredExpr::FnCall const &)> {};
     
-    scope s = class_<PredExpr>("PredicateExpression")
-        .def(init<PredExpr const &>())
-        .def(init<std::string, optional<std::string> >(
-                 args("exprString", "context")))
+    nb::class_<PredExpr> s(m, "PredicateExpression");
+    s
+        .def(nb::init<>())
+        .def(nb::init<PredExpr const &>())
+        .def(nb::init<std::string, std::string>(),
+             nb::arg("exprString"), nb::arg("context") = std::string())
 
-        .def("MakeNot",
+        .def_static("MakeNot",
              +[](PredExpr const &r) {
                  return PredExpr::MakeNot(PredExpr(r));
-             }, arg("right"))
-        .staticmethod("MakeNot")
+             }, nb::arg("right"))
 
-        .def("MakeOp",
+        .def_static("MakeOp",
              +[](PredExpr::Op op, PredExpr const &r, PredExpr const &l) {
                  return PredExpr::MakeOp(op, PredExpr(l), PredExpr(r));
-             }, (arg("op"), arg("left"), arg("right")))
-        .staticmethod("MakeOp")
+             }, nb::arg("op"), nb::arg("left"), nb::arg("right"))
 
-        .def("MakeCall",
+        .def_static("MakeCall",
              +[](PredExpr::FnCall const &call) {
                  return PredExpr::MakeCall(PredExpr::FnCall(call));
-             }, (arg("call")))
-        .staticmethod("MakeCall")
+             }, nb::arg("call"))
 
         .def("Walk",
              +[](PredExpr const &expr,
                  std::function<void (PredExpr::Op, int)> logic,
                  std::function<void (PredExpr::FnCall const &)> call) {
                  return expr.Walk(logic, call);
-             }, (arg("logic"), arg("call")))
+             }, nb::arg("logic"), nb::arg("call"))
 
         .def("GetText", &PredExpr::GetText)
 
@@ -76,39 +73,41 @@ void wrapPredicateExpression()
         .def("__repr__", &_Repr)
         .def("__str__", &PredExpr::GetText)
         .def("__hash__", +[](PredExpr const &e) { return TfHash{}(e); })
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("GetParseError",
-             static_cast<std::string const &(PredExpr::*)() const &>(
-                 &PredExpr::GetParseError),
-             return_value_policy<return_by_value>())
+             +[](PredExpr const &self) -> std::string const & {
+                 return self.GetParseError();
+             },
+             nb::rv_policy::copy)
         ;
 
-    TfPyWrapEnum<PredExpr::Op>();
+    TfNbWrapEnum<PredExpr::Op>(s);
 
     {
-        scope s = class_<PredExpr::FnCall>("FnCall")
-            .def(init<PredExpr::FnCall const &>())
-            .def_readwrite("kind", &PredExpr::FnCall::kind)
-            .def_readwrite("funcName", &PredExpr::FnCall::funcName)
-            .def_readwrite("args", &PredExpr::FnCall::args)
+        nb::class_<PredExpr::FnCall> fnCallCls(s, "FnCall");
+        fnCallCls
+            .def(nb::init<>())
+            .def(nb::init<PredExpr::FnCall const &>())
+            .def_rw("kind", &PredExpr::FnCall::kind)
+            .def_rw("funcName", &PredExpr::FnCall::funcName)
+            .def_rw("args", &PredExpr::FnCall::args)
             .def("__hash__",
                  +[](PredExpr::FnCall const &c) { return TfHash{}(c); })
-            .def(self == self)
-            .def(self != self)
+            .def(nb::self == nb::self)
+            .def(nb::self != nb::self)
             ;
-        TfPyWrapEnum<PredExpr::FnCall::Kind>();
+        TfNbWrapEnum<PredExpr::FnCall::Kind>(fnCallCls);
     }
 
-    class_<PredExpr::FnArg>("FnArg")
-        .def(init<PredExpr::FnArg const &>())
-        .def("Positional", PredExpr::FnArg::Positional, arg("value"))
-        .staticmethod("Positional")
-        .def("Keyword", PredExpr::FnArg::Keyword, (arg("name"), arg("value")))
-        .staticmethod("Keyword")
-        .def_readwrite("argName", &PredExpr::FnArg::argName)
-        .add_property("value",
+    nb::class_<PredExpr::FnArg>(s, "FnArg")
+        .def(nb::init<>())
+        .def(nb::init<PredExpr::FnArg const &>())
+        .def_static("Positional", &PredExpr::FnArg::Positional, nb::arg("value"))
+        .def_static("Keyword", &PredExpr::FnArg::Keyword, nb::arg("name"), nb::arg("value"))
+        .def_rw("argName", &PredExpr::FnArg::argName)
+        .def_prop_rw("value",
                       +[](PredExpr::FnArg const &arg) {
                           return arg.value;
                       },
@@ -117,11 +116,7 @@ void wrapPredicateExpression()
                       }
             )
         .def("__hash__", +[](PredExpr::FnArg const &a) { return TfHash{}(a); })
-        .def(self == self)
-        .def(self != self)
-        ;
-
-    class_<std::vector<PredExpr::FnArg>>("_PredicateExpressionFnArgVector")
-        .def(vector_indexing_suite<std::vector<PredExpr::FnArg>>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
 }

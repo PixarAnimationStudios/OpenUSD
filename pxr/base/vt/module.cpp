@@ -19,7 +19,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Array);
+    TF_WRAP_NB(Array);
     TF_WRAP(ArrayDualQuaternion);
     TF_WRAP(ArrayFloat);
     TF_WRAP(ArrayIntegral);
@@ -35,7 +35,7 @@ TF_WRAP_MODULE
     // Add python buffer protocol support to VtArray.
     Vt_AddBufferProtocolSupportToVtArrays();
 
-    TF_WRAP(Dictionary);
-    TF_WRAP(Value);
-    TF_WRAP(ValueRef);
+    TF_WRAP_NB(Dictionary);
+    TF_WRAP_NB(Value);
+    TF_WRAP_NB(ValueRef);
 }

@@ -9,12 +9,6 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/type_id.hpp"
 
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -25,7 +19,6 @@ using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -69,19 +62,23 @@ _GetLongMin() {
 
 } // anonymous namespace 
 
-void wrapStringUtils() {
-    def("StringSplit", TfStringSplit, return_value_policy<TfPySequenceToList>());
-    def("DictionaryStrcmp", DictionaryStrcmp);
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-    def("IsValidIdentifier", TfIsValidIdentifier);
-    def("MakeValidIdentifier", TfMakeValidIdentifier);
+void wrapStringUtils(nanobind::module_& m) {
+    m.def("StringSplit", TfStringSplit);
+    m.def("DictionaryStrcmp", DictionaryStrcmp);
 
-    def("StringToDouble",
+    m.def("IsValidIdentifier", TfIsValidIdentifier);
+    m.def("MakeValidIdentifier", TfMakeValidIdentifier);
+
+    m.def("StringToDouble",
         (double (*)(const std::string &))TfStringToDouble);
-    def("StringToLong", _StringToLong);
-    def("StringToULong", _StringToULong);
+    m.def("StringToLong", _StringToLong);
+    m.def("StringToULong", _StringToULong);
 
-    def("_GetULongMax", _GetULongMax);
-    def("_GetLongMax", _GetLongMax);
-    def("_GetLongMin", _GetLongMin);
+    m.def("_GetULongMax", _GetULongMax);
+    m.def("_GetLongMax", _GetLongMax);
+    m.def("_GetLongMin", _GetLongMin);
 }

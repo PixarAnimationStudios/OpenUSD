@@ -16,24 +16,21 @@
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/weakBase.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/converter/registry.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/has_back_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 using namespace std;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -45,95 +42,17 @@ namespace {
 static TfType
 _GetTfTypeFromPython(PyObject *p)
 {
-    if (PyBytes_Check(p) || PyUnicode_Check(p))
-        return TfType::FindByName( extract<string>(p)() );
+    if (nanobind::isinstance<TfType>(nanobind::handle(p)))
+        return *nanobind::inst_ptr<TfType>(p);
+    if (PyBytes_Check(p))
+        return TfType::FindByName(
+            std::string(PyBytes_AsString(p), PyBytes_Size(p)));
+    if (PyUnicode_Check(p))
+        return TfType::FindByName(nanobind::cast<string>(nanobind::handle(p)));
     else
-        return TfType::FindByPythonClass( object(borrowed(p)) );
+        return TfType::FindByPythonClass(
+            TfPyObjWrapper(nanobind::borrow<nanobind::object>(p)));
 }
-
-// A from-Python converter that uses the _GetTfTypeFromPython function.
-struct _TfTypeFromPython
-{
-    _TfTypeFromPython() {
-        converter::registry::insert(&_Convertible, &_Construct,
-                                    type_id<TfType>());
-    }
-private:
-    static void* _Convertible(PyObject *p) {
-        if (_GetTfTypeFromPython(p).IsUnknown()) {
-            TfPyThrowTypeError(
-                TfStringPrintf("cannot convert %s to TfType; has that type "
-                               "been defined as a TfType?",
-                               TfPyRepr( object(borrowed(p) ) ).c_str()
-                              ) );
-        }
-        return p;
-    }
-
-    static void _Construct(PyObject *p,
-                           converter::rvalue_from_python_stage1_data *data)
-    {
-        void* const storage = ((converter::rvalue_from_python_storage
-                                <TfType>*)data)->storage.bytes;
-
-        TfType type = _GetTfTypeFromPython(p);
-        new (storage) TfType(type);
-        data->convertible = storage;
-    }
-};
-
-////////////////////////////////////////////////////////////////////////
-// Base C++ class to test Python subclassing.
-#if 0
-
-class Tf_TestCppBase : public TfWeakBase
-{
-public:
-    virtual ~Tf_TestCppBase() {}
-//    virtual int TestVirtual() = 0;
-};
-
-// Polymorphic wrapper.
-class PolymorphicTestCppBase :
-    public Tf_TestCppBase,
-    public TfType::PyPolymorphicBase
-{
-public:
-    static TfWeakPtr<PolymorphicTestCppBase> New() {
-        // XXX leaks.
-        return TfCreateWeakPtr(new PolymorphicTestCppBase());
-    }
-};
-
-TF_REGISTRY_FUNCTION(TfType)
-{
-    TfType::Define<Tf_TestCppBase>();
-}
-
-// Helper function to test TfType::Find(obj) on Python subclasses of
-// wrapped C++ classes.
-TfType
-_TestFindType( Tf_TestCppBase & cppBase )
-{
-    printf("_TestFindType with '%s'\n",
-           ArchGetDemangled(typeid(cppBase)).c_str());
-    return TfType::Find(cppBase);
-}
-
-static void wrapTestCppBase()
-{
-    typedef Tf_TestCppBase This;
-    typedef PolymorphicTestCppBase PolymorphicThis;
-
-    class_<PolymorphicThis, TfWeakPtr<PolymorphicThis>, noncopyable>
-        ("TestCppBase", no_init)
-        .def( TfPyWeakPtr() )
-        .def( TfMakePyConstructor(&PolymorphicThis::New))
-        ;
-
-    def("_TestFindType", ::_TestFindType);
-}
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -199,7 +118,7 @@ _GetAllAncestorTypes( TfType & t )
 }
 
 static TfType
-_FindByPythonClass(const pxr_boost::python::object & classObj)
+_FindByPythonClass(const nanobind::object & classObj)
 {
     // Guard against the potentially common mistake of calling Find() with a
     // string typename.  Rather than returning the unknown type (assuming
@@ -210,7 +129,7 @@ _FindByPythonClass(const pxr_boost::python::object & classObj)
                            "want Tf.Type.FindByName() instead");
     }
 
-    return TfType::FindByPythonClass(classObj);
+    return TfType::FindByPythonClass(TfPyObjWrapper(classObj));
 }
 
 static void
@@ -235,81 +154,131 @@ _DumpTypeHierarchy( TfType t )
 
 } // anonymous namespace
 
-void wrapType()
+static nanobind::tuple
+_VecToTuple(std::vector<TfType> const& v) {
+    PyObject* t = PyTuple_New(v.size());
+    for (size_t i = 0; i < v.size(); ++i) {
+        PyTuple_SET_ITEM(t, i, nanobind::cast(v[i]).release().ptr());
+    }
+    return nanobind::steal<nanobind::tuple>(t);
+}
+
+static nanobind::tuple
+_StrVecToTuple(std::vector<std::string> const& v) {
+    PyObject* t = PyTuple_New(v.size());
+    for (size_t i = 0; i < v.size(); ++i) {
+        PyTuple_SET_ITEM(t, i, nanobind::cast(v[i]).release().ptr());
+    }
+    return nanobind::steal<nanobind::tuple>(t);
+}
+
+void wrapType(nanobind::module_& m)
 {
     typedef TfType This;
+    namespace nb = nanobind;
 
-    class_<This> classDef( "Type" );
+    nb::class_<This> classDef(m, "Type");
     classDef
-        .def( init<const TfType &>() )
+        .def(nb::init<>())
+        .def(nb::init<const TfType &>())
+        .def("__init__", [](This *self, nb::handle obj) {
+            TfType t = _GetTfTypeFromPython(obj.ptr());
+            if (t.IsUnknown()) {
+                TfPyThrowTypeError(
+                    TfStringPrintf("cannot convert %s to TfType; has that type "
+                                   "been defined as a TfType?",
+                                   TfPyRepr(obj).c_str()));
+            }
+            new (self) This(t);
+        })
 
-        .def(!self)
-        .def( self == self )
-        .def( self != self )
-        .def( self < self )
-        .def( self > self )
-        .def( self <= self )
-        .def( self >= self )
-        .def( "__repr__", &_Repr)
-        .def( "__hash__", &_TypeHash)
+        .def("__bool__", [](const This &self) { return !(!self); })
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self >= nb::self)
+        .def("__repr__", &_Repr)
+        .def("__hash__", &_TypeHash)
 
-        .def( "GetRoot", &_GetRoot)
-        .staticmethod("GetRoot")
+        .def_static("GetRoot", &_GetRoot)
 
-        .def( "Find", &_FindByPythonClass)
-        .staticmethod("Find")
+        .def_static("Find", [](nb::handle classObj) {
+            return _FindByPythonClass(nb::borrow<nb::object>(classObj));
+        })
 
-        .def( "FindByName", &_FindByName)
-        .staticmethod("FindByName")
+        .def_static("FindByName", &_FindByName)
+        .def_static("FindByName", [](nb::bytes name) {
+            return _FindByName(std::string(name.c_str(), name.size()));
+        })
 
         .def("FindDerivedByName", &_FindDerivedByName)
+        .def("FindDerivedByName", [](TfType &t, nb::bytes name) {
+            return _FindDerivedByName(
+                t, std::string(name.c_str(), name.size()));
+        })
 
-        .def("IsA", &_IsA )
+        .def("IsA", &_IsA)
 
-        .add_property("isUnknown", &This::IsUnknown)
-        .add_property("isEnumType", &This::IsEnumType)
-        .add_property("isPlainOldDataType", &This::IsPlainOldDataType)
-        .add_property("sizeof", &This::GetSizeof)
+        .def_prop_ro("isUnknown", &This::IsUnknown)
+        .def_prop_ro("isEnumType", &This::IsEnumType)
+        .def_prop_ro("isPlainOldDataType", &This::IsPlainOldDataType)
+        .def_prop_ro("sizeof", &This::GetSizeof)
 
-        .add_property("typeName",
-            make_function( &This::GetTypeName,
-                           return_value_policy<return_by_value>() ) )
+        .def_prop_ro("typeName", &This::GetTypeName)
 
-        .add_property("pythonClass", &This::GetPythonClass)
+        .def_prop_ro("pythonClass", [](const This &self) {
+            return nb::borrow<nb::object>(self.GetPythonClass().Get().ptr());
+        })
 
-        .add_property("baseTypes",
-            make_function( &This::GetBaseTypes,
-                return_value_policy< TfPySequenceToTuple >() ) )
-        .add_property("derivedTypes",
-            make_function( &This::GetDirectlyDerivedTypes,
-                return_value_policy< TfPySequenceToTuple >() ) )
+        .def_prop_ro("baseTypes", [](const This &self) {
+            return _VecToTuple(self.GetBaseTypes());
+        })
+        .def_prop_ro("derivedTypes", [](const This &self) {
+            return _VecToTuple(self.GetDirectlyDerivedTypes());
+        })
 
-        .def("GetAliases", &This::GetAliases,
-             return_value_policy< TfPySequenceToTuple >() )
-        .def("GetAllDerivedTypes", &_GetAllDerivedTypes,
-             return_value_policy< TfPySequenceToTuple >() )
-        .def("GetAllAncestorTypes", &_GetAllAncestorTypes,
-             return_value_policy< TfPySequenceToTuple >() )
+        .def("GetAliases", [](const This &self, TfType derivedType) {
+            return _StrVecToTuple(self.GetAliases(derivedType));
+        })
+        .def("GetAllDerivedTypes", [](This &self) {
+            return _VecToTuple(_GetAllDerivedTypes(self));
+        })
+        .def("GetAllAncestorTypes", [](This &self) {
+            return _VecToTuple(_GetAllAncestorTypes(self));
+        })
 
-        .def("Define", &TfType_DefinePythonTypeAndBases)
-        .staticmethod("Define")
+        .def_static("Define", [](nb::handle typeObj) {
+            return TfType_DefinePythonTypeAndBases(
+                nb::borrow<nb::object>(typeObj));
+        })
 
-        .def("AddAlias", (void (TfType::*)(TfType, const std::string &) const)
-                         &This::AddAlias)
+        .def("AddAlias", [](const This &self, TfType base, const std::string &name) {
+            self.AddAlias(base, name);
+        })
+        .def("AddAlias", [](const This &self, TfType base, nb::bytes name) {
+            self.AddAlias(base, std::string(name.c_str(), name.size()));
+        })
 
-        .def("_DumpTypeHierarchy", &_DumpTypeHierarchy,
+        .def_static("_DumpTypeHierarchy", &_DumpTypeHierarchy,
             "_DumpTypeHierarchy(TfType): "
             "Diagnostic method to print the type hierarchy beneath a given "
             "TfType.")
-        .staticmethod("_DumpTypeHierarchy")
         ;
+
+    nanobind::detail::implicitly_convertible(
+        NB_CTX,
+        &typeid(This),
+        (void *)+[](PyTypeObject *, PyObject *,
+                    nanobind::detail::cleanup_list *) noexcept -> bool {
+            return true;
+        },
+        true);
 
     // Create an attribute to use for the repr() for the Unknown type.
     // We do not wrap the GetUnknownType() method, favoring this instead.
     classDef.attr("Unknown") = TfType();
-
-    // Register from-python conversions.
-    _TfTypeFromPython();
 
     // Handle a sequence of TfTypes
     TfPyContainerConversions::from_python_sequence<
@@ -319,8 +288,4 @@ void wrapType()
     TfPyContainerConversions::from_python_sequence<
         std::set<TfType> , 
         TfPyContainerConversions::set_policy >();
-
-#if 0
-    wrapTestCppBase();
-#endif
 }

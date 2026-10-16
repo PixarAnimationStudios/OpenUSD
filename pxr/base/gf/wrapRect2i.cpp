@@ -11,18 +11,11 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -37,37 +30,36 @@ static size_t __hash__(GfRect2i const &self) {
 
 } // anonymous namespace 
 
-void wrapRect2i()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+
+void wrapRect2i(nanobind::module_ &m)
 {    
     using This = GfRect2i;
 
-    object getMin = make_function(&This::GetMin,
-                                    return_value_policy<return_by_value>());
+    nanobind::class_<This>(m, "Rect2i")
+        .def(nanobind::init<>())
+        .def(nanobind::init<const This &>())
+        .def(nanobind::init<const GfVec2i &, const GfVec2i &>())
+        .def(nanobind::init<const GfVec2i &, int, int>())
 
-    object getMax = make_function(&This::GetMax,
-                                     return_value_policy<return_by_value>());
-
-    class_<This>( "Rect2i", init<>() )
-        .def(init<const This &>())
-        .def(init<const GfVec2i &, const GfVec2i &>())
-        .def(init<const GfVec2i &, int, int >())
-
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
         .def("IsNull", &This::IsNull)
         .def("IsEmpty", &This::IsEmpty)
         .def("IsValid", &This::IsValid)
 
-        .add_property("min", getMin, &This::SetMin)
-        .add_property("max", getMax, &This::SetMax)
+        .def_prop_rw("min", &This::GetMin, &This::SetMin, nanobind::rv_policy::copy)
+        .def_prop_rw("max", &This::GetMax, &This::SetMax, nanobind::rv_policy::copy)
 
-        .add_property("minX", &This::GetMinX, &This::SetMinX) 
-        .add_property("maxX", &This::GetMaxX, &This::SetMaxX) 
-        .add_property("minY", &This::GetMinY, &This::SetMinY) 
-        .add_property("maxY", &This::GetMaxY, &This::SetMaxY) 
+        .def_prop_rw("minX", &This::GetMinX, &This::SetMinX) 
+        .def_prop_rw("maxX", &This::GetMaxX, &This::SetMaxX) 
+        .def_prop_rw("minY", &This::GetMinY, &This::SetMinY) 
+        .def_prop_rw("maxY", &This::GetMaxY, &This::SetMaxY) 
 
-        .def("GetMin", getMin)
-        .def("GetMax", getMax)
+        .def("GetMin", &This::GetMin, nanobind::rv_policy::copy)
+        .def("GetMax", &This::GetMax, nanobind::rv_policy::copy)
 
         .def("GetMinX", &This::GetMinX)
         .def("GetMaxX", &This::GetMaxX)
@@ -88,23 +80,20 @@ void wrapRect2i()
         .def("GetSize", &This::GetSize)
         .def("GetWidth", &This::GetWidth)
 
-        .def("Translate", &This::Translate, return_self<>())
+        .def("Translate", &This::Translate, nanobind::rv_policy::reference)
         .def("GetNormalized", &This::GetNormalized)
         .def("GetIntersection", &This::GetIntersection)
         .def("GetUnion", &This::GetUnion)
 
-        .def("Contains", &This::Contains )
+        .def("Contains", &This::Contains)
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self += self )
-        .def( self + self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self + nanobind::self)
         
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
-    
 }

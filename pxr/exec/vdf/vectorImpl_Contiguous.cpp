@@ -12,7 +12,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define VDF_INSTANTIATE_VECTOR_IMPL_CONTIGUOUS(type)    \
-    template class Vdf_VectorImplContiguous<type>;
+    template class VDF_API Vdf_VectorImplContiguous<type>;
 VDF_FOR_EACH_COMMON_TYPE(VDF_INSTANTIATE_VECTOR_IMPL_CONTIGUOUS)
 #undef VDF_INSTANTIATE_VECTOR_IMPL_CONTIGUOUS
 

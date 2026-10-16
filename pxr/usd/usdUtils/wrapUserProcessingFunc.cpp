@@ -6,41 +6,44 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/base/tf/pyFunction.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
 
 #include "pxr/usd/usdUtils/userProcessingFunc.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapUserProcessingFunc()
+void wrapUserProcessingFunc(nanobind::module_ &m)
 {
     TfPyFunctionFromPython<UsdUtilsProcessingFunc>();
     
     typedef UsdUtilsDependencyInfo This;
 
-    class_<This>("DependencyInfo", init<>())
+    nb::class_<This>(m, "DependencyInfo")
         // Note: we purposely do not expose the constructor which allows for
         // providing expression variables.  These values are currently only
         // specified by the asset localization system during dependency
         // traversal.
-        .def(init<const This&>())
-        .def(init<const std::string &>())
-        .def(init<const std::string &, const std::vector<std::string>>())
-        .add_property("assetPath", make_function(&This::GetAssetPath,
-            return_value_policy<return_by_value>()))
-        .add_property("dependencies", make_function(&This::GetDependencies,
-            return_value_policy<TfPySequenceToList>()))
-        .add_property("rawAssetPath", make_function(&This::GetRawAssetPath,
-            return_value_policy<return_by_value>()))
-        .add_property("expressionVariables", 
-            make_function(&This::GetExpressionVariables,
-            return_value_policy<return_by_value>()))
+        .def(nb::init<>())
+        .def(nb::init<const This&>())
+        .def(nb::init<const std::string &>())
+        .def(nb::init<const std::string &, const std::vector<std::string>>())
+        .def_prop_ro("assetPath", &This::GetAssetPath,
+            nb::rv_policy::copy)
+        .def_prop_ro("dependencies", [](const This& self) {
+            return TfNbSequenceToList(self.GetDependencies());
+        })
+        .def_prop_ro("rawAssetPath", &This::GetRawAssetPath,
+            nb::rv_policy::copy)
+        .def_prop_ro("expressionVariables", &This::GetExpressionVariables,
+            nb::rv_policy::copy)
     ;
 }

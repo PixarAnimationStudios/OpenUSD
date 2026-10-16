@@ -12,7 +12,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     // Base classes must precede derived classes.
-    TF_WRAP(UsdRiRmanUtilities);
+    TF_WRAP_NB(UsdRiRmanUtilities);
 
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

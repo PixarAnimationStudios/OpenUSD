@@ -12,18 +12,13 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include "pxr/external/boost/python/override.hpp"
-#include "pxr/external/boost/python/type.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfPyMethodResult
-///
-/// A reimplementation of pxr_boost::python::detail::method_result.
-///
-/// This class is reimplemented from the boost class simply because the
-/// provided class only allows construction from it's friended class
-/// pxr_boost::python::override, which we also reimplement below.
 ///
 /// \see TfPyOverride
 class TfPyMethodResult
@@ -32,7 +27,7 @@ private:
     /// Clients must hold GIL to construct.
     friend class TfPyOverride;
     explicit TfPyMethodResult(PyObject* x)
-    : m_obj(x)
+    : m_obj(nanobind::steal<nanobind::object>(x))
     {}
 
 public:
@@ -49,48 +44,35 @@ public:
     operator T()
     {
         TfPyLock lock;
-        pxr_boost::python::converter::return_from_python<T> converter;
-        return converter(m_obj.release());
+        return nanobind::cast<T>(m_obj);
     }
 
     template <class T>
     operator T&() const
     {
         TfPyLock lock;
-        pxr_boost::python::converter::return_from_python<T&> converter;
-        return converter(
-            const_cast<pxr_boost::python::handle<>&>(m_obj).release());
+        return nanobind::cast<T&>(m_obj);
     }
 
     template <class T>
-    T as(pxr_boost::python::type<T>* = 0)
+    T as()
     {
         TfPyLock lock;
-        pxr_boost::python::converter::return_from_python<T> converter;
-        return converter(m_obj.release());
+        return nanobind::cast<T>(m_obj);
     }
 
     template <class T>
-    T unchecked(pxr_boost::python::type<T>* = 0)
+    T unchecked()
     {
         TfPyLock lock;
-        return pxr_boost::python::extract<T>(m_obj)();
+        return nanobind::cast<T>(m_obj);
     }
 
 private:
-    mutable pxr_boost::python::handle<> m_obj;
+    mutable nanobind::object m_obj;
 };
 
 /// \class TfPyOverride
-///
-/// A reimplementation of pxr_boost::python::override.
-///
-/// This class is reimplemented from the boost class simply because the
-/// provided class only allows construction from, ultimately,
-/// pxr_boost::python::wrapper::get_override(). Unfortunately, that method 
-/// returns the wrong result when the overridden function we are asking about
-/// lives not on the directly wrapped C++ class, but a wrapped ancestor.
-/// So we provide our own version, TfPyOverride, with a public constructor.
 ///
 /// Note that clients must have the python GIL when constructing a
 /// TfPyOverride object.
@@ -106,8 +88,8 @@ class TfPyOverride : public TfPyObjWrapper
 
 public:
     /// Clients must hold the GIL to construct.
-    TfPyOverride(pxr_boost::python::handle<> callable)
-        : TfPyObjWrapper(pxr_boost::python::object(callable))
+    TfPyOverride(nanobind::handle callable)
+        : TfPyObjWrapper(nanobind::borrow<nanobind::object>(callable))
     {}
 
     /// Call the override.
@@ -126,7 +108,7 @@ public:
             PyEval_CallFunction(
                 this->ptr(),
                 const_cast<char*>(pyCallFormat),
-                pxr_boost::python::converter::arg_to_python<Args>(args).get()...));
+                nanobind::cast(args).ptr()...));
         return x;
     }
 };

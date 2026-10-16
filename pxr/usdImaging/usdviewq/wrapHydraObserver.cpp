@@ -4,6 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdviewq/hydraObserver.h"
 #include "pxr/imaging/hd/dataSource.h"
@@ -11,67 +18,61 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/token.h"
 
-
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static
-object
+nb::object
 _WrapGetPrim(UsdviewqHydraObserver &self, const SdfPath &primPath)
 {
     HdSceneIndexPrim prim = self.GetPrim(primPath);
-    list result;
+    nb::list result;
     result.append(prim.primType);
 
     if (prim.dataSource) {
         result.append(prim.dataSource);
     } else {
-        result.append(object());
+        result.append(nb::none());
     }
     return result;
 }
 
 static
-object _GetPendingNotices(UsdviewqHydraObserver &self)
+nb::object _GetPendingNotices(UsdviewqHydraObserver &self)
 {
     UsdviewqHydraObserver::NoticeEntryVector noticeEntries = self.GetPendingNotices();
 
-    list result;
+    nb::list result;
 
     for (const UsdviewqHydraObserver::NoticeEntry &noticeEntry : noticeEntries) {
         if (!noticeEntry.added.empty()) {
-            list entries;
+            nb::list entries;
             for (const HdSceneIndexObserver::AddedPrimEntry &entry :
                     noticeEntry.added) {
-                entries.append(make_tuple(entry.primPath, entry.primType));
+                entries.append(nb::make_tuple(entry.primPath, entry.primType));
             }
-            result.append(make_tuple("added", entries));
+            result.append(nb::make_tuple("added", entries));
         }
 
         if (!noticeEntry.removed.empty()) {
-            list entries;
+            nb::list entries;
             for (const HdSceneIndexObserver::RemovedPrimEntry &entry :
                     noticeEntry.removed) {
                 entries.append(entry.primPath);
             }
-            result.append(make_tuple("removed", entries));
+            result.append(nb::make_tuple("removed", entries));
         }
 
         if (!noticeEntry.dirtied.empty()) {
-            list entries;
+            nb::list entries;
             for (const HdSceneIndexObserver::DirtiedPrimEntry &entry :
                     noticeEntry.dirtied) {
-                entries.append(make_tuple(entry.primPath, entry.dirtyLocators));
+                entries.append(nb::make_tuple(entry.primPath, entry.dirtyLocators));
             }
-            result.append(make_tuple("dirtied", entries));
+            result.append(nb::make_tuple("dirtied", entries));
         }
     }
 
@@ -91,44 +92,43 @@ _WrapLocatorSetAsString(const HdDataSourceLocatorSet &self)
 }
 
 static
-object
+nb::object
 _CastDataSource(const HdDataSourceBaseHandle &ds)
 {
     if (auto cds = HdContainerDataSource::Cast(ds)) {
-        return object(cds);
+        return nb::cast(cds);
     }
 
     if (auto sds = HdSampledDataSource::Cast(ds)) {
-        return object(sds);
+        return nb::cast(sds);
     }
 
     if (auto vds = HdVectorDataSource::Cast(ds)) {
-        return object(vds);
+        return nb::cast(vds);
     }
 
     if (ds) {
-        return object(ds);
+        return nb::cast(ds);
     }
 
-    return object();
+    return nb::none();
 }
 
 static
-object
+nb::object
 _WrapContainerDataSourceGet(
     const HdContainerDataSourceHandle &self,
     const TfToken &name)
 {
     if (!self) {
-        return object();
+        return nb::none();
     }
     HdDataSourceBaseHandle ds = self->Get(name);
     return _CastDataSource(ds);
 }
 
-
 static
-object
+nb::object
 _WrapContainerDataSourceGetGetFromLocator(
     const HdContainerDataSourceHandle &self,
     const HdDataSourceLocator &loc)
@@ -149,40 +149,40 @@ _WrapVectorDataSourceGetNumElements(const HdVectorDataSourceHandle &self)
 }
 
 static
-object
+nb::object
 _WrapVectorDataSourceGetElement(const HdVectorDataSourceHandle &self, size_t i)
 {
     if (!self) {
-        return object();
+        return nb::none();
     }
     HdDataSourceBaseHandle ds = self->GetElement(i);
     return _CastDataSource(ds);
 }
 
 static
-object
+nb::object
 _WrapSampledDataSourceGetValue(const HdSampledDataSourceHandle &self,
     HdSampledDataSource::Time shutterOffset)
 {
     if (!self) {
-        return object();
+        return nb::none();
     }
 
     VtValue v = self->GetValue(shutterOffset);
 
     if (v.IsEmpty()) {
-        return object();
+        return nb::none();
     }
 
     try {
-        return object(v);
+        return nb::cast(v);
     } catch (...) {
         // if we cannot convert, clear the python state and produce a string
         // as the value
         PyErr_Clear();
         std::ostringstream buffer;
         buffer << v;
-        return object(buffer.str());
+        return nb::cast(buffer.str());
     }
 }
 
@@ -250,15 +250,15 @@ _WrapHdDataSourceLocatorSetStr(const HdDataSourceLocatorSet &self)
     return buffer.str();
 }
 
-void wrapHydraObserver()
+void wrapHydraObserver(nb::module_ &m)
 {
     {
         using This = UsdviewqHydraObserver;
 
-        class_<This> ("HydraObserver", init<>())
-            .def("GetRegisteredSceneIndexNames",
+        nb::class_<This>(m, "HydraObserver")
+            .def(nb::init<>())
+            .def_static("GetRegisteredSceneIndexNames",
                  &This::GetRegisteredSceneIndexNames)
-            .staticmethod("GetRegisteredSceneIndexNames")
 
             .def("TargetToNamedSceneIndex", &This::TargetToNamedSceneIndex)
             .def("TargetToInputSceneIndex", &This::TargetToInputSceneIndex)
@@ -286,15 +286,16 @@ void wrapHydraObserver()
         using Sig1 = This(This::*)(const TfToken &) const;
         using Sig2 = This(This::*)(const This &) const; 
 
-        class_<This> ("DataSourceLocator", init<>())
-            .def( init<const TfToken &>() )
-            .def( init<const TfToken &, const TfToken &>() )
-            .def( init<const TfToken &, const TfToken &, const TfToken &>() )
-            .def( init<const TfToken &, const TfToken &, const TfToken &,
+        nb::class_<This>(m, "DataSourceLocator")
+            .def( nb::init<>() )
+            .def( nb::init<const TfToken &>() )
+            .def( nb::init<const TfToken &, const TfToken &>() )
+            .def( nb::init<const TfToken &, const TfToken &, const TfToken &>() )
+            .def( nb::init<const TfToken &, const TfToken &, const TfToken &,
                   const TfToken &>())
-            .def( init<const TfToken &, const TfToken &, const TfToken &,
+            .def( nb::init<const TfToken &, const TfToken &, const TfToken &,
                   const TfToken &, const TfToken &>())
-            .def( init<const TfToken &, const TfToken &, const TfToken &,
+            .def( nb::init<const TfToken &, const TfToken &, const TfToken &,
                   const TfToken &, const TfToken &, const TfToken &>())
             .def("IsEmpty", &This::IsEmpty)
             .def("GetElementCount", &This::GetElementCount)
@@ -312,8 +313,8 @@ void wrapHydraObserver()
             .def("Intersects", &This::Intersects)
             .def("GetString", &This::GetString)
             
-            .def(self == self)
-            .def(self != self)
+            .def(nb::self == nb::self)
+            .def(nb::self != nb::self)
             .def("__hash__", &This::Hash)
             .def("__str__", &_WrapHdDataSourceLocatorStr)
             // TODO, further methods not needed for browser case
@@ -328,7 +329,8 @@ void wrapHydraObserver()
         using Sig3 = void(This::*)(const HdDataSourceLocator &);
         using Sig4 = void(This::*)(const This &);
 
-        class_<This> ("DataSourceLocatorSet", init<>())
+        nb::class_<This>(m, "DataSourceLocatorSet")
+            .def(nb::init<>())
             .def("Intersects", (Sig1)&This::Intersects)
             .def("Intersects", (Sig2)&This::Intersects)
             .def("IsEmpty", &This::IsEmpty)
@@ -342,14 +344,13 @@ void wrapHydraObserver()
     }
 
     {
-        using ThisHandle = HdDataSourceBaseHandle;
-        class_<ThisHandle> ("DataSourceBase", no_init)
+        nb::class_<HdDataSourceBase>(m, "DataSourceBase")
             ;
     }
 
     {
         using ThisHandle = HdContainerDataSourceHandle;
-        class_<ThisHandle> ("ContainerDataSource", no_init)
+        nb::class_<HdContainerDataSource, HdDataSourceBase>(m, "ContainerDataSource")
             .def("GetNames",
                  +[](const ThisHandle &handle) {
                      return handle->GetNames(); })
@@ -359,16 +360,14 @@ void wrapHydraObserver()
     }
 
     {
-        using ThisHandle = HdVectorDataSourceHandle;
-        class_<ThisHandle> ("VectorDataSource", no_init)
+        nb::class_<HdVectorDataSource, HdDataSourceBase>(m, "VectorDataSource")
             .def("GetNumElements", &_WrapVectorDataSourceGetNumElements)
             .def("GetElement", &_WrapVectorDataSourceGetElement)
             ;
     }
 
     {
-        using ThisHandle = HdSampledDataSourceHandle;
-        class_<ThisHandle> ("SampledDataSource", no_init)
+        nb::class_<HdSampledDataSource, HdDataSourceBase>(m, "SampledDataSource")
             .def("GetValue", &_WrapSampledDataSourceGetValue)
             .def("GetTypeString", &_WrapSampledDataSourceGetTypeString)
             ;

@@ -13,20 +13,14 @@
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include "pxr/usd/sdf/pathPattern.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/scope.hpp"
 
 #include <mutex>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static std::string
 _Repr(SdfPathPattern const &self) {
@@ -64,63 +58,72 @@ _CanAppendProperty(SdfPathPattern const &self, std::string const &text)
     return Sdf_PathPatternCanAppendResult(valid, errMsg);
 }
 
-void wrapPathPattern()
+void wrapPathPattern(nanobind::module_ &m)
 {
-    class_<SdfPathPattern>("PathPattern")
-        .def(init<SdfPath>(arg("prefix")))
-        .def("Everything", SdfPathPattern::Everything,
-             return_value_policy<return_by_value>())
-        .staticmethod("Everything")
-        .def("EveryDescendant", SdfPathPattern::EveryDescendant,
-            return_value_policy<return_by_value>())
-        .staticmethod("EveryDescendant")
-        .def("Nothing", SdfPathPattern::Nothing,
-            return_value_policy<return_by_value>())
-        .staticmethod("Nothing")
-        .def("CanAppendChild", _CanAppendChild, arg("text"))
+    namespace nb = nanobind;
+
+    nb::class_<SdfPathPattern>(m, "PathPattern")
+        .def(nb::init<>())
+        .def(nb::init<SdfPath>(), nb::arg("prefix"))
+        .def_static("Everything", &SdfPathPattern::Everything,
+                    nb::rv_policy::copy)
+        .def_static("EveryDescendant", &SdfPathPattern::EveryDescendant,
+                    nb::rv_policy::copy)
+        .def_static("Nothing", &SdfPathPattern::Nothing,
+                    nb::rv_policy::copy)
+        .def("CanAppendChild", _CanAppendChild, nb::arg("text"))
         .def("AppendChild",
              +[](SdfPathPattern &self, std::string text,
-                 SdfPredicateExpression const &predExpr) {
+                 SdfPredicateExpression const &predExpr) -> SdfPathPattern & {
                  self.AppendChild(text, predExpr);
-             }, (arg("text"), arg("predExpr")=SdfPredicateExpression()),
-             return_self<>())
-        .def("CanAppendProperty", _CanAppendProperty, arg("text"))
+                 return self;
+             }, nb::arg("text"), nb::arg("predExpr") = SdfPredicateExpression(),
+             nb::rv_policy::reference)
+        .def("CanAppendProperty", _CanAppendProperty, nb::arg("text"))
         .def("AppendProperty",
              +[](SdfPathPattern &self, std::string text,
-                 SdfPredicateExpression const &predExpr) {
+                 SdfPredicateExpression const &predExpr) -> SdfPathPattern & {
                  self.AppendProperty(text, predExpr);
-             }, (arg("text"), arg("predExpr")=SdfPredicateExpression()),
-             return_self<>())
+                 return self;
+             }, nb::arg("text"), nb::arg("predExpr") = SdfPredicateExpression(),
+             nb::rv_policy::reference)
         .def("GetPrefix",
              +[](SdfPathPattern const &self) {
                  return self.GetPrefix();
-             }, return_value_policy<return_by_value>())
+             }, nb::rv_policy::copy)
         .def("SetPrefix",
-             +[](SdfPathPattern &self, SdfPath const &prefix) {
+             +[](SdfPathPattern &self, SdfPath const &prefix) -> SdfPathPattern & {
                  self.SetPrefix(prefix);
-             }, (arg("prefix")), return_self<>())
+                 return self;
+             }, nb::arg("prefix"), nb::rv_policy::reference)
         .def("HasLeadingStretch", &SdfPathPattern::HasLeadingStretch)
         .def("HasTrailingStretch", &SdfPathPattern::HasTrailingStretch)
         .def("AppendStretchIfPossible",
-             &SdfPathPattern::AppendStretchIfPossible,
-             return_self<>())
+             +[](SdfPathPattern &self) -> SdfPathPattern & {
+                 self.AppendStretchIfPossible();
+                 return self;
+             }, nb::rv_policy::reference)
         .def("RemoveTrailingStretch",
-             &SdfPathPattern::RemoveTrailingStretch,
-             return_self<>())
+             +[](SdfPathPattern &self) -> SdfPathPattern & {
+                 self.RemoveTrailingStretch();
+                 return self;
+             }, nb::rv_policy::reference)
         .def("RemoveTrailingComponent",
-             &SdfPathPattern::RemoveTrailingComponent,
-             return_self<>())
+             +[](SdfPathPattern &self) -> SdfPathPattern & {
+                 self.RemoveTrailingComponent();
+                 return self;
+             }, nb::rv_policy::reference)
         .def("GetText", &SdfPathPattern::GetText)
         .def("IsProperty", &SdfPathPattern::IsProperty)
         .def("__bool__", &SdfPathPattern::operator bool)
         .def("__repr__", &_Repr)
         .def("__hash__", +[](SdfPathPattern const &p) { return TfHash{}(p); })
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
     VtValueFromPython<SdfPathPattern>();
 
     Sdf_PathPatternCanAppendResult::
-        Wrap<Sdf_PathPatternCanAppendResult>("_PathPatternCanAppendResult",
-                                             "reason");
+        WrapNb<Sdf_PathPatternCanAppendResult>(m, "_PathPatternCanAppendResult",
+                                               "reason");
 }

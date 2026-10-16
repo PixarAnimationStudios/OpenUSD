@@ -16,21 +16,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 {% if useExportAPI %}
 {{ namespaceUsing }}
 
-using namespace pxr_boost::python;
-
 namespace {
-
-{% else %}
-using namespace pxr_boost::python;
 
 {% endif %}
 #define WRAP_CUSTOM                                                     \
@@ -46,7 +46,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.Create{{ Proper(attr.apiName) }}Attr(
         UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
 }
@@ -116,7 +116,7 @@ _WrapCanApply(const UsdPrim& prim)
         
 static UsdAttribute
 _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.Create{{ Proper(attr.apiName) }}Attr(
         UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
 }
@@ -134,110 +134,101 @@ static bool _WrapIs{{ schemaCls.usdPrimTypeName }}Path(const SdfPath &path) {
 } // anonymous namespace
 {% endif %}
 
-void wrap{{ cls.cppClassName }}()
+void wrap{{ cls.cppClassName }}(nb::module_ &m)
 {
     typedef {{ cls.cppClassName }} This;
 
 {% if cls.isAppliedAPISchema %}
     {{ cls.cppClassName }}_CanApplyResult::Wrap<{{ cls.cppClassName }}_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+        m, "_CanApplyResult", "whyNot");
 
 {% endif %}
 {% if cls.isAPISchemaBase %}
-    class_< This , bases<{{ cls.parentCppClassName }}>, noncopyable> cls ("APISchemaBase", "", no_init);
+    nb::class_<This, {{ cls.parentCppClassName }}> cls(m, "APISchemaBase", "");
 {% else %}
-    class_<This, bases<{{ cls.parentCppClassName }}> >
-        cls("{{ cls.className }}");
+    nb::class_<This, {{ cls.parentCppClassName }}>
+        cls(m, "{{ cls.className }}");
 {% endif %}
 
     cls
 {% if not cls.isAPISchemaBase %}
 {% if cls.isMultipleApply %}
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
 {% else %}
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
 {% endif %}
 {% endif %}
         .def(TfTypePythonClass())
 
 {% if not cls.isAPISchemaBase %}
 {% if cls.isMultipleApply %}
-        .def("Get",
+        .def_static("Get",
             ({{ cls.cppClassName }}(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             ({{ cls.cppClassName }}(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
+            nb::arg("prim"), nb::arg("name"))
 {% else %}
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 {% endif %}
-        .staticmethod("Get")
 {% endif %}
 {% if cls.isMultipleApply %}
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<{{ cls.cppClassName }}>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+            nb::rv_policy::copy)
 {% endif %}
 {% if cls.isConcrete %}
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 {% endif %}
 {% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 {% endif %}
 {% if cls.isAppliedAPISchema and cls.isMultipleApply %}
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 {% endif %}
 {% if cls.isAppliedAPISchema and not cls.isMultipleApply %}
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 {% endif %}
 {% if cls.isAppliedAPISchema and cls.isMultipleApply %}
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 {% endif %}
 
 {% if cls.isMultipleApply %}
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 {% else %}
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 {% endif %}
-        .staticmethod("GetSchemaAttributeNames")
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
 {% for attrName in cls.attrOrder -%}
 {% set attr = cls.attrs[attrName] %}
@@ -248,8 +239,8 @@ void wrap{{ cls.cppClassName }}()
              &This::Get{{ Proper(attr.apiName) }}Attr)
         .def("Create{{ Proper(attr.apiName) }}Attr",
              &_Create{{ Proper(attr.apiName) }}Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 {% endif %}
 {% endfor %}
 
@@ -275,8 +266,8 @@ void wrap{{ cls.cppClassName }}()
              &This::Get{{ Proper(attr.apiName) }}Attr)
         .def("Create{{ Proper(attr.apiName) }}Attr",
              &_Create{{ Proper(attr.apiName) }}Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 {% endif %}
 {% endfor %}
 
@@ -294,8 +285,7 @@ void wrap{{ cls.cppClassName }}()
         .def("{{ schema }}", &This::{{ schema }})
 {% endfor %}
 {% if cls.isMultipleApply and cls.propertyNamespace %}
-        .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
-            .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
+        .def_static("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
 {% endif %}
 {% if not cls.isAPISchemaBase %}
         .def("__repr__", ::_Repr)

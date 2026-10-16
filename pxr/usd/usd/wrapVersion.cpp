@@ -6,15 +6,15 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static int 
 _GetMajorVersion() {
@@ -31,11 +31,11 @@ _GetPatchVersion() {
     return PXR_PATCH_VERSION;
 }
 
-static pxr_boost::python::tuple
+static nb::tuple
 _GetVersion() {
-    return make_tuple(PXR_MAJOR_VERSION, 
-                      PXR_MINOR_VERSION,
-                      PXR_PATCH_VERSION);
+    return nb::make_tuple(PXR_MAJOR_VERSION, 
+                          PXR_MINOR_VERSION,
+                          PXR_PATCH_VERSION);
 }
 
 // Create a doc string corresponding to the particular
@@ -50,14 +50,15 @@ _MakeVersionFuncDocstring(const std::string& section,
            "USD versions are described as (major,minor,patch)\n";
 }
 
-void wrapVersion()
+void wrapVersion(nanobind::module_ &m)
 {
-    def("GetMajorVersion", _GetMajorVersion,
-        _MakeVersionFuncDocstring("major", "int").c_str()); 
-    def("GetMinorVersion", _GetMinorVersion,
-        _MakeVersionFuncDocstring("minor", "int").c_str());
-    def("GetPatchVersion", _GetPatchVersion,
-        _MakeVersionFuncDocstring("patch", "int").c_str());
-    def("GetVersion", _GetVersion,
-        _MakeVersionFuncDocstring("complete", "tuple(int,int,int)").c_str());
+    m.def("GetMajorVersion", _GetMajorVersion,
+          _MakeVersionFuncDocstring("major", "int").c_str()); 
+    m.def("GetMinorVersion", _GetMinorVersion,
+          _MakeVersionFuncDocstring("minor", "int").c_str());
+    m.def("GetPatchVersion", _GetPatchVersion,
+          _MakeVersionFuncDocstring("patch", "int").c_str());
+    m.def("GetVersion", _GetVersion,
+          _MakeVersionFuncDocstring("complete", "tuple(int,int,int)").c_str());
 }
+

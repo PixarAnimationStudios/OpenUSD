@@ -17,12 +17,10 @@
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include "pxr/external/boost/python/dict.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/object.hpp"
+#include <nanobind/nanobind.h>
 
 #include <cstddef>
 #include <memory>
@@ -36,15 +34,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #ifndef doxygen
 
-// Convert any type to pxr_boost::python::object.
+// Convert any type to nanobind::object.
 template <typename T>
-pxr_boost::python::object Tf_ArgToPy(const T &value)
+nanobind::object Tf_ArgToPy(const T &value)
 {
-    return pxr_boost::python::object(value);
+    if constexpr (std::is_pointer_v<T> &&
+                  !std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>,
+                                  char>) {
+        if (!value) {
+            return nanobind::none();
+        }
+    }
+    return nanobind::cast(value);
 }
 
 // Convert nullptr to None.
-TF_API pxr_boost::python::object Tf_ArgToPy(const std::nullptr_t &value);
+TF_API nanobind::object Tf_ArgToPy(const std::nullptr_t &value);
 
 #endif // !doxygen
 
@@ -72,10 +77,10 @@ struct TfPyKwArg
     TfPyKwArg(const std::string &nameIn, const T &valueIn)
         : name(nameIn)
     {
-        // Constructing pxr_boost::python::object requires the GIL.
+        // Constructing nanobind::object requires the GIL.
         TfPyLock lock;
 
-        // The object constructor throws if the type is not convertible.
+        // The cast throws if the type is not convertible.
         value = Tf_ArgToPy(valueIn);
     }
 
@@ -90,13 +95,13 @@ struct TfPyKwArg
 
 // Variadic helper: trivial base case.
 TF_API void Tf_BuildPyInvokeKwArgs(
-    pxr_boost::python::dict *kwArgsOut);
+    nanobind::dict *kwArgsOut);
 
 // Poisoned variadic template helper that provides an error message when
 // non-keyword args are used after keyword args.
 template <typename Arg, typename... RestArgs>
 void Tf_BuildPyInvokeKwArgs(
-    pxr_boost::python::dict *kwArgsOut,
+    nanobind::dict *kwArgsOut,
     const Arg &kwArg,
     RestArgs... rest)
 {
@@ -110,12 +115,12 @@ void Tf_BuildPyInvokeKwArgs(
 // Recursive variadic template helper for keyword args.
 template <typename... RestArgs>
 void Tf_BuildPyInvokeKwArgs(
-    pxr_boost::python::dict *kwArgsOut,
+    nanobind::dict *kwArgsOut,
     const TfPyKwArg &kwArg,
     RestArgs... rest)
 {
     // Store mapping in kwargs dict.
-    (*kwArgsOut)[kwArg.name] = kwArg.value.Get();
+    (*kwArgsOut)[kwArg.name.c_str()] = kwArg.value.Get();
 
     // Recurse to handle next arg.
     Tf_BuildPyInvokeKwArgs(kwArgsOut, rest...);
@@ -123,19 +128,19 @@ void Tf_BuildPyInvokeKwArgs(
 
 // Variadic helper: trivial base case.
 TF_API void Tf_BuildPyInvokeArgs(
-    pxr_boost::python::list *posArgsOut,
-    pxr_boost::python::dict *kwArgsOut);
+    nanobind::list *posArgsOut,
+    nanobind::dict *kwArgsOut);
 
 // Recursive general-purpose variadic template helper.
 template <typename Arg, typename... RestArgs>
 void Tf_BuildPyInvokeArgs(
-    pxr_boost::python::list *posArgsOut,
-    pxr_boost::python::dict *kwArgsOut,
+    nanobind::list *posArgsOut,
+    nanobind::dict *kwArgsOut,
     const Arg &arg,
     RestArgs... rest)
 {
     // Convert value to Python, and store in args list.
-    // The object constructor throws if the type is not convertible.
+    // The cast throws if the type is not convertible.
     posArgsOut->append(Tf_ArgToPy(arg));
 
     // Recurse to handle next arg.
@@ -145,8 +150,8 @@ void Tf_BuildPyInvokeArgs(
 // Recursive variadic template helper for keyword args.
 template <typename... RestArgs>
 void Tf_BuildPyInvokeArgs(
-    pxr_boost::python::list *posArgsOut,
-    pxr_boost::python::dict *kwArgsOut,
+    nanobind::list *posArgsOut,
+    nanobind::dict *kwArgsOut,
     const TfPyKwArg &kwArg,
     RestArgs... rest)
 {
@@ -167,16 +172,16 @@ void Tf_BuildPyInvokeArgs(
 TF_API bool Tf_PyInvokeImpl(
     const std::string &moduleName,
     const std::string &callableExpr,
-    const pxr_boost::python::list &posArgs,
-    const pxr_boost::python::dict &kwArgs,
-    pxr_boost::python::object *resultObjOut);
+    const nanobind::list &posArgs,
+    const nanobind::dict &kwArgs,
+    nanobind::object *resultObjOut);
 
 // Forward declaration.
 template <typename... Args>
 bool TfPyInvokeAndReturn(
     const std::string &moduleName,
     const std::string &callableExpr,
-    pxr_boost::python::object *resultOut,
+    nanobind::object *resultOut,
     Args... args);
 
 #endif // !doxygen
@@ -246,32 +251,30 @@ bool TfPyInvokeAndExtract(
     TfPyInitialize();
     TfPyLock lock;
 
-    pxr_boost::python::object resultObj;
+    nanobind::object resultObj;
     if (!TfPyInvokeAndReturn(
             moduleName, callableExpr, &resultObj, args...)) {
         return false;
     }
 
     // Extract return value.
-    pxr_boost::python::extract<Result> extractor(resultObj);
-    if (!extractor.check()) {
+    if (!nanobind::try_cast<Result>(resultObj, *resultOut)) {
         TF_CODING_ERROR("Result type mismatched or not convertible");
         return false;
     }
-    *resultOut = extractor();
 
     return true;
 }
 
 /// A version of TfPyInvokeAndExtract that provides the Python function's return
-/// value as a \c pxr_boost::python::object, rather than extracting a particular C++
+/// value as a \c nanobind::object, rather than extracting a particular C++
 /// type from it.
 ///
 template <typename... Args>
 bool TfPyInvokeAndReturn(
     const std::string &moduleName,
     const std::string &callableExpr,
-    pxr_boost::python::object *resultOut,
+    nanobind::object *resultOut,
     Args... args)
 {
     if (!resultOut) {
@@ -285,8 +288,8 @@ bool TfPyInvokeAndReturn(
 
     try {
         // Convert args to Python and store in list+dict form.
-        pxr_boost::python::list posArgs;
-        pxr_boost::python::dict kwArgs;
+        nanobind::list posArgs;
+        nanobind::dict kwArgs;
         Tf_BuildPyInvokeArgs(&posArgs, &kwArgs, args...);
 
         // Import, find callable, and call.
@@ -295,8 +298,16 @@ bool TfPyInvokeAndReturn(
             return false;
         }
     }
-    catch (pxr_boost::python::error_already_set const &) {
-        // Handle exceptions.
+    catch (nanobind::python_error &e) {
+        e.restore();
+        TfPyConvertPythonExceptionToTfErrors();
+        PyErr_Clear();
+        return false;
+    }
+    catch (nanobind::cast_error const &e) {
+        if (!PyErr_Occurred()) {
+            PyErr_SetString(PyExc_TypeError, e.what());
+        }
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
         return false;
@@ -318,7 +329,7 @@ bool TfPyInvoke(
     TfPyInitialize();
     TfPyLock lock;
 
-    pxr_boost::python::object ignoredResult;
+    nanobind::object ignoredResult;
     return TfPyInvokeAndReturn(
         moduleName, callableExpr, &ignoredResult, args...);
 }

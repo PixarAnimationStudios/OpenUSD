@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,21 +41,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateRadianceSphericalHarmonicsDegreeAttr(UsdVolParticleFieldSphericalHarmonicsAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsDegreeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRadianceSphericalHarmonicsCoefficientsAttr(UsdVolParticleFieldSphericalHarmonicsAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsCoefficientsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRadianceSphericalHarmonicsCoefficientshAttr(UsdVolParticleFieldSphericalHarmonicsAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsCoefficientshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
@@ -80,64 +86,56 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdVolParticleFieldSphericalHarmonicsAttributeAPI()
+void wrapUsdVolParticleFieldSphericalHarmonicsAttributeAPI(nb::module_ &m)
 {
     typedef UsdVolParticleFieldSphericalHarmonicsAttributeAPI This;
 
-    UsdVolParticleFieldSphericalHarmonicsAttributeAPI_CanApplyResult::Wrap<UsdVolParticleFieldSphericalHarmonicsAttributeAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdVolParticleFieldSphericalHarmonicsAttributeAPI_CanApplyResult::WrapNb<UsdVolParticleFieldSphericalHarmonicsAttributeAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ParticleFieldSphericalHarmonicsAttributeAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ParticleFieldSphericalHarmonicsAttributeAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetRadianceSphericalHarmonicsDegreeAttr",
              &This::GetRadianceSphericalHarmonicsDegreeAttr)
         .def("CreateRadianceSphericalHarmonicsDegreeAttr",
              &_CreateRadianceSphericalHarmonicsDegreeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRadianceSphericalHarmonicsCoefficientsAttr",
              &This::GetRadianceSphericalHarmonicsCoefficientsAttr)
         .def("CreateRadianceSphericalHarmonicsCoefficientsAttr",
              &_CreateRadianceSphericalHarmonicsCoefficientsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRadianceSphericalHarmonicsCoefficientshAttr",
              &This::GetRadianceSphericalHarmonicsCoefficientshAttr)
         .def("CreateRadianceSphericalHarmonicsCoefficientshAttr",
              &_CreateRadianceSphericalHarmonicsCoefficientshAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("ParticleFieldRadianceBaseAPI", &This::ParticleFieldRadianceBaseAPI)
         .def("__repr__", ::_Repr)

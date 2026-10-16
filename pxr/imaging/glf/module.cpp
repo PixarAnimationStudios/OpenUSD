@@ -11,7 +11,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Diagnostic );
-    TF_WRAP( SimpleLight );
-    TF_WRAP( SimpleMaterial );
+    TF_WRAP_NB( Diagnostic );
+    TF_WRAP_NB( SimpleLight );
+    TF_WRAP_NB( SimpleMaterial );
 }

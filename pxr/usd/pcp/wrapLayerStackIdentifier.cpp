@@ -10,14 +10,12 @@
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/ar/pyResolverContext.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -36,44 +34,39 @@ _Repr(const PcpLayerStackIdentifier& x)
 
 } // anonymous namespace 
 
-void wrapLayerStackIdentifier()
+void wrapLayerStackIdentifier(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef PcpLayerStackIdentifier This;
 
-    class_<This>("LayerStackIdentifier")
-        .def(init<>())
-        .def(init<
+    nb::class_<This>(m, "LayerStackIdentifier")
+        .def(nb::init<>())
+        .def(nb::init<
              const SdfLayerHandle &,
              const SdfLayerHandle &,
              const ArResolverContext &,
-             const PcpExpressionVariablesSource &>
-             ((args("rootLayer"),
-               args("sessionLayer") = SdfLayerHandle(),
-               args("pathResolverContext") = ArResolverContext(),
-               args("expressionVariablesOverrideSource") = 
-                   PcpExpressionVariablesSource())))
+             const PcpExpressionVariablesSource &>(),
+             nb::arg("rootLayer"),
+             nb::arg("sessionLayer") = SdfLayerHandle(),
+             nb::arg("pathResolverContext") = ArResolverContext(),
+             nb::arg("expressionVariablesOverrideSource") = 
+                 PcpExpressionVariablesSource())
 
-        .add_property("sessionLayer", 
-                      make_getter(&This::sessionLayer, 
-                                  return_value_policy<return_by_value>()))
-        .add_property("rootLayer", 
-                      make_getter(&This::rootLayer, 
-                                  return_value_policy<return_by_value>()))
-        .add_property("pathResolverContext", 
-                      make_getter(&This::pathResolverContext, 
-                                  return_value_policy<return_by_value>()))
-        .add_property("expressionVariablesOverrideSource", 
-                      make_getter(&This::expressionVariablesOverrideSource, 
-                                  return_value_policy<return_by_value>()))
+        .def_ro("sessionLayer", &This::sessionLayer, nb::rv_policy::copy)
+        .def_ro("rootLayer", &This::rootLayer, nb::rv_policy::copy)
+        .def_ro("pathResolverContext", &This::pathResolverContext, nb::rv_policy::copy)
+        .def_ro("expressionVariablesOverrideSource", 
+                &This::expressionVariablesOverrideSource, nb::rv_policy::copy)
 
         .def("__repr__", &_Repr)
         .def("__hash__", &This::GetHash)
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
-        .def(self <  self)
-        .def(self <= self)
-        .def(self >  self)
-        .def(self >= self)
+        .def(!nb::self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self <  nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self >  nb::self)
+        .def(nb::self >= nb::self)
         ;
+
 }

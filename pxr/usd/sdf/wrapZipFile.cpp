@@ -7,43 +7,44 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/zipFile.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/manage_new_object.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-static object
+static std::optional<SdfZipFile>
 _Open(const std::string& filePath)
 {
     SdfZipFile zipFile = SdfZipFile::Open(filePath);
-    return zipFile ? object(zipFile) : object();
+    return zipFile ? std::optional<SdfZipFile>(zipFile) : std::nullopt;
 }
 
-static object
+static nb::object
 _GetFile(const SdfZipFile& zipFile, const std::string& filePath)
 {
     auto iter = zipFile.Find(filePath);
     if (iter == zipFile.end()) {
-        return object();
+        return nb::none();
     }
-    return TfPyCopyBufferToByteArray(iter.GetFile(), iter.GetFileInfo().size);
+    return nb::borrow<nb::object>(
+        TfPyCopyBufferToByteArray(iter.GetFile(), iter.GetFileInfo().size).ptr());
 }
 
-static object
+static std::optional<SdfZipFile::FileInfo>
 _GetFileInfo(const SdfZipFile& zipFile, const std::string& filePath)
 {
     auto iter = zipFile.Find(filePath);
     if (iter == zipFile.end()) {
-        return object();
+        return std::nullopt;
     }
-    return object(iter.GetFileInfo());
+    return iter.GetFileInfo();
 }
 
 static std::vector<std::string>
@@ -52,26 +53,11 @@ _GetFileNames(const SdfZipFile& zipFile)
     return std::vector<std::string>(zipFile.begin(), zipFile.end());
 }
 
-// XXX: SdfZipFileWriter is a move-only type, but if I return a 
-// SdfZipFileWriter by value from this function, pxr_boost::python gives me a
-// no to-python converter error.
-static SdfZipFileWriter*
-_CreateNew(const std::string& filePath)
-{
-    return new SdfZipFileWriter(SdfZipFileWriter::CreateNew(filePath));
-}
-
 static void
-_Enter(const SdfZipFileWriter&)
-{
-    // Nothing to do
-}
-
-static void
-_Exit(SdfZipFileWriter& w, const object& exc_type, const object&, const object&)
+_ExitWriter(SdfZipFileWriter& w, nb::args args)
 {
     if (w) {
-        if (TfPyIsNone(exc_type)) {
+        if (args.size() == 0 || args[0].is_none()) {
             w.Save();
         }
         else {
@@ -81,53 +67,46 @@ _Exit(SdfZipFileWriter& w, const object& exc_type, const object&, const object&)
 }
 
 void
-wrapZipFile()
+wrapZipFile(nanobind::module_& m)
 {
     {
-        scope s = class_<SdfZipFile>
-            ("ZipFile", no_init)
-            .def("Open", _Open, arg("filePath"))
-            .staticmethod("Open")
+        nb::class_<SdfZipFile> s(m, "ZipFile");
+        s.def_static("Open", _Open, nb::arg("filePath"))
             
-            .def("GetFileNames", &_GetFileNames,
-                return_value_policy<TfPySequenceToList>())
+            .def("GetFileNames", &_GetFileNames)
 
-            .def("GetFile", &_GetFile, arg("path"))
-            .def("GetFileInfo", &_GetFileInfo, arg("path"))
+            .def("GetFile", &_GetFile, nb::arg("path"))
+            .def("GetFileInfo", &_GetFileInfo, nb::arg("path"))
 
             .def("DumpContents", &SdfZipFile::DumpContents)
             ;
 
-        class_<SdfZipFile::FileInfo>
-            ("FileInfo", no_init)
-            .def_readonly("dataOffset", &SdfZipFile::FileInfo::dataOffset)
-            .def_readonly("size", &SdfZipFile::FileInfo::size)
-            .def_readonly("uncompressedSize", 
+        nb::class_<SdfZipFile::FileInfo>(s, "FileInfo")
+            .def_ro("dataOffset", &SdfZipFile::FileInfo::dataOffset)
+            .def_ro("size", &SdfZipFile::FileInfo::size)
+            .def_ro("uncompressedSize", 
                 &SdfZipFile::FileInfo::uncompressedSize)
-            .def_readonly("crc", 
+            .def_ro("crc", 
                 &SdfZipFile::FileInfo::crc)
-            .def_readonly("compressionMethod", 
+            .def_ro("compressionMethod", 
                 &SdfZipFile::FileInfo::compressionMethod)
-            .def_readonly("encrypted",
+            .def_ro("encrypted",
                 &SdfZipFile::FileInfo::encrypted)
             ;
+
     }
 
-    class_<SdfZipFileWriter, noncopyable>
-        ("ZipFileWriter", no_init)
-        .def("CreateNew", &_CreateNew, arg("filePath"),
-            return_value_policy<manage_new_object>())
-        .staticmethod("CreateNew")
+    nb::class_<SdfZipFileWriter>(m, "ZipFileWriter")
+        .def_static("CreateNew", &SdfZipFileWriter::CreateNew, nb::arg("filePath"))
 
         .def("AddFile", &SdfZipFileWriter::AddFile, 
-            (arg("filePath"), 
-             arg("filePathInArchive") = std::string()))
+            nb::arg("filePath"), 
+            nb::arg("filePathInArchive") = std::string())
         .def("Save", &SdfZipFileWriter::Save)
         .def("Discard", &SdfZipFileWriter::Discard)
 
-        .def("__enter__", &_Enter, return_self<>())
-        .def("__exit__", 
-            (void(*)(SdfZipFileWriter&, const object&, const object&, 
-                     const object&))&_Exit);
+        .def("__enter__", [](nb::object self) { return self; })
+        .def("__exit__", &_ExitWriter)
         ;
+
 }

@@ -6,19 +6,20 @@
 //
 #include "pxr/imaging/glf/diagnostic.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapDiagnostic()
+void wrapDiagnostic(nanobind::module_ &m)
 {    
-    def("RegisterDefaultDebugOutputMessageCallback",
+    m.def("RegisterDefaultDebugOutputMessageCallback",
         &GlfRegisterDefaultDebugOutputMessageCallback);
 
-    class_<GlfGLQueryObject, noncopyable>("GLQueryObject")
+    nb::class_<GlfGLQueryObject>(m, "GLQueryObject")
+        .def(nb::init<>())
         .def("Begin", &GlfGLQueryObject::Begin)
         .def("BeginPrimitivesGenerated", &GlfGLQueryObject::BeginPrimitivesGenerated)
         .def("BeginTimeElapsed", &GlfGLQueryObject::BeginTimeElapsed)

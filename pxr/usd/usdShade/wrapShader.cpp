@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdShadeShader &self)
@@ -43,36 +48,30 @@ _Repr(const UsdShadeShader &self)
 
 } // anonymous namespace
 
-void wrapUsdShadeShader()
+void wrapUsdShadeShader(nb::module_ &m)
 {
     typedef UsdShadeShader This;
 
-    class_<This, bases<UsdTyped> >
-        cls("Shader");
+    nb::class_<This, UsdTyped> cls(m, "Shader");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -100,71 +99,70 @@ void wrapUsdShadeShader()
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include <nanobind/stl/unordered_map.h>
 
 namespace {
 
 static UsdAttribute
 _CreateImplementationSourceAttr(UsdShadeShader &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateImplementationSourceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIdAttr(UsdShadeShader &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIdAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
-
-static object 
+static nb::object 
 _WrapGetShaderId(const UsdShadeShader &shader)
 {
     TfToken id;
     if (shader.GetShaderId(&id)) {
-        return object(id);
+        return nb::cast(id);
     }
-    return object();
+    return nb::none();
 }
 
-static object 
+static nb::object 
 _WrapGetSourceAsset(const UsdShadeShader &shader,
                     const TfToken &sourceType)
 {
     SdfAssetPath asset;
     if (shader.GetSourceAsset(&asset, sourceType)) {
-        return object(asset);
+        return nb::cast(asset);
     }
-    return object();
+    return nb::none();
 }
 
-static object
+static nb::object
 _WrapGetSourceAssetSubIdentifier(const UsdShadeShader &shader,
                     const TfToken &sourceType)
 {
     TfToken subIdentifier;
     if (shader.GetSourceAssetSubIdentifier(&subIdentifier, sourceType)) {
-        return object(subIdentifier);
+        return nb::cast(subIdentifier);
     }
-    return object();
+    return nb::none();
 }
 
-static object 
+static nb::object 
 _WrapGetSourceCode(const UsdShadeShader &shader,
                    const TfToken &sourceType)
 {
     std::string code;
     if (shader.GetSourceCode(&code, sourceType)) {
-        return object(code);
+        return nb::cast(code);
     }
-    return object();
+    return nb::none();
 }
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(nb::init<UsdShadeConnectableAPI>(), nb::arg("connectable"))
 
         .def("ConnectableAPI", &UsdShadeShader::ConnectableAPI)
 
@@ -172,76 +170,76 @@ WRAP_CUSTOM {
              &UsdShadeShader::GetImplementationSourceAttr)
         .def("CreateImplementationSourceAttr",
              &_CreateImplementationSourceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIdAttr",
              &UsdShadeShader::GetIdAttr)
         .def("CreateIdAttr",
              &_CreateIdAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("GetImplementationSource", &UsdShadeShader::GetImplementationSource)
 
         .def("SetShaderId", &UsdShadeShader::SetShaderId)
         .def("SetSourceAsset", &UsdShadeShader::SetSourceAsset,
-            (arg("sourceAsset"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("sourceAsset"), 
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("SetSourceAssetSubIdentifier",
             &UsdShadeShader::SetSourceAssetSubIdentifier,
-            (arg("subIdentifier"),
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("subIdentifier"),
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("SetSourceCode", &UsdShadeShader::SetSourceCode,
-            (arg("sourceCode"), 
-             arg("sourceType")=UsdShadeTokens->universalSourceType))
+            nb::arg("sourceCode"), 
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
 
         .def("GetShaderId", _WrapGetShaderId)
         .def("GetSourceAsset", _WrapGetSourceAsset, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceAssetSubIdentifier", _WrapGetSourceAssetSubIdentifier,
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
         .def("GetSourceCode", _WrapGetSourceCode, 
-             arg("sourceType")=UsdShadeTokens->universalSourceType)
+             nb::arg("sourceType")=UsdShadeTokens->universalSourceType)
 
         .def("GetSdrMetadata", &UsdShadeShader::GetSdrMetadata)
         .def("GetSdrMetadataByKey", &UsdShadeShader::GetSdrMetadataByKey,
-             (arg("key")))
+             nb::arg("key"))
 
         .def("SetSdrMetadata", &UsdShadeShader::SetSdrMetadata,
-             (arg("sdrMetadata")))
+             nb::arg("sdrMetadata"))
         .def("SetSdrMetadataByKey", &UsdShadeShader::SetSdrMetadataByKey,
-             (arg("key"), arg("value")))
+             nb::arg("key"), nb::arg("value"))
 
         .def("HasSdrMetadata", &UsdShadeShader::HasSdrMetadata)
         .def("HasSdrMetadataByKey", &UsdShadeShader::HasSdrMetadataByKey,
-             (arg("key")))
+             nb::arg("key"))
 
         .def("ClearSdrMetadata", &UsdShadeShader::ClearSdrMetadata)
         .def("ClearSdrMetadataByKey", 
-             &UsdShadeShader::ClearSdrMetadataByKey, (arg("key")))
+             &UsdShadeShader::ClearSdrMetadataByKey, nb::arg("key"))
 
         .def("GetSourceTypes", 
              &UsdShadeShader::GetSourceTypes)
 
         .def("GetShaderNodeForSourceType", 
              &UsdShadeShader::GetShaderNodeForSourceType,
-             (arg("sourceType")),
-             return_internal_reference<>())
+             nb::arg("sourceType"),
+             nb::rv_policy::reference_internal)
 
         .def("CreateOutput", &UsdShadeShader::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdShadeShader::GetOutput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetOutput", &UsdShadeShader::GetOutput, nb::arg("name"))
         .def("GetOutputs", &UsdShadeShader::GetOutputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
 
         .def("CreateInput", &UsdShadeShader::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeShader::GetInput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetInput", &UsdShadeShader::GetInput, nb::arg("name"))
         .def("GetInputs", &UsdShadeShader::GetInputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
 
         ;
 }

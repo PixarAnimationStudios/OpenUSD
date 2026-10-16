@@ -7,17 +7,16 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
-void wrapDiagnostic()
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+void wrapDiagnostic(nanobind::module_& m)
 {
-    TfPyWrapEnum<TfDiagnosticType>();
+    TfNbWrapEnum<TfDiagnosticType>(m);
 
-    def("InstallTerminateAndCrashHandlers",
-        TfInstallTerminateAndCrashHandlers);
-
+    m.def("InstallTerminateAndCrashHandlers",
+          TfInstallTerminateAndCrashHandlers);
 }

@@ -8,19 +8,27 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/coalescingDiagnosticDelegate.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <iostream>
 #include <string>
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+namespace std {
+template <>
+struct is_copy_constructible<PXR_NS::UsdUtilsCoalescingDiagnosticDelegate>
+    : std::false_type {};
+template <>
+struct is_move_constructible<PXR_NS::UsdUtilsCoalescingDiagnosticDelegate>
+    : std::false_type {};
+}  // namespace std
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static void
 _DumpCoalescedDiagnosticsToStdout(UsdUtilsCoalescingDiagnosticDelegate& d)
@@ -46,58 +54,59 @@ _DumpUncoalescedDiagnosticsToStderr(UsdUtilsCoalescingDiagnosticDelegate& d)
     d.DumpUncoalescedDiagnostics(std::cerr);
 }
 
-static pxr_boost::python::list
+static nb::list
 _TakeUncoalescedDiagnostics(UsdUtilsCoalescingDiagnosticDelegate& d)
 {
-    pxr_boost::python::list result;
+    nb::list result;
     for (auto const& item : d.TakeUncoalescedDiagnostics()) {
-        result.append(*item.get()); 
+        result.append(nb::cast(*item.get())); 
     }
     return result;
 }
 
-static pxr_boost::python::list
+static nb::list
 _TakeCoalescedDiagnostics(UsdUtilsCoalescingDiagnosticDelegate& d)
 {
-    pxr_boost::python::list result;
+    nb::list result;
     for (auto const& item : d.TakeCoalescedDiagnostics()) {
-        result.append(item);
+        result.append(nb::cast(item));
     }
     return result;
 }
 
-static pxr_boost::python::list
+static nb::list
 _GetUnsharedItems(UsdUtilsCoalescingDiagnosticDelegateItem const& d)
 {
-    pxr_boost::python::list result;
+    nb::list result;
     for (auto const& item : d.unsharedItems) {
-        result.append(item);
+        result.append(nb::cast(item));
     }
 
     return result;
 }
 
 void 
-wrapCoalescingDiagnosticDelegate()
+wrapCoalescingDiagnosticDelegate(nanobind::module_ &m)
 {
      using SharedItem = UsdUtilsCoalescingDiagnosticDelegateSharedItem;
-     class_<SharedItem>("CoalescingDiagnosticDelegateSharedItem", no_init)
-        .add_property("sourceLineNumber", &SharedItem::sourceLineNumber)
-        .add_property("sourceFileName",   &SharedItem::sourceFileName)
-        .add_property("sourceFunction",   &SharedItem::sourceFunction); 
+     nb::class_<SharedItem>(m, "CoalescingDiagnosticDelegateSharedItem")
+        .def_ro("sourceLineNumber", &SharedItem::sourceLineNumber)
+        .def_ro("sourceFileName",   &SharedItem::sourceFileName)
+        .def_ro("sourceFunction",   &SharedItem::sourceFunction); 
 
      using UnsharedItem = UsdUtilsCoalescingDiagnosticDelegateUnsharedItem;
-     class_<UnsharedItem>("CoalescingDiagnosticDelegateUnsharedItem", no_init)
-        .add_property("context",    &UnsharedItem::context)
-        .add_property("commentary", &UnsharedItem::commentary); 
+     nb::class_<UnsharedItem>(m, "CoalescingDiagnosticDelegateUnsharedItem")
+        .def_ro("context",    &UnsharedItem::context)
+        .def_ro("commentary", &UnsharedItem::commentary); 
 
      using Item = UsdUtilsCoalescingDiagnosticDelegateItem;
-     class_<Item>("CoalescingDiagnosticDelegateItem", no_init)
-        .add_property("sharedItem",   &Item::sharedItem)
-        .add_property("unsharedItems", &_GetUnsharedItems);
+     nb::class_<Item>(m, "CoalescingDiagnosticDelegateItem")
+        .def_ro("sharedItem",   &Item::sharedItem)
+        .def_prop_ro("unsharedItems", &_GetUnsharedItems);
 
      using This = UsdUtilsCoalescingDiagnosticDelegate;
-     class_<This, noncopyable>("CoalescingDiagnosticDelegate")
+     nb::class_<This>(m, "CoalescingDiagnosticDelegate")
+        .def(nb::init<>())
         .def("DumpCoalescedDiagnosticsToStdout", 
              &_DumpCoalescedDiagnosticsToStdout)
         .def("DumpUncoalescedDiagnostics", 

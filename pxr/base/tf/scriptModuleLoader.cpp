@@ -19,10 +19,6 @@
 
 #include "pxr/base/arch/fileSystem.h"
 
-#include "pxr/external/boost/python/borrowed.hpp"
-#include "pxr/external/boost/python/dict.hpp"
-#include "pxr/external/boost/python/handle.hpp"
-
 /*
 
 Notes for those who venture into this dark crevice:
@@ -123,11 +119,6 @@ using std::pair;
 using std::string;
 using std::vector;
 
-using pxr_boost::python::borrowed;
-using pxr_boost::python::dict;
-using pxr_boost::python::handle;
-using pxr_boost::python::object;
-
 TfScriptModuleLoader::TfScriptModuleLoader() = default;
 TfScriptModuleLoader::~TfScriptModuleLoader() = default;
 
@@ -163,12 +154,12 @@ RegisterLibrary(TfToken const &lib, TfToken const &moduleName,
     }
 }
 
-dict
+nanobind::dict
 TfScriptModuleLoader::GetModulesDict() const
 {
     if (!TfPyIsInitialized()) {
         TF_CODING_ERROR("Python is not initialized.");
-        return dict();
+        return nanobind::dict();
     }
 
     // Subscribe to the registry function so any loaded libraries with script
@@ -190,37 +181,17 @@ TfScriptModuleLoader::GetModulesDict() const
 
     // Get the sys.modules dict from python, so we can see if modules are
     // already loaded.
-    dict modulesDict(handle<>(borrowed(PyImport_GetModuleDict())));
-    dict ret;
+    nanobind::dict modulesDict =
+        nanobind::borrow<nanobind::dict>(PyImport_GetModuleDict());
+    nanobind::dict ret;
 
     for (auto const &[lib, mod]: libAndModNames) {
-        if (modulesDict.has_key(mod.GetText())) {
-            handle<> modHandle(PyImport_ImportModule(mod.GetText()));
-
-            // Use the upper-cased form of the library name as
-            // the Python module name.
-            //
-            // XXX This does not seem quite right.  For one thing,
-            //     we should be using the Python module names here,
-            //     not the C++ library names. However, after the
-            //     shared_code unification, some Python modules
-            //     are now submodules ("Tf" becomes "pixar.Tf").
-            //     To preserve compatibility with eval'ing reprs
-            //     of python types via this function, we have two
-            //     options:
-            //
-            //     1) strip the new "pixar." prefix off module names
-            //     2) upper-case the library name (tf -> Tf)
-            //
-            //     Also, neither of these two options correctly
-            //     handles prefixed submodules.  This will provide a
-            //     binding as "PrestopkgFoo", when really we
-            //     should have a binding to the "Prestopkg" module
-            //     with "Foo" imported underneath.
-            //
-            // For now, we just upper-case the library name.
-            //
-            ret[TfStringCapitalize(lib.GetString())] = object(modHandle);
+        if (modulesDict.contains(mod.GetText())) {
+            nanobind::object modObj = nanobind::steal<nanobind::object>(
+                PyImport_ImportModule(mod.GetText()));
+            if (modObj.is_valid()) {
+                ret[TfStringCapitalize(lib.GetString()).c_str()] = modObj;
+            }
         }
     }
     return ret;

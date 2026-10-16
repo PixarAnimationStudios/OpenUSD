@@ -14,7 +14,8 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include <string>
 
@@ -23,23 +24,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <class ArrayEdit>
 void VtWrapArrayEdit()
 {
-    using namespace pxr_boost::python;
     using namespace Vt_WrapArray;
     
     using Array = typename ArrayEdit::Array;
     using ElementType = typename ArrayEdit::ElementType;
     
     const std::string name = GetVtArrayName<Array>() + "Edit";
+    nanobind::module_ m = TfPyGetCurrentNanobindModule();
 
-    class_<ArrayEdit>(name.c_str())
-        .def(init<ArrayEdit const &>())
-        .def(self == self)
-        .def(self != self)
+    nanobind::class_<ArrayEdit>(m, name.c_str())
+        .def(TfTypePythonClass())
+        .def(nanobind::init<>())
+        .def(nanobind::init<ArrayEdit const &>())
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
         .def("__hash__",
              +[](ArrayEdit const &self) {
                  return TfHash{}(self);
              })
-        .def(self_ns::str(self_ns::self))
+        .def("__str__", +[](ArrayEdit const &self) {
+            return TfStringify(self);
+        })
         .def("IsIdentity", &ArrayEdit::IsIdentity)
         .def("ComposeOver",
              +[](ArrayEdit const &self, ArrayEdit const &weaker) {
@@ -52,46 +57,58 @@ void VtWrapArrayEdit()
         ;
 
     using Builder = VtArrayEditBuilder<ElementType>;
-    class_<Builder>((name + "Builder").c_str())
+    nanobind::class_<Builder>(m, (name + "Builder").c_str())
+        .def(nanobind::init<>())
         .def("Write", &Builder::Write,
-             (arg("elem"), arg("index")), return_self<>())
+             nanobind::arg("elem"), nanobind::arg("index"),
+             nanobind::rv_policy::reference)
         .def("WriteRef", &Builder::WriteRef,
-             (arg("srcIndex"), arg("dstIndex")), return_self<>())
+             nanobind::arg("srcIndex"), nanobind::arg("dstIndex"),
+             nanobind::rv_policy::reference)
         .def("Insert", &Builder::Insert,
-             (arg("elem"), arg("index")), return_self<>())
+             nanobind::arg("elem"), nanobind::arg("index"),
+             nanobind::rv_policy::reference)
         .def("InsertRef", &Builder::InsertRef,
-             (arg("srcIndex"), arg("dstIndex")), return_self<>())
+             nanobind::arg("srcIndex"), nanobind::arg("dstIndex"),
+             nanobind::rv_policy::reference)
         .def("Prepend", &Builder::Prepend,
-             (arg("elem")), return_self<>())
+             nanobind::arg("elem"), nanobind::rv_policy::reference)
         .def("PrependRef", &Builder::PrependRef,
-             (arg("srcIndex")), return_self<>())
-        .def("Append", &Builder::Append, (arg("elem")), return_self<>())
+             nanobind::arg("srcIndex"), nanobind::rv_policy::reference)
+        .def("Append", &Builder::Append,
+             nanobind::arg("elem"), nanobind::rv_policy::reference)
         .def("AppendRef", &Builder::AppendRef,
-             (arg("srcIndex")), return_self<>())
-        .def("EraseRef", &Builder::EraseRef, (arg("index")), return_self<>())
+             nanobind::arg("srcIndex"), nanobind::rv_policy::reference)
+        .def("EraseRef", &Builder::EraseRef,
+             nanobind::arg("index"), nanobind::rv_policy::reference)
         .def("MinSize",
-             +[](Builder &self, int64_t size) {
-                 self.MinSize(size);
+             +[](Builder &self, int64_t size) -> Builder & {
+                 return self.MinSize(size);
              },
-             (arg("size")), return_self<>())
+             nanobind::arg("size"), nanobind::rv_policy::reference)
         .def("MinSize",
-             +[](Builder &self, int64_t size, ElementType const &fill) {
-                 self.MinSize(size, fill);
-             }, (arg("size"), arg("fill")), return_self<>())
-        .def("MaxSize", &Builder::MaxSize, (arg("size")), return_self<>())
+             +[](Builder &self, int64_t size, ElementType const &fill) -> Builder & {
+                 return self.MinSize(size, fill);
+             },
+             nanobind::arg("size"), nanobind::arg("fill"),
+             nanobind::rv_policy::reference)
+        .def("MaxSize", &Builder::MaxSize,
+             nanobind::arg("size"), nanobind::rv_policy::reference)
         .def("SetSize",
-             +[](Builder &self, int64_t size) {
-                 self.SetSize(size);
-             }, (arg("size")), return_self<>())
+             +[](Builder &self, int64_t size) -> Builder & {
+                 return self.SetSize(size);
+             },
+             nanobind::arg("size"), nanobind::rv_policy::reference)
         .def("SetSize",
-             +[](Builder &self, int64_t size, ElementType const &fill) {
-                 self.SetSize(size, fill);
-             }, (arg("size"), arg("fill")), return_self<>())
+             +[](Builder &self, int64_t size, ElementType const &fill) -> Builder & {
+                 return self.SetSize(size, fill);
+             },
+             nanobind::arg("size"), nanobind::arg("fill"),
+             nanobind::rv_policy::reference)
         .def("FinalizeAndReset", &Builder::FinalizeAndReset)
-        .def("Optimize", +[](ArrayEdit edit) {
+        .def_static("Optimize", +[](ArrayEdit edit) {
             return Builder::Optimize(std::move(edit));
-        }, (arg("edit")))
-        .staticmethod("Optimize")
+        }, nanobind::arg("edit"))
         ;
 }
 

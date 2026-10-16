@@ -9,5 +9,5 @@
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(ResolverContext);
+    TF_WRAP_NB(ResolverContext);
 }
