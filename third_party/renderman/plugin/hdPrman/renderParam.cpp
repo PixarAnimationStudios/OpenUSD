@@ -886,12 +886,17 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         if (hdInterp != HdInterpolationConstant &&
             val.IsArrayValued() &&
             val.GetArraySize() != expectedArraySize) {
+#if HD_API_VERSION >= 104
+            const int elementSize = primvar.elementSize;
+#else
+            const int elementSize = 1;
+#endif
             TF_WARN("<%s> %s '%s' array size (%zu) did not match "
                     "expected size (%d elements, %d values per element)",
                     id.GetText(), label.c_str(), primvar.name.GetText(),
                     val.GetArraySize(),
                     elementCount,
-                    primvar.elementSize);
+                    elementSize);
             continue;
         }
         if constexpr(std::is_same<RtPrimVarList, T>()) {
@@ -3499,7 +3504,7 @@ HdPrman_RenderParam::SetRileyOptions()
         // support for multiple cameras than RIS, the last-modified rule still
         // affects OSL shader evaluation when shaders access camera params,
         // which XPU currently treats as global render options. XPU will add
-        // official OSL §7.11 camera parameter access in a future release,
+        // official OSL sec 7.11 camera parameter access in a future release,
         // which should remove the last-modified requirement under XPU.
         _cameraContext.ReapplyActiveCamera(_renderDelegate->GetRenderIndex());
 
