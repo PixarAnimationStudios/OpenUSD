@@ -461,7 +461,7 @@ def PointInstancer "PointInstancerExample"
     # Prototype index for each instance
     int[] protoIndices = [0, 1, 0, 1]
 
-    # World-space positions for each instance
+    # Per-instance positions
     point3f[] positions = [
         (0, 3, 1), (3, 0, 3), (6, 2, 0), (9, 1, 1)
     ]
