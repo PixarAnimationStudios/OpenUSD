@@ -367,6 +367,8 @@ private:
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
     friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
+    friend bool Pcp_IsElided(const PcpNodeRef& node);
+    friend void Pcp_SetElided(const PcpNodeRef& node);
 
     // Private constructor for internal use.
     PcpNodeRef(PcpPrimIndex_Graph* graph, size_t idx)

@@ -40,6 +40,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/smallVector.h"
 
 #include <algorithm>
 #include <functional>
@@ -1783,6 +1784,19 @@ _AddArc(
         return PcpNodeRef();
     }
 
+    // Nodes implied from an elided node are elided too: the set of elided nodes
+    // is closed under origin.  Here we enforce this for nodes that would be
+    // added after their origin was elided; _ElideNodesWithElidedOrigins handles
+    // nodes that already existed.  Without this, an elided class can be implied
+    // across an arc into a context where its opinions contribute.  See the
+    // TrickyNestedRelocatesAndInherits museum case.
+    if (origin && Pcp_IsElided(origin)) {
+        PCP_INDEXING_MSG(
+            indexer, parent, "Skipping because origin %s was elided.",
+            Pcp_FormatSite(origin.GetSite()).c_str());
+        return PcpNodeRef();
+    }
+
     // Check for cycles.  If found, report an error and bail.
     if (PcpErrorArcCyclePtr err =
         _CheckForCycle(parent, origin, arcType, site, indexer->previousFrame)) {
@@ -2815,10 +2829,43 @@ _ElideSubtree(
     // ensure "ancestral" tasks (e.g. ancestral variants) will also
     // be skipped.
     node.SetSpecContributionRestrictedDepth(1);
+    Pcp_SetElided(node);
 
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         _ElideSubtree(*child, cull);
     }
+}
+
+// Elide every node in the graph whose origin is elided, and so on transitively.
+// For example, an implied class may already have been propagated from a class
+// node that relocation processing has just elided.  See the
+// TrickyNestedRelocatesAndInherits2 museum case.  An origin may follow the
+// nodes implied from it in traversal order, so repeat until nothing changes.
+//
+// Eliding a node may detach the graph's shared node pool, which would
+// invalidate a subtree iterator, so collect the nodes before eliding them.
+static void
+_ElideNodesWithElidedOrigins(
+    const Pcp_PrimIndexer& indexer,
+    const PcpNodeRef& root)
+{
+    TfSmallVector<PcpNodeRef, /*LocalCap=*/16> toElide;
+    do {
+        toElide.clear();
+        for (const PcpNodeRef& node : Pcp_GetSubtreeRange(root)) {
+            const PcpNodeRef origin = node.GetOriginNode();
+            if (origin && Pcp_IsElided(origin) && !Pcp_IsElided(node)) {
+                toElide.push_back(node);
+            }
+        }
+        for (const PcpNodeRef& node : toElide) {
+            _ElideSubtree(node, indexer.inputs.cull);
+            PCP_INDEXING_UPDATE(
+                &indexer, node,
+                "Elided subtree whose origin %s was elided",
+                Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
+        }
+    } while (!toElide.empty());
 }
 
 static void
@@ -3040,6 +3087,8 @@ _EvalNodeRelocations(
         // See RelocatePrimsWithSameName test case for an example of this.
         _ElideRelocatedSubtrees(*indexer, newNode);
     }
+
+    _ElideNodesWithElidedOrigins(*indexer, node.GetRootNode());
 }
 
 static void

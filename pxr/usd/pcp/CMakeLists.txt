@@ -977,6 +977,22 @@ pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocatesToNewRootPrim.txt compositionErrors_TrickyInheritsAndRelocatesToNewRootPrim.txt
 )
 
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits.txt
+)
+
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits2/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits2.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits2.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits2.txt
+)
+
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyInheritsInVariants/root.usda" 
