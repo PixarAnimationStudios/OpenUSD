@@ -1390,6 +1390,7 @@ struct PcpCache::_ParallelIndexer
         _parentCache = parentCache;
 
         _toCompute.clear();
+        _toComputeRoots.clear();
         _indexIsInstanceable.clear();
     }
 
@@ -1398,6 +1399,9 @@ struct PcpCache::_ParallelIndexer
         WorkWithScopedParallelism([this]() {
                 Pcp_Dependencies::ConcurrentPopulationContext
                     populationContext(*_cache->_primDependencies);
+                for (auto const& [_, rootPath] : _toCompute) {
+                    _toComputeRoots.insert(rootPath);
+                }
                 TF_FOR_ALL(i, _toCompute) {
                     _dispatcher.Run(&This::_ComputeIndex, this,
                                     i->first, i->second, /*checkCache=*/true);
@@ -1412,6 +1416,7 @@ struct PcpCache::_ParallelIndexer
         // future calls.
         constexpr size_t MaxSize = 1024;
         _ClearMaybeAsync(_toCompute, _toCompute.size() >= MaxSize);
+        _ClearMaybeAsync(_toComputeRoots, _toComputeRoots.size() >= MaxSize);
     }
 
     // Add an index to compute.
@@ -1628,9 +1633,12 @@ struct PcpCache::_ParallelIndexer
         // If ancestorIndexPath is descendant to any of the roots in
         // _toCompute, the corresponding index must have already been
         // computed during the current parallel indexing invocation.
+        // Look for it and its ancestors in _toComputeRoots rather than testing
+        // every root.
         const bool ancestorIndexWasComputed = [&]() {
-            for (auto const& [_, rootPath] : _toCompute) {
-                if (ancestorIndexPath.HasPrefix(rootPath)) {
+            for (SdfPath p = ancestorIndexPath; !p.IsEmpty();
+                 p = p.GetParentPath()) {
+                if (_toComputeRoots.count(p)) {
                     return true;
                 }
             }
@@ -1676,6 +1684,7 @@ struct PcpCache::_ParallelIndexer
     tbb::spin_mutex _allErrorsMutex;
     const ArResolverScopedCache* _parentCache;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
+    std::unordered_set<SdfPath, TfHash> _toComputeRoots;
     tbb::concurrent_queue<
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs>
         > _toPublish;
