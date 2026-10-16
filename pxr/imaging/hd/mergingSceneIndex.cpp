@@ -76,7 +76,11 @@ HdMergingSceneIndex::InsertInputScene(
 const HdMergingSceneIndex::_InputEntries&
 HdMergingSceneIndex::_GetInputEntriesByPath(SdfPath const& primPath) const
 {
-    TRACE_FUNCTION();
+    // Avoid an infinite loop below if provided a path such as <> or <.>.
+    if (!primPath.IsAbsoluteRootOrPrimPath()) {
+        static const HdMergingSceneIndex::_InputEntries empty;
+        return empty;
+    }
 
     if (_inputs.size() < 5) {
         // It is common for merging scene indexes to have few inputs,
@@ -85,6 +89,8 @@ HdMergingSceneIndex::_GetInputEntriesByPath(SdfPath const& primPath) const
         // list.
         return _inputs;
     }
+
+    TRACE_FUNCTION();
 
     // Find the closest enclosing path table entry.
     for (SdfPath p = primPath; !p.IsEmpty(); p = p.GetParentPath()) {
