@@ -325,7 +325,21 @@ HdChangeTracker::RemoveSprimFromSprimSprimDependencies(SdfPath const& sprimId)
         if (_sprimSprimTargetDependencies.find(a, sprimId)) {
             // If sprim is parent, mark its children dirty before removing.
             for (const SdfPath & childPath : a->second) {
-                MarkSprimDirty(childPath, ~Clean);
+                // This was MarkSprimDirty.
+                //
+                // Replacing it by a guarded call to _MarkSprimDirty to
+                // do what MarkSprimDirty did through the _emulationSceneIndex.
+                // That is, _emulationSceneIndex->DirtyPrims resulted in a call
+                // to HdSceneIndexAdapterSceneDelegate::PrimsDirtied which
+                // checked that the prim existed before calling _MarkSprimDirty.
+                //
+                // Without guarding _MarkSprimDirty, we hit TF_VERIFY in
+                // _MarkSprimDirty during ~HdSceneIndexAdapterSceneDelegate in
+                // some tests.
+                //
+                if (_sprimState.find(childPath) != _sprimState.end()) {
+                    _MarkSprimDirty(childPath, ~Clean);
+                }
                 _RemoveDependency(
                     _sprimSprimSourceDependencies, childPath, sprimId);
             }
