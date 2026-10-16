@@ -1,0 +1,191 @@
+{
+  "boost_python": {
+    "backend": "Boost.Python",
+    "python_version": "3.13.15",
+    "benchmarks": {
+      "Gf.Vec3d math (50k ops)": {
+        "min_s": 0.30272955005057156,
+        "median_s": 0.30576771800406277,
+        "mean_s": 0.3097468371436532,
+        "stdev_s": 0.0078116469668323895,
+        "iterations": 50000,
+        "ops_per_sec": 163522.82159274787
+      },
+      "Gf.Matrix4d transform & inverse (30k ops)": {
+        "min_s": 0.09040255600120872,
+        "median_s": 0.09122716204728931,
+        "mean_s": 0.09118025041451412,
+        "stdev_s": 0.0004777686668122083,
+        "iterations": 30000,
+        "ops_per_sec": 328849.42737173976
+      },
+      "Gf.Range3d & Gf.Quatd (30k ops)": {
+        "min_s": 0.08081466192379594,
+        "median_s": 0.0813952669268474,
+        "mean_s": 0.08475970839416343,
+        "stdev_s": 0.005658469271237618,
+        "iterations": 30000,
+        "ops_per_sec": 368571.79947529366
+      },
+      "VtArray construction & indexing (2k arrays)": {
+        "min_s": 0.046260814066044986,
+        "median_s": 0.04664951201993972,
+        "mean_s": 0.04662555416247675,
+        "stdev_s": 0.00027288358249616737,
+        "iterations": 2000,
+        "ops_per_sec": 42872.90291793677
+      },
+      "Sdf.Path manipulation (40k ops)": {
+        "min_s": 0.07660752697847784,
+        "median_s": 0.07987968705128878,
+        "mean_s": 0.0793575455733974,
+        "stdev_s": 0.001291218833048951,
+        "iterations": 40000,
+        "ops_per_sec": 500753.08850818337
+      },
+      "Sdf.Layer PrimSpec authoring (2k prims)": {
+        "min_s": 0.022284787031821907,
+        "median_s": 0.026071044034324586,
+        "mean_s": 0.024933875987439284,
+        "stdev_s": 0.0016908914578016802,
+        "iterations": 2000,
+        "ops_per_sec": 76713.4602422075
+      },
+      "Usd.Stage define & traverse (2k prims)": {
+        "min_s": 0.10719068604521453,
+        "median_s": 0.12320552906021476,
+        "mean_s": 0.11949077486393175,
+        "stdev_s": 0.007743701548775627,
+        "iterations": 2000,
+        "ops_per_sec": 16233.037715560084
+      },
+      "Usd.Attribute time-samples set/get (5k samples)": {
+        "min_s": 0.03861540905199945,
+        "median_s": 0.04052091611083597,
+        "mean_s": 0.04281847874101784,
+        "stdev_s": 0.004354843090569779,
+        "iterations": 5000,
+        "ops_per_sec": 123393.06412331869
+      },
+      "UsdGeom XformCache & BBoxCache (1k prims)": {
+        "min_s": 0.029895665938965976,
+        "median_s": 0.04042299301363528,
+        "mean_s": 0.037412321710559936,
+        "stdev_s": 0.004622388511492383,
+        "iterations": 1000,
+        "ops_per_sec": 24738.395785356246
+      },
+      "UsdShade Material & Shader binding (500 mats)": {
+        "min_s": 0.13692359207198024,
+        "median_s": 0.1593009060015902,
+        "mean_s": 0.15722021971097483,
+        "stdev_s": 0.01504192203138913,
+        "iterations": 500,
+        "ops_per_sec": 3138.714101192926
+      },
+      "UsdLux & UsdPhysics schema authoring (800 prims)": {
+        "min_s": 0.19346845103427768,
+        "median_s": 0.2255248479777947,
+        "mean_s": 0.21843197871930897,
+        "stdev_s": 0.012484296012462235,
+        "iterations": 800,
+        "ops_per_sec": 3547.280963376454
+      }
+    }
+  },
+  "nanobind": {
+    "backend": "nanobind",
+    "python_version": "3.13.15",
+    "benchmarks": {
+      "Gf.Vec3d math (50k ops)": {
+        "min_s": 0.05519593704957515,
+        "median_s": 0.057671766029670835,
+        "mean_s": 0.057526099029928446,
+        "stdev_s": 0.0021556972177813314,
+        "iterations": 50000,
+        "ops_per_sec": 866975.3579988537
+      },
+      "Gf.Matrix4d transform & inverse (30k ops)": {
+        "min_s": 0.019820075947791338,
+        "median_s": 0.020445966976694763,
+        "mean_s": 0.02041420987474599,
+        "stdev_s": 0.0005339890375221742,
+        "iterations": 30000,
+        "ops_per_sec": 1467282.0333807326
+      },
+      "Gf.Range3d & Gf.Quatd (30k ops)": {
+        "min_s": 0.022857341915369034,
+        "median_s": 0.023074076045304537,
+        "mean_s": 0.023153993700231825,
+        "stdev_s": 0.0002609385602172204,
+        "iterations": 30000,
+        "ops_per_sec": 1300160.4025702626
+      },
+      "VtArray construction & indexing (2k arrays)": {
+        "min_s": 0.009077623952180147,
+        "median_s": 0.009121296927332878,
+        "mean_s": 0.009235065546818078,
+        "stdev_s": 0.00022773443861618918,
+        "iterations": 2000,
+        "ops_per_sec": 219267.0643148125
+      },
+      "Sdf.Path manipulation (40k ops)": {
+        "min_s": 0.040578295942395926,
+        "median_s": 0.04121299006510526,
+        "mean_s": 0.04133253483035203,
+        "stdev_s": 0.0006780411082874648,
+        "iterations": 40000,
+        "ops_per_sec": 970567.7733358083
+      },
+      "Sdf.Layer PrimSpec authoring (2k prims)": {
+        "min_s": 0.014651765930466354,
+        "median_s": 0.014887562952935696,
+        "mean_s": 0.014948140114678867,
+        "stdev_s": 0.00027231922224922405,
+        "iterations": 2000,
+        "ops_per_sec": 134340.32194004042
+      },
+      "Usd.Stage define & traverse (2k prims)": {
+        "min_s": 0.09131656994577497,
+        "median_s": 0.0942062659887597,
+        "mean_s": 0.09601477084548346,
+        "stdev_s": 0.005900250159045865,
+        "iterations": 2000,
+        "ops_per_sec": 21230.0103290224
+      },
+      "Usd.Attribute time-samples set/get (5k samples)": {
+        "min_s": 0.029758024960756302,
+        "median_s": 0.03380851401016116,
+        "mean_s": 0.03312815629344966,
+        "stdev_s": 0.0027661758838977897,
+        "iterations": 5000,
+        "ops_per_sec": 147891.7410714132
+      },
+      "UsdGeom XformCache & BBoxCache (1k prims)": {
+        "min_s": 0.038313645985908806,
+        "median_s": 0.03889050194993615,
+        "mean_s": 0.039670599391683936,
+        "stdev_s": 0.0022841533799064914,
+        "iterations": 1000,
+        "ops_per_sec": 25713.2191630569
+      },
+      "UsdShade Material & Shader binding (500 mats)": {
+        "min_s": 0.14345772692468017,
+        "median_s": 0.14589159796014428,
+        "mean_s": 0.14667849866340735,
+        "stdev_s": 0.003705840154979558,
+        "iterations": 500,
+        "ops_per_sec": 3427.2021623657424
+      },
+      "UsdLux & UsdPhysics schema authoring (800 prims)": {
+        "min_s": 0.1952724950388074,
+        "median_s": 0.1991729310248047,
+        "mean_s": 0.19972797642861093,
+        "stdev_s": 0.00319359879500964,
+        "iterations": 800,
+        "ops_per_sec": 4016.6100678629323
+      }
+    }
+  },
+  "markdown_table": "| Benchmark | Boost.Python Median (ms) | nanobind Median (ms) | Speedup |\n| :--- | ---: | ---: | ---: |\n| Gf.Vec3d math (50k ops) | 305.77 | 57.67 | **5.30x** |\n| Gf.Matrix4d transform & inverse (30k ops) | 91.23 | 20.45 | **4.46x** |\n| Gf.Range3d & Gf.Quatd (30k ops) | 81.40 | 23.07 | **3.53x** |\n| VtArray construction & indexing (2k arrays) | 46.65 | 9.12 | **5.11x** |\n| Sdf.Path manipulation (40k ops) | 79.88 | 41.21 | **1.94x** |\n| Sdf.Layer PrimSpec authoring (2k prims) | 26.07 | 14.89 | **1.75x** |\n| Usd.Stage define & traverse (2k prims) | 123.21 | 94.21 | **1.31x** |\n| Usd.Attribute time-samples set/get (5k samples) | 40.52 | 33.81 | **1.20x** |\n| UsdGeom XformCache & BBoxCache (1k prims) | 40.42 | 38.89 | **1.04x** |\n| UsdShade Material & Shader binding (500 mats) | 159.30 | 145.89 | **1.09x** |\n| UsdLux & UsdPhysics schema authoring (800 prims) | 225.52 | 199.17 | **1.13x** |\n| **Geometric Mean** | | | **2.07x** |"
+}
