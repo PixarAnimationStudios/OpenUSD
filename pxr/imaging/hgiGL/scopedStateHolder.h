@@ -58,7 +58,6 @@ private:
     int32_t _restoreStencilReferenceValue[2];
     int32_t _restoreStencilFail[2];
     int32_t _restoreStencilReadMask[2];
-    int32_t _restoreStencilPass[2];
     int32_t _restoreStencilDepthFail[2];
     int32_t _restoreStencilDepthPass[2];
     int32_t _restoreStencilWriteMask[2];
