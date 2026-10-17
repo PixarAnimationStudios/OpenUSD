@@ -166,6 +166,18 @@ static NcColorSpace _colorSpaces[] = {
         { 0,0,0, 0,0,0, 0,0,0 }
     },
     {
+        {"sRGB Encoded Rec.709 (sRGB) - Display-referred",
+         "srgb_rec709_display",
+         { 0.640, 0.330 },
+         { 0.300, 0.600 },
+         { 0.150, 0.060 },
+         _WpD65,
+         2.4,
+         0.055},
+        0, 0,
+        { 0,0,0, 0,0,0, 0,0,0 }
+    },
+    {
         {"Gamma 2.4 Encoded Rec.709", "g24_rec709_scene",
          { 0.640, 0.330 },
          { 0.300, 0.600 },
