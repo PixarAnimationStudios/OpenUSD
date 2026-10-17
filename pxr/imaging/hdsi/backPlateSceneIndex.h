@@ -131,6 +131,9 @@ private:
     _IsBackPlateInMap(
         const SdfPath &platePath) const;
 
+    bool
+    _HasTrackedBackPlates() const;
+
     using _BackPlates = std::unordered_set<TfToken,TfToken::HashFunctor>;
     using _CameraToBackPlatesMap = std::map<SdfPath, _BackPlates>;
 

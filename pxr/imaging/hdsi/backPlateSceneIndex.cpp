@@ -218,10 +218,20 @@ HdsiBackPlateSceneIndex::_IsBackPlateInMap(const SdfPath &platePath) const {
     return false;
 }
 
+bool
+HdsiBackPlateSceneIndex::_HasTrackedBackPlates() const {
+    return !_cameraToBackPlates.empty();
+}
+
 HdSceneIndexPrim
 HdsiBackPlateSceneIndex::GetPrim(const SdfPath &primPath) const
 {
+    if (!_HasTrackedBackPlates()) {
+        return _GetInputSceneIndex()->GetPrim(primPath);
+    }
+
     TRACE_FUNCTION();
+
     if (primPath.IsAbsoluteRootPath()) {
         return _GetInputSceneIndex()->GetPrim(primPath);
     }
@@ -248,6 +258,10 @@ SdfPathVector
 HdsiBackPlateSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
+    if (!_HasTrackedBackPlates()) {
+        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    }
+
     TRACE_FUNCTION();
 
     // Case 1: The prim path is the camera prim's path. Return all back plate
@@ -445,6 +459,11 @@ HdsiBackPlateSceneIndex::_PrimsDirtied(
             _RemoveBackPlateChildren(
                 entry.primPath,
                 isObserved ? &removedBackPlatePrims : nullptr);
+
+            // XXX Below, we're querying the prim to check if it has back
+            // plates. For the universal locator set, we'd end up querying
+            // non-camera prims. Scope this to just cameras by tracking all
+            // camera prims in _PrimsAdded.
             _AddBackPlateChildren(
                 entry.primPath,
                 isObserved ? &addedBackPlatePrims : nullptr);
@@ -455,6 +474,8 @@ HdsiBackPlateSceneIndex::_PrimsDirtied(
                 HdXformSchema::GetDefaultLocator()) ||
             entry.dirtyLocators.Intersects(
                 _GetAdditionalDirtyLocators())) {
+            
+            // XXX Here too we end up querying the prim.
             _DirtyBackPlateChildren(
                 entry.primPath,
                 isObserved ? &dirtiedBackPlatePrims : nullptr);
