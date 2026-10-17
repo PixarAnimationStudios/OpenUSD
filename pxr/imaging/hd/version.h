@@ -172,7 +172,8 @@
 // 107 -> 108: Adding HdLegacyRendrControlInterface::AddCollection and
 //             ReloadShaderPrograms.
 // 108 -> 109: Added HdSurfaceSchema.
-#define HD_API_VERSION 109
+// 109 -> 110: Added excludedPurposesHint to HdSceneIndexInputArgsSchema.
+#define HD_API_VERSION 110
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

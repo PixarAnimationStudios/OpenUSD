@@ -1754,6 +1754,10 @@
                            the material render contexts correctly.''')),
             ('renderSettingDescriptors', 'HdRenderSettingDescriptorContainerSchema',
              dict(DOC = '''Render settings advertised by rendererer.''')),
+            ('excludedPurposesHint', T_TOKENARRAY,
+             dict(DOC = '''Hint listing prim purposes (e.g. render, proxy, guide) that
+             are typically excluded (i.e. not consumed or rendered) by the
+             renderer. See UsdGeomImageable and HdPurposeSchema for more information.'''))
         ],
     ),
 

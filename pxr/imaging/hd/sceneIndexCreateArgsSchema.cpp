@@ -60,17 +60,25 @@ HdSceneIndexCreateArgsSchema::GetRenderSettingDescriptors() const
         HdSceneIndexCreateArgsSchemaTokens->renderSettingDescriptors));
 }
 
+HdTokenArrayDataSourceHandle
+HdSceneIndexCreateArgsSchema::GetExcludedPurposesHint() const
+{
+    return _GetTypedDataSource<HdTokenArrayDataSource>(
+        HdSceneIndexCreateArgsSchemaTokens->excludedPurposesHint);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneIndexCreateArgsSchema::BuildRetained(
         const HdBoolDataSourceHandle &motionBlurSupport,
         const HdBoolDataSourceHandle &cameraMotionBlurSupport,
         const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo,
-        const HdContainerDataSourceHandle &renderSettingDescriptors
+        const HdContainerDataSourceHandle &renderSettingDescriptors,
+        const HdTokenArrayDataSourceHandle &excludedPurposesHint
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
 
@@ -92,6 +100,11 @@ HdSceneIndexCreateArgsSchema::BuildRetained(
     if (renderSettingDescriptors) {
         _names[_count] = HdSceneIndexCreateArgsSchemaTokens->renderSettingDescriptors;
         _values[_count++] = renderSettingDescriptors;
+    }
+
+    if (excludedPurposesHint) {
+        _names[_count] = HdSceneIndexCreateArgsSchemaTokens->excludedPurposesHint;
+        _values[_count++] = excludedPurposesHint;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -128,6 +141,14 @@ HdSceneIndexCreateArgsSchema::Builder::SetRenderSettingDescriptors(
     return *this;
 }
 
+HdSceneIndexCreateArgsSchema::Builder &
+HdSceneIndexCreateArgsSchema::Builder::SetExcludedPurposesHint(
+    const HdTokenArrayDataSourceHandle &excludedPurposesHint)
+{
+    _excludedPurposesHint = excludedPurposesHint;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneIndexCreateArgsSchema::Builder::Build()
 {
@@ -135,7 +156,8 @@ HdSceneIndexCreateArgsSchema::Builder::Build()
         _motionBlurSupport,
         _cameraMotionBlurSupport,
         _legacyRenderDelegateInfo,
-        _renderSettingDescriptors
+        _renderSettingDescriptors,
+        _excludedPurposesHint
     );
 } 
 
