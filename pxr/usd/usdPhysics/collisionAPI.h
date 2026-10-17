@@ -204,6 +204,19 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get the rigid body that owns this collider.
+    ///
+    /// A collider belongs to the nearest ancestor (or itself) with an enabled
+    /// UsdPhysicsRigidBodyAPI. A body whose physics:rigidBodyEnabled resolves
+    /// to false takes no part in simulation and is treated as though the API
+    /// were not applied at all, so the search continues past it to the nearest
+    /// enabled body above.
+    ///
+    /// \return The enabled rigid body prim that owns this collider, or an
+    /// invalid prim when no enabled rigid body exists in its ancestry.
+    USDPHYSICS_API
+    UsdPrim GetBody() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
