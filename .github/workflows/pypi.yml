@@ -187,26 +187,50 @@ jobs:
   Windows:
     strategy:
       matrix:
+        ARCH:
+          - NAME: x64
+            RUNNER: windows-2022
+            VCVARS: vcvars64.bat
+            PLAT_NAME: win_amd64
+            PACKAGING_DRIVE: 'D:'
+            BUILD_ARGS: ''
+            TIMEOUT: 60
+          - NAME: arm64
+            RUNNER: windows-11-arm
+            VCVARS: vcvarsarm64.bat
+            PLAT_NAME: win_arm64
+            # The Windows ARM64 runner does not have a D drive
+            PACKAGING_DRIVE: 'C:'
+            # Windows ARM64 builds require oneTBB
+            BUILD_ARGS: --onetbb
+            TIMEOUT: 120
         PYTHON:
           - VERSION_SPEC: '3.11'
+            ARM64_VERSION_SPEC: '3.11'
             TAG: cp311
           - VERSION_SPEC: '3.12'
+            ARM64_VERSION_SPEC: '3.12'
             TAG: cp312
           - VERSION_SPEC: '3.13.5'
+            ARM64_VERSION_SPEC: '3.13'
             TAG: cp313
           - VERSION_SPEC: '3.14.3'
+            ARM64_VERSION_SPEC: '3.14'
             TAG: cp314
-    runs-on: windows-2022
+    runs-on: ${{ matrix.ARCH.RUNNER }}
     permissions:
       contents: write # Grant write permissions in order to upload artifacts
-    timeout-minutes: 60
+    timeout-minutes: ${{ matrix.ARCH.TIMEOUT }}
+    env:
+      PACKAGING_DIR: ${{ matrix.ARCH.PACKAGING_DRIVE }}\packaging
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
       - name: Install Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
-          python-version: ${{ matrix.PYTHON.VERSION_SPEC }}
+          python-version: ${{ matrix.ARCH.NAME == 'arm64' && matrix.PYTHON.ARM64_VERSION_SPEC || matrix.PYTHON.VERSION_SPEC }}
+          architecture: ${{ matrix.ARCH.NAME }}
           check-latest: false
       - name: Install dependencies  
         run: |
@@ -215,33 +239,34 @@ jobs:
         shell: cmd
       - name: Build USD
         run: |
-          call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat
+          :: Locate Visual Studio with vswhere since the install path differs between runner images
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set VS_INSTALL_DIR=%%i
+          call "%VS_INSTALL_DIR%\VC\Auxiliary\Build\${{ matrix.ARCH.VCVARS }}" || exit /b 1
           set BOOST_ROOT=
           python --version
-          python build_scripts/build_usd.py --build-monolithic --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_BUILD_EXEC=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo -DPXR_PYTHON_INSTALL_DIR=lib/python" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
+          python build_scripts/build_usd.py ${{ matrix.ARCH.BUILD_ARGS }} --build-monolithic --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON -DPXR_BUILD_USD_TOOLS=OFF -DPXR_BUILD_EXEC=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo -DPXR_PYTHON_INSTALL_DIR=lib/python" --no-materialx --no-imaging --no-examples --no-tutorials --build USDgen/build --src USDgen/src USDinst -v
         shell: cmd
       - name: Packaging USD
         run: |
           dir
-          mkdir D:\packaging
-          xcopy /E /I USDinst D:\packaging\inst
-          copy build_scripts\pypi\package_files\* D:\packaging
-          copy LICENSE.txt D:\packaging
-          dir D:\packaging
-          dir D:\packaging\inst
+          mkdir %PACKAGING_DIR%
+          xcopy /E /I USDinst %PACKAGING_DIR%\inst
+          copy build_scripts\pypi\package_files\* %PACKAGING_DIR%
+          copy LICENSE.txt %PACKAGING_DIR%
+          dir %PACKAGING_DIR%
+          dir %PACKAGING_DIR%\inst
         shell: cmd
       - name: Running setup.py
         run: |
-          D:
-          cd D:\packaging
-          python setup.py ${{ env.POST_RELEASE_TAG }} bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name win_amd64
+          cd /d %PACKAGING_DIR%
+          python setup.py ${{ env.POST_RELEASE_TAG }} bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }} --plat-name ${{ matrix.ARCH.PLAT_NAME }}
           dir
         shell: cmd
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: dist-windows-${{ matrix.PYTHON.TAG }}
-          path: D:\packaging\dist
+          name: dist-windows-${{ matrix.ARCH.NAME }}-${{ matrix.PYTHON.TAG }}
+          path: ${{ env.PACKAGING_DIR }}\dist
 
   CollectPackages:
     if: ${{ always() }}
@@ -334,6 +359,26 @@ jobs:
             PYTHON_VERSION_SPEC: '3.14.3'
             IMAGE: windows-2022
             PYTHON_INTERPRETER: python3
+          - NAME: Windows_ARM64_Python311
+            PYTHON_VERSION_SPEC: '3.11'
+            IMAGE: windows-11-arm
+            PYTHON_ARCH: arm64
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_ARM64_Python312
+            PYTHON_VERSION_SPEC: '3.12'
+            IMAGE: windows-11-arm
+            PYTHON_ARCH: arm64
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_ARM64_Python313
+            PYTHON_VERSION_SPEC: '3.13'
+            IMAGE: windows-11-arm
+            PYTHON_ARCH: arm64
+            PYTHON_INTERPRETER: python3
+          - NAME: Windows_ARM64_Python314
+            PYTHON_VERSION_SPEC: '3.14'
+            IMAGE: windows-11-arm
+            PYTHON_ARCH: arm64
+            PYTHON_INTERPRETER: python3
     runs-on: ${{ matrix.BUILD_CONFIG.IMAGE }}
     permissions:
       contents: write # Grant write permissions in order to upload artifacts
@@ -342,6 +387,7 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
           python-version: ${{ matrix.BUILD_CONFIG.PYTHON_VERSION_SPEC }}
+          architecture: ${{ matrix.BUILD_CONFIG.PYTHON_ARCH }}
           check-latest: false
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
