@@ -120,27 +120,6 @@ HdxOitRenderTask::Prepare(HdTaskContext* ctx,
         HdxRenderTask::Prepare(ctx, renderIndex);
         HdxOitBufferAccessor(ctx).RequestOitBuffers();
 
-        // OIT expects alphaThreshold to be 0. Because HdStRenderPassState
-        // conditionally includes it in the uniform BAR when it isn't zero, we
-        // have to keep it out of there. The shaders were compiled against a
-        // uniform BAR without alphaThreshold. If an application sends down a
-        // non-zero alphaThreshold, the BAR layout will change and the shader
-        // will read garbage after the insertion. We protect against misbehaving
-        // applications here by detecting erroneous alphaThreshold and calling
-        // Prepare() again to make sure the BAR layout is as the shaders expect.
-        const HdRenderPassStateSharedPtr opaquePassState =
-            _GetRenderPassState(ctx);
-        auto* const stOpaquePassState =
-                dynamic_cast<HdStRenderPassState*>(opaquePassState.get());
-        if (stOpaquePassState) {
-            if (stOpaquePassState->GetAlphaThreshold() != 0.0f) {
-                stOpaquePassState->SetAlphaThreshold(0.0f);
-                // This forced Prepare() needs to happen here, before the
-                // render delegate commits the malformed uniform BAR to the GPU.
-                stOpaquePassState->Prepare(renderIndex->GetResourceRegistry());
-            }
-        }
-
         // XXX: We cannot sync or prepare the translucent pass here either
         // because the separate, application-controlled setup task's Prepare()
         // phase may not have completed yet. We have to wait until our own
