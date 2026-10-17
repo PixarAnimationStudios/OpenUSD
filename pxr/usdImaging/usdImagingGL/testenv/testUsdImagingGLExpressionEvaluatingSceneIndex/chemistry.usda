@@ -1,0 +1,839 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    doc = """
+    Chemistry-themed scene for testUsdImagingGLExpressionEvaluatingSceneIndex
+    generated using claude.
+
+    Six labelled rows, each containing 3 methane molecules and 2 water molecules.
+
+      Row_NoInstancing      y=0   Plain composed molecules; no instancing.
+      Row_NI_1Level         y=3   Molecule-level native instances (single level).
+      Row_NI_2Level         y=6   Nested native instances (molecule + atoms).
+      Row_PI_NoInstancing   y=9   PointInstancer; non-instanced prototype.
+      Row_PI_NI1            y=12  PointInstancer; NI 1-level prototype.
+      Row_PI_NI2            y=15  PointInstancer; NI 2-level prototype.
+
+    InvisControl carries CollectionAPI:invis; the membershipExpression is
+    authored by each test.
+    """
+)
+
+# ---------------------------------------------------------------------------
+# Atoms and bonds
+
+class Xform "_class_Atom"
+{
+    def Sphere "Shell"
+    {
+        double radius = 0.3
+    }
+}
+
+class Xform "_class_Bond"
+{
+    def Cylinder "Geom"
+    {
+        token axis = "Y"
+        double height = 1
+        double radius = 0.04
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Molecule structural template
+
+class Xform "_class_Molecule"
+{
+    def Xform "Atoms" {}
+    def Xform "Bonds" {}
+}
+
+# ---------------------------------------------------------------------------
+# Water molecule (H2O): 1 Oxygen + 2 Hydrogen in a V-shape, plus 2 O-H bonds.
+#   Oxygen:     (0,    0,   0)  scale 0.40  red
+#   Hydrogen_1: (-0.5, 0.3, 0)  scale 0.25  white
+#   Hydrogen_2: ( 0.5, 0.3, 0)  scale 0.25  white
+# O-H bond length = sqrt(0.5^2 + 0.3^2) ~= 0.583
+# Bond rotation from +Y: +/-59 deg around Z to align with H positions.
+
+class Xform "_class_WaterMolecule" (
+    inherits = </_class_Molecule>
+)
+{
+    over "Atoms"
+    {
+        def Xform "Oxygen" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (0, 0, 0)
+            float3 xformOp:scale = (0.4, 0.4, 0.4)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(1, 0.1, 0.1)]
+            }
+        }
+
+        def Xform "Hydrogen_1" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (-0.5, 0.3, 0)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+
+        def Xform "Hydrogen_2" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (0.5, 0.3, 0)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+    }
+
+    over "Bonds"
+    {
+        def Xform "OH_1" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (-0.25, 0.15, 0)
+            float3 xformOp:rotateXYZ = (0, 0, 59)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            over "Geom" {
+                double height = 0.583
+            }
+        }
+
+        def Xform "OH_2" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (0.25, 0.15, 0)
+            float3 xformOp:rotateXYZ = (0, 0, -59)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            over "Geom" {
+                double height = 0.583
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Water molecule NI: marks each atom as instanceable = true.
+
+class Xform "_class_WaterMoleculeNI" (
+    inherits = </_class_WaterMolecule>
+)
+{
+    over "Atoms"
+    {
+        over "Oxygen"     ( instanceable = true ) {}
+        over "Hydrogen_1" ( instanceable = true ) {}
+        over "Hydrogen_2" ( instanceable = true ) {}
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Methane molecule (CH4): 1 Carbon + 4 Hydrogen in a tetrahedral arrangement.
+#   Tetrahedron vertices at distance 0.6 from center (1,±1,±1)/sqrt(3) * 0.6:
+#     H1: ( 0.3464,  0.3464,  0.3464)
+#     H2: ( 0.3464, -0.3464, -0.3464)
+#     H3: (-0.3464,  0.3464, -0.3464)
+#     H4: (-0.3464, -0.3464,  0.3464)
+# Bond midpoints at half each H offset. xformOp:orient quaternions (w,xi,yj,zk)
+# rotate the +Y cylinder axis to each tetrahedral direction.
+
+class Xform "_class_MethaneMolecule" (
+    inherits = </_class_Molecule>
+)
+{
+    over "Atoms"
+    {
+        def Xform "Carbon" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (0, 0, 0)
+            float3 xformOp:scale = (0.4, 0.4, 0.4)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.1, 0.3, 0.9)]
+            }
+        }
+
+        def Xform "Hydrogen_1" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (0.3464, 0.3464, 0.3464)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+
+        def Xform "Hydrogen_2" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (0.3464, -0.3464, -0.3464)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+
+        def Xform "Hydrogen_3" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (-0.3464, 0.3464, -0.3464)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+
+        def Xform "Hydrogen_4" (
+            inherits = </_class_Atom>
+        )
+        {
+            double3 xformOp:translate = (-0.3464, -0.3464, 0.3464)
+            float3 xformOp:scale = (0.25, 0.25, 0.25)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            over "Shell" {
+                color3f[] primvars:displayColor = [(0.9, 0.85, 0.1)]
+            }
+        }
+    }
+
+    over "Bonds"
+    {
+        # Quaternions computed as: half = normalize(Y + dir); q = (dot(Y,half), cross(Y,half))
+        def Xform "CH_1" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (0.1732, 0.1732, 0.1732)
+            quatf xformOp:orient = (0.8881, 0.3250, 0, -0.3250)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            over "Geom" {
+                double height = 0.6
+            }
+        }
+
+        def Xform "CH_2" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (0.1732, -0.1732, -0.1732)
+            quatf xformOp:orient = (0.4597, -0.6280, 0, -0.6280)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            over "Geom" {
+                double height = 0.6
+            }
+        }
+
+        def Xform "CH_3" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (-0.1732, 0.1732, -0.1732)
+            quatf xformOp:orient = (0.8881, -0.3250, 0, 0.3250)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            over "Geom" {
+                double height = 0.6
+            }
+        }
+
+        def Xform "CH_4" (
+            inherits = </_class_Bond>
+        )
+        {
+            double3 xformOp:translate = (-0.1732, -0.1732, 0.1732)
+            quatf xformOp:orient = (0.4597, 0.6280, 0, 0.6280)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
+            over "Geom" {
+                double height = 0.6
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Methane molecule NI: marks each atom as instanceable = true.
+
+class Xform "_class_MethaneMoleculeNI" (
+    inherits = </_class_MethaneMolecule>
+)
+{
+    over "Atoms"
+    {
+        over "Carbon"     ( instanceable = true ) {}
+        over "Hydrogen_1" ( instanceable = true ) {}
+        over "Hydrogen_2" ( instanceable = true ) {}
+        over "Hydrogen_3" ( instanceable = true ) {}
+        over "Hydrogen_4" ( instanceable = true ) {}
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Label card: vertical quad mesh, 4 units wide x 2 units tall (2:1), facing +Z.
+# UV (0,0)=bottom-left .. (1,1)=top-right. Storm flips images on load so no
+# manual flip is applied in generate_label_textures.py (512x256, 2:1 aspect).
+# Each row overrides material:binding and sets displayName.
+
+class Mesh "_class_Card"
+(
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    # uniform bool doubleSided = true
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 2, 3]
+    point3f[] points = [(-2, -1, 0), (2, -1, 0),
+                        (2,   1, 0), (-2,  1, 0)]
+    normal3f[] normals = [(0, 0, 1), (0, 0, 1), (0, 0, 1), (0, 0, 1)] (
+        interpolation = "vertex"
+    )
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+        interpolation = "vertex"
+    )
+}
+
+# ---------------------------------------------------------------------------
+# Materials — one per row, each reading a different label texture.
+
+def Scope "Materials"
+{
+    def Material "Card_NoInstancing"
+    {
+        token outputs:surface.connect = </Materials/Card_NoInstancing/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_NoInstancing/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_no_instancing.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_NoInstancing/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+
+    def Material "Card_NI_1Level"
+    {
+        token outputs:surface.connect = </Materials/Card_NI_1Level/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_NI_1Level/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_ni_1level.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_NI_1Level/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+
+    def Material "Card_NI_2Level"
+    {
+        token outputs:surface.connect = </Materials/Card_NI_2Level/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_NI_2Level/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_ni_2levels.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_NI_2Level/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+
+    def Material "Card_PI_NoInstancing"
+    {
+        token outputs:surface.connect = </Materials/Card_PI_NoInstancing/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_PI_NoInstancing/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_pi_no_instancing.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_PI_NoInstancing/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+
+    def Material "Card_PI_NI1"
+    {
+        token outputs:surface.connect = </Materials/Card_PI_NI1/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_PI_NI1/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_pi_ni1.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_PI_NI1/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+
+    def Material "Card_PI_NI2"
+    {
+        token outputs:surface.connect = </Materials/Card_PI_NI2/Surface.outputs:surface>
+        def Shader "Surface" {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Materials/Card_PI_NI2/Tex.outputs:rgb>
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            token outputs:surface
+        }
+        def Shader "Tex" {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./label_pi_ni2.png@
+            token inputs:wrapS = "clamp"
+            token inputs:wrapT = "clamp"
+            float2 inputs:st.connect = </Materials/Card_PI_NI2/UV.outputs:result>
+            float3 outputs:rgb
+        }
+        def Shader "UV" {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+
+def Xform "World"
+{
+    # -------------------------------------------------------------------
+    # Label cards — one per row, grouped here so they can be toggled as
+    # a unit independently of the molecule geometry.
+    # Each card bakes in the same y-offset as its corresponding row.
+    # -------------------------------------------------------------------
+    def Scope "Labels" {
+        def Mesh "Card_NoInstancing" (
+            displayName = "No Instancing"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_NoInstancing>
+            double3 xformOp:translate = (-6, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Mesh "Card_NI_1Level" (
+            displayName = "NI 1 Level"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_NI_1Level>
+            double3 xformOp:translate = (-6, 3, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Mesh "Card_NI_2Level" (
+            displayName = "NI 2 Levels"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_NI_2Level>
+            double3 xformOp:translate = (-6, 6, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Mesh "Card_PI_NoInstancing" (
+            displayName = "PI: Non-instanced Prototype"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_PI_NoInstancing>
+            double3 xformOp:translate = (-6, 9, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Mesh "Card_PI_NI1" (
+            displayName = "PI: NI 1-Level Prototype"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_PI_NI1>
+            double3 xformOp:translate = (-6, 12, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+        def Mesh "Card_PI_NI2" (
+            displayName = "PI: NI 2-Level Prototype"
+            inherits = </_class_Card>
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Card_PI_NI2>
+            double3 xformOp:translate = (-6, 15, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 1 — No instancing
+    # -------------------------------------------------------------------
+    def Xform "Row_NoInstancing" (
+        displayName = "No Instancing"
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "WaterMolecule_A" (
+            inherits = </_class_WaterMolecule>
+        )
+        {
+            double3 xformOp:translate = (-1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "WaterMolecule_B" (
+            inherits = </_class_WaterMolecule>
+        )
+        {
+            double3 xformOp:translate = (1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Methane_A" (
+            inherits = </_class_MethaneMolecule>
+        )
+        {
+            double3 xformOp:translate = (-9, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Methane_B" (
+            inherits = </_class_MethaneMolecule>
+        )
+        {
+            double3 xformOp:translate = (-10.5, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Methane_C" (
+            inherits = </_class_MethaneMolecule>
+        )
+        {
+            double3 xformOp:translate = (-12, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 2 — Single-level native instancing (molecule instanceable)
+    # -------------------------------------------------------------------
+    def Xform "Row_NI_1Level" (
+        displayName = "NI 1 Level"
+    )
+    {
+        double3 xformOp:translate = (0, 3, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "WaterMoleculeNI_A" (
+            inherits = </_class_WaterMolecule>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "WaterMoleculeNI_B" (
+            inherits = </_class_WaterMolecule>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI_A" (
+            inherits = </_class_MethaneMolecule>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-9, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI_B" (
+            inherits = </_class_MethaneMolecule>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-10.5, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI_C" (
+            inherits = </_class_MethaneMolecule>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-12, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 3 — Two-level nested native instancing (molecule + atoms)
+    # -------------------------------------------------------------------
+    def Xform "Row_NI_2Level" (
+        displayName = "NI 2 Levels"
+    )
+    {
+        double3 xformOp:translate = (0, 6, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "WaterMoleculeNI2_A" (
+            inherits = </_class_WaterMoleculeNI>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "WaterMoleculeNI2_B" (
+            inherits = </_class_WaterMoleculeNI>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (1.2, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI2_A" (
+            inherits = </_class_MethaneMoleculeNI>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-9, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI2_B" (
+            inherits = </_class_MethaneMoleculeNI>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-10.5, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "MethaneNI2_C" (
+            inherits = </_class_MethaneMoleculeNI>
+            instanceable = true
+        )
+        {
+            double3 xformOp:translate = (-12, 0, 0)
+            token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 4 — PointInstancer, non-instanced prototype
+    # -------------------------------------------------------------------
+    def Xform "Row_PI_NoInstancing" (
+        displayName = "PI: Non-instanced Prototype"
+    )
+    {
+        double3 xformOp:translate = (0, 9, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "PI"
+        {
+            rel prototypes = [
+                </World/Row_PI_NoInstancing/PI/Prototypes/MethaneMolecule>,
+                </World/Row_PI_NoInstancing/PI/Prototypes/WaterMolecule>
+            ]
+            int[] protoIndices = [0, 0, 0, 1, 1]
+            point3f[] positions = [(-9, 0, 0), (-10.5, 0, 0), (-12, 0, 0), (-1.2, 0, 0), (1.2, 0, 0)]
+            int64[] ids = [0, 1, 2, 3, 4]
+
+            def Scope "Prototypes"
+            {
+                def Xform "MethaneMolecule" (
+                    inherits = </_class_MethaneMolecule>
+                ) {}
+                def Xform "WaterMolecule" (
+                    inherits = </_class_WaterMolecule>
+                ) {}
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 5 — PointInstancer, NI 1-level prototype
+    # -------------------------------------------------------------------
+    def Xform "Row_PI_NI1" (
+        displayName = "PI: NI 1-Level Prototype"
+    )
+    {
+        double3 xformOp:translate = (0, 12, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "PI"
+        {
+            rel prototypes = [
+                </World/Row_PI_NI1/PI/Prototypes/MethaneMolecule>,
+                </World/Row_PI_NI1/PI/Prototypes/WaterMolecule>
+            ]
+            int[] protoIndices = [0, 0, 0, 1, 1]
+            point3f[] positions = [(-9, 0, 0), (-10.5, 0, 0), (-12, 0, 0), (-1.2, 0, 0), (1.2, 0, 0)]
+            int64[] ids = [0, 1, 2, 3, 4]
+
+            def Scope "Prototypes"
+            {
+                def Xform "MethaneMolecule" (
+                    inherits = </_class_MethaneMolecule>
+                    instanceable = true
+                ) {}
+                def Xform "WaterMolecule" (
+                    inherits = </_class_WaterMolecule>
+                    instanceable = true
+                ) {}
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # Row 6 — PointInstancer, NI 2-level prototype
+    # -------------------------------------------------------------------
+    def Xform "Row_PI_NI2" (
+        displayName = "PI: NI 2-Level Prototype"
+    )
+    {
+        double3 xformOp:translate = (0, 15, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def PointInstancer "PI"
+        {
+            rel prototypes = [
+                </World/Row_PI_NI2/PI/Prototypes/MethaneMolecule>,
+                </World/Row_PI_NI2/PI/Prototypes/WaterMolecule>
+            ]
+            int[] protoIndices = [0, 0, 0, 1, 1]
+            point3f[] positions = [(-9, 0, 0), (-10.5, 0, 0), (-12, 0, 0), (-1.2, 0, 0), (1.2, 0, 0)]
+            int64[] ids = [0, 1, 2, 3, 4]
+
+            def Scope "Prototypes"
+            {
+                def Xform "MethaneMolecule" (
+                    inherits = </_class_MethaneMoleculeNI>
+                    instanceable = true
+                ) {}
+                def Xform "WaterMolecule" (
+                    inherits = </_class_WaterMoleculeNI>
+                    instanceable = true
+                ) {}
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------
+    # In spirit the "invis" collection here
+    # is similar to the existing renderVisibility collection on UsdRenderPass
+    # prims, so we use a RenderPass prim. 
+    # -------------------------------------------------------------------
+    def RenderPass "InvisControl" (
+        prepend apiSchemas = ["CollectionAPI:invis"]
+    )
+    {
+        uniform token collection:invis:expansionRule = "expandPrims"
+    }
+
+
+    def Xform "Lights"
+    {
+        # Front light — no rotation, so direction is -Z.  This illuminates
+        # the +Z-facing card normals.
+        def DistantLight "Front"
+        {
+            color3f inputs:color = (0.5, 0.5, 0.5)
+            float inputs:exposure = 0.7
+        }
+
+        def DomeLight "Dome"
+        {
+            float inputs:intensity = 1.0
+            color3f inputs:color = (1, 1, 1)
+        }    
+    }
+}
+
+

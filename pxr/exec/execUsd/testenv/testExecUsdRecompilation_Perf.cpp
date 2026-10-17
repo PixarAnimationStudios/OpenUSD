@@ -547,7 +547,7 @@ private:
         _WriteStat(_GetTraceNode(mainThreadNode,
                 "prepare_request_time",
                 "*ExecUsdSystem::PrepareRequest",
-                "*VdfScheduler::Schedule"),
+                "*VdfScheduler::CreateSchedule"),
             "schedule_time", &statsFile);
         _WriteStat(_GetTraceNode(mainThreadNode,
                 "evaluate_time"), &statsFile);
@@ -567,11 +567,11 @@ private:
             "recompile_time", &statsFile);
 
         // Some scene edits might not require scheduling, in which case
-        // there is no node for VdfScheduler::Schedule.
+        // there is no node for VdfScheduler::CreateSchedule.
         _WriteStat(_GetTraceNode(mainThreadNode,
                 "reprepare_request_time",
                 "*ExecUsdSystem::PrepareRequest",
-                "*VdfScheduler::Schedule?"),
+                "*VdfScheduler::CreateSchedule?"),
             "reschedule_time", &statsFile);
 
         _WriteStat(_GetTraceNode(mainThreadNode,

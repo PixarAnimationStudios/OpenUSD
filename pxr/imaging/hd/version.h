@@ -169,7 +169,10 @@
 // 105 -> 106: Add HdCachingSampledDataSource and HdCachingTypedSampledDataSource
 // 106 -> 107: HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport renamed
 //             to IsEnabledNativeImplicitsRenderingSupport.
-#define HD_API_VERSION 107
+// 107 -> 108: Adding HdLegacyRendrControlInterface::AddCollection and
+//             ReloadShaderPrograms.
+// 108 -> 109: Added HdSurfaceSchema.
+#define HD_API_VERSION 109
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

@@ -69,14 +69,6 @@ TF_MAKE_STATIC_DATA(
     _colorSpaceRemappingCallbacks->clear();
 }
 
-TF_MAKE_STATIC_DATA(
-    std::vector<
-        HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransformCallback>,
-    _disableTransformCallbacks)
-{
-    _disableTransformCallbacks->clear();
-}
-
 // Helper function to determine if a HdRenderVar should be excluded
 // from PxrColorDisplayTransform.
 static bool
@@ -500,10 +492,6 @@ private:
     // Returns true if rendering and display color spaces are different
     bool _NeedColorSpaceTransform(const HdRenderSettingsSchema &rsSchema)
     {
-        if (HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransform(_si)) {
-            return false;
-        }
-
         const HdTokenDataSourceHandle colorSpaceDS =
             rsSchema.GetRenderingColorSpace();
         TfToken renderingCsName = (colorSpaceDS)
@@ -779,26 +767,6 @@ HdPrman_DisplayColorSpaceSceneIndexPlugin::RemapColorSpaceName(
         convertedCsName = callback(csName);
     }
     return convertedCsName;
-}
-
-/* static */
-void
-HdPrman_DisplayColorSpaceSceneIndexPlugin::RegisterDisableTransformCallback(
-    const DisableTransformCallback& callback)
-{
-    _disableTransformCallbacks->push_back(callback);
-}
-
-bool
-HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransform(
-    const HdSceneIndexBaseRefPtr& si)
-{
-    for (const auto& callback : *_disableTransformCallbacks) {
-        if (callback(si)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 HdSceneIndexBaseRefPtr

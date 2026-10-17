@@ -8,9 +8,14 @@
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/dispatcher.h"
 
@@ -447,6 +452,7 @@ HdMergingSceneIndex::_PrimsAdded(
     }
 
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Merging Input Scenes");
 
     // Confirm that the type here is not masked by a stronger contributing
     // input. We still send it along as an add because a weaker input providing
@@ -514,6 +520,23 @@ HdMergingSceneIndex::_PrimsAdded(
     }
 }
 
+bool
+HdMergingSceneIndex::_HasOtherInputForPath(
+    const HdSceneIndexBase& sender,
+    const SdfPath& path) const
+{
+    if (_inputsPathTable.find(path) != _inputsPathTable.end()) {
+        return true;
+    }
+    for (const _InputEntry& entry : _GetInputEntriesByPath(path)) {
+        if (get_pointer(entry.sceneIndex) != &sender &&
+            path.HasPrefix(entry.sceneRoot)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 HdMergingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
@@ -530,11 +553,17 @@ HdMergingSceneIndex::_PrimsRemoved(
         return;
     }
 
+    TF_DESCRIBE_SCOPE("Merging Input Scenes");
+
     // Note: if a prim is removed from an input scene, but exists in another
     // input scene, we trigger that as a resync (signaled by PrimsAdded).
     HdSceneIndexObserver::AddedPrimEntries addedEntries;
 
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+        if (!_HasOtherInputForPath(sender, entry.primPath)) {
+            continue;
+        }
+
         const HdSceneIndexPrim prim = GetPrim(entry.primPath);
         if (!prim) {
             continue;

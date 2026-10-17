@@ -377,24 +377,6 @@ pxr_register_test(testUsdviewSelectionHighlighting
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdviewSelectionHighlighting_Delegate
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSelectionHighlighting.py test.usda"
-    TESTENV testenv/testUsdviewSelectionHighlighting
-    IMAGE_DIFF_COMPARE
-        sel_highlight.png
-        sel_highlight_none.png
-        sel_highlight_double.png
-        sel_highlight_instance.png
-        sel_highlight_color.png
-    FAIL 0.05
-    FAIL_PERCENT 0.03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
-)
-
 pxr_register_test(testUsdviewRenderMode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewRenderMode.py test.usda"
@@ -462,29 +444,6 @@ pxr_register_test(testUsdviewSceneLights
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
-
-pxr_register_test(testUsdviewSceneLights_Delegate
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSceneLights.py test.usda"
-    TESTENV testenv/testUsdviewSceneLights
-    IMAGE_DIFF_COMPARE
-        camera_noScene_Storm.png
-        camera_scene_Storm.png
-        domeVis_noScene_Storm.png
-        domeVis_scene_Storm.png
-        domeInvis_noScene_Storm.png
-        domeInvis_scene_Storm.png
-        sceneLights_Storm.png
-        sceneLights_edit_Storm.png
-        noLights_Storm.png
-    FAIL 0.05
-    FAIL_PERCENT 0.3
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
-)
-
 
 pxr_register_test(testUsdviewSceneMaterials
     PYTHON
@@ -891,22 +850,6 @@ pxr_register_test(testUsdviewPointInstancerVariant
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdviewExpressionVariableEdits_Delegate
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
-    TESTENV testenv/testUsdviewExpressionVariableEdits
-    IMAGE_DIFF_COMPARE
-        start.png
-        step_1.png
-        step_2.png
-    FAIL 0.05
-    FAIL_PERCENT 0.03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
-)
-
 pxr_register_test(testUsdviewExpressionVariableEdits
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
@@ -919,24 +862,6 @@ pxr_register_test(testUsdviewExpressionVariableEdits
     FAIL_PERCENT 0.03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdviewInstancingEdits
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
-    TESTENV testenv/testUsdviewInstancingEdits
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        instanceWithParent.png
-        instanceWithParentDeactivated.png
-        completeResyncWithNativeInstances1.png
-        completeResyncWithNativeInstances2.png
-    FAIL 0.04
-    FAIL_PERCENT 0.1
-    WARN 0.02
-    WARN_PERCENT 0.2
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 pxr_register_test(testUsdviewInstancingEdits_SceneIndex

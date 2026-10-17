@@ -8,4 +8,8 @@ pxr_build_test_library(execTest
         api.h
     PUBLIC_CLASSES
         publicClass
+    RESOURCE_FILES
+        plugInfo.json
+    
+    INSTALL_PREFIX ExecTestPlugins
 )

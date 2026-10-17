@@ -515,7 +515,11 @@ _GetPropagatedSpecializesNode(
             break;
         }
 
-        if (rootChild.GetOriginNode() == node &&
+        // Match by site rather than by origin.  _PropagateNodeToRoot reuses an
+        // existing propagated node for the same site, so several placeholders
+        // may share one propagated node whose origin is only the first of them.
+        // See the SpecializesAndDuplicateArcs2 museum case.
+        if (rootChild.HasSameSiteAs(node) &&
             Pcp_IsPropagatedSpecializesNode(rootChild)) {
             return rootChild;
         }
@@ -1797,7 +1801,11 @@ _AddArc(
         opts.skipDuplicateNodes |= indexer->previousFrame->skipDuplicateNodes;
     }
 
-    if (opts.skipDuplicateNodes) {
+    // A node that does not contribute specs cannot introduce duplicate
+    // opinions, so it is never skipped.  Such nodes are placeholders that keep
+    // class-based arcs present for propagation, and skipping one would stop
+    // that propagation.
+    if (opts.skipDuplicateNodes && opts.directNodeShouldContributeSpecs) {
         PcpLayerStackSite siteToAddInCurrentGraph = site;
 
         bool foundDuplicateNode = false;
@@ -3295,8 +3303,9 @@ _AddClassBasedArc(
     if (PcpNodeRef child = findMatchingChild()) {
         PCP_INDEXING_MSG(
             indexer, parent, child,
+            "A%s %s arc to <%s> already exists. Skipping.",
+            arcType == PcpArcTypeInherit ? "n" : "",
             TfEnum::GetDisplayName(arcType).c_str(),
-            "A %s arc to <%s> already exists. Skipping.",
             inheritPath.GetText());
 
         // TODO Need some policy to resolve multiple arcs.  Existing Csd
@@ -3631,10 +3640,19 @@ _EvalImpliedClassTree(
         // We do NOT want to add an implied class arc directly
         // from otherNode to destNode.
         //
+        // The arc that continues the chain is introduced at srcNode's level of
+        // namespace or above.  It is above when it is an ancestral arc, for
+        // example when srcNode is /A/B and otherNode is reached from an arc
+        // authored on /A.  In that case srcChild is further below its
+        // introduction than srcNode is, so compare with >= rather than ==.
+        // Otherwise the chain is shortcut by an implied arc directly from
+        // otherNode to destNode, and for specializes that arc can take a
+        // stronger position than the chain it bypasses.  See the
+        // SpecializesAndAncestralArcs6 museum case.
         if (srcNodeIsStartOfTree
             && PcpIsClassBasedArc(srcNode.GetArcType())
-            && srcNode .GetDepthBelowIntroduction() ==
-               srcChild.GetDepthBelowIntroduction()) {
+            && srcChild.GetDepthBelowIntroduction() >=
+               srcNode .GetDepthBelowIntroduction()) {
 
             PCP_INDEXING_MSG(indexer, srcChild, destNode,
                              "Skipping ancestral class");
@@ -3874,7 +3892,7 @@ _IsRelocatesPlaceholderImpliedArc(
     const bool nodeIsRelocatesPlaceholder =
         parentNode != node.GetOriginNode() && 
         parentNode.GetArcType() == PcpArcTypeRelocate &&
-        parentNode.GetSite() == node.GetSite();
+        parentNode.HasSameSiteAs(node);
     return nodeIsRelocatesPlaceholder;
 }
 

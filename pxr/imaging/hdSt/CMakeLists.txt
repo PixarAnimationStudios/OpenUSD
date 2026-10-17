@@ -246,7 +246,7 @@ pxr_build_test(testHdStQualifiers
         testenv/testHdStQualifiers.cpp
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 pxr_build_test(testHdStBasicDrawing
     LIBRARIES
         hdSt
@@ -608,7 +608,7 @@ pxr_build_test(testHdStSubResourceRegistry
 )
 endif()
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 # Most HdSt tests require setup of a GL context and window. This is the
 # exception.
 pxr_register_test(testHdStBufferSource
@@ -631,11 +631,6 @@ pxr_register_test(testHdStQualifiers
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-
-if (WIN32)
-    message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
 
 #
 # Register tests
@@ -2754,6 +2749,7 @@ pxr_register_test(testHdStInstancingUnbalancedNoBindless
         TF_DEBUG=HD_SAFE_MODE
 )
 if (${PXR_ENABLE_MATERIALX_SUPPORT} AND NOT APPLE)
+if (NOT WIN32)
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_default.mtlx"
     EXPECTED_RETURN_CODE 0
@@ -2761,6 +2757,7 @@ pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     DIFF_COMPARE shadergen_UsdPSdefault.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+endif()
 pxr_register_test(testHdStMaterialXShaderGen_SSmarble
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_marble_solid.mtlx"
     EXPECTED_RETURN_CODE 0
@@ -2782,6 +2779,7 @@ pxr_register_test(testHdStMaterialXShaderGen_SSdefault
     DIFF_COMPARE shadergen_SSdefault.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+if (NOT WIN32)
 pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file"
     EXPECTED_RETURN_CODE 0
@@ -2789,6 +2787,7 @@ pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
     DIFF_COMPARE shadergen_UsdPStextured.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+endif()
 pxr_register_test(testHdStMaterialXShaderGen_SStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2"
     EXPECTED_RETURN_CODE 0
@@ -2796,6 +2795,7 @@ pxr_register_test(testHdStMaterialXShaderGen_SStextured
     DIFF_COMPARE shadergen_SStextured.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+if (NOT WIN32)
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_glass.mtlx"
     EXPECTED_RETURN_CODE 0
@@ -2803,6 +2803,7 @@ pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     DIFF_COMPARE shadergen_UsdPSglass.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+endif()
 pxr_register_test(testHdStMaterialXShaderGen_SStextured_bindless
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2 --bindless"
     EXPECTED_RETURN_CODE 0
@@ -2810,6 +2811,7 @@ pxr_register_test(testHdStMaterialXShaderGen_SStextured_bindless
     DIFF_COMPARE shadergen_SStextured_bindless.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+if (NOT WIN32)
 pxr_register_test(testHdStMaterialXShaderGen_texcoord
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename texcoord.mtlx --primvarMap st:vector2"
     EXPECTED_RETURN_CODE 0
@@ -2817,6 +2819,7 @@ pxr_register_test(testHdStMaterialXShaderGen_texcoord
     DIFF_COMPARE shadergen_texcoord.out
     TESTENV testenv/testHdStMaterialXShaderGen
 )
+endif()
 endif()
 if (NOT APPLE)
 pxr_register_test(testHdStMeshTopology

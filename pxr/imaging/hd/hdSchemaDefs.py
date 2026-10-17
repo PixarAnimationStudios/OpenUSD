@@ -88,7 +88,11 @@
             ('topology', 'HdMeshTopologySchema', {}),
             ('subdivisionScheme', T_TOKEN, {}),
             ('subdivisionTags', 'HdSubdivisionTagsSchema', {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
 
         ADD_DEFAULT_LOCATOR = True,
@@ -128,7 +132,11 @@
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdTetMeshTopologySchema', {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
 
         ADD_DEFAULT_LOCATOR = True,
@@ -173,7 +181,11 @@
             ('vRange', T_VEC2D, {}),
             ('trimCurve', 'HdNurbsPatchTrimCurveSchema', {}),
             ('orientation', T_TOKEN, {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
         
         ADD_DEFAULT_LOCATOR = True,
@@ -381,6 +393,18 @@
             ('min', T_VEC3D, {}),
             ('max', T_VEC3D, {}),
             
+        ],
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
+    # surface
+    dict(
+        SCHEMA_NAME = 'Surface',
+        SCHEMA_TOKEN = 'surface',
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('doubleSided', T_BOOL, {}),
         ],
         ADD_DEFAULT_LOCATOR = True,
     ),
@@ -1532,7 +1556,11 @@
         SCHEMA_TOKEN = 'plane',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
             ('axis', T_TOKEN, {}),
             ('length', T_DOUBLE, {}),
             ('width', T_DOUBLE, {}),

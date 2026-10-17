@@ -9,6 +9,7 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/legacyRenderControlInterface.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/rendererCreateArgsSchema.h"
@@ -197,6 +198,26 @@ public:
 
     SdfPath GetRprimPathFromPrimId(const int primIdx) override {
         return _renderIndex->GetRprimPathFromPrimId(primIdx);
+    }
+
+    void AddCollection(const TfToken &name) override {
+        HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
+        tracker.AddCollection(name);
+        tracker.MarkCollectionDirty(name);
+    }
+    
+    void ReloadShaderPrograms() override {
+        // HdRenderDelegate's expect all materials to be dirtied
+        // even we also communicate shader invalidation through
+        // the resource registry.
+        for (const SdfPath &path :
+                 _renderIndex->GetSprimSubtree(
+                     HdPrimTypeTokens->material, SdfPath::AbsoluteRootPath())) {
+            _renderIndex->GetChangeTracker().MarkSprimDirty(
+                path, HdMaterial::DirtyResource);
+        }
+
+        _renderIndex->GetResourceRegistry()->InvalidateShaderRegistry();
     }
 
 private:
