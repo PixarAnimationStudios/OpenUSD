@@ -179,6 +179,43 @@ class TestSdfZipFile(unittest.TestCase):
             fi = zf.GetFileInfo("test_align_2.txt")
             self.assertEqual(fi.dataOffset % 64, 0)
             
+    def test_WriterUtf8Filename(self):
+        """Test that Sdf.ZipFileWriter sets the UTF-8 filename flag (bit 11)
+        for non-ASCII file names and leaves it unset for ASCII names"""
+        if os.path.isfile("test_utf8.usdz"):
+            os.remove("test_utf8.usdz")
+
+        utf8Name = "blåbær/rødgrød.test"
+        with Sdf.ZipFileWriter.CreateNew("test_utf8.usdz") as zfw:
+            self.assertTrue(zfw)
+
+            addedFile = zfw.AddFile("src/a.test", utf8Name)
+            self.assertEqual(addedFile, utf8Name)
+
+            addedFile = zfw.AddFile("src/a.test", "ascii.test")
+            self.assertEqual(addedFile, "ascii.test")
+
+        self.assertTrue(os.path.isfile("test_utf8.usdz"))
+
+        # Verify that the zip file can be read by Sdf.ZipFile.
+        zf = Sdf.ZipFile.Open("test_utf8.usdz")
+        self.assertEqual(zf.GetFileNames(), [utf8Name, "ascii.test"])
+        self._ValidateSourceAndZippedFile("src/a.test", zf, utf8Name)
+        self._ValidateSourceAndZippedFile("src/a.test", zf, "ascii.test")
+
+        # Multi-byte names must not break 64-byte data alignment.
+        for f in zf.GetFileNames():
+            self.assertEqual(zf.GetFileInfo(f).dataOffset % 64, 0)
+
+        # Python's zip module decodes names as UTF-8 only if bit 11 is set.
+        zf = zipfile.ZipFile("test_utf8.usdz")
+        self.assertEqual(zf.namelist(), [utf8Name, "ascii.test"])
+        self.assertIsNone(zf.testzip())
+        self.assertTrue(zf.getinfo(utf8Name).flag_bits & 0x800)
+        self.assertFalse(zf.getinfo("ascii.test").flag_bits & 0x800)
+        self._ValidateSourceAndZippedFile("src/a.test", zf, utf8Name)
+        self._ValidateSourceAndZippedFile("src/a.test", zf, "ascii.test")
+
     def test_WriterDiscard(self):
         if os.path.isfile("test_discard.usdz"):
             os.remove("test_discard.usdz")
