@@ -1362,8 +1362,9 @@ def InstallOpenEXR(context, force, buildArgs):
                   # Force OpenEXR to build and use a separate Imath library
                   # instead of looking for one externally. This ensures that
                   # OpenEXR and other dependencies use the Imath library
-                  # built via this script.
+                  # built via this script. Same idea for libdeflate.
                   '-DOPENEXR_FORCE_INTERNAL_IMATH=ON',
+                  '-DOPENEXR_FORCE_INTERNAL_DEFLATE=ON',
                   '-DBUILD_TESTING=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
