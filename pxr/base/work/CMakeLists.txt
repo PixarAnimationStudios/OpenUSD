@@ -185,6 +185,7 @@ if (use_tbb)
         pxr_register_test(testWorkThreadLimitsRawTBBMax
             RUN_SERIAL
             COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimitsTBB --rawtbb"
+            LABELS "flaky"
         )
         pxr_register_test(testWorkThreadLimitsRawTBB2
             RUN_SERIAL
