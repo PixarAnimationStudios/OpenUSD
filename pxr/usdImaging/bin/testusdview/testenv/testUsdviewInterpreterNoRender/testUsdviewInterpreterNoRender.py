@@ -46,7 +46,31 @@ def _testInterpreterWorks(appController):
     # initializes. This is pretty brittle, but other options seem just as 
     # brittle,
     assert "usdviewApi" in appController._console.locals()
-    
+
+def _testInterpreterHandlesSyntaxError(appController):
+    #
+    # Simulate entering some invalid Python code into the interpreter and
+    # verify that the exception handling worked correctly by checking that
+    # the console text includes a report of the SyntaxError.
+    #
+
+    import pxr.Usdviewq.qt
+    if pxr.Usdviewq.qt.PySideModule == 'PySide2':
+        from PySide2 import QtTest
+    elif pxr.Usdviewq.qt.PySideModule == 'PySide6':
+        from PySide6 import QtTest
+    else:
+        raise ImportError('PySide QtTest module not available for import')
+
+    controller = appController._console._controller
+
+    QtTest.QTest.keyClicks(controller.textEdit, 'A Syntax Error')
+    QtTest.QTest.keyClick(controller.textEdit, QtCore.Qt.Key.Key_Return)
+
+    console_text = controller.textEdit.toPlainText()
+    assert 'A Syntax Error' in console_text
+    assert 'SyntaxError: invalid syntax' in console_text
 
 def testUsdviewInputFunction(appController):
     _testInterpreterWorks(appController)
+    _testInterpreterHandlesSyntaxError(appController)
