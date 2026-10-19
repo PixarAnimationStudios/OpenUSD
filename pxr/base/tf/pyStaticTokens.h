@@ -28,9 +28,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \hideinitializer
 #define TF_PY_WRAP_PUBLIC_TOKENS(name, key, seq)                        \
-    pxr_boost::python::class_<                                          \
-        _TF_TOKENS_STRUCT_NAME(key), pxr_boost::python::noncopyable>(   \
-            name, pxr_boost::python::no_init)                           \
+    PXR_NS::pxr_boost::python::class_<                                  \
+        _TF_TOKENS_STRUCT_NAME(key),                                    \
+        PXR_NS::pxr_boost::python::noncopyable>(                        \
+            name, PXR_NS::pxr_boost::python::no_init)                   \
         _TF_PY_TOKENS_WRAP_SEQ(key, seq)
 
 /// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS to
@@ -43,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Private macros to add a single data member.
 #define _TF_PY_TOKENS_WRAP_ATTR_MEMBER(r, key, name)                        \
-    pxr_boost::python::scope().attr(                                            \
+    PXR_NS::pxr_boost::python::scope().attr(                                \
         TF_PP_STRINGIZE(name)) = key->name.GetString();
 
 // We wrap tokens as Python strings, but simply wrapping the token using 
