@@ -10,6 +10,9 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/schema.h"
+
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -28,7 +31,7 @@ TestUsdValidators()
     // this keyword this unit test will have to be updated.
     const UsdValidationValidatorMetadataVector coreValidatorMetadata
         = registry.GetValidatorMetadataForPlugin(_tokens->usdValidationPlugin);
-    TF_AXIOM(coreValidatorMetadata.size() == 3);
+    TF_AXIOM(coreValidatorMetadata.size() == 4);
 
     std::set<TfToken> validatorMetadataNameSet;
     for (const UsdValidationValidatorMetadata &metadata :
@@ -39,7 +42,8 @@ TestUsdValidators()
     const std::set<TfToken> expectedValidatorNames
         = { UsdValidatorNameTokens->compositionErrorTest,
             UsdValidatorNameTokens->stageMetadataChecker,
-            UsdValidatorNameTokens->attributeTypeMismatch };
+            UsdValidatorNameTokens->attributeTypeMismatch,
+            UsdValidatorNameTokens->attributeValueTypeMismatch };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -238,6 +242,70 @@ TestUsdAttributeTypeMismatch()
     }
 }   
 
+static void
+TestUsdAttributeValueTypeMismatch()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *const validator
+        = registry.GetOrLoadValidatorByName(
+            UsdValidatorNameTokens->attributeValueTypeMismatch);
+    TF_AXIOM(validator);
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(R"usda(#usda 1.0
+        def "Prim" {
+            token[] goodTokens = ["a", "b"]
+            token[] badDefault
+            string[] goodStrings = ["a", "b"]
+            token[] blocked = None
+            double animationBlocked = AnimationBlock
+            float badSample
+            int[] arrayEdit = edit [ append 1 ]
+        }
+    )usda");
+
+    // The text parser, SdfAttributeSpec and SdfLayer::SetTimeSample all cast
+    // values to the declared type, so author mismatched values directly as
+    // raw fields, the way a file format or low-level writer could.
+    const SdfPath primPath("/Prim");
+    layer->SetField(primPath.AppendProperty(TfToken("badDefault")),
+                    SdfFieldKeys->Default,
+                    VtValue(VtStringArray { "a", "b" }));
+    const SdfPath badSamplePath = primPath.AppendProperty(
+        TfToken("badSample"));
+    layer->SetField(badSamplePath, SdfFieldKeys->TimeSamples,
+                    VtValue(SdfTimeSampleMap {
+                        { 1.0, VtValue(1.0f) }, { 2.0, VtValue(2.0) } }));
+
+    const UsdValidationErrorVector errors = validator->Validate(layer);
+    TF_AXIOM(errors.size() == 2);
+
+    const TfToken expectedErrorIdentifier = TfToken(
+        UsdValidatorNameTokens->attributeValueTypeMismatch.GetString() + "." +
+        UsdValidationErrorNameTokens->attributeValueTypeMismatch.GetString());
+    const std::set<std::string> expectedMessages = {
+        TfStringPrintf("Attribute </Prim.badDefault> is declared as "
+                       "'token[]' (VtArray<TfToken>) in layer <%s>, but its "
+                       "authored default value holds a value of type "
+                       "'VtArray<string>'.",
+                       layer->GetIdentifier().c_str()),
+        TfStringPrintf("Attribute </Prim.badSample> is declared as "
+                       "'float' (float) in layer <%s>, but its authored "
+                       "time sample at 2 holds a value of type 'double'.",
+                       layer->GetIdentifier().c_str())
+    };
+    std::set<std::string> messages;
+    for (const UsdValidationError &error : errors) {
+        TF_AXIOM(error.GetValidator() == validator);
+        TF_AXIOM(error.GetIdentifier() == expectedErrorIdentifier);
+        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(error.GetSites().size() == 1);
+        TF_AXIOM(error.GetSites()[0].IsValidSpecInLayer());
+        messages.insert(error.GetMessage());
+    }
+    TF_AXIOM(messages == expectedMessages);
+}
+
 int
 main()
 {
@@ -245,6 +313,7 @@ main()
     TestCoreUsdStageMetadata();
     TestUsdCompositionErrorTest();
     TestUsdAttributeTypeMismatch();
+    TestUsdAttributeValueTypeMismatch();
 
     std::cout << "OK\n";
 }
