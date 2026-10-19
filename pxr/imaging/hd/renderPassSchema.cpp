@@ -46,15 +46,23 @@ HdRenderPassSchema::GetRenderSource() const
         HdRenderPassSchemaTokens->renderSource);
 }
 
+HdSampledDataSourceContainerSchema
+HdRenderPassSchema::GetNamespacedSettings() const
+{
+    return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdRenderPassSchemaTokens->namespacedSettings));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderPassSchema::BuildRetained(
         const HdTokenDataSourceHandle &passType,
-        const HdPathDataSourceHandle &renderSource
+        const HdPathDataSourceHandle &renderSource,
+        const HdContainerDataSourceHandle &namespacedSettings
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
@@ -66,6 +74,11 @@ HdRenderPassSchema::BuildRetained(
     if (renderSource) {
         _names[_count] = HdRenderPassSchemaTokens->renderSource;
         _values[_count++] = renderSource;
+    }
+
+    if (namespacedSettings) {
+        _names[_count] = HdRenderPassSchemaTokens->namespacedSettings;
+        _values[_count++] = namespacedSettings;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -86,12 +99,21 @@ HdRenderPassSchema::Builder::SetRenderSource(
     return *this;
 }
 
+HdRenderPassSchema::Builder &
+HdRenderPassSchema::Builder::SetNamespacedSettings(
+    const HdContainerDataSourceHandle &namespacedSettings)
+{
+    _namespacedSettings = namespacedSettings;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderPassSchema::Builder::Build()
 {
     return HdRenderPassSchema::BuildRetained(
         _passType,
-        _renderSource
+        _renderSource,
+        _namespacedSettings
     );
 }
 
@@ -139,6 +161,16 @@ HdRenderPassSchema::GetRenderSourceLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdRenderPassSchemaTokens->renderSource);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdRenderPassSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdRenderPassSchemaTokens->namespacedSettings);
     return locator;
 } 
 
