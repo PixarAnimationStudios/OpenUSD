@@ -140,7 +140,8 @@ HgiPipelineCreationTestDriver::_CreatePipeline()
 
     // Setup color attachment
     _colorAtt.blendEnabled = false;
-    _colorAtt.loadOp = HgiAttachmentLoadOpDontCare;
+    _colorAtt.loadOp = HgiAttachmentLoadOpClear;
+    _colorAtt.clearValue = GfVec4f(0.0f);
     _colorAtt.storeOp = HgiAttachmentStoreOpStore;
     _colorAtt.srcColorBlendFactor = HgiBlendFactorZero;
     _colorAtt.dstColorBlendFactor = HgiBlendFactorZero;

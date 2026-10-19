@@ -9,6 +9,7 @@
 
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/resourceTracker.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -91,6 +92,10 @@ public:
     HGIVULKAN_API
     uint64_t & GetInflightBits();
 
+    /// Returns the buffer state use for resource tracking.
+    HGIVULKAN_API
+    HgiVulkanResourceState* GetState();
+
     /// Creates a staging buffer.
     /// The caller is responsible for the lifetime (destruction) of the buffer.
     HGIVULKAN_API
@@ -105,12 +110,6 @@ public:
     /// or on UMA/ReBAR enabled systems.
     HGIVULKAN_API
     HgiVulkanMappedBufferUniquePointer Map() const;
-
-    // Returns a VkBufferMemoryBarrier for the buffer.
-    HGIVULKAN_API
-    VkBufferMemoryBarrier GetBarrier(
-        VkAccessFlags srcAccess,
-        VkAccessFlags dstAccess) const;
 
 protected:
     friend class HgiVulkan;
@@ -130,6 +129,7 @@ private:
     VkBuffer _vkBuffer;
     VmaAllocation _vmaAllocation;
     uint64_t _inflightBits;
+    HgiVulkanResourceState _state;
     std::unique_ptr<HgiVulkanBuffer> _stagingBuffer;
     HgiVulkanMappedBufferUniquePointer _cpuStagingAddress;
     bool _mappable;

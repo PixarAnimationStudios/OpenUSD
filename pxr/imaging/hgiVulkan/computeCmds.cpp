@@ -23,6 +23,7 @@ HgiVulkanComputeCmds::HgiVulkanComputeCmds(
     , _hgi(hgi)
     , _commandBuffer(nullptr)
     , _pipelineLayout(nullptr)
+    , _tracker(hgi->GetCapabilities())
     , _pushConstantsDirty(false)
     , _pushConstants(nullptr)
     , _pushConstantsByteSize(0)
@@ -97,6 +98,7 @@ HgiVulkanComputeCmds::BindResources(HgiResourceBindingsHandle res)
     _CreateCommandBuffer();
     // Delay bindings until we know for sure what the pipeline will be.
     _resourceBindings = res;
+    _trackedResources = res;
 }
 
 void
@@ -122,6 +124,11 @@ HgiVulkanComputeCmds::Dispatch(int dimX, int dimY)
 {
     _CreateCommandBuffer();
     _BindResources();
+
+    if (_trackedResources) {
+        _tracker.UseResourceBindings(_trackedResources->GetDescriptor());
+        _tracker.FlushWithoutRestore(_commandBuffer->GetVulkanCommandBuffer());
+    }
 
     const int threadsPerGroupX = _localWorkGroupSize[0];
     const int threadsPerGroupY = _localWorkGroupSize[1];

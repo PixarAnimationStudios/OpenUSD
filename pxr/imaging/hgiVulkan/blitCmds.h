@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/resourceTracker.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -91,8 +92,17 @@ private:
 
     void _CreateCommandBuffer();
 
+    void _TrackTransfer(
+        HgiVulkanResourceState* src,
+        HgiVulkanResourceState* dst);
+
+    void _TransitionMipToTransferSrc(
+        HgiVulkanTexture* texture,
+        uint32_t mipLevel);
+
     HgiVulkan* _hgi;
     HgiVulkanCommandBuffer* _commandBuffer;
+    HgiVulkanResourceTracker _tracker;
 
     // BlitCmds is used only one frame so storing multi-frame state on BlitCmds
     // will not survive.

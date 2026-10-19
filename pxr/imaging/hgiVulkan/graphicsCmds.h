@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/resourceTracker.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include <cstdint>
@@ -132,7 +133,17 @@ private:
     void _EndRenderPass();
     void _CreateCommandBuffer();
 
+    void _TrackBufferRead(
+        HgiBufferHandle const& handle,
+        VkPipelineStageFlags2 stages,
+        VkAccessFlags2 access);
+    void _TrackIndexRead(HgiBufferHandle const& handle);
+    void _TrackIndirectRead(HgiBufferHandle const& handle);
+    void _TrackAttachments(bool forClear);
+
     HgiVulkan* _hgi;
+    HgiVulkanResourceTracker _tracker;
+    HgiVulkanResourceTracker::PendingRestores _attachmentRestore;
     HgiGraphicsCmdsDesc _descriptor;
     HgiVulkanCommandBuffer* _commandBuffer;
     HgiGraphicsPipelineHandle _pipeline;
