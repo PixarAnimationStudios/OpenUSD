@@ -59,6 +59,20 @@ public:
     void
     Prepare(HdResourceRegistrySharedPtr const &resourceRegistry) override;
 
+    HDST_API
+    void Copy(HdRenderPassState const& src) override;
+
+    /// Copy the uniform buffer state from src into this object. Note this copies
+    /// both the member variables as well as the bar pointer for the uniform
+    /// buffer we upload these to.  Validates that updated uniform buffer state
+    /// will not cause a layout change.
+    ///
+    /// The intent of this function is to allow the caller to make late edits to
+    /// uniforms (e.g. camera matrices) without invalidating any pipeline
+    /// compilation that may have already happened.
+    HDST_API
+    void CopyUniforms(HdStRenderPassState const& src);
+
     /// XXX: Bind and Unbind set./restore the following GL state.
     /// This will be reworked to use Hgi in the near future.
     /// Following states may be changed and restored to
@@ -195,12 +209,6 @@ public:
     HDST_API
     AxisAlignedAffineTransform
     ComputeImageToHorizontallyNormalizedFilmback() const;
-
-    // Copies everything except the render pass shader from the given
-    // HdStRenderPassState to this one.
-    HDST_API
-    void
-    CopyAllExceptShaderFrom(const HdStRenderPassState& other);
 
 private:
     unsigned int _GetFramebufferHeight() const;

@@ -173,7 +173,8 @@
 //             ReloadShaderPrograms.
 // 108 -> 109: Added HdSurfaceSchema.
 // 109 -> 110: Added excludedPurposesHint to HdSceneIndexInputArgsSchema.
-#define HD_API_VERSION 110
+// 110 -> 111: Added HdRenderPassState::Copy.
+#define HD_API_VERSION 111
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

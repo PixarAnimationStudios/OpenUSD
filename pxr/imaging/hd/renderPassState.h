@@ -50,6 +50,11 @@ public:
     HD_API
     virtual ~HdRenderPassState();
 
+    /// Copy state from src into this object. Overridden in derived classes
+    /// to avoid object slicing when copying through a base-class pointer.
+    HD_API
+    virtual void Copy(HdRenderPassState const& src);
+
     /// Schedule to update renderPassState parameters.
     /// e.g. camera matrix, override color, id blend factor.
     /// Prepare, called once per frame after the sync phase, but prior to
