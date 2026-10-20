@@ -316,11 +316,6 @@ pxr_register_test(testUsdviewMeshBounds
     EXPECTED_RETURN_CODE 0
 )
 
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
-
 pxr_register_test(testUsdviewFreeCamera
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewFreeCamera.py Block.usda"

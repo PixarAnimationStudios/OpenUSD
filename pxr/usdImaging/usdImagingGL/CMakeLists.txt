@@ -4683,7 +4683,6 @@ pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsNiInstance
         FAIL_PERCENT 0.001
     TESTENV testenv/testUsdImagingGLMaterialsAndInstancers)
 
-if (NOT WIN32)
 pxr_register_test(testUsdImagingGLUsdRenderPass_prune
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --renderer HdStormRendererPlugin --renderPassPrimPath /Render/Passes/nospheres input.usda nospheres.exr"
@@ -4749,7 +4748,6 @@ pxr_register_test(testUsdImagingGLUsdRenderPassWithInstances_renderVisibility_te
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLUsdRenderPass)
-endif()
 
 pxr_register_test(testUsdImagingGLTextureResync
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLTextureResync --stage testUsdImagingGLTextureResync.usda --deactivate /Scene/Looks/Material1/Texture --deactivate /Scene/Looks/Material2/Texture --write testUsdImagingGLTextureResync.png"
