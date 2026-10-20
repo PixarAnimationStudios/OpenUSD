@@ -99,8 +99,9 @@ private:
     /// Remove all the non flatten references from the list
     bool _RemoveFlattenedReferences();
 
-    bool _CreateFlattenOutput (std::filesystem::path input,
-                               std::filesystem::path* output);
+    bool _CreateFlattenOutput(std::filesystem::path input,
+                              std::filesystem::path dest,
+                              std::filesystem::path* output);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

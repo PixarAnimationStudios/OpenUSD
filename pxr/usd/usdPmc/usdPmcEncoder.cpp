@@ -28,6 +28,8 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdUtils/dependencies.h"
+#include "pxr/usd/usdUtils/flattenLayerStack.h"
 #include "pxr/usd/usdUtils/usdzPackage.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/usd/sdf/zipFile.h"
@@ -38,7 +40,6 @@
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/flattenLayerStack.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/assetInfo.h"
 
@@ -395,7 +396,7 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
 
     // Flatten the stage
     std::filesystem::path flattenedPath;
-    if (!_CreateFlattenOutput(stageSource, &flattenedPath)) {
+    if (!_CreateFlattenOutput(stageSource, outFile, &flattenedPath)) {
         TF_RUNTIME_ERROR("Unable to create flatten stage");
         return false;
     }
@@ -576,6 +577,7 @@ UsdPmcMeshEncoder::_WriteNonUsdzOutput() {
 
 bool
 UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
+                                        std::filesystem::path dest,
                                         std::filesystem::path* output) {
     if (!output) {
         TF_RUNTIME_ERROR("output cannot be null");
@@ -600,7 +602,8 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
     // Flatten the entire stage - this collapses all layer composition and
     // value resolution into a single layer while preserving geometry and
     // prims
-    SdfLayerRefPtr flattenedLayer = stage->Flatten();
+    SdfLayerRefPtr flattenedLayer = 
+        stage->Flatten(/*addSourceFileComment*/ false);
 
     if (!flattenedLayer) {
         TF_RUNTIME_ERROR("Failed to flatten stage.");
@@ -609,7 +612,9 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
 
     // Convert absolute paths back to relative paths
     // Get the base path for making relative paths
-    std::filesystem::path basePath = _tempDir;
+    std::filesystem::path basePath = dest.is_absolute() ? 
+        dest.parent_path() :
+        std::filesystem::absolute(dest).parent_path();
 
     // Helper function to convert absolute path to relative
     auto makeRelative = [&basePath](const std::string& absPath)
@@ -635,131 +640,7 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
         return absPath;
     };
 
-    // Helper function to recursively fix asset paths in nested dictionaries
-    std::function<bool(VtDictionary&)> fixNestedAssetPaths =
-        [&](VtDictionary& dict) -> bool {
-        bool modified = false;
-
-        for (auto& entry : dict) {
-            const std::string& key = entry.first;
-            VtValue& value = entry.second;
-            // Handle SdfAssetPath values
-            if (value.IsHolding<SdfAssetPath>()) {
-                SdfAssetPath assetPath = value.UncheckedGet<SdfAssetPath>();
-                std::string originalPath = assetPath.GetAssetPath();
-                std::string relativePath = makeRelative(originalPath);
-                if (relativePath != originalPath) {
-                    dict[key] = VtValue(SdfAssetPath(relativePath));
-                    modified = true;
-                }
-            }
-            // Handle string values that might be paths (defaultImage)
-            else if (value.IsHolding<std::string>()) {
-                std::string strValue = value.UncheckedGet<std::string>();
-                // Common keys that contain paths
-                if (key == "defaultImage" || key == "thumbnailImage" ||
-                    key == "previewImage" || key == "icon") {
-                    std::string relativePath = makeRelative(strValue);
-                    if (relativePath != strValue) {
-                        dict[key] = VtValue(relativePath);
-                        modified = true;
-                    }
-                }
-            }
-            // Recursively handle nested dictionaries
-            else if (value.IsHolding<VtDictionary>()) {
-                VtDictionary nestedDict =
-                    value.UncheckedGet<VtDictionary>();
-                if (fixNestedAssetPaths(nestedDict)) {
-                    dict[key] = VtValue(nestedDict);
-                    modified = true;
-                }
-            }
-        }
-        return modified;
-    };
-
-    // Traverse all asset paths in the flattened layer and convert them to
-    // relative paths
-    std::function<void(const SdfPath&)> fixAssetPaths =
-        [&](const SdfPath& path) {
-        SdfPrimSpecHandle primSpec = flattenedLayer->GetPrimAtPath(path);
-        if (!primSpec) return;
-
-        // Check assetInfo dictionary for asset paths like defaultImage
-        if (primSpec->HasInfo(SdfFieldKeys->AssetInfo)) {
-            VtValue assetInfoValue =
-                primSpec->GetInfo(SdfFieldKeys->AssetInfo);
-            if (assetInfoValue.IsHolding<VtDictionary>()) {
-                VtDictionary assetInfo =
-                    assetInfoValue.UncheckedGet<VtDictionary>();
-                // Use the recursive helper to fix all nested asset paths
-                // This will handle structures like:
-                // assetInfo -> previews -> thumbnails -> default ->
-                // defaultImage
-                if (fixNestedAssetPaths(assetInfo)) {
-                    primSpec->SetInfo(SdfFieldKeys->AssetInfo,
-                                      VtValue(assetInfo));
-                }
-            }
-        }
-        // Check all attributes for asset path values
-        for (const SdfAttributeSpecHandle& attrSpec :
-             primSpec->GetAttributes()) {
-            VtValue value = attrSpec->GetDefaultValue();
-            // Handle SdfAssetPath
-            if (value.IsHolding<SdfAssetPath>()) {
-                SdfAssetPath assetPath = value.UncheckedGet<SdfAssetPath>();
-                std::string originalPath = assetPath.GetAssetPath();
-                std::string relativePath = makeRelative(originalPath);
-                if (relativePath != originalPath) {
-                    // Update the attribute with the relative path
-                    SdfAssetPath newAssetPath(relativePath);
-                    attrSpec->SetDefaultValue(VtValue(newAssetPath));
-                }
-            }
-            // Handle array of SdfAssetPath
-            else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
-                VtArray<SdfAssetPath> assetPaths =
-                    value.UncheckedGet<VtArray<SdfAssetPath>>();
-                bool modified = false;
-                for (size_t i = 0; i < assetPaths.size(); ++i) {
-                    std::string originalPath =
-                        assetPaths[i].GetAssetPath();
-                    std::string relativePath = makeRelative(originalPath);
-                    if (relativePath != originalPath) {
-                        assetPaths[i] = SdfAssetPath(relativePath);
-                        modified = true;
-                    }
-                }
-                if (modified) {
-                    attrSpec->SetDefaultValue(VtValue(assetPaths));
-                }
-            }
-        }
-
-        // Also check relationships and references
-        for (const SdfRelationshipSpecHandle& relSpec :
-             primSpec->GetRelationships()) {
-            // Relationships typically don't contain file paths, but we
-            // check anyway
-        }
-
-        // Recursively process child prims
-        for (const SdfPrimSpecHandle& childSpec :
-             primSpec->GetNameChildren()) {
-            fixAssetPaths(childSpec->GetPath());
-        }
-    };
-
-    // Process all prims starting from the root
-    SdfPrimSpecHandle rootPrim = flattenedLayer->GetPseudoRoot();
-    if (rootPrim) {
-        for (const SdfPrimSpecHandle& childSpec :
-             rootPrim->GetNameChildren()) {
-            fixAssetPaths(childSpec->GetPath());
-        }
-    }
+    UsdUtilsModifyAssetPaths(flattenedLayer, makeRelative);
 
     // Export the flattened layer to the output path
     if (!flattenedLayer->Export(output->string())) {
