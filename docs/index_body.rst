@@ -55,8 +55,8 @@ USD Home
 
       :fa:`download` Download
       ^^^^^^^^
-      - `Get and Build USD <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/README.md#getting-and-building-the-code>`_
-      - Source: `Release <https://github.com/PixarAnimationStudios/OpenUSD/tree/release>`_ (`Changes <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/CHANGELOG.md#change-log>`__)
+      - `Get and Build USD <https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/README.md#getting-and-building-the-code>`_
+      - Source: `Release <https://github.com/PixarAnimationStudios/OpenUSD/tree/v26.11>`_ (`Changes <https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/CHANGELOG.md#change-log>`__)
       - Source: `Dev <https://github.com/PixarAnimationStudios/OpenUSD/tree/dev>`_ (`Changes <https://github.com/PixarAnimationStudios/OpenUSD/blob/dev/CHANGELOG.md#change-log>`__)
       - :ref:`Demo Assets <dl_downloads:Assets>`
 
