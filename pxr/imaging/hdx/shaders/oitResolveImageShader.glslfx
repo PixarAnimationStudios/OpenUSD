@@ -58,7 +58,8 @@ vec4 imageShader(vec2 uv)
     // (See HdxOitResolveTask::_PrepareOitBuffers)
     const int maxSamples = 8;
 
-    const int dataBufferSize = screenWidth * screenHeight * maxSamples;
+    // The max number of elements in the data and joint buffers.
+    const int dataBufferSize = int(HdGet_oitMaxDataBufferSize());
 
     // +1 because index 0 of counter buffer is reserved as atomic counter in
     // WriteOitLayersToBuffer

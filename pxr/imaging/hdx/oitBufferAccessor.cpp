@@ -13,15 +13,12 @@
 
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-
-#include "pxr/base/gf/vec2i.h"
-
-// XXX todo tmp needed until we remove direct gl calls below.
-#include "pxr/imaging/hgiGL/buffer.h"
-
 #include "pxr/imaging/hdx/tokens.h"
 
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/envSetting.h"
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -186,7 +183,8 @@ HdxOitBufferAccessor::AllocateOitBuffersIfNecessary(HdRenderIndex *renderIndex)
 
     // Uniform buffer (screen size)
     HdBufferSpecVector uniformSpecs{
-        { HdxTokens->oitScreenSize, HdTupleType{HdTypeInt32Vec2, 1} }
+        { HdxTokens->oitScreenSize, HdTupleType{HdTypeInt32Vec2, 1} },
+        { HdxTokens->oitMaxDataBufferSize, HdTupleType{HdTypeInt32, 1} }
     };
     (*_ctx)[HdxTokens->oitUniformBar] =
         hdStResourceRegistry->AllocateUniformBufferArrayRange(
@@ -194,7 +192,7 @@ HdxOitBufferAccessor::AllocateOitBuffersIfNecessary(HdRenderIndex *renderIndex)
             HdBufferArrayUsageHintBitsUniform);
 }
 
-void
+bool
 HdxOitBufferAccessor::ResizeOitBuffersIfNecessary(
     HdRenderIndex *renderIndex,
     GfVec2i const &screenSize,
@@ -204,29 +202,68 @@ HdxOitBufferAccessor::ResizeOitBuffersIfNecessary(
 
     if (screenSize[0] < 0 || screenSize[1] < 0) {
         TF_CODING_ERROR("Invalid screen size for OIT buffer resize");
-        return;
+        return false;
     }
 
-    const bool resizeOitBuffers = (screenSize[0] > (*prevScreenSize)[0] ||
-                                   screenSize[1] > (*prevScreenSize)[1]);
-    if (!resizeOitBuffers) {
-        return;
+    const size_t numPixels = static_cast<size_t>(screenSize[0]) *
+                             static_cast<size_t>(screenSize[1]);
+
+    // The counter buffer is sized based on the size of the screen and uses
+    // fragCoord to index into the buffers. We use numPixels + 1 for the size
+    // because element 0 is an atomic counter pointing at the next free index
+    // into the data/joint buffers.
+    const size_t numCounterElements = numPixels + 1;
+
+    // If the counter buffer won't fit on the GPU, we can't safely use OIT
+    // at all.
+    const size_t maxCounterElements =
+        _GetBar(HdxTokens->oitCounterBufferBar)->GetMaxNumElements();
+    if (numCounterElements > maxCounterElements) {
+        TF_WARN("OIT counter buffer for screen size (%d, %d) needs 0x%zx "
+                "elements, which exceeds the hardware maximum of 0x%zx; "
+                "disabling OIT.",
+                screenSize[0], screenSize[1],
+                numCounterElements, maxCounterElements);
+        return false;
     }
 
-    const int oldBufferSize = (*prevScreenSize)[0] * (*prevScreenSize)[1];
-    const int newBufferSize = screenSize[0] * screenSize[1];
+    const size_t oldNumPixels = static_cast<size_t>((*prevScreenSize)[0]) *
+                                static_cast<size_t>((*prevScreenSize)[1]);
     *prevScreenSize = screenSize;
 
     HdStResourceRegistrySharedPtr const hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
-    if (oldBufferSize < newBufferSize) {
-        // +1 because element 0 of the counter buffer is used as an atomic
-        // counter in the shader to give each fragment a unique index.
-        _GetBar(HdxTokens->oitCounterBufferBar)->Resize(newBufferSize + 1);
-        _GetBar(HdxTokens->oitJointBufferBar)->Resize(newBufferSize * numSamples);
-        _GetBar(HdxTokens->oitDataBufferBar)->Resize(newBufferSize * numSamples);
+    // We only ever need to grow this buffer; if it's too big,
+    // we can just use part of it and don't need to shrink it.
+    if (oldNumPixels < numPixels) {
+        // Update counterBar since we've already checked its length.
+        _GetBar(HdxTokens->oitCounterBufferBar)->Resize(numCounterElements);
+
+        // The data/joint buffer elements are allocated as-needed to represent
+        // transparent pixels, so these can be safely clamped if they are too
+        // big (and data buffer, holding the color samples, is likely to be the
+        // first to hit the size limit). Clamping here might mean we throw
+        // away transparent pixels for complex scenes rendered at high res, so
+        // warn before clamping.
+        auto clampedResize = [&](
+                HdBufferArrayRangeSharedPtr const &bar,
+                const char *name) {
+            const size_t numElements = numPixels * numSamples;
+            const size_t maxElements = bar->GetMaxNumElements();
+            if (numElements > maxElements) {
+                TF_WARN("OIT %s needs 0x%zx elements, which exceeds the "
+                        "hardware maximum of 0x%zx; clamping.",
+                        name, numElements, maxElements);
+                bar->Resize(maxElements);
+            } else {
+                bar->Resize(numElements);
+            }
+        };
+
+        clampedResize(_GetBar(HdxTokens->oitJointBufferBar), "joint buffer");
+        clampedResize(_GetBar(HdxTokens->oitDataBufferBar), "data buffer");
     }
 
     hdStResourceRegistry->AddSource(
@@ -234,6 +271,21 @@ HdxOitBufferAccessor::ResizeOitBuffersIfNecessary(
         std::make_shared<HdVtBufferSource>(
             HdxTokens->oitScreenSize,
             VtValue(screenSize)));
+
+    // Compute the maximum addressable sample (across dataBar/jointBar) so that
+    // the shader can properly do bounds checking.
+    const size_t maxDataElements = std::min({
+        _GetBar(HdxTokens->oitDataBufferBar)->GetNumElements(),
+        _GetBar(HdxTokens->oitJointBufferBar)->GetNumElements(),
+        numPixels * numSamples});
+
+    hdStResourceRegistry->AddSource(
+        _GetBar(HdxTokens->oitUniformBar),
+        std::make_shared<HdVtBufferSource>(
+            HdxTokens->oitMaxDataBufferSize,
+            VtValue(static_cast<int>(maxDataElements))));
+
+    return true;
 }
 
 void

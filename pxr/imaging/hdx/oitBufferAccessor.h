@@ -56,9 +56,10 @@ public:
 
     /// Called during Prepare (by OitResolveTask) to grow OIT bars to fit the
     /// current screen.  prevScreenSize is updated in-place and must be
-    /// persisted by the caller across frames.
+    /// persisted by the caller across frames. Returns false if "screenSize"
+    /// is invalid.
     HDX_API
-    void ResizeOitBuffersIfNecessary(HdRenderIndex *renderIndex,
+    bool ResizeOitBuffersIfNecessary(HdRenderIndex *renderIndex,
                                      GfVec2i const &screenSize,
                                      GfVec2i *prevScreenSize);
 
