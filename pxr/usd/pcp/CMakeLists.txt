@@ -913,6 +913,16 @@ pxr_register_test(testPcpMuseum_TrickySpookyInherits
     DIFF_COMPARE compositionResults_TrickySpookyInherits.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickySpookyInherits_ElideImplied
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickySpookyInherits/root.usda" 
+    TESTENV testenv/testPcpMuseum_TrickySpookyInherits.testenv
+    STDOUT_REDIRECT compositionResults_TrickySpookyInherits_ElideImplied.txt
+    DIFF_COMPARE compositionResults_TrickySpookyInherits_ElideImplied.txt
+    ENV
+        PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS=1
+)
+
 pxr_register_test(testPcpMuseum_TrickySpookyInheritsInSymmetricArmRig
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickySpookyInheritsInSymmetricArmRig/root.usda" 
@@ -991,6 +1001,16 @@ pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits2
     TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits2.testenv
     STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits2.txt
     DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits2.txt
+)
+
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits2_ElideImplied
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits2/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits2.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits2_ElideImplied.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits2_ElideImplied.txt
+    ENV
+        PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS=1
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants

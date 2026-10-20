@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 
 // Un-comment for extra runtime validation.
@@ -59,6 +60,13 @@ TF_DEFINE_ENV_SETTING(
     PCP_ENABLE_CONSISTENCY_CHECKS, false,
     "Enable self-consistency checks when composing prim indexes. "
     "This is for testing and debugging only.");
+
+TF_DEFINE_ENV_SETTING(
+    PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS, false,
+    "Elide nodes that were implied from a node that relocation processing "
+    "has since elided, so that the set of elided nodes is closed under origin. "
+    "When off (the legacy behavior) such nodes can still contribute opinions. "
+    "Enable the PCP_ELIDED_ORIGIN_LEAKS debug code to report them.");
 
 static inline PcpPrimIndex const *
 _GetOriginatingIndex(PcpPrimIndex_StackFrame *previousFrame,
@@ -2844,11 +2852,19 @@ _ElideSubtree(
 //
 // Eliding a node may detach the graph's shared node pool, which would
 // invalidate a subtree iterator, so collect the nodes before eliding them.
+//
+// This does nothing unless PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS is set,
+// since existing assets depend on these opinions.  The PCP_ELIDED_ORIGIN_LEAKS
+// debug code reports them.
 static void
 _ElideNodesWithElidedOrigins(
     const Pcp_PrimIndexer& indexer,
     const PcpNodeRef& root)
 {
+    if (!TfGetEnvSetting(PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS)) {
+        return;
+    }
+
     TfSmallVector<PcpNodeRef, /*LocalCap=*/16> toElide;
     do {
         toElide.clear();
@@ -2866,6 +2882,45 @@ _ElideNodesWithElidedOrigins(
                 Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
         }
     } while (!toElide.empty());
+}
+
+// Report the nodes in the finished graph that _ElideNodesWithElidedOrigins
+// would have elided and that contribute specs.  These are the opinions that
+// PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS removes.  Nodes are visited in
+// strength order, which is not necessarily origin order, so iterate to a
+// fixed point as _ElideNodesWithElidedOrigins does.
+static void
+_ReportNodesWithElidedOrigins(const PcpPrimIndex& index)
+{
+    std::unordered_set<PcpNodeRef, PcpNodeRef::Hash> wouldElide;
+    const auto isElided = [&wouldElide](const PcpNodeRef& node) {
+        return Pcp_IsElided(node) || wouldElide.count(node);
+    };
+    bool changed;
+    do {
+        changed = false;
+        for (const PcpNodeRef& node : Pcp_GetSubtreeRange(index.GetRootNode())) {
+            const PcpNodeRef origin = node.GetOriginNode();
+            if (origin && isElided(origin) && !isElided(node)) {
+                for (const PcpNodeRef& sub : Pcp_GetSubtreeRange(node)) {
+                    changed |= wouldElide.insert(sub).second;
+                }
+            }
+        }
+    } while (changed);
+
+    for (const PcpNodeRef& node : Pcp_GetSubtreeRange(index.GetRootNode())) {
+        if (wouldElide.count(node) &&
+            node.HasSpecs() && node.CanContributeSpecs()) {
+            TfDebug::Helper().Msg(
+                "Pcp: <%s> has opinions from %s, which "
+                "PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS would elide "
+                "(origin %s was elided)\n",
+                index.GetPath().GetText(),
+                Pcp_FormatSite(node.GetSite()).c_str(),
+                Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
+        }
+    }
 }
 
 static void
@@ -5574,6 +5629,13 @@ PcpComputePrimIndex(
     // instead of in Pcp_BuildPrimIndex.
     outputs->primIndex.GetGraph()->SetIsInstanceable(
         Pcp_PrimIndexIsInstanceable(outputs->primIndex));
+
+    // If asked, report contributing opinions in leaked elided implied nodes
+    // with elided origins; a bug whose behavior is relied upon by real assets.
+    if (ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_ELIDED_ORIGIN_LEAKS)) &&
+        !TfGetEnvSetting(PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS)) {
+        _ReportNodesWithElidedOrigins(outputs->primIndex);
+    }
 
     // We're done modifying the graph, so finalize it.
     outputs->primIndex.GetGraph()->Finalize();

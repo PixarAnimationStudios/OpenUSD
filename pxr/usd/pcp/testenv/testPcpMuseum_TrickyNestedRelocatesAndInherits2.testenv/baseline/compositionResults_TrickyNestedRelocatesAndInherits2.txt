@@ -206,11 +206,19 @@ Child names:
 Results for composing </Saverio/Control/RWing/Flight01>
 
 Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01
     feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control
     feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control
 
 Child names:
      ['Base', 'X']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Control/RWing/Flight01.probe:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01.probe
 
 ------------------------------------------------------------------------
 Results for composing </Saverio/Control/RWing/Flight01/Base>
@@ -231,6 +239,7 @@ Property stacks:
 Results for composing </Saverio/Control/RWing/Flight01/X>
 
 Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01/X
     feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base
     feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/X
     feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base
@@ -240,6 +249,7 @@ Property names:
 
 Property stacks:
 /Saverio/Control/RWing/Flight01/X.probe:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01/X.probe
     feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base.probe
     feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base.probe
 
