@@ -48,6 +48,7 @@ pxr_library(hdsi
         primTypeAndPathPruningSceneIndex
         primTypeNoticeBatchingSceneIndex
         primTypePruningSceneIndex
+        purposeFilteringSceneIndex
         renderPassPruneSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex

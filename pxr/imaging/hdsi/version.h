@@ -21,7 +21,8 @@
 // 19 -> 20: Updated LegacyDisplayStyleOverrideSceneIndex refineLevelFallback
 // 20 -> 21: Update HdsiLightLinkingSceneIndex and HdsiRenderPassPruneSceneIndex
 //           to take the predicate library as an input argument.
+// 21 -> 22: Introducing HdsiPurposeFilteringSceneIndex.
 
-#define HDSI_API_VERSION 21
+#define HDSI_API_VERSION 22
 
 #endif // PXR_IMAGING_HDSI_VERSION_H
