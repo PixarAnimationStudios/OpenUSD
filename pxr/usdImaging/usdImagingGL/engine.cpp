@@ -46,6 +46,7 @@
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/prefixPathPruningSceneIndex.h"
 #include "pxr/imaging/hdsi/primTypeAndPathPruningSceneIndex.h"
+#include "pxr/imaging/hdsi/purposeFilteringSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneMaterialPruningSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
@@ -88,6 +89,10 @@ TF_DEFINE_ENV_SETTING(
     "values in the input scene. To use this feature, usdImaging must be "
     "built with PXR_BUILD_EXEC=ON.");
 
+TF_DEFINE_ENV_SETTING(
+    USDIMAGINGGL_ENGINE_ENABLE_PURPOSE_FILTERING_SCENE_INDEX, false,
+    "Use purpose filtering scene index.");
+
 namespace UsdImagingGLEngine_Impl
 {
 
@@ -108,6 +113,8 @@ struct _AppSceneIndices
         sceneMaterialPruningSceneIndex;
     HdsiApplicationRenderSettingsSceneIndexRefPtr
         applicationRenderSettingsSceneIndex;
+    HdsiPurposeFilteringSceneIndexRefPtr
+        purposeFilteringSceneIndex;
 
     _AppSceneIndicesSharedPtr
     static New(const TfToken &renderInstanceId)
@@ -166,6 +173,17 @@ private:
                 applicationRenderSettingsSceneIndex =
                     HdsiApplicationRenderSettingsSceneIndex::New(
                         sceneIndex, createArgs);
+        }
+
+        static const bool enablePurposeFilteringSceneIndex =
+            TfGetEnvSetting(
+                USDIMAGINGGL_ENGINE_ENABLE_PURPOSE_FILTERING_SCENE_INDEX);
+        if (enablePurposeFilteringSceneIndex) {
+            // The renderer plugin can configure the createArgs to specify 
+            // the excludedPurposesHint via the HdSceneIndexCreateArgsSchema.
+            // See HdStormRendererPlugin for an example.
+            sceneIndex = purposeFilteringSceneIndex =
+                HdsiPurposeFilteringSceneIndex::New(sceneIndex, createArgs);
         }
 
         return sceneIndex;
@@ -523,6 +541,10 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams &params)
 
     _taskControllerSceneIndex->SetFreeCameraClipPlanes(params.clipPlanes);
     _taskControllerSceneIndex->SetRenderTags(renderTags);
+    if (const auto si = _GetPurposeFilteringSceneIndex()) {
+        si->SetPurposes(
+            VtArray<TfToken>(renderTags.begin(), renderTags.end()));
+    }
     _taskControllerSceneIndex->SetRenderParams(
         _MakeHydraUsdImagingGLRenderParams(params));
 }
@@ -1553,7 +1575,7 @@ UsdImagingGLEngine::_CreateUsdImagingSceneIndices(
     sceneIndex =
         _displayStyleSceneIndex =
              HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndex);
-
+    
     if (!_sceneDelegateId.IsAbsoluteRootPath()) {
         sceneIndex =
             HdPrefixingSceneIndex::New(sceneIndex, _sceneDelegateId);
@@ -2536,6 +2558,15 @@ UsdImagingGLEngine::_GetApplicationRenderSettingsSceneIndex() const
         return nullptr;
     }
     return _appSceneIndices->applicationRenderSettingsSceneIndex;
+}
+
+HdsiPurposeFilteringSceneIndexRefPtr
+UsdImagingGLEngine::_GetPurposeFilteringSceneIndex() const
+{
+    if (!_appSceneIndices) {
+        return nullptr;
+    }
+    return _appSceneIndices->purposeFilteringSceneIndex;
 }
 
 SdfPath

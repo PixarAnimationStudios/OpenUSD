@@ -48,10 +48,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 TF_DECLARE_REF_PTRS(UsdImagingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(HdCachingSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiApplicationRenderSettingsSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypeAndPathPruningSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiPurposeFilteringSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
-TF_DECLARE_REF_PTRS(HdsiApplicationRenderSettingsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 TF_DECLARE_REF_PTRS(HdMergingSceneIndex);
 TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
@@ -836,6 +837,9 @@ private:
     // otherwise (in which case callers fall back to the legacy render control).
     HdsiApplicationRenderSettingsSceneIndexRefPtr
     _GetApplicationRenderSettingsSceneIndex() const;
+
+    HdsiPurposeFilteringSceneIndexRefPtr
+    _GetPurposeFilteringSceneIndex() const;
 
     SdfPath _GetSceneIndexPrimPathFromPrimId(int primId) const;
 
