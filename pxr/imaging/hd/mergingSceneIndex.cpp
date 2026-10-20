@@ -77,7 +77,17 @@ const HdMergingSceneIndex::_InputEntries&
 HdMergingSceneIndex::_GetInputEntriesByPath(SdfPath const& primPath) const
 {
     // Avoid an infinite loop below if provided a path such as <> or <.>.
-    if (!primPath.IsAbsoluteRootOrPrimPath()) {
+    //
+    // XXX We should be able to check that primPath is a prim path, i.e.
+    //    if (!primPath.IsAbsoluteRootOrPrimPath()) {
+    //
+    // However, when emulating Hydra 1 legacy delegates, we have found
+    // there are still code paths that result in primPath being given
+    // a non-prim path, and that we need to allow them here.
+    //
+    // For now, just check that it is an absolute path, to ensure that
+    // calling GetParentPath() will terminate.
+    if (!primPath.IsAbsolutePath()) {
         static const HdMergingSceneIndex::_InputEntries empty;
         return empty;
     }
