@@ -178,11 +178,6 @@ HdRenderIndex::HdRenderIndex(
     static std::once_flag reprsOnce;
     std::call_once(reprsOnce, _ConfigureReprs);
 
-    // Register well-known collection types (to be deprecated)
-    // XXX: for compatibility and smooth transition,
-    //      leave geometry collection for a while.
-    _tracker.AddCollection(HdTokens->geometry);
-
     // Let render delegate choose drivers its interested in
     renderDelegate->SetDrivers(drivers);
 

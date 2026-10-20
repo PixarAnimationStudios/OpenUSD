@@ -200,12 +200,6 @@ public:
         return _renderIndex->GetRprimPathFromPrimId(primIdx);
     }
 
-    void AddCollection(const TfToken &name) override {
-        HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-        tracker.AddCollection(name);
-        tracker.MarkCollectionDirty(name);
-    }
-    
     void ReloadShaderPrograms() override {
         // HdRenderDelegate's expect all materials to be dirtied
         // even we also communicate shader invalidation through

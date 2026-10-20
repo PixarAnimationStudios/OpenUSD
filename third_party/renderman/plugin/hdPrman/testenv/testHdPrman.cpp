@@ -752,8 +752,10 @@ HydraSetupAndRender(
     HdRprimCollection hdCollection(
         _tokens->testCollection,
         HdReprSelector(HdReprTokens->smoothHull));
+#if HD_API_VERSION < 112
     HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
     tracker.AddCollection(_tokens->testCollection);
+#endif
 
     // We don't need multi-pass rendering with a pathtracer
     // so we use a single, simple render pass.

@@ -491,11 +491,6 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
             if (_params[HdLightTokens->shadowCollection] != newCollection) {
                 _params[HdLightTokens->shadowCollection] = newCollection;
-
-                HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-
-                changeTracker.MarkCollectionDirty(newCollection.GetName());
             }
 
         } else {

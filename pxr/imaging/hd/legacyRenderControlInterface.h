@@ -143,9 +143,6 @@ public:
     ///
     virtual SdfPath GetRprimPathFromPrimId(int primIdx) = 0;
 
-    /// Replaces HdChangeTracker::AddCollection.
-    virtual void AddCollection(const TfToken &name) = 0;
-
     /// Dirties materials and replaces
     // HdResourceRegistry::InvalidateShaderRegistry.
     virtual void ReloadShaderPrograms() = 0;

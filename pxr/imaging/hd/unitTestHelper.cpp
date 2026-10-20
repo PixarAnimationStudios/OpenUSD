@@ -153,10 +153,8 @@ Hd_TestDriver::_Init(HdReprSelector const &reprSelector)
     // set depthfunc to default
     _renderPassState->SetDepthFunc(HdCmpFuncLess);
 
-    // Update collection with repr and add collection to change tracker.
+    // Update collection with repr.
     _collection.SetReprSelector(reprSelector);
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.AddCollection(_collection.GetName());
 }
 
 void
@@ -272,10 +270,6 @@ void
 Hd_TestDriver::SetRepr(HdReprSelector const &reprSelector)
 {
     _collection.SetReprSelector(reprSelector);
-
-    // Mark changes.
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.MarkCollectionDirty(_collection.GetName());
 
     // Update render pass with updated collection
     _renderPass->SetRprimCollection(_collection);

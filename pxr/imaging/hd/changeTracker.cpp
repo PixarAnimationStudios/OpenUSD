@@ -1123,23 +1123,18 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
     HD_TRACE_FUNCTION();
 
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
-    if (!TF_VERIFY(it != _collectionState.end(),
-                      "Collection %s not found\n", collectionName.GetText())) {
+    if (it == _collectionState.end()) {
         return;
     }
     // bump the version number
     it->second += 1;
-
-    ++_sceneStateVersion;
 }
 
 unsigned
 HdChangeTracker::GetCollectionVersion(TfToken const& collectionName) const
 {
     _CollectionStateMap::const_iterator it = _collectionState.find(collectionName);
-    if (!(it != _collectionState.end())) {
-        TF_CODING_ERROR("Change Tracker unable to find collection %s",
-                        collectionName.GetText());
+    if (it == _collectionState.end()) {
         return _rprimIndexVersion;
     }
     return it->second + _rprimIndexVersion;
