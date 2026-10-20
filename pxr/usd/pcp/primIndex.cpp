@@ -4934,8 +4934,8 @@ _NodeCanBeCulled(
     const PcpNodeRef& node,
     const PcpLayerStackSite& rootSite)
 {
-    // Trivial case if this node has already been culled. 
-    // This could happen if this node was culled ancestrally.
+    // Trivial case if this node has already been culled.  This happens if
+    // this node was elided.  See _CullSubtreesWithNoOpinionsHelper.
     if (node.IsCulled()) {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
         TF_VERIFY(!node.IsRootNode());
@@ -5040,6 +5040,23 @@ _CullSubtreesWithNoOpinionsHelper(
     const PcpLayerStackSite& rootSite,
     std::vector<PcpCulledDependency>* culledDeps)
 {
+    // A node that is culled but not elided was culled when computing an
+    // ancestral prim index, and this index started from that graph.  Decide
+    // again here: the node may no longer be cullable, because arcs added at
+    // this level of namespace can introduce live nodes beneath it.  For
+    // example, implied classes are evaluated through specializes placeholders,
+    // which are inert, and may be added beneath their parents.  See the
+    // SpecializesAndCulledAncestors museum case.
+    //
+    // Unculling resets the node's contribution restriction depth, so save it
+    // and then restore it if the node is culled again, to keep the depth at
+    // which it was first restricted.
+    const bool wasCulled = node.IsCulled() && !Pcp_IsElided(node);
+    const size_t restrictionDepth = node.GetSpecContributionRestrictedDepth();
+    if (wasCulled) {
+        node.SetCulled(false);
+    }
+
     // Recurse and attempt to cull all children first. Order doesn't matter.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         _CullSubtreesWithNoOpinionsHelper(*child, rootSite, culledDeps);
@@ -5049,6 +5066,9 @@ _CullSubtreesWithNoOpinionsHelper(
     // removed from the prim index at the end of prim indexing.
     if (_NodeCanBeCulled(node, rootSite)) {
         node.SetCulled(true);
+        if (wasCulled) {
+            node.SetSpecContributionRestrictedDepth(restrictionDepth);
+        }
     }
 }
 

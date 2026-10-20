@@ -137,13 +137,14 @@ PcpNodeRef::SetCulled(bool culled)
         _graph->_finalized = false;
     }
 
-    // If we've culled this node, we've definitely restricted contributions.
-    // If we've unculled this node, some other flags may be restriction
-    // contributions, so we don't know.
-    _RecordRestrictionDepth(
-        culled ? _Restricted::Yes : _Restricted::Unknown);
-
     _graph->_unshared[_nodeIdx].culled = culled;
+
+    // If we've culled this node, we've definitely restricted contributions.  If
+    // we've unculled this node, some other flags may be restriction
+    // contributions, so we don't know.  This must follow the update above,
+    // since _RecordRestrictionDepth consults CanContributeSpecs which looks at
+    // `culled`.
+    _RecordRestrictionDepth(culled ? _Restricted::Yes : _Restricted::Unknown);
 }
 
 void
