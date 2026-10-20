@@ -75,8 +75,8 @@ Uniform Interpolation
 
 :ref:`One element <primvar_element_size>` remains constant for each patch 
 segment of the prim's surface/volume. For a mesh prim, provide an array with a 
-single element for each face of the mesh. For a curve prim, provide an array 
-with a single element for each curve segment (as described in 
+single element for each face of the mesh. For BasisCurves, provide an array with 
+a single element for each curve (as described in 
 :usdcpp:`UsdGeomBasisCurves -- Primvar Interpolation <UsdGeomBasisCurves>`). 
 
 The elements in the array must match the count and order of the segments of the 
@@ -309,7 +309,7 @@ discontinuities.
 
 .. note::
 
-    Currently, faceVarying interpolation is not support for basis curves.
+    Currently, faceVarying interpolation is not supported for BasisCurves.
 
 For Mesh prims, you'll provide a primvar array with one element for each 
 face-vertex of each face, with the order of the primvar array matching 
