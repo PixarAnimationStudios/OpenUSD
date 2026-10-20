@@ -172,9 +172,10 @@ public:
         // XXX TODO
         // parallelize this?
         std::vector<HdSampledDataSourceHandle> ds;
-        ds.reserve(_animSchemas.size());
+        ds.reserve(_animSchemas.size() * 2);
         for (const auto& animSchema : _animSchemas) {
             ds.push_back(animSchema.GetBlendShapes());
+            ds.push_back(animSchema.GetBlendShapeWeights());
         };
 
         if (!HdGetMergedContributingSampleTimesForInterval(
@@ -281,8 +282,9 @@ public:
         // XXX TODO
         // parallelize this?
         std::vector<HdSampledDataSourceHandle> ds;
-        ds.reserve(_animSchemas.size());
+        ds.reserve(_animSchemas.size() * 2);
         for (const auto& animSchema : _animSchemas) {
+            ds.push_back(animSchema.GetBlendShapes());
             ds.push_back(animSchema.GetBlendShapeWeights());
         };
 
@@ -356,7 +358,7 @@ private:
     const VtFloatArray _valueAtZero;
 };
 
-/// Data source for resolvedSkeleton/blendShapeWeights
+/// Data source for resolvedSkeleton/blendShapeRanges
 /// This provides the ranges (offset, numElements tuple) of the concatenated 
 /// blendShapes and blendShapeWeights from resolved animation schemas on the 
 /// resolved skeleton data source.
@@ -392,8 +394,9 @@ public:
         // XXX TODO
         // parallelize this?
         std::vector<HdSampledDataSourceHandle> ds;
-        ds.reserve(_animSchemas.size());
+        ds.reserve(_animSchemas.size() * 2);
         for (const auto& animSchema : _animSchemas) {
+            ds.push_back(animSchema.GetBlendShapes());
             ds.push_back(animSchema.GetBlendShapeWeights());
         };
 
@@ -437,9 +440,13 @@ private:
             [&] (GfVec2i* start, GfVec2i* end)
             {   
                 for (size_t i = 0; i < _animSchemas.size(); ++i) {
-                    const int size = UsdSkelImagingGetTypedValue(
-                        _animSchemas[i].GetBlendShapeWeights(), 
+                    const size_t numShapes = UsdSkelImagingGetTypedValue(
+                        _animSchemas[i].GetBlendShapes(), shutterOffset).size();
+                    const size_t numWeights = UsdSkelImagingGetTypedValue(
+                        _animSchemas[i].GetBlendShapeWeights(),
                         shutterOffset).size();
+                    const int size = static_cast<int>(
+                        std::min(numShapes, numWeights));
                     new (start + i) GfVec2i(offset, size);
                     offset += size;
                 }
@@ -1112,22 +1119,19 @@ _ProcessSkelAnimationDirtyLocators(
         }
     }
 
-    if (dirtyLocators.Intersects(
-            UsdSkelImagingAnimationSchema::GetBlendShapesLocator())) {
+    static const HdDataSourceLocatorSet blendShapeLocators{
+        UsdSkelImagingAnimationSchema::GetBlendShapesLocator(),
+        UsdSkelImagingAnimationSchema::GetBlendShapeWeightsLocator()};
+    if (dirtyLocators.Intersects(blendShapeLocators)) {
         if (newDirtyLocators) {
             newDirtyLocators->insert(
                 UsdSkelImagingResolvedSkeletonSchema::GetBlendShapesLocator());
             newDirtyLocators->insert(
                 UsdSkelImagingResolvedSkeletonSchema::
-                GetBlendShapeRangesLocator());
-        }
-    }
-    if (dirtyLocators.Intersects(
-            UsdSkelImagingAnimationSchema::GetBlendShapeWeightsLocator())) {
-        if (newDirtyLocators) {
+                GetBlendShapeWeightsLocator());
             newDirtyLocators->insert(
                 UsdSkelImagingResolvedSkeletonSchema::
-                GetBlendShapeWeightsLocator());
+                GetBlendShapeRangesLocator());
         }
     }
 
