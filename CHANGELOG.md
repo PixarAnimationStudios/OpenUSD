@@ -40,6 +40,8 @@
   - Replaced deprecated codecs.open call from build_usd.py.
   - Updated to download and install the Polygonal Mesh Coding (PMC) codec 
     library and plugin when building with PMC support.
+  - Fixed default TBB help string.
+    (PR: [#4282](https://github.com/PixarAnimationStudios/OpenUSD/pull/4282))  
 
 - Build changes made in support of the AOUSD Build Interest Group's work on 
   cmake modernization. 
@@ -80,7 +82,8 @@
   `pxr_build_test_plugin`.
 
 - Configured OpenColorIO to be built when building OpenImageIO. 
-  (Issue: [#4219](https://github.com/PixarAnimationStudios/OpenUSD/issues/4219))
+  (Issue: [#4219](https://github.com/PixarAnimationStudios/OpenUSD/issues/4219),
+   PR: [#4295](https://github.com/PixarAnimationStudios/OpenUSD/pull/4295))
 
 ### USD
 
@@ -706,6 +709,11 @@
 
 - Updated USDZ specification doc to clarify that nesting usdz is allowed. 
   (Issue: [#4200](https://github.com/PixarAnimationStudios/OpenUSD/issues/4200))
+
+- Various doc fixes.
+  (PR: [#4280](https://github.com/PixarAnimationStudios/OpenUSD/pull/4280),
+   [#4281](https://github.com/PixarAnimationStudios/OpenUSD/pull/4281),
+   [#4289](https://github.com/PixarAnimationStudios/OpenUSD/pull/4289))
 
 <details open>
   <summary><b>Previous Releases</b></summary>
