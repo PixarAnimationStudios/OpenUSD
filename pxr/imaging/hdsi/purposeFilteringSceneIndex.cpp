@@ -83,24 +83,27 @@ _GetPurpose(HdContainerDataSourceHandle const &primDs)
 // - If purposes is nullopt (hint mode): prune if purpose IS in hint.
 bool
 _ComputeShouldPrune(
-    const std::optional<TfToken> &purpose,
-    const std::optional<VtArray<TfToken>> &purposes,
-    const VtArray<TfToken> &hint)
+    const std::optional<TfToken> &primPurpose,
+    const std::optional<VtArray<TfToken>> &purposesToKeep,
+    const VtArray<TfToken> &excludedPurposesHint)
 {
-    if (!purpose) {
+    if (!primPurpose) {
         return false;
     }
 
-    if (purposes.has_value()) {
-        if (purposes->empty()) {
+    if (purposesToKeep.has_value()) {
+        if (purposesToKeep->empty()) {
             return false;
         }
-        return std::find(purposes->begin(), purposes->end(), *purpose)
-            == purposes->end();
+        return std::find(
+            purposesToKeep->begin(), purposesToKeep->end(), *primPurpose)
+                == purposesToKeep->end();
     }
 
     // Hint mode.
-    return std::find(hint.begin(), hint.end(), *purpose) != hint.end();
+    return std::find(
+        excludedPurposesHint.begin(), excludedPurposesHint.end(), *primPurpose)
+            != excludedPurposesHint.end();
 }
 
 } // anon namespace
@@ -164,6 +167,8 @@ HdsiPurposeFilteringSceneIndex::SetPurposes(VtArray<TfToken> const &purposes)
     if (!_IsObserved()) {
         return;
     }
+
+    TRACE_FUNCTION();
 
     TF_DEBUG(HDSI_PURPOSE_FILTERING_SCENE_INDEX).Msg(
         "Starting full scene traversal to update pruning state.\n");
