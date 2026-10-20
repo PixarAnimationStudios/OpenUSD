@@ -10,7 +10,6 @@ pxr_plugin(${PXR_PACKAGE}
         vt
 
     INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
         ${PYTHON_INCLUDE_DIRS}
 
     PUBLIC_HEADERS
