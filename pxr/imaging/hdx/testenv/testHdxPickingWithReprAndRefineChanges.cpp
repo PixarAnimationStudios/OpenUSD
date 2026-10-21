@@ -320,8 +320,9 @@ My_TestGLDrawing::OffscreenTest()
         _selTracker->SetSelection(selection);
         DrawScene();
         _driver->WriteToFile("color", "color3_repr_change_cube2.png");
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+        if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+            TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+        }
     }
 
     // (c)
@@ -334,8 +335,9 @@ My_TestGLDrawing::OffscreenTest()
         _selTracker->SetSelection(selection);
         DrawScene();
         _driver->WriteToFile("color", "color4_repr_and_refine_change_cube1.png");
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube1"));
+        if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+            TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube1"));
+        }
     }
 
 
