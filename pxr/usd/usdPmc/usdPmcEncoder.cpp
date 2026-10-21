@@ -376,10 +376,14 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
     }
     _tempDir = tmpDirStr;
 
-    // Determine input format
+    // Determine input and output formats
     std::string inExt = inFile.extension().string();
     std::transform(inExt.begin(), inExt.end(), inExt.begin(), ::tolower);
     const bool isUsdzInput = (inExt == ".usdz");
+
+    std::string outExt = outFile.extension().string();
+    std::transform(outExt.begin(), outExt.end(), outExt.begin(), ::tolower);
+    const bool isUsdzOutput = (outExt == ".usdz");
 
     // For USDZ input, extract the archive; otherwise use the file directly
     std::filesystem::path stageSource;
@@ -396,7 +400,8 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
 
     // Flatten the stage
     std::filesystem::path flattenedPath;
-    if (!_CreateFlattenOutput(stageSource, outFile, &flattenedPath)) {
+    if (!_CreateFlattenOutput(stageSource, outFile, isUsdzInput, isUsdzOutput,
+                               &flattenedPath)) {
         TF_RUNTIME_ERROR("Unable to create flatten stage");
         return false;
     }
@@ -430,11 +435,6 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
     if (_entryFileName.empty()) {
         _entryFileName = "root.usdc";
     }
-
-    // Determine output format
-    std::string outExt = outFile.extension().string();
-    std::transform(outExt.begin(), outExt.end(), outExt.begin(), ::tolower);
-    const bool isUsdzOutput = (outExt == ".usdz");
 
     if (isUsdzOutput) {
         // Export the modified stage to the temporary directory for packing
@@ -578,6 +578,8 @@ UsdPmcMeshEncoder::_WriteNonUsdzOutput() {
 bool
 UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
                                         std::filesystem::path dest,
+                                        bool isUsdzInput,
+                                        bool isUsdzOutput,
                                         std::filesystem::path* output) {
     if (!output) {
         TF_RUNTIME_ERROR("output cannot be null");
@@ -611,33 +613,82 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
     }
 
     // Convert absolute paths back to relative paths
-    // Get the base path for making relative paths
-    std::filesystem::path basePath = dest.is_absolute() ? 
-        dest.parent_path() :
-        std::filesystem::absolute(dest).parent_path();
+    // Get the base path for making relative paths. For USDZ input, the
+    // flattened layer's dependencies were extracted into _tempDir and are
+    // later copied/packed relative to that same root (see _PackUSDZ and
+    // _WriteNonUsdzOutput), so asset paths must stay relative to _tempDir.
+    // For non-USDZ input, no dependencies are extracted or copied; they
+    // remain at their original on-disk location, so asset paths must be
+    // relative to the final output file's directory instead.
+    std::filesystem::path basePath = isUsdzInput ? _tempDir :
+        (dest.is_absolute() ? dest.parent_path() :
+         std::filesystem::absolute(dest).parent_path());
+
+    // Directory containing the original (non-USDZ) input file. Used below to
+    // decide which dependencies live alongside the input and should be
+    // bundled when packaging a USDZ output from non-USDZ input.
+    std::filesystem::path sourceDir = input.is_absolute() ?
+        input.parent_path() :
+        std::filesystem::absolute(input).parent_path();
 
     // Helper function to convert absolute path to relative
-    auto makeRelative = [&basePath](const std::string& absPath)
-                        -> std::string {
+    auto makeRelative = [&](const std::string& absPath) -> std::string {
         if (absPath.empty()) return absPath;
 
         std::filesystem::path absPathFs(absPath);
 
-        // Check if it's an absolute path that needs conversion
-        if (absPathFs.is_absolute()) {
-            try {
-                // Try to make it relative to the base path
-                std::filesystem::path relPath =
-                    std::filesystem::relative(absPathFs, basePath);
-                return relPath.string();
-            } catch (...) {
-                // If relative path calculation fails, keep the original
-                return absPath;
-            }
+        // Already relative or not a file path
+        if (!absPathFs.is_absolute()) {
+            return absPath;
         }
 
-        // Already relative or not a file path
-        return absPath;
+        // Non-USDZ input packaged as USDZ output: dependencies were never
+        // extracted into _tempDir (there was no archive to extract), so they
+        // still live next to the original input file. Any dependency found
+        // within that source folder must be copied into _tempDir -- preserving
+        // its relative layout -- and registered so _PackUSDZ bundles it;
+        // anything outside the source folder (or missing on disk) is left
+        // referencing its original path since it cannot be meaningfully
+        // packaged.
+        if (!isUsdzInput && isUsdzOutput) {
+            if (!std::filesystem::exists(absPathFs)) {
+                return absPath;
+            }
+            std::error_code relEc;
+            std::filesystem::path relToSource =
+                std::filesystem::relative(absPathFs, sourceDir, relEc);
+            bool insideSource = !relEc && !relToSource.empty() &&
+                *relToSource.begin() != "..";
+
+            if (insideSource) {
+                std::filesystem::path copyDest = _tempDir / relToSource;
+                std::filesystem::path copyDestParent =
+                    copyDest.parent_path();
+                if (copyDestParent.empty() ||
+                    _CreateDirectory(copyDestParent)) {
+                    std::error_code copyEc;
+                    std::filesystem::copy_file(
+                        absPathFs, copyDest,
+                        std::filesystem::copy_options::overwrite_existing,
+                        copyEc);
+                    if (!copyEc) {
+                        _references.push_back(relToSource.string());
+                        return relToSource.string();
+                    }
+                }
+            }
+            return absPath;
+        }
+
+        // Try to make it relative to the base path
+        try {
+            std::filesystem::path relPath =
+                std::filesystem::relative(absPathFs, basePath);
+            return relPath.string();
+        } catch (...) {
+            // If relative path calculation fails, keep the original
+            return absPath;
+        }
     };
 
     UsdUtilsModifyAssetPaths(flattenedLayer, makeRelative);

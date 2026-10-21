@@ -101,6 +101,8 @@ private:
 
     bool _CreateFlattenOutput(std::filesystem::path input,
                               std::filesystem::path dest,
+                              bool isUsdzInput,
+                              bool isUsdzOutput,
                               std::filesystem::path* output);
 };
 
