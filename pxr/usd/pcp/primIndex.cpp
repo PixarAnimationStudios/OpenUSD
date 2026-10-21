@@ -1432,6 +1432,26 @@ struct Pcp_PrimIndexer
                 if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
                     AddTask(Task(Task::EvalImpliedClasses, base));
                 }
+
+                // A propagated specializes node may arrive with class-based
+                // children built in its own recursive frame, where it was the
+                // root and its placeholder's parent was not available, so
+                // their implied classes were not evaluated there.  The chain
+                // above starts at or above the placeholder and so does not
+                // reach these children.  Evaluate each child's chain as if it
+                // had been added after this node.  See the
+                // SpecializesAndPropagatedClasses museum case.
+                if (Pcp_IsPropagatedSpecializesNode(n)) {
+                    TF_FOR_ALL(child, Pcp_GetChildrenRange(n)) {
+                        if (!PcpIsClassBasedArc(child->GetArcType())) {
+                            continue;
+                        }
+                        if (PcpNodeRef base =
+                            _FindStartingNodeForImpliedClasses(*child)) {
+                            AddTask(Task(Task::EvalImpliedClasses, base));
+                        }
+                    }
+                }
             } else if (_HasClassBasedChild(n)) {
                 // The new node is not class-based -- but it has class-based
                 // children.  Such children represent inherits found during the
