@@ -105,7 +105,7 @@ public:
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
     
     HGIMETAL_API
-    void EnableParallelEncoder(bool enable);
+    void EnableParallelEncoder(bool enable) override;
 
     // Needs to be accessible from the Metal IndirectCommandEncoder
     id<MTLRenderCommandEncoder> GetEncoder(uint32_t encoderIndex = 0);
