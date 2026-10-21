@@ -9,6 +9,7 @@
 #include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/conversions.h"
+#include "pxr/imaging/hgiVulkan/descriptorSetLayouts.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/resourceBindings.h"
@@ -80,22 +81,15 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
     // OpenGL (and Metal) have separate bindings for each buffer and image type.
     // Ubo, ssbo, sampler2D, image all start at bindingIndex 0. So we expect
     // that Hgi clients may specify OpenGL style bindingIndex for each.
-    // In Vulkan, bindingIndices are shared (incremented) across all resources.
-    // We could split all four into a separate descriptorSet and set the
-    // slot=XX in the shader. Instead we keep all resources in one
-    // descriptor set and increment all Hgi binding indices here.
-    // This assumes that Hgi codeGen does the same for vulkan glsl.
-
-    // For non-bindless buffers in Storm, uniform and storage buffers share a 
-    // binding index counter, while textures have their own binding index 
-    // counter. Thus for Vulkan, we adjust the texture bind indices to start 
-    // after the last buffer bind index.
+    // In Vulkan all resources share one binding space per descriptor set, so
+    // buffers keep their index and textures are placed at
+    // HgiVulkanTextureBindIndexBase and above. HgiVulkanShaderGenerator applies
+    // the identical offset, which is what makes this descriptor set layout
+    // compatible with the pipeline layout.
     // E.g. If HgiResourceBindingDesc indicates the following binding indices:
     // UBO1: 0, SSBO1: 1, SSB02: 2, TEX1: 0, TEX2: 1, here we change that to:
-    // UBO1: 0, SSBO1: 1, SSB02: 2, TEX1: 3, TEX2: 4.
+    // UBO1: 0, SSBO1: 1, SSB02: 2, TEX1: 128, TEX2: 129.
 
-    uint32_t textureBindIndexStart = 0;
-    
     // XXX We need to overspecify the stage usage here so we can match the 
     // VkDescriptorSetLayout that is created with spirv-reflect for the 
     // graphics and compute pipelines.
@@ -126,14 +120,15 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
         d.pImmutableSamplers = nullptr;
         bindings.push_back(std::move(d));
 
-        textureBindIndexStart =
-            std::max(textureBindIndexStart, b.bindingIndex + 1);
+        TF_VERIFY(b.bindingIndex < HgiVulkanTextureBindIndexBase,
+            "Buffer binding index %u overlaps the texture binding range",
+            b.bindingIndex);
     }
 
     // Textures
     for (HgiTextureBindDesc const& t : desc.textures) {
         VkDescriptorSetLayoutBinding d = {};
-        d.binding = textureBindIndexStart + t.bindingIndex;
+        d.binding = HgiVulkanTextureBindIndexBase + t.bindingIndex;
         d.descriptorType =
             HgiVulkanConversions::GetDescriptorType(t.resourceType);
         poolSizes[t.resourceType].descriptorCount++;
@@ -324,7 +319,8 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
         // For dstBinding we must provided an index in descriptor set.
         // Must be one of the bindings specified in VkDescriptorSetLayoutBinding
         VkWriteDescriptorSet writeSet= {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        writeSet.dstBinding = textureBindIndexStart + texDesc.bindingIndex;
+        writeSet.dstBinding =
+            HgiVulkanTextureBindIndexBase + texDesc.bindingIndex;
         writeSet.dstArrayElement = 0;
         writeSet.descriptorCount = static_cast<uint32_t>(texDesc.textures.size()); // 0 ok
         writeSet.dstSet = _vkDescriptorSet;
