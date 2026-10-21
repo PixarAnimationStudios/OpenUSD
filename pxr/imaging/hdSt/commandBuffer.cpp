@@ -330,16 +330,28 @@ HdStCommandBuffer::PrepareDraw(
     // Once all the prepare work is done, add a memory barrier before the next
     // stage.
     HgiComputeCmds *computeCmds =
-        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent, false);
 
-    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+    // Only insert barrier when there is compute commands.
+    if (computeCmds)
+        computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+
+    bool hasEncodeDraw = false;
 
     for (auto const& batch : _drawBatches) {
-        batch->EncodeDraw(renderPassState, resourceRegistry,
+        hasEncodeDraw |= batch->EncodeDraw(renderPassState, resourceRegistry,
             /*firstDrawBatch*/batch == *_drawBatches.begin());
     }
 
-    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+    // Only insert barrier when there is compute commands.
+    if (hasEncodeDraw)
+    {
+        if (!computeCmds)
+            computeCmds = resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent, false);
+
+        if (computeCmds)
+            computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+    }
 
     //
     // Compute work that was set up for indirect command buffers and frustum

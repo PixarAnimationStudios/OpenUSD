@@ -992,13 +992,13 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     }
 }
 
-void
+bool
 HdSt_PipelineDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
     bool firstDrawBatch)
 {
-    if (_HasNothingToDraw()) return;
+    if (_HasNothingToDraw()) return false;
 
     Hgi *hgi = resourceRegistry->GetHgi();
     HgiCapabilities const *capabilities = hgi->GetCapabilities();
@@ -1014,7 +1014,10 @@ HdSt_PipelineDrawBatch::EncodeDraw(
     if (drawICB) {
         _PrepareIndirectCommandBuffer(renderPassState, resourceRegistry,
             firstDrawBatch);
+        return true;
     }
+
+    return false;
 }
 
 ////////////////////////////////////////////////////////////

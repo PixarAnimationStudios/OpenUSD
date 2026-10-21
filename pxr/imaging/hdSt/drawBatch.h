@@ -80,7 +80,7 @@ public:
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
     /// Encode drawing commands for this batch.
-    virtual void EncodeDraw(
+    virtual bool EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry,
         bool firstDrawBatch) = 0;
