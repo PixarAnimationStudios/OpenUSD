@@ -192,6 +192,65 @@ class TestSdfZipFile(unittest.TestCase):
 
         self.assertFalse(os.path.isfile("test_discard.usdz"))
 
+    def test_WriterUnicodeFilenames(self):
+        """Test that Sdf.ZipFileWriter sets the UTF-8 flag (bit 11 of the
+        General Purpose Bit Flag) for filenames containing non-ASCII characters,
+        per the ZIP specification (PKWARE APPNOTE.TXT section 4.4.4).
+
+        Regression test for https://github.com/PixarAnimationStudios/OpenUSD/issues/3774
+        """
+        # Create temporary source files with ASCII and Unicode names.
+        ascii_src = "test_ascii.txt"
+        unicode_src_zh = "test_\u4e2d\u6587.txt"   # 中文
+        unicode_src_ja = "test_\u65e5\u672c\u8a9e.txt"  # 日本語
+        unicode_src_ko = "test_\ud55c\uad6d\uc5b4.txt"  # 한국어
+
+        content = b"hello unicode world"
+        for name in [ascii_src, unicode_src_zh, unicode_src_ja, unicode_src_ko]:
+            with open(name, "wb") as f:
+                f.write(content)
+
+        archive_path = "test_unicode_filenames.usdz"
+        if os.path.isfile(archive_path):
+            os.remove(archive_path)
+
+        with Sdf.ZipFileWriter.CreateNew(archive_path) as zfw:
+            # Add files using their Unicode names as the in-archive path.
+            zfw.AddFile(ascii_src,      ascii_src)
+            zfw.AddFile(unicode_src_zh, unicode_src_zh)
+            zfw.AddFile(unicode_src_ja, unicode_src_ja)
+            zfw.AddFile(unicode_src_ko, unicode_src_ko)
+
+        self.assertTrue(os.path.isfile(archive_path))
+
+        # Verify with Python's zipfile module, which correctly interprets
+        # the UTF-8 flag and returns decoded filenames.
+        _UTF8_FLAG = 0x0800  # bit 11
+
+        with zipfile.ZipFile(archive_path) as zf:
+            infos = {info.filename: info for info in zf.infolist()}
+
+            # ASCII filename: UTF-8 flag is NOT required (but harmless if set).
+            # We only assert that the file is present and readable.
+            self.assertIn(ascii_src, infos)
+            self.assertEqual(zf.read(ascii_src), content)
+
+            # Unicode filenames: UTF-8 flag MUST be set so that tools can
+            # correctly decode the filename bytes as UTF-8.
+            for name in [unicode_src_zh, unicode_src_ja, unicode_src_ko]:
+                self.assertIn(name, infos,
+                    f"Unicode filename '{name}' not found in archive — "
+                    "UTF-8 flag may be missing")
+                self.assertTrue(
+                    infos[name].flag_bits & _UTF8_FLAG,
+                    f"UTF-8 flag (bit 11) not set for filename '{name}'")
+                self.assertEqual(zf.read(name), content)
+
+        # Clean up temporary files.
+        for name in [ascii_src, unicode_src_zh, unicode_src_ja, unicode_src_ko]:
+            if os.path.isfile(name):
+                os.remove(name)
+
     def test_WriterEmptyArchive(self):
         """Test corner case writing an empty zip archive with 
         Sdf.ZipFileWriter"""
