@@ -27,6 +27,15 @@ if (${PXR_STRICT_BUILD_MODE})
     set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /WX")
 endif()
 
+# Conformant preprocessor is available for Visual Studio 2019 16.5 and above.
+# This translates to MSVC version 1925. For more details, see:
+# https://learn.microsoft.com/en-us/cpp/overview/compiler-versions?view=msvc-170#version-macros
+# If compatibility with legacy rules for macro expansion are needed, see:
+# https://learn.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview?view=msvc-170#rescanning-replacement-list-for-macros
+if (MSVC_VERSION GREATER_EQUAL 1925)
+    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:preprocessor")
+else()
+
 # The Visual Studio preprocessor does not conform to the C++ standard,
 # resulting in warnings like:
 #
@@ -36,12 +45,9 @@ endif()
 # code sites that tricky to guard with individual pragmas, so we opt to
 # disable them throughout the build here.
 #
-# Note that these issues are apparently fixed with the "new" preprocessor
-# present in Visual Studio 2019 version 16.5. If/when we enable that option,
-# we should revisit this.
-#
 # https://developercommunity.visualstudio.com/t/standard-conforming-preprocessor-invalid-warning-c/364698
 _disable_warning("4003")
+endif()
 
 # truncation from 'double' to 'float' due to matrix and vector classes in `Gf`
 _disable_warning("4244")
