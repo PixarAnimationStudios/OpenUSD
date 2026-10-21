@@ -65,6 +65,22 @@ public:
     VtDictionary const &GetRenderSettings() const { return _renderSettings; }
     TfToken const & GetRendererAov() const { return _rendererAov; }
     std::string const &GetPerfStatsFile() const { return _perfStatsFile; }
+    std::string const &GetSceneIndexOutputFilePath() const {
+        return _sceneIndexOutputFilePath;
+    }
+
+    // Controls how much detail WriteSceneIndexToFile emits per prim.
+    enum class SceneIndexDumpMode {
+        // Write "<path> type = <primType>" per prim only.
+        PathAndType,
+        // Write path/type plus the full data source tree via
+        // HdDebugPrintDataSource.
+        PathTypeAndDataSource,
+    };
+
+    SceneIndexDumpMode GetSceneIndexDumpMode() const {
+        return _sceneIndexDumpMode;
+    }
     float GetPixelAspectRatio() const { return _pixelAspectRatio; }
     GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
     GfRect2i const & GetDataWindow() const { return _dataWindow; }
@@ -94,6 +110,14 @@ public:
     static bool WriteAovToFile(UsdImagingGLEngine *engine,
                                TfToken const &aovName,
                                std::string const &filename);
+
+    // Dump the terminal scene index (excluding task controller prims) to a text
+    // file with prims paths lexicographically sorted and pointer addresses
+    // in data sources scrubbed for diff stability.
+    static void WriteSceneIndexToFile(
+        UsdImagingGLEngine *engine,
+        std::string const &filename,
+        SceneIndexDumpMode mode = SceneIndexDumpMode::PathTypeAndDataSource);
 
 protected:
     float _GetComplexity() const { return _complexity; }
@@ -145,6 +169,8 @@ private:
     TfToken _rendererAov;
     std::string _perfStatsFile;
     std::string _traceFile;
+    std::string _sceneIndexOutputFilePath;
+    SceneIndexDumpMode _sceneIndexDumpMode;
 
     bool _showGuides;
     bool _showRender;

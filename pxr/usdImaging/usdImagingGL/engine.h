@@ -790,6 +790,12 @@ protected:
         HdContainerDataSourceHandle const &sceneIndexCreateArgs,
         HdRendererPluginHandle const &plugin,
         const HdRendererCreateArgsSchema &rendererCreateArgs);
+    
+    // Get the terminal scene index of the scene index graph that feeds
+    // the renderer.
+    USDIMAGINGGL_API
+    HdSceneIndexBaseRefPtr
+    _GetTerminalSceneIndex() const;
 
     Hgi *
     _GetOrCreateHgi();
@@ -828,8 +834,6 @@ protected:
     bool _isPopulated;
 
 private:
-    HdSceneIndexBaseRefPtr _GetTerminalSceneIndex() const;
-
     HdLegacyRenderControlInterface * _GetLegacyRenderControl() const;
 
     // The application-managed render settings scene index, if the renderer

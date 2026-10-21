@@ -20,7 +20,10 @@
 // 10 -> 11: Removed UsdImagingGLRenderParams::enableIdRender.
 // 11 -> 12: Removed USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX and
 //           UsdImagingGLEngine::UseUsdImagingSceneIndex().
-#define USDIMAGINGGL_API_VERSION 12
+// 12 -> 13: Made private API UsdImagingGLEngine::_GetTerminalSceneIndex()
+//           protected.
+
+#define USDIMAGINGGL_API_VERSION 13
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 
