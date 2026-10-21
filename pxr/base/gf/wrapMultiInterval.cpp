@@ -32,10 +32,10 @@ _Repr(GfMultiInterval const &self)
     if (!self.IsEmpty()) {
         r += "[";
         int count = 0;
-        TF_FOR_ALL(i, self) {
+        for(const auto& i : self) {
             if (count)
                 r += ", ";
-            r += TfPyRepr(*i);
+            r += TfPyRepr(i);
             count++;
         }
         r += "]";
