@@ -32,6 +32,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdSphereSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
+HdBoolDataSourceHandle
+HdSphereSchema::GetDoubleSided() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdSphereSchemaTokens->doubleSided);
+}
+
 HdDoubleDataSourceHandle
 HdSphereSchema::GetRadius() const
 {
@@ -42,19 +49,33 @@ HdSphereSchema::GetRadius() const
 /*static*/
 HdContainerDataSourceHandle
 HdSphereSchema::BuildRetained(
+        const HdBoolDataSourceHandle &doubleSided,
         const HdDoubleDataSourceHandle &radius
 )
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
+
+    if (doubleSided) {
+        _names[_count] = HdSphereSchemaTokens->doubleSided;
+        _values[_count++] = doubleSided;
+    }
 
     if (radius) {
         _names[_count] = HdSphereSchemaTokens->radius;
         _values[_count++] = radius;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdSphereSchema::Builder &
+HdSphereSchema::Builder::SetDoubleSided(
+    const HdBoolDataSourceHandle &doubleSided)
+{
+    _doubleSided = doubleSided;
+    return *this;
 }
 
 HdSphereSchema::Builder &
@@ -69,6 +90,7 @@ HdContainerDataSourceHandle
 HdSphereSchema::Builder::Build()
 {
     return HdSphereSchema::BuildRetained(
+        _doubleSided,
         _radius
     );
 }

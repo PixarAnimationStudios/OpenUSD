@@ -171,6 +171,7 @@ const TfTokenVector&
 UsdGeomCapsule::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdGeomTokens->doubleSided,
         UsdGeomTokens->height,
         UsdGeomTokens->radius,
         UsdGeomTokens->axis,
