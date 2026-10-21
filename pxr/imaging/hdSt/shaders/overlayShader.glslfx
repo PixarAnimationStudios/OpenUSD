@@ -49,7 +49,12 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
     vec4 colorOut = color;
     if (d <= gl_FragCoord.z) {
-        const float showThroughAlpha = 0.3;
+        // Occluded parts are drawn at a fraction of the prim's opacity, which
+        // the prim can set with its overlayOpacity primvar.
+        float showThroughAlpha = 0.3;
+#ifdef HD_HAS_overlayOpacity
+        showThroughAlpha = clamp(float(HdGet_overlayOpacity()), 0.0, 1.0);
+#endif
         float adjAlpha = showThroughAlpha * color.a;
         colorOut.rgb = color.rgb*adjAlpha + bg.rgb*bg.a*(1-adjAlpha);
         colorOut.a = adjAlpha + bg.a*(1.0-adjAlpha);
