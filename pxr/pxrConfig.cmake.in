@@ -112,6 +112,14 @@ if(NOT "@PXR_WORK_IMPL_PACKAGE@" STREQUAL "")
     find_dependency(@PXR_WORK_IMPL_PACKAGE@)
 endif()
 
+# If Vulkan support was enabled for the USD build, make sure to locate it using
+# the VULKAN_SDK environment variable.
+if(@PXR_ENABLE_VULKAN_SUPPORT@)
+    if (EXISTS $ENV{VULKAN_SDK})
+        find_package(Vulkan REQUIRED)
+    endif()
+endif()
+
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
 if (TARGET usd_m)
     set(libs "usd_m")
