@@ -27,7 +27,8 @@ bool operator==(
             lhs.srcAlphaBlendFactor == rhs.srcAlphaBlendFactor &&
             lhs.dstAlphaBlendFactor == rhs.dstAlphaBlendFactor &&
             lhs.alphaBlendOp == rhs.alphaBlendOp &&
-            lhs.blendConstantColor == rhs.blendConstantColor;
+            lhs.blendConstantColor == rhs.blendConstantColor &&
+            lhs.resolveFilter == rhs.resolveFilter;
 }
 
 bool operator!=(
@@ -55,7 +56,8 @@ std::ostream& operator<<(
         << "srcAlphaBlendFactor: " << attachment.srcAlphaBlendFactor << ", "
         << "dstAlphaBlendFactor: " << attachment.dstAlphaBlendFactor << ", "
         << "alphaBlendOp: " << attachment.alphaBlendOp << ", "
-        << "blendConstantColor: " << attachment.blendConstantColor <<
+        << "blendConstantColor: " << attachment.blendConstantColor << ", "
+        << "resolveFilter: " << attachment.resolveFilter <<
     "}";
     return out;
 }
