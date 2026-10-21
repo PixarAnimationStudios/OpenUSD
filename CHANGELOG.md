@@ -1,6 +1,12 @@
 # Change Log
 
-## [26.11] - 2026-10-20
+## [26.11.1] - 2026-10-21
+
+- Fixed a GPU memory issue.
+
+- Updated GitHub's CI configuration to avoid a PySide6 bug.
+
+## [26.11.0] - 2026-10-20
 
 ### Security
 
