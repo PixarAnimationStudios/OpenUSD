@@ -634,6 +634,194 @@ pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWithOrthoCam
         HDST_ENABLE_NATIVE_IMPLICITS=1
 )
 
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -times 1 2 3 -stage intersectingImplicits.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireframe_001.png
+        testUsdImagingGLNativeImplicits_implicitsWireframe_002.png
+        testUsdImagingGLNativeImplicits_implicitsWireframe_003.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -times 1 2 3 -stage intersectingImplicits.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireOnSurf_001.png
+        testUsdImagingGLNativeImplicits_implicitsWireOnSurf_002.png
+        testUsdImagingGLNativeImplicits_implicitsWireOnSurf_003.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireframePlaneIntersections
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -stage planeIntersectionsWithImplicits.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireframePlaneIntersections.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireframePlaneIntersections.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireOnSurfPlaneIntersections
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage planeIntersectionsWithImplicits.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireOnSurfPlaneIntersections.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireOnSurfPlaneIntersections.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireframeOrthoCam
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -stage implicitsWithOrthoCam.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireframeOrthoCam.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireframeOrthoCam.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_implicitsWireOnSurfOrthoCam
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage implicitsWithOrthoCam.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_implicitsWireOnSurfOrthoCam.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_implicitsWireOnSurfOrthoCam.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle back -offscreen -lighting -shading wire -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireframe.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle back -offscreen -lighting -shading wireOnSurface -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleBackfaceCullWireOnSurf.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle front -offscreen -lighting -shading wire -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireframe.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle front -offscreen -lighting -shading wireOnSurface -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleFrontfaceCullWireOnSurf.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_sphereBehindEyeWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -stage sphereBehindEye.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_sphereBehindEyeWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_sphereBehindEyeWireframe.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_sphereBehindEyeWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage sphereBehindEye.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_sphereBehindEyeWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_sphereBehindEyeWireOnSurf.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_clippedCapsuleWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -times 1 2 3 4 5 -stage clippedCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_clippedCapsuleWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireframe_001.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireframe_002.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireframe_003.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireframe_004.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireframe_005.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -times 1 2 3 4 5 -stage clippedCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf_001.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf_002.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf_003.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf_004.png
+        testUsdImagingGLNativeImplicits_clippedCapsuleWireOnSurf_005.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_piCapsulesWireframe
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wire -stage piCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_piCapsulesWireframe.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_piCapsulesWireframe.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_piCapsulesWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage piCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_piCapsulesWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_piCapsulesWireOnSurf.png
+    FAIL_PERCENT 0.25
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
 pxr_register_test(testUsdImagingGLNativeImplicits_piSpheres
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage piSpheres.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_piSpheres.png"
     IMAGE_DIFF_COMPARE
@@ -667,10 +855,10 @@ pxr_register_test(testUsdImagingGLNativeImplicits_sphereInsideSphere
         HDST_ENABLE_NATIVE_IMPLICITS=1
 )
 
-pxr_register_test(testUsdImagingGLNativeImplicits_backfaceCull
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle back -offscreen -lighting -stage sphereInsideSphere.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_backfaceCull.png"
+pxr_register_test(testUsdImagingGLNativeImplicits_sphereBackfaceCull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle back -offscreen -lighting -stage sphereInsideSphere.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_sphereBackfaceCull.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLNativeImplicits_backfaceCull.png
+        testUsdImagingGLNativeImplicits_sphereBackfaceCull.png
     FAIL_PERCENT 0.05
     FAIL 0.2
     TESTENV testenv/testUsdImagingGLNativeImplicits
@@ -678,10 +866,10 @@ pxr_register_test(testUsdImagingGLNativeImplicits_backfaceCull
         HDST_ENABLE_NATIVE_IMPLICITS=1
 )
 
-pxr_register_test(testUsdImagingGLNativeImplicits_frontfaceCull
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle front -offscreen -lighting -stage sphereInsideSphere.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_frontfaceCull.png"
+pxr_register_test(testUsdImagingGLNativeImplicits_sphereFrontfaceCull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle front -offscreen -lighting -stage sphereInsideSphere.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_sphereFrontfaceCull.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLNativeImplicits_frontfaceCull.png
+        testUsdImagingGLNativeImplicits_sphereFrontfaceCull.png
     FAIL_PERCENT 0.05
     FAIL 0.2
     TESTENV testenv/testUsdImagingGLNativeImplicits

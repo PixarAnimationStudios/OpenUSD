@@ -1,0 +1,161 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/implicitSurfaceWire.glslfx
+
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.EdgeCommon
+
+// Half-width of edge bands in screen pixels.
+float GetEdgeHalfWidth()
+{
+    return 0.5;
+}
+
+// Matches MeshWire.Fragment.EdgeCommon's GetEdgeFalloff.
+float GetEdgeBlendFactor(const float edgePixelDist)
+{
+    return exp2(-4.0 * edgePixelDist * edgePixelDist);
+}
+
+// Distance from nearest edge in pixels. 0 = on edge.
+float GetMinEdgeDistance(const Shape shape,
+                         const Point pointShape,
+                         const MAT4 shapeToEye,
+                         const MAT4 shapeToPixelClip,
+                         const mat3 NshapeToNeye,
+                         const vec3 rayDirEye)
+{
+    const float edgeDist = ComputeWireDist(shape,
+                                           pointShape,
+                                           shapeToEye,
+                                           shapeToPixelClip,
+                                           NshapeToNeye,
+                                           rayDirEye);
+
+    return max(0.0, edgeDist - GetEdgeHalfWidth());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.FinalEdgeOpacityNoForce
+
+// Matches MeshWire.Fragment.FinalEdgeOpacityNoForce's ApplyFinalEdgeOpacity.
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill, const float edgeBlend)
+{
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.FinalEdgeOpacityForce
+
+// Matches MeshWire.Fragment.FinalEdgeOpacityForce's ApplyFinalEdgeOpacity.
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill, const float edgeBlend)
+{
+    Cfill.a = mix(Cfill.a, 1.0, edgeBlend);
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.EdgeOnlyCommon
+
+bool ShouldDiscardBasedOnEdgeCoverage(const float edgeBlend)
+{
+    return edgeBlend < 0.5;
+}
+
+// Bias edge depth toward the camera to ensure that edges pass the depth test
+// in case the underlying surface is drawn in a separate pass.
+float GetEdgeDepthBias()
+{
+    return -1e-5;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.NoEdge
+
+float GetEdgeBlendFactor(const float edgePixelDist)
+{
+    return 0.0;
+}
+
+// Matches MeshWire.Fragment.NoEdge's GetMinEdgeDistance.
+float GetMinEdgeDistance(const Shape shape,
+                         const Point pointShape,
+                         const MAT4 shapeToEye,
+                         const MAT4 shapeToPixelClip,
+                         const mat3 NshapeToNeye,
+                         const vec3 rayDirEye)
+{
+    return 1000.0;
+}
+
+bool ShouldDiscardBasedOnEdgeCoverage(const float edgeBlend)
+{
+    return false;
+}
+
+// Matches MeshWire.Fragment.NoEdge's ApplyEdgeColor.
+vec4 ApplyEdgeColor(vec4 Cfill, const float edgeBlend)
+{
+    return Cfill;
+}
+
+float GetEdgeDepthBias()
+{
+    return 0.0;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.EdgeOnSurface
+
+bool ShouldDiscardBasedOnEdgeCoverage(const float edgeBlend)
+{
+    return false;
+}
+
+// Matches MeshWire.Fragment.EdgeOnSurface's ApplyEdgeColor.
+vec4 ApplyEdgeColor(vec4 Cfill, const float edgeBlend)
+{
+    vec4 wireColor = GetWireframeColor();
+
+    if (all(equal(wireColor, vec4(0)))) wireColor.a = 0.5;
+
+    vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1.0);
+    Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, edgeBlend);
+
+    return ApplyFinalEdgeOpacity(Cfill, edgeBlend);
+}
+
+float GetEdgeDepthBias()
+{
+    return 0.0;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.EdgeOnlyBlendColor
+
+// Matches MeshWire.Fragment.EdgeOnlyBlendColor's ApplyEdgeColor.
+vec4 ApplyEdgeColor(vec4 Cfill, const float edgeBlend)
+{
+    vec4 wireColor = GetWireframeColor();
+    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
+
+    return ApplyFinalEdgeOpacity(Cfill, edgeBlend);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceWire.Fragment.EdgeOnlyNoBlend
+
+// Matches MeshWire.Fragment.EdgeOnlyNoBlend's ApplyEdgeColor.
+vec4 ApplyEdgeColor(vec4 Cfill, const float edgeBlend)
+{
+    return ApplyFinalEdgeOpacity(Cfill, edgeBlend);
+}

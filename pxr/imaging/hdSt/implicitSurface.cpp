@@ -286,7 +286,8 @@ HdStImplicitSurface::_UpdateDrawItemGeometricShader(
     bool doubleSided = _doubleSided || desc.doubleSided;
 
     HdSt_ImplicitSurfaceShaderKey shaderKey{
-        cullStyle, doubleSided, _vertexCount, _primType};
+        cullStyle, doubleSided, _vertexCount, _primType,
+        desc.geomStyle, desc.blendWireframeColor, desc.forceOpaqueEdges};
 
     HdSt_GeometricShaderSharedPtr geomShader = HdSt_GeometricShader::Create(
                                                 shaderKey, resourceRegistry);

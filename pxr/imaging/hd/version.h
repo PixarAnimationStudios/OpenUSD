@@ -176,7 +176,10 @@
 // 110 -> 111: Added HdRenderPassState::Copy.
 // 111 -> 112: Removed HdLegacyRenderControlInterface::AddCollection; deprecated
 //                     HdChangeTracker's AddCollection, MarkCollectionDirty, GetCollectionVersion.
-#define HD_API_VERSION 112
+// 112 -> 113: Renamed HdImplicitSurfaceGeomStyleRingsOnly/RingsOnSurf to
+//             EdgeOnly/EdgeOnSurf and HdImplicitSurfaceReprDesc::forceOpaqueRings
+//             to forceOpaqueEdges.
+#define HD_API_VERSION 113
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

@@ -209,6 +209,7 @@ pxr_library(hdSt
         shaders/implicitSurface.glslfx
         shaders/implicitSurfaceFaceCull.glslfx
         shaders/implicitSurfaceNormal.glslfx
+        shaders/implicitSurfaceWire.glslfx
         shaders/instancing.glslfx
         shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx

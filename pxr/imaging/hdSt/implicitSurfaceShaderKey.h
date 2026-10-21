@@ -24,7 +24,10 @@ struct HdSt_ImplicitSurfaceShaderKey : public HdSt_ShaderKey
     HdSt_ImplicitSurfaceShaderKey(const HdCullStyle cullStyle,
                                   const bool doubleSided,
                                   const uint32_t vertexCount,
-                                  TfToken const &primType);
+                                  TfToken const &primType,
+                                  const HdImplicitSurfaceGeomStyle geomStyle,
+                                  const bool blendWireframeColor,
+                                  const bool forceOpaqueEdges);
     HDST_API
     ~HdSt_ImplicitSurfaceShaderKey() = default;
 
@@ -60,7 +63,7 @@ struct HdSt_ImplicitSurfaceShaderKey : public HdSt_ShaderKey
 
     TfToken glslfx;
     TfSmallVector<TfToken, 15> VS;
-    TfSmallVector<TfToken, 22> FS;
+    TfSmallVector<TfToken, 28> FS;
 };
 
 

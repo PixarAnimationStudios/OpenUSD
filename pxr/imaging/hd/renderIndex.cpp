@@ -1122,24 +1122,24 @@ HdRenderIndex::_ConfigureReprs()
                                 /*blendWireframeColor=*/false));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->wire,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnly,
+                                HdImplicitSurfaceGeomStyleEdgeOnly,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->wireOnSurf,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdImplicitSurfaceGeomStyleEdgeOnSurf,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true,
-                                /*forceOpaqueRings=*/false));
+                                /*forceOpaqueEdges=*/false));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->solidWireOnSurf,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdImplicitSurfaceGeomStyleEdgeOnSurf,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true,
-                                /*forceOpaqueRings=*/true));
+                                /*forceOpaqueEdges=*/true));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->refined,
                             HdImplicitSurfaceReprDesc(
                                 HdImplicitSurfaceGeomStyleSurf,
@@ -1148,24 +1148,24 @@ HdRenderIndex::_ConfigureReprs()
                                 /*blendWireframeColor=*/false));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedWire,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnly,
+                                HdImplicitSurfaceGeomStyleEdgeOnly,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdImplicitSurfaceGeomStyleEdgeOnSurf,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true,
-                                /*forceOpaqueRings=*/false));
+                                /*forceOpaqueEdges=*/false));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedSolidWireOnSurf,
                             HdImplicitSurfaceReprDesc(
-                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdImplicitSurfaceGeomStyleEdgeOnSurf,
                                 HdCullStyleDontCare,
                                 HdImplicitSurfaceReprDescTokens->surfaceShader,
                                 /*blendWireframeColor=*/true,
-                                /*forceOpaqueRings=*/true));
+                                /*forceOpaqueEdges=*/true));
     HdImplicitSurface::ConfigureRepr(HdReprTokens->points,
                             HdImplicitSurfaceReprDesc(
                                 HdImplicitSurfaceGeomStylePoints,

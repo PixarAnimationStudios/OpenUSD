@@ -22,6 +22,8 @@
 #import $TOOLS/hdSt/shaders/conicalFrustum.glslfx
 #import $TOOLS/hdSt/shaders/sphere.glslfx
 
+#import $TOOLS/hdSt/shaders/implicitSurfaceWire.glslfx
+
 
 --- --------------------------------------------------------------------------
 --- Shape contract: every shape module (e.g., sphere.glslfx, conicalFrustum.glslfx)
@@ -50,6 +52,16 @@
 ---   SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape);
 ---   // Unnormalized outward normal in shape space at the given point.
 ---   vec3 ComputeNormalShape(const Shape shape, const Point pointShape);
+---
+---   -- glsl ImplicitSurface.Wire.<Shape>
+---   // Pixel distance to the nearest wireframe edge.
+---   // Used by GetMinEdgeDistance in implicitSurfaceWire.glslfx.
+---   float ComputeWireDist(const Shape shape,
+---                         const Point pointShape,
+---                         const MAT4 shapeToEye,
+---                         const MAT4 shapeToPixelClip,
+---                         const mat3 NshapeToNeye,
+---                         const vec3 rayDirEye);
 --- --------------------------------------------------------------------------
 
 --- --------------------------------------------------------------------------
@@ -59,6 +71,8 @@
 const float EPS = 1e-5;
 // Sentinel for invalid hits.
 const float INF = 1e+37;
+// Iteration count for the Newton-Raphson algorithm.
+const int NR_ITER_COUNT = 2;
 
 --- --------------------------------------------------------------------------
 -- layout ImplicitSurface.Vertex
@@ -106,6 +120,23 @@ struct SortedHits
 {
     // Set t = INF for invalid hits.
     Hit hits[MAX_HITS];
+};
+
+const uint RING_AXIS_X = 0u;
+const uint RING_AXIS_Y = 1u;
+const uint RING_AXIS_Z = 2u;
+
+struct Ring
+{
+    vec3 center;
+    float radius;
+    uint axis;
+};
+
+struct LineSeg
+{
+    vec3 endPoint1;
+    vec3 endPoint2;
 };
 
 --- --------------------------------------------------------------------------
@@ -221,6 +252,242 @@ ConditionalInsertHit(REF(thread, SortedHits) shapeHits,
     shapeHits.hits[numInserted].t = t;
     shapeHits.hits[numInserted].segment = segment;
     numInserted++;
+}
+
+// Computes the facing characteristic of a surface with the given normal.
+// Returns +1 for front-facing, -1 for back-facing, and 0 for surfaces that
+// are orthogonal to the view direction.
+float ComputeFacing(const mat3 NshapeToNeye,
+                    const vec3 Nshape,
+                    const vec3 rayDirEye)
+{
+    return sign(dot(NshapeToNeye * Nshape, -rayDirEye));
+}
+
+// Returns the distance in pixels between the screen-space point Pscreen and
+// the shape-space point Qshape.
+float ComputeScreenDist(const vec2 Pscreen,
+                        const vec3 Qshape,
+                        const MAT4 shapeToPixelClip)
+{
+    return length(Pscreen - TransformPoint(shapeToPixelClip, Qshape).xy);
+}
+
+// Returns the distance in pixels between Pscreen and Qshape.
+// Returns INF if the surface point at Pscreen and Qshape have opposite facing
+// characteristics.
+// QNshape need not be normalized.
+float ComputeFacingAwareScreenDist(const vec2 Pscreen,
+                                   const vec3 Qshape,
+                                   const float Pfacing,
+                                   const vec3 QNshape,
+                                   const mat3 NshapeToNeye,
+                                   const MAT4 shapeToEye,
+                                   const MAT4 shapeToPixelClip)
+{
+    const vec3 Qeye = TransformPoint(shapeToEye, Qshape);
+    const float Qfacing = ComputeFacing(NshapeToNeye,
+                                        QNshape,
+                                        ComputeRayDirectionEye(Qeye));
+
+    if (Pfacing * Qfacing < 0.0) {
+        return INF;
+    }
+
+    return ComputeScreenDist(Pscreen, Qshape, shapeToPixelClip);
+}
+
+// Returns (cosT, sinT) via Newton-Raphson such that the screen-space distance^2
+// from the corresponding ring point to the surface point is minimized.
+// initRingDir is the initial guess (cosT, sinT).
+vec2 RingDistNR(const vec2 Pscreen,
+                const vec4 ringBasis0Clip,
+                const vec4 ringBasis1Clip,
+                const vec4 ringCenterClip,
+                const vec2 initRingDir)
+{
+    vec2 ringDir = initRingDir;
+    for (int iter = 0; iter < NR_ITER_COUNT; iter++) {
+        const float cosT = ringDir.x;
+        const float sinT = ringDir.y;
+
+        const vec4 ringPointClip = cosT * ringBasis0Clip +
+                                   sinT * ringBasis1Clip +
+                                   ringCenterClip;
+
+        const vec4 ringPointClip_1d = -sinT * ringBasis0Clip +
+                                       cosT * ringBasis1Clip;
+
+        // Let f = ringPointClip
+        // f'' = -cosT * ringBasis0Clip - sinT * ringBasis1Clip
+        //     = -(ringPointClip - ringCenterClip)
+        const vec4 ringPointClip_2d = -(ringPointClip - ringCenterClip);
+
+        const vec2 ringPointScreen = ringPointClip.xy / ringPointClip.w;
+
+        // Let f = u/v
+        // => f' = (u/v)' = (u'v - uv')/v^2
+        //                = u'/v - uv'/v^2
+        // u = f * v
+        // => f' = u'/v - f * v * v'/v^2
+        //       = (u' - f * v')/v
+        const vec2 ringPointScreen_1d = (ringPointClip_1d.xy
+                                        - ringPointScreen * ringPointClip_1d.w)
+                                        / ringPointClip.w;
+
+        const vec2 ringPointScreen_2d = (ringPointClip_2d.xy
+                                        - 2.0 * ringPointScreen_1d * ringPointClip_1d.w
+                                        - ringPointScreen * ringPointClip_2d.w)
+                                        / ringPointClip.w;
+
+        const vec2 PtoRingPoint = ringPointScreen - Pscreen;
+
+        // dist^2 = dot(p2 - p1, p2 - p1)
+        //        = dot(p2, p2) + dot(p1, p1) - 2 * dot(p1, p2)
+        // Since p1 is a constant in our case, the function that we want to
+        // minimize is:
+        // f(theta) = dot(p2, p2) - 2 * dot(p1, p2)
+        //          = dot(p2, p2 - 2 * p1)
+        // => f'(theta) = dot(p2', p2 - 2 * p1) + dot(p2, p2')
+        //              = dot(p2', 2 * p2 - 2 * p1)
+        //              = 2 * dot(p2', p2 - p1)
+        const float f_1d = 2.0 * dot(ringPointScreen_1d, PtoRingPoint);
+        const float f_2d = 2.0 * (dot(ringPointScreen_1d, ringPointScreen_1d) +
+                                  dot(PtoRingPoint, ringPointScreen_2d));
+
+        if (abs(f_1d) < EPS || f_2d < EPS) {
+            break;
+        }
+
+        // Setting cos and sin for the next iteration.
+        // Since we want to minimize f(theta), we are attempting to find the
+        // nearest root of f'(theta).
+        // => nextTheta - theta = -f'(theta) / f''(theta)
+        const float delta = f_1d / f_2d;
+
+        float sinDelta, cosDelta;
+
+        // Avoid evaluating transcendentals for small angles.
+        if (abs(delta) < 0.1) {
+            // For small angles, sin(x) can be approximated as x.
+            sinDelta = delta;
+            cosDelta = sqrt(1.0 - sinDelta * sinDelta);
+        } else {
+            sinDelta = sin(delta);
+            cosDelta = cos(delta);
+        }
+
+        // cos(A - B) = cos(A) * cos(B) + sin(A) * sin(B)
+        // sin(A - B) = sin(A) * cos(B) - cos(A) * sin(B)
+        ringDir = vec2(cosT * cosDelta + sinT * sinDelta,
+                       sinT * cosDelta - cosT * sinDelta);
+    }
+
+    return ringDir;
+}
+
+// Returns the shape-space ring point with the smallest pixel distance
+// to Pshape.
+vec3 ComputeNearestRingPointShape(const Ring ring,
+                                  const vec3 Pshape,
+                                  const vec2 Pscreen,
+                                  const MAT4 shapeToPixelClip)
+{
+    // If radius is 0, the nearest ring point is the ring's center.
+    if (abs(ring.radius) < EPS) {
+        return ring.center;
+    }
+
+    // We use the closest ring point in shape space as the initial guess
+    // for Newton-Raphson.
+    uint ringBasis0Idx;
+    uint ringBasis1Idx;
+
+    if (ring.axis == RING_AXIS_X) {
+        ringBasis0Idx = 1;
+        ringBasis1Idx = 2;
+    } else if (ring.axis == RING_AXIS_Y) {
+        ringBasis0Idx = 0;
+        ringBasis1Idx = 2;
+    } else {
+        ringBasis0Idx = 0;
+        ringBasis1Idx = 1;
+    }
+
+    // The closest ring point in shape space can be obtained by projecting
+    // Pshape onto the ring plane, and then pushing the projected point to
+    // the ring's boundary along the radial direction.
+    const vec3 ringCenterToP = Pshape - ring.center;
+
+    const vec2 radialDir = vec2(ringCenterToP[ringBasis0Idx],
+                                ringCenterToP[ringBasis1Idx]);
+
+    // If Pshape lies on the ring's axis, use an arbitrary initial direction.
+    const vec2 initRingDir = SafeNormalize(radialDir, vec2(1.0, 0.0));
+
+    // Converting to vec4 explicitly in case shapeToPixelClip is a
+    // double-precision matrix.
+    const vec4 ringBasis0Clip = ring.radius *
+                                vec4(shapeToPixelClip[ringBasis0Idx]);
+    const vec4 ringBasis1Clip = ring.radius *
+                                vec4(shapeToPixelClip[ringBasis1Idx]);
+
+    // Run Newton-Raphson on initial ring dir to obtain the ring dir
+    // corresponding to the (approx.) smallest screen-space distance.
+    const vec4 ringCenterClip = vec4(shapeToPixelClip * vec4(ring.center, 1.0));
+
+    const vec2 finalRingDir = RingDistNR(Pscreen,
+                                         ringBasis0Clip,
+                                         ringBasis1Clip,
+                                         ringCenterClip,
+                                         initRingDir);
+    const float cosT = finalRingDir.x;
+    const float sinT = finalRingDir.y;
+
+    vec3 ringBasis0Shape = vec3(0.0);
+    ringBasis0Shape[ringBasis0Idx] = 1.0;
+
+    vec3 ringBasis1Shape = vec3(0.0);
+    ringBasis1Shape[ringBasis1Idx] = 1.0;
+
+    const vec3 ringDirShape = cosT * ringBasis0Shape + sinT * ringBasis1Shape;
+
+    return ring.center + ring.radius * ringDirShape;
+}
+
+// Returns the screen-space line segment point with the smallest pixel distance
+// to Pscreen.
+vec2 ComputeNearestLinePointScreen(const LineSeg lineSegShape,
+                                   const vec2 Pscreen,
+                                   const MAT4 shapeToPixelClip)
+{
+    const vec2 endPoint1Screen = TransformPoint(shapeToPixelClip,
+                                                lineSegShape.endPoint1).xy;
+    const vec2 endPoint2Screen = TransformPoint(shapeToPixelClip,
+                                                lineSegShape.endPoint2).xy;
+
+    const vec2 lineSegVec = endPoint1Screen - endPoint2Screen;
+
+    // Case where the 2 end points project to the same screen-space point.
+    const float lineSegLenSq = dot(lineSegVec, lineSegVec);
+    if (lineSegLenSq < EPS) {
+        return endPoint1Screen;
+    }
+
+    const vec2 lineDir = lineSegVec * inversesqrt(lineSegLenSq);
+
+    // Out-of-bounds cases.
+    if (dot(lineDir, Pscreen - endPoint2Screen) <= 0.0) {
+        return endPoint2Screen;
+    }
+
+    if (dot(lineDir, Pscreen - endPoint1Screen) >= 0.0) {
+        return endPoint1Screen;
+    }
+
+    // General case.
+    return endPoint2Screen
+           + dot(Pscreen - endPoint2Screen, lineDir) * lineDir;
 }
 
 --- --------------------------------------------------------------------------
@@ -361,6 +628,35 @@ bool ShouldDiscardByClipPlanes(vec3 Peye)
     return false;
 }
 
+// Returns a matrix whose output xy coordinates, after the perspective divide,
+// are measured in pixels (relative to the viewport center) instead of NDC.
+MAT4 GetShapeToPixelClip(const MAT4 shapeToEye)
+{
+    const vec2 pixelsPerNdc = 0.5 * GetViewport().zw;
+
+    // Scale the x and y rows.
+    const vec4 rowScale = vec4(pixelsPerNdc, 1.0, 1.0);
+
+    MAT4 projPixel = GetProjectionMatrix();
+    projPixel[0] *= rowScale;
+    projPixel[1] *= rowScale;
+    projPixel[2] *= rowScale;
+    projPixel[3] *= rowScale;
+
+    return projPixel * shapeToEye;
+}
+
+// Returns the window-space depth of Peye, offset by the wireframe depth bias
+// and clamped to be no less than gl_FragCoord.z so that the depth_greater
+// qualifier is respected.
+float WindowDepthFromPeye(vec3 Peye)
+{
+    const float ndcDepth = TransformPoint(GetProjectionMatrix(), Peye).z;
+    const float windowDepth = NDCToWindowDepth(ndcDepth);
+
+    return max(windowDepth + GetEdgeDepthBias(), gl_FragCoord.z);
+}
+
 void main(void)
 {
     const Shape shape = ConstructShape();
@@ -374,6 +670,8 @@ void main(void)
                                 HdGet_transformInverse()) *
                             GetWorldToViewInverseMatrix();
 
+    const MAT4 shapeToPixelClip = GetShapeToPixelClip(shapeToEye);
+
     const vec3 rayDirEye = ComputeRayDirectionEye(inData.Peye);
 
     Ray rayShape;
@@ -382,12 +680,18 @@ void main(void)
 
     const SortedHits shapeHits = ComputeHitsShape(shape, rayShape);
 
-    // Iterate over the sorted hits and choose the first one not clipped away
-    bool frontFacing;
-    vec3 Peye;
-    Point pointShape;
+    vec4 albedo = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    albedo.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    albedo.a = HdGet_displayOpacity();
+#endif
 
-    int chosenIdx = -1;
+    const mat3 NshapeToNeye = transpose(Mat4ToMat3(eyeToShape));
+
+    // Process all hits.
+    bool anyRendered = false;
     for (int i = 0; i < MAX_HITS; i++) {
         // Invalids sort to the end
         if (!IsValidHit(shapeHits.hits[i].t)) {
@@ -399,58 +703,69 @@ void main(void)
             continue;
         }
 
-        pointShape.position = rayShape.origin + shapeHits.hits[i].t * rayShape.dir;
-        Peye = TransformPoint(shapeToEye, pointShape.position);
-
-        if (!ShouldDiscardByClipPlanes(Peye)) {
-            // Hits at even indices are marked as frontFacing
-            frontFacing = (i % 2) == 0;
-            pointShape.segment = shapeHits.hits[i].segment;
-
-            chosenIdx = i;
-
-            break;
+        // Hits at even indices are front-facing
+        const bool frontFacing = (i % 2) == 0;
+        if (ShouldDiscardBasedOnShading(frontFacing)) {
+            continue;
         }
-    }
 
-    if (chosenIdx < 0) {
-        discard;
-        return;
-    }
+        Point pointShape;
+        pointShape.position = rayShape.origin + shapeHits.hits[i].t * rayShape.dir;
 
-    DiscardBasedOnShading(frontFacing);
+        const vec3 Peye = TransformPoint(shapeToEye, pointShape.position);
+        if (ShouldDiscardByClipPlanes(Peye)) {
+            continue;
+        }
 
-    const mat3 matrixForNormal = transpose(Mat4ToMat3(eyeToShape));
+        pointShape.segment = shapeHits.hits[i].segment;
 
-    const vec3 Nshape = ComputeNormalShape(shape, pointShape);
+        // XXX: We can probably add an optimization to prevent duplicate
+        // calculations for edge-only cases. If we do that, we will need to
+        // ensure that we write the correct depth.
+        const float edgeDist = GetMinEdgeDistance(shape,
+                                                  pointShape,
+                                                  shapeToEye,
+                                                  shapeToPixelClip,
+                                                  NshapeToNeye,
+                                                  rayDirEye);
 
-    // We get -Neye if this is a backface and the surface is double-sided
-    const vec3 Neye = GetShadingNormal(
-                        normalize(matrixForNormal * Nshape), frontFacing);
+        const float edgeBlend = GetEdgeBlendFactor(edgeDist);
+        if (ShouldDiscardBasedOnEdgeCoverage(edgeBlend)) {
+            continue;
+        }
 
-    const vec3 ndc = TransformPoint(GetProjectionMatrix(), Peye);
+        const vec3 Nshape = ComputeNormalShape(shape, pointShape);
 
-    gl_FragDepth = NDCToWindowDepth(ndc.z);
+        // We get -Neye if this is a backface and the surface is double-sided
+        const vec3 Neye = GetShadingNormal(
+                            normalize(NshapeToNeye * Nshape), frontFacing);
 
-    vec4 color = vec4(0.5, 0.5, 0.5, 1);
-#ifdef HD_HAS_displayColor
-    color.rgb = HdGet_displayColor().rgb;
-#endif
-#ifdef HD_HAS_displayOpacity
-    color.a = HdGet_displayOpacity();
-#endif
+        // hard code patchCoord since the entire implicit surface is one "patch"
+        const vec4 patchCoord = vec4(0);
 
-    // hard code patchCoord since the entire implicit surface is one "patch"
-    const vec4 patchCoord = vec4(0, 0.5, 0, 0);
+        vec4 color = ShadingTerminal(vec4(Peye, 1), Neye, albedo, patchCoord);
 
-    color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+        color = ApplyEdgeColor(color, edgeBlend);
 
 #ifdef HD_MATERIAL_TAG_MASKED
-    if (ShouldDiscardByAlpha(color)) {
+        if (ShouldDiscardByAlpha(color)) {
+            continue;
+        }
+#endif
+
+        RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+
+        // Set gl_FragDepth at the first hit that gets rendered.
+        if (!anyRendered) {
+            anyRendered = true;
+            gl_FragDepth = WindowDepthFromPeye(Peye);
+        }
+
+        break;
+    }
+
+    if (!anyRendered) {
         discard;
         return;
     }
-#endif
-
-    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
