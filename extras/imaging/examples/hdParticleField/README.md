@@ -1,11 +1,24 @@
 # hdParticleField Render Delegate
+
 hdParticleField is a sample render delegate implementing rendering of the
 "particleField" prim type. It was designed to be a reference for gaussian
 splat rendering, to assist in schema development, but does not currently
 support other geometry types. It outputs a color/depth/primId tuple to support
 compositing into the usdview viewport and picking/selection highlighting.
 
+## Caveats
+
+This renderer is provided as-is for validating the schema data.
+
+The implementation is purely CPU based for maximum portability with minimum dependencies.
+As such, performance is not an explicit goal.
+
+While the renderer attempts to be accurate for the purposes of schema validation, it does not
+guarantee production quality accuracy for aspects like color reproduction. This can be highly
+dependent on the source data provided.
+
 ## Using hdParticleField
+
 hdParticleField is a render delegate that is registered as a plugin. It can be
 used as a viewport renderer (e.g. in usdview) through renderer discovery,
 or it can be instantiated directly. 
