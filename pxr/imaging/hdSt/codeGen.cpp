@@ -3477,9 +3477,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.generatedShaderCodeOut = &_fsSource;
 
         // builtins
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
+        const bool primitiveIdEmulationEabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsPrimitiveIdEmulation);
+        if(!primitiveIdEmulationEabled) {
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "gl_PrimitiveID", "uint",
+                HgiShaderKeywordTokens->hdPrimitiveID);
+        }
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
