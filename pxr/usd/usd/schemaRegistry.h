@@ -496,37 +496,27 @@ public:
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered abstract typed schema type. Returns null if
     /// it is not.
+    USD_API
     const UsdPrimDefinition* FindAbstractPrimDefinition(
-        const TfToken &typeName) const {
-        const auto it = _abstractTypedPrimDefinitions.find(typeName);
-        return it != _abstractTypedPrimDefinitions.end() ?
-            it->second.get() : nullptr;
-    }
+        const TfToken &typeName) const;
 
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
     /// it is not.
+    USD_API
     const UsdPrimDefinition* FindConcretePrimDefinition(
-        const TfToken &typeName) const {
-        const auto it = _concreteTypedPrimDefinitions.find(typeName);
-        return it != _concreteTypedPrimDefinitions.end() ? 
-            it->second.get() : nullptr;
-    }
+        const TfToken &typeName) const;
 
     /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered applied API schema type. Returns null if
     /// it is not.
+    USD_API
     const UsdPrimDefinition *FindAppliedAPIPrimDefinition(
-        const TfToken &typeName) const {
-        const auto it = _appliedAPIPrimDefinitions.find(typeName);
-        return it != _appliedAPIPrimDefinitions.end() ?
-            it->second.primDef.get() : nullptr;
-    }
+        const TfToken &typeName) const;
 
     /// Returns the empty prim definition.
-    const UsdPrimDefinition *GetEmptyPrimDefinition() const {
-        return _emptyPrimDefinition;
-    }
+    USD_API
+    const UsdPrimDefinition *GetEmptyPrimDefinition() const;
 
     /// Composes and returns a new UsdPrimDefinition from the given \p primType
     /// and list of \p appliedSchemas. This prim definition will contain a union
