@@ -66,7 +66,16 @@ jobs:
           sudo apt-get -qq update
           sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
           pip install --upgrade pip
-          pip install PySide6 PyOpenGL
+
+          # Pin PySide6 to 6.11.2 due to a C-extension refcount bug in 6.12.0.
+          # The bug over-releases Py_None, causing a fatal "none_dealloc" abort
+          # during testUsdviewPrimTreeExpansion (in Usdviewq/appController.py).
+          # Python 3.12+ masks this crash because None is immortal, but 3.11 and
+          # older reliably fail. Re-evaluate when a newer 6.12.x patch is
+          # released.
+          pip install "PySide6==6.11.2"
+
+          pip install PyOpenGL
       - name: Build USD
         run: |
           # All tests are run for a push to fully validate the repository; tests requiring a GPU are executed in the
@@ -142,7 +151,16 @@ jobs:
           sudo dpkg -i virtualgl_3.1_amd64.deb
 
           pip install --upgrade pip
-          pip install PySide6 PyOpenGL cmake
+
+          # Pin PySide6 to 6.11.2 due to a C-extension refcount bug in 6.12.0.
+          # The bug over-releases Py_None, causing a fatal "none_dealloc" abort
+          # during testUsdviewPrimTreeExpansion (in Usdviewq/appController.py).
+          # Python 3.12+ masks this crash because None is immortal, but 3.11 and
+          # older reliably fail. Re-evaluate when a newer 6.12.x patch is
+          # released.
+          pip install "PySide6==6.11.2"
+
+          pip install PyOpenGL cmake
       - name: Download USD Build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 #v4.3.0
         with:
@@ -225,7 +243,16 @@ jobs:
           # Set SYSTEM_VERSION_COMPAT while installing Python packages to
           # accommodate the macOS version numbering change from 10.x to 11
           export SYSTEM_VERSION_COMPAT=1
-          pip install PySide6 PyOpenGL setuptools
+
+          # Pin PySide6 to 6.11.2 due to a C-extension refcount bug in 6.12.0.
+          # The bug over-releases Py_None, causing a fatal "none_dealloc" abort
+          # during testUsdviewPrimTreeExpansion (in Usdviewq/appController.py).
+          # Python 3.12+ masks this crash because None is immortal, but 3.11 and
+          # older reliably fail. Re-evaluate when a newer 6.12.x patch is
+          # released.
+          pip install "PySide6==6.11.2"
+
+          pip install PyOpenGL setuptools
           export -n SYSTEM_VERSION_COMPAT
       - name: Build USD
         run: |
@@ -294,7 +321,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install PyOpenGL PySide6
+
+          # Pin PySide6 to 6.11.2 due to a C-extension refcount bug in 6.12.0.
+          # The bug over-releases Py_None, causing a fatal "none_dealloc" abort
+          # during testUsdviewPrimTreeExpansion (in Usdviewq/appController.py).
+          # Python 3.12+ masks this crash because None is immortal, but 3.11 and
+          # older reliably fail. Re-evaluate when a newer 6.12.x patch is
+          # released.
+          python -m pip install "PySide6==6.11.2"
+
+          python -m pip install PyOpenGL
       - name: Build USD
         run: |
           :: Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
