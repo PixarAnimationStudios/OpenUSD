@@ -1761,6 +1761,39 @@ _FinalizeLocallyDefinedPropertiesForPrimDefinitions() const
     }
 }
 
+const UsdPrimDefinition*
+UsdSchemaRegistry::FindAbstractPrimDefinition(
+    const TfToken &typeName) const
+{
+    const auto it = _abstractTypedPrimDefinitions.find(typeName);
+    return it != _abstractTypedPrimDefinitions.end() ?
+        it->second.get() : nullptr;
+}
+
+const UsdPrimDefinition*
+UsdSchemaRegistry::FindConcretePrimDefinition(
+    const TfToken &typeName) const
+{
+    const auto it = _concreteTypedPrimDefinitions.find(typeName);
+    return it != _concreteTypedPrimDefinitions.end() ?
+        it->second.get() : nullptr;
+}
+
+const UsdPrimDefinition*
+UsdSchemaRegistry::FindAppliedAPIPrimDefinition(
+    const TfToken &typeName) const
+{
+    const auto it = _appliedAPIPrimDefinitions.find(typeName);
+    return it != _appliedAPIPrimDefinitions.end() ?
+        it->second.primDef.get() : nullptr;
+}
+
+const UsdPrimDefinition*
+UsdSchemaRegistry::GetEmptyPrimDefinition() const
+{
+    return _emptyPrimDefinition;
+}
+
 UsdSchemaRegistry::UsdSchemaRegistry()
 {
     _emptyPrimDefinition = new UsdPrimDefinition();
