@@ -2177,6 +2177,23 @@ HdxTaskController::_UpdateAovDimensions(GfVec2i const& dimensions)
                 HdRenderBuffer::DirtyDescription);
         }
     }
+
+    // Update the OIT Resolve Task.
+
+    if (!_oitResolveTaskId.IsEmpty()) {
+        HdxOitResolveTaskParams params =
+            _delegate.GetParameter<HdxOitResolveTaskParams>(_oitResolveTaskId,
+                HdTokens->params);
+
+        if (params.screenSize != dimensions) {
+            params.screenSize = dimensions;
+
+            _delegate.SetParameter(_oitResolveTaskId, HdTokens->params,
+                params);
+            changeTracker.MarkTaskDirty(_oitResolveTaskId,
+                HdChangeTracker::DirtyParams);
+        }
+    }
 }
 
 
