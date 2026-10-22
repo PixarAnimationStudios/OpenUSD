@@ -626,7 +626,7 @@ pxr_register_test(testVdfRequest
 )
 
 pxr_register_test(testVdfSchedulerInterruptionPerf
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfSchedulerInterruption"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfSchedulerInterruption --numNodes 10000"
     EXPECTED_RETURN_CODE 0
 )
 

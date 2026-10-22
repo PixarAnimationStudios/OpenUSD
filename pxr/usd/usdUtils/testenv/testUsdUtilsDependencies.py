@@ -403,5 +403,51 @@ class TestUsdUtilsDependencies(unittest.TestCase):
 
         self.assertEqual(expectedUnresolved, unresolved)
 
+    def test_ComputeAllDependenciesUserFuncFilterSkipsTraversal(self):
+        """Tests that layers filtered by the processing func are not
+        traversed for further dependencies"""
+
+        def CreateLayerWithRef(layerPath, refPath):
+            layer = Sdf.Layer.CreateNew(layerPath)
+            prim = Sdf.CreatePrimInLayer(layer, "/test")
+            prim.specifier = Sdf.SpecifierDef
+            prim.referenceList.Prepend(Sdf.Reference(refPath))
+            layer.Save()
+            return layer
+
+        # Each filtered layer references a missing layer, which would be
+        # reported as unresolved if the filtered layer were traversed.
+        testDir = "filterSkipsTraversal"
+        os.mkdir(testDir)
+        CreateLayerWithRef(f"{testDir}/kept.usda", "./keptMissing.usda")
+        CreateLayerWithRef(f"{testDir}/excluded.usda", "./missing.usda")
+        CreateLayerWithRef(f"{testDir}/excludedExpr.usda", "./missingExpr.usda")
+
+        root = Sdf.Layer.CreateNew(f"{testDir}/root.usda")
+        root.expressionVariables = {"NAME": "excludedExpr"}
+        prim = Sdf.CreatePrimInLayer(root, "/test")
+        prim.specifier = Sdf.SpecifierDef
+        prim.referenceList.Prepend(Sdf.Reference("./kept.usda"))
+        prim.referenceList.Prepend(Sdf.Reference("./excluded.usda"))
+        prim.referenceList.Prepend(Sdf.Reference('`"./${NAME}.usda"`'))
+        root.Save()
+
+        def FilterExcluded(layer, depInfo):
+            if "excluded" in depInfo.assetPath:
+                return UsdUtils.DependencyInfo()
+            return depInfo
+
+        layers, references, unresolved = \
+            UsdUtils.ComputeAllDependencies(root.identifier, FilterExcluded)
+
+        self.assertEqual(
+            [os.path.normcase(l.realPath) for l in layers],
+            [os.path.normcase(os.path.abspath(p)) for p in
+             (f"{testDir}/root.usda", f"{testDir}/kept.usda")])
+        self.assertEqual(references, [])
+        self.assertEqual(
+            [os.path.normcase(p) for p in unresolved],
+            [os.path.normcase(os.path.abspath(f"{testDir}/keptMissing.usda"))])
+
 if __name__=="__main__":
     unittest.main()

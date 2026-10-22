@@ -975,6 +975,11 @@ function(pxr_register_test TEST_NAME)
 
     if (bt_IMAGE_DIFF_COMPARE)
         if (IMAGE_DIFF_TOOL)
+            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
+        elseif(TARGET OpenImageIO::idiff)
+            set(IMAGE_DIFF_TOOL_PATH "$<TARGET_FILE_DIR:OpenImageIO::idiff>")
+        endif()
+        if (IMAGE_DIFF_TOOL_PATH)
             foreach (compareFile ${bt_IMAGE_DIFF_COMPARE})
                 set(testWrapperCmd ${testWrapperCmd} --image-diff-compare=${compareFile})
             endforeach ()
@@ -1009,8 +1014,9 @@ function(pxr_register_test TEST_NAME)
 
             # Make sure to add the image diff tool to the PATH so
             # it can be easily found within the testWrapper
-            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
             set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
+        else()
+            message(WARN "idiff was not located. Image comparison will be skipped without failure.")
         endif()
     endif()
 

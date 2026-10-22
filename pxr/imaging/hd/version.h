@@ -171,7 +171,8 @@
 //             to IsEnabledNativeImplicitsRenderingSupport.
 // 107 -> 108: Adding HdLegacyRendrControlInterface::AddCollection and
 //             ReloadShaderPrograms.
-#define HD_API_VERSION 107
+// 108 -> 109: Added HdSurfaceSchema.
+#define HD_API_VERSION 109
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

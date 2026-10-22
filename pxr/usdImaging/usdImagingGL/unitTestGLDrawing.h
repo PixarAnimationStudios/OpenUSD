@@ -10,12 +10,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/vt/dictionary.h"
-
 #include "pxr/base/tf/declarePtrs.h"
-
 #include "pxr/usdImaging/usdImagingGL/engine.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
-
 #include <string>
 #include <vector>
 

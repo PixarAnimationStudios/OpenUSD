@@ -72,6 +72,14 @@ public:
     HD_API
     const SdfPathSet &GetAllOutermostInstancePrimPaths() const;
 
+    /// Given an outermost instance prim path, returns the instancer prim path
+    /// that is associated (responsible) for the instance.
+    /// Returns std::nullopt if the input path isn't a tracked outermost
+    /// instance prim path.
+    HD_API
+    std::optional<SdfPath>
+    GetInstancerPrimPath(const SdfPath &outermostInstancePath) const;
+
     // ------------------------------------------------------------------------
     // HdSceneIndex overrides.
     //
