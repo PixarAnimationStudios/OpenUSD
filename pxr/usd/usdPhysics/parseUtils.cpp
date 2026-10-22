@@ -952,19 +952,20 @@ void _FinalizeJoint(const UsdPhysicsJoint& jointPrim,
     {
         const UsdPrim body0 = jointPrim.GetBody0();
         outJointDesc->body0 = body0 ? body0.GetPrimPath() : SdfPath();
-        // GetLocalPose0 always writes a pose. On a dangling relationship it
-        // returns false and passes the authored local pose through unchanged;
-        // the return value is not needed here since the body is reported
-        // separately above.
-        jointPrim.GetLocalPose0(&t0, &q0);
     }
 
     if (outJointDesc->rel1 != SdfPath())
     {
         const UsdPrim body1 = jointPrim.GetBody1();
         outJointDesc->body1 = body1 ? body1.GetPrimPath() : SdfPath();
-        jointPrim.GetLocalPose1(&t1, &q1);
     }
+
+    // GetLocalPose0/1 always write a pose. A side with an unset or dangling
+    // relationship is anchored to the world at its authored local pose, which
+    // they pass through unchanged; the return value is not needed here since
+    // the body is reported separately above.
+    jointPrim.GetLocalPose0(&t0, &q0);
+    jointPrim.GetLocalPose1(&t1, &q1);
 
     outJointDesc->localPose0Position = t0;
     outJointDesc->localPose0Orientation = q0;
