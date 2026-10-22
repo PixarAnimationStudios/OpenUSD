@@ -24,7 +24,10 @@ pxr_library(usdPhysics
         massProperties.h
         parseUtils.h
         parseDesc.h   
-        
+
+    PRIVATE_HEADERS
+        bodyResolution.h
+
     PYMODULE_CPPFILES
         wrapMetrics.cpp
         wrapParseUtils.cpp

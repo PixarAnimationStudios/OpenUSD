@@ -314,6 +314,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdPhysics/bodyResolution.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCache.h"
@@ -348,34 +349,37 @@ _FindEnclosingBody(const UsdPrim& prim)
     return UsdPrim();
 }
 
-// Return the prim a joint body relationship targets, or an invalid prim when the
-// relationship is unset or has no target.
-static UsdPrim
-_GetJointBodyTarget(const UsdRelationship& bodyRel)
+UsdPrim
+UsdPhysics_GetJointBodyTarget(const UsdRelationship& bodyRel,
+                              SdfPath* targetPath)
 {
-    if (!bodyRel)
-    {
-        return UsdPrim();
-    }
     SdfPathVector targets;
-    bodyRel.GetTargets(&targets);
-    if (targets.empty())
+    if (bodyRel)
+    {
+        bodyRel.GetTargets(&targets);
+    }
+    const SdfPath path = targets.empty() ? SdfPath() : targets.front();
+    if (targetPath)
+    {
+        *targetPath = path;
+    }
+    if (path.IsEmpty())
     {
         return UsdPrim();
     }
-    return bodyRel.GetPrim().GetStage()->GetPrimAtPath(targets.front());
+    return bodyRel.GetPrim().GetStage()->GetPrimAtPath(path);
 }
 
 UsdPrim
 UsdPhysicsJoint::GetBody0() const
 {
-    return _FindEnclosingBody(_GetJointBodyTarget(GetBody0Rel()));
+    return _FindEnclosingBody(UsdPhysics_GetJointBodyTarget(GetBody0Rel()));
 }
 
 UsdPrim
 UsdPhysicsJoint::GetBody1() const
 {
-    return _FindEnclosingBody(_GetJointBodyTarget(GetBody1Rel()));
+    return _FindEnclosingBody(UsdPhysics_GetJointBodyTarget(GetBody1Rel()));
 }
 
 // Local-to-world for \p prim, using \p cache when one is supplied so repeated
@@ -396,47 +400,26 @@ _LocalToWorld(const UsdPrim& prim, UsdGeomXformCache* cache)
         UsdTimeCode::Default());
 }
 
-// Compute the joint's local pose for one body relationship, in the frame of the
-// prim the joint attaches to. Seeds from the authored localPos/localRot for that
-// side, then rebases into the attachment frame when the rel target is not itself
-// the attachment prim (e.g. a collider under the body, or an arbitrary anchor
-// prim), and folds in that frame's scale. The out pose is always written: an
-// unset or dangling relationship yields the authored local pose unchanged,
-// since there is no resolved frame to rebase into or scale to bake. Returns
-// false only for a dangling relationship (target does not resolve to a prim on
-// the stage); an unset relationship succeeds with the authored world-anchor
-// pose.
-static bool
-_ComputeJointLocalPose(const UsdRelationship& bodyRel,
-                       const GfVec3f& authoredPosition,
-                       const GfQuatf& authoredOrientation,
-                       UsdGeomXformCache* cache,
-                       GfVec3f* outPosition,
-                       GfQuatf* outOrientation)
+UsdPrim
+UsdPhysics_ResolveJointSide(const UsdPrim& target,
+                            const GfVec3f& authoredPosition,
+                            const GfQuatf& authoredOrientation,
+                            UsdGeomXformCache* xformCache,
+                            GfVec3f* outPosition,
+                            GfQuatf* outOrientation)
 {
     GfVec3f position = authoredPosition;
     GfQuatf orientation = authoredOrientation;
     orientation.Normalize();
 
-    // A relationship that is unset, or whose target does not resolve to a prim
-    // on the stage, gives no frame to rebase into or scale to bake, so the
-    // authored local pose is passed through unchanged in both cases. The
-    // return value distinguishes them: an unset relationship is a valid world
-    // anchor (true), while a dangling relationship is malformed authoring
-    // (false). Either way the caller receives the pose it authored and learns
-    // whether a body resolved from GetBody0 / GetBody1.
-    const UsdPrim relPrim = _GetJointBodyTarget(bodyRel);
-    if (!relPrim)
+    // With no target (an unset or dangling relationship) there is no frame to
+    // rebase into or scale to bake, so the side is anchored to the world at
+    // its authored local pose.
+    if (!target)
     {
         *outPosition = position;
         *outOrientation = orientation;
-
-        SdfPathVector targets;
-        if (bodyRel)
-        {
-            bodyRel.GetTargets(&targets);
-        }
-        return targets.empty();
+        return UsdPrim();
     }
 
     // Resolve the nearest enclosing enabled body. When one exists and it is a
@@ -447,18 +430,18 @@ _ComputeJointLocalPose(const UsdRelationship& bodyRel,
     // rebased into the world frame rather than passed through, or the
     // target's own placement is lost. Only when the target is itself the body
     // is the authored pose already in the right frame and just scaled.
-    const UsdPrim body = _FindEnclosingBody(relPrim);
+    const UsdPrim body = _FindEnclosingBody(target);
 
     GfVec3f scale;
-    if (body != relPrim)
+    if (body != target)
     {
         // body is either a proper ancestor of the target, or invalid (the
         // world). Rebase the authored anchor from the target frame into the
         // owning body's frame; the world body is identity, so its inverse is
         // identity and the anchor stays in world.
-        const GfMatrix4d worldRel = _LocalToWorld(relPrim, cache);
+        const GfMatrix4d worldRel = _LocalToWorld(target, xformCache);
         const GfMatrix4d bodyMat =
-            body ? _LocalToWorld(body, cache) : GfMatrix4d(1.0);
+            body ? _LocalToWorld(body, xformCache) : GfMatrix4d(1.0);
 
         GfMatrix4d localAnchor;
         localAnchor.SetIdentity();
@@ -477,7 +460,8 @@ _ComputeJointLocalPose(const UsdRelationship& bodyRel,
     }
     else
     {
-        scale = GfVec3f(GfTransform(_LocalToWorld(relPrim, cache)).GetScale());
+        scale = GfVec3f(
+            GfTransform(_LocalToWorld(target, xformCache)).GetScale());
     }
 
     // Physics simulation has no notion of scale, so the resolved frame's scale
@@ -489,7 +473,37 @@ _ComputeJointLocalPose(const UsdRelationship& bodyRel,
 
     *outPosition = position;
     *outOrientation = orientation;
-    return true;
+    return body;
+}
+
+// Compute the joint's local pose for one body relationship, in the frame of the
+// prim the joint attaches to. Seeds from the authored localPos/localRot for that
+// side, then rebases into the attachment frame when the rel target is not itself
+// the attachment prim (e.g. a collider under the body, or an arbitrary anchor
+// prim), and folds in that frame's scale. The out pose is always written: an
+// unset or dangling relationship yields the authored local pose unchanged,
+// since there is no resolved frame to rebase into or scale to bake. Returns
+// false only for a dangling relationship (target does not resolve to a prim on
+// the stage); an unset relationship succeeds with the authored world-anchor
+// pose.
+static bool
+_ComputeJointLocalPose(const UsdRelationship& bodyRel,
+                       const GfVec3f& authoredPosition,
+                       const GfQuatf& authoredOrientation,
+                       UsdGeomXformCache* cache,
+                       GfVec3f* outPosition,
+                       GfQuatf* outOrientation)
+{
+    SdfPath targetPath;
+    const UsdPrim target = UsdPhysics_GetJointBodyTarget(bodyRel, &targetPath);
+    UsdPhysics_ResolveJointSide(target, authoredPosition, authoredOrientation,
+                                cache, outPosition, outOrientation);
+
+    // An unset relationship and a dangling one both pass the authored pose
+    // through. The return value distinguishes them: an unset relationship is a
+    // valid world anchor (true), while a dangling relationship is malformed
+    // authoring (false).
+    return targetPath.IsEmpty() || target;
 }
 
 bool

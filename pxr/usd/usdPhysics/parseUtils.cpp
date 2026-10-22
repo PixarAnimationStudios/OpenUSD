@@ -31,6 +31,7 @@
 
 #include "pxr/usd/usdPhysics/parseUtils.h"
 #include "pxr/usd/usdPhysics/parseDesc.h"
+#include "pxr/usd/usdPhysics/bodyResolution.h"
 
 #include "pxr/usd/usdPhysics/scene.h"
 #include "pxr/usd/usdPhysics/collisionGroup.h"
@@ -922,50 +923,42 @@ bool _ParseCollisionGroupDesc(const UsdPhysicsCollisionGroup& collisionGroup,
     return true;
 }
 
-// Get joint rel target
-SdfPath _GetRel(const UsdRelationship& ref, const UsdPrim& jointPrim)
+// Resolve one side of a joint from its relationship's target prim, returning
+// the owning body path and rebasing the authored local pose in place.
+SdfPath _FinalizeJointSide(const UsdPrim& target,
+                           GfVec3f* localPosition, GfQuatf* localOrientation)
 {
-    SdfPathVector targets;
-    ref.GetTargets(&targets);
-
-    if (targets.size() == 0)
-    {
-        return SdfPath();
-    }
-    return targets.at(0);
+    const GfVec3f authoredPosition = *localPosition;
+    const GfQuatf authoredOrientation = *localOrientation;
+    const UsdPrim body = UsdPhysics_ResolveJointSide(
+        target, authoredPosition, authoredOrientation, nullptr,
+        localPosition, localOrientation);
+    return body ? body.GetPrimPath() : SdfPath();
 }
 
 // Finalize joint desc
 void _FinalizeJoint(const UsdPhysicsJoint& jointPrim, 
                    UsdPhysicsJointDesc* outJointDesc)
 {
-    // Resolve each side's owning body and the joint-local anchor pose in that
-    // body's frame. The public getters are the single source of this logic
-    // (see UsdPhysicsJoint::GetBody0 / GetLocalPose0); the parser routes through
-    // them so the resolution cannot drift from what consumers see.
+    // Read each side's target once, then resolve its owning body and the
+    // joint-local anchor pose in that body's frame through the same functions
+    // as UsdPhysicsJoint::GetBody0 / GetLocalPose0 (see bodyResolution.h).
+    const UsdPrim target0 = UsdPhysics_GetJointBodyTarget(
+        jointPrim.GetBody0Rel(), &outJointDesc->rel0);
+    const UsdPrim target1 = UsdPhysics_GetJointBodyTarget(
+        jointPrim.GetBody1Rel(), &outJointDesc->rel1);
+
     GfVec3f t0(0.f);
     GfVec3f t1(0.f);
     GfQuatf q0(1.f);
     GfQuatf q1(1.f);
+    jointPrim.GetLocalPos0Attr().Get(&t0);
+    jointPrim.GetLocalRot0Attr().Get(&q0);
+    jointPrim.GetLocalPos1Attr().Get(&t1);
+    jointPrim.GetLocalRot1Attr().Get(&q1);
 
-    if (outJointDesc->rel0 != SdfPath())
-    {
-        const UsdPrim body0 = jointPrim.GetBody0();
-        outJointDesc->body0 = body0 ? body0.GetPrimPath() : SdfPath();
-    }
-
-    if (outJointDesc->rel1 != SdfPath())
-    {
-        const UsdPrim body1 = jointPrim.GetBody1();
-        outJointDesc->body1 = body1 ? body1.GetPrimPath() : SdfPath();
-    }
-
-    // GetLocalPose0/1 always write a pose. A side with an unset or dangling
-    // relationship is anchored to the world at its authored local pose, which
-    // they pass through unchanged; the return value is not needed here since
-    // the body is reported separately above.
-    jointPrim.GetLocalPose0(&t0, &q0);
-    jointPrim.GetLocalPose1(&t1, &q1);
+    outJointDesc->body0 = _FinalizeJointSide(target0, &t0, &q0);
+    outJointDesc->body1 = _FinalizeJointSide(target1, &t1, &q1);
 
     outJointDesc->localPose0Position = t0;
     outJointDesc->localPose0Orientation = q0;
@@ -988,9 +981,6 @@ bool _ParseCommonJointDesc(const UsdPhysicsJoint& jointPrim,
     jointPrim.GetBreakTorqueAttr().Get(&outJointDesc->breakTorque);
     jointPrim.GetExcludeFromArticulationAttr().Get(
         &outJointDesc->excludeFromArticulation);
-
-    outJointDesc->rel0 = _GetRel(jointPrim.GetBody0Rel(), prim);
-    outJointDesc->rel1 = _GetRel(jointPrim.GetBody1Rel(), prim);
 
     _FinalizeJoint(jointPrim, outJointDesc);
 

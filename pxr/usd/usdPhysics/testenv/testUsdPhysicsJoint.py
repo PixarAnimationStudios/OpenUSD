@@ -341,6 +341,114 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         expected_composed = collider_rot * authored_rot
         self.assertQuatClose(orientation0, expected_composed)
 
+    def test_getters_match_parser(self):
+        """The joint parser and the public getters resolve joint sides through
+        the same functions, so every parsed joint must report the bodies and
+        local poses GetBody0/1 and GetLocalPose0/1 return, with or without an
+        xform cache. A dangling side has no getter pose; the parser reports
+        its authored pose, normalized.
+        """
+        self.setup_scene()
+        stage = self.stage
+        UsdPhysics.Scene.Define(stage, "/physicsScene")
+
+        def define_body(path, translate, scale=None, enabled=True):
+            xform = UsdGeom.Xform.Define(stage, path)
+            xform.AddTranslateOp().Set(Gf.Vec3d(*translate))
+            if scale:
+                xform.AddScaleOp().Set(Gf.Vec3f(*scale))
+            bodyAPI = UsdPhysics.RigidBodyAPI.Apply(xform.GetPrim())
+            if not enabled:
+                bodyAPI.GetRigidBodyEnabledAttr().Set(False)
+            return xform.GetPrim().GetPath()
+
+        def define_collider(path, translate, rotateX):
+            cube = UsdGeom.Cube.Define(stage, path)
+            cube.AddTranslateOp().Set(Gf.Vec3d(*translate))
+            cube.AddRotateXOp().Set(rotateX)
+            UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+            return cube.GetPrim().GetPath()
+
+        # Each target exercises one resolution case: the body itself, a scaled
+        # body, a collider below a body, a collider below a disabled body with
+        # an enabled body above it, a nested body, a non-collider anchor below
+        # a body, and a world-owned static collider.
+        bodyA = define_body("/bodyA", (1, 2, 3))
+        bodyB = define_body("/bodyB", (-4, 0, 1), scale=(2, 2, 2))
+        colliderA = define_collider("/bodyA/geo/collider", (0, 0.5, 0), 30)
+        define_body("/outer", (0, 5, 0))
+        define_body("/outer/disabled", (1, 0, 0), enabled=False)
+        underDisabled = define_collider(
+            "/outer/disabled/collider", (0, 0, 2), 15)
+        nested = define_body("/outer/nested", (0, 0, 1))
+        anchor = UsdGeom.Xform.Define(stage, "/bodyB/anchor")
+        anchor.AddTranslateOp().Set(Gf.Vec3d(0.25, 0, 0))
+        anchor.AddRotateZOp().Set(45)
+        static = define_collider("/static", (0, 0, 10), 90)
+
+        # body0 targets, with None for an unset relationship and a path that
+        # does not exist for a dangling one.
+        authoredPos = Gf.Vec3f(0.1, 0.2, 0.3)
+        authoredRot = Gf.Quatf(0.9238795, Gf.Vec3f(0.3826834, 0, 0))
+        cases = [
+            (UsdPhysics.RevoluteJoint, bodyA, bodyB),
+            (UsdPhysics.FixedJoint, colliderA, anchor.GetPrim().GetPath()),
+            (UsdPhysics.PrismaticJoint, underDisabled, nested),
+            (UsdPhysics.SphericalJoint, static, bodyA),
+            (UsdPhysics.DistanceJoint, None, bodyB),
+            (UsdPhysics.Joint, Sdf.Path("/does/not/exist"), nested),
+        ]
+        joints = []
+        for index, (schema, target0, target1) in enumerate(cases):
+            joint = schema.Define(stage, "/joint%d" % index)
+            if target0 is not None:
+                joint.CreateBody0Rel().SetTargets([target0])
+            joint.CreateBody1Rel().SetTargets([target1])
+            joint.CreateLocalPos0Attr().Set(authoredPos)
+            joint.CreateLocalRot0Attr().Set(authoredRot)
+            joint.CreateLocalPos1Attr().Set(-authoredPos)
+            joint.CreateLocalRot1Attr().Set(authoredRot)
+            joints.append(joint)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+        parsed = {}
+        for prim_paths, descs in ret_dict.values():
+            for prim_path, desc in zip(prim_paths, descs):
+                if hasattr(desc, "body0"):
+                    parsed[prim_path] = desc
+        self.assertEqual(sorted(parsed),
+                         sorted(joint.GetPath() for joint in joints))
+
+        cache = UsdGeom.XformCache()
+        for joint in joints:
+            desc = parsed[joint.GetPath()]
+            sides = [
+                (joint.GetBody0Rel(), joint.GetBody0, joint.GetLocalPose0,
+                 desc.rel0, desc.body0, desc.localPose0Position,
+                 desc.localPose0Orientation, authoredPos),
+                (joint.GetBody1Rel(), joint.GetBody1, joint.GetLocalPose1,
+                 desc.rel1, desc.body1, desc.localPose1Position,
+                 desc.localPose1Orientation, -authoredPos),
+            ]
+            for (bodyRel, getBody, getLocalPose, parsedRel, parsedBody,
+                 parsedPos, parsedRot, sideAuthoredPos) in sides:
+                # rel0/rel1 report the authored first target, even when it is
+                # dangling and resolves to no body.
+                targets = bodyRel.GetTargets()
+                self.assertEqual(parsedRel,
+                                 targets[0] if targets else Sdf.Path())
+                body = getBody()
+                self.assertEqual(parsedBody,
+                                 body.GetPath() if body else Sdf.Path())
+                for pose in (getLocalPose(), getLocalPose(cache)):
+                    expectedPos, expectedRot = (
+                        pose if pose else (sideAuthoredPos, authoredRot))
+                    self.assertTrue(
+                        Gf.IsClose(parsedPos, expectedPos, 1e-5),
+                        "%s: parsed %s, getter %s"
+                        % (joint.GetPath(), parsedPos, expectedPos))
+                    self.assertQuatClose(parsedRot, expectedRot)
+
 
 if __name__ == "__main__":
     unittest.main()
