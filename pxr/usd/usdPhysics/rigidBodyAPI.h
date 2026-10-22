@@ -17,7 +17,8 @@
 #include "pxr/usd/usdPhysics/tokens.h"
 
 #include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/quatf.h" 
+#include "pxr/base/gf/quatf.h"
+#include <vector> 
 
 #include "pxr/base/vt/value.h"
 
@@ -27,8 +28,6 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
-
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

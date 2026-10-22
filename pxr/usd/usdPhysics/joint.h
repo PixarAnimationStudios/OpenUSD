@@ -16,11 +16,13 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdPhysics/tokens.h"
 
+#include "pxr/base/gf/quatf.h"
+#include "pxr/usd/usdGeom/xformCache.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include "pxr/base/tf/token.h"
@@ -29,7 +31,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
-class UsdGeomXformCache;
 
 // -------------------------------------------------------------------------- //
 // PHYSICSJOINT                                                               //

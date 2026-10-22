@@ -6,7 +6,6 @@
 //
 #include "pxr/usd/usdPhysics/joint.h"
 #include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
@@ -235,6 +234,8 @@ void wrapUsdPhysicsJoint()
 //
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdGeom/xformCache.h"
 
 namespace {
 

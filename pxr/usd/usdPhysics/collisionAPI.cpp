@@ -5,7 +5,6 @@
 // https://openusd.org/license.
 //
 #include "pxr/usd/usdPhysics/collisionAPI.h"
-#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -156,6 +155,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
