@@ -279,7 +279,10 @@ HdsiLocatorCachingSceneIndex::_SystemMessage(
 {
     if (messageType == HdSystemMessageTokens->dropCaches) {
         std::lock_guard<std::mutex> lock(_cacheMutex);
-        TfReset(_primDsCache);
+        if (_primDsCache.empty()) {
+            TRACE_SCOPE("HdsiLocatorCachingSceneIndex - Dropping Caches");
+            TfReset(_primDsCache);
+        }
     }
 }
 

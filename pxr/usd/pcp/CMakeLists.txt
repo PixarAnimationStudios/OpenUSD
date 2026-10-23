@@ -693,12 +693,60 @@ pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs5
     DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs5.txt 
 )
 
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs6
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndAncestralArcs6/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndAncestralArcs6.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs6.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs6.txt
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs7
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndAncestralArcs7/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndAncestralArcs7.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs7.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs7.txt
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndCulledAncestors
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndCulledAncestors/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndCulledAncestors.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndCulledAncestors.txt
+    DIFF_COMPARE compositionResults_SpecializesAndCulledAncestors.txt
+)
+
 pxr_register_test(testPcpMuseum_SpecializesAndDuplicateArcs
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndDuplicateArcs/root.usda" 
     TESTENV testenv/testPcpMuseum_SpecializesAndDuplicateArcs.testenv
     STDOUT_REDIRECT compositionResults_SpecializesAndDuplicateArcs.txt
     DIFF_COMPARE compositionResults_SpecializesAndDuplicateArcs.txt
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndDuplicateArcs2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndDuplicateArcs2/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndDuplicateArcs2.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndDuplicateArcs2.txt
+    DIFF_COMPARE compositionResults_SpecializesAndDuplicateArcs2.txt
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndDuplicateArcs3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndDuplicateArcs3/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndDuplicateArcs3.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndDuplicateArcs3.txt
+    DIFF_COMPARE compositionResults_SpecializesAndDuplicateArcs3.txt
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndPropagatedClasses
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndPropagatedClasses/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndPropagatedClasses.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndPropagatedClasses.txt
+    DIFF_COMPARE compositionResults_SpecializesAndPropagatedClasses.txt
 )
 
 pxr_register_test(testPcpMuseum_SpecializesAndVariants
@@ -881,6 +929,16 @@ pxr_register_test(testPcpMuseum_TrickySpookyInherits
     DIFF_COMPARE compositionResults_TrickySpookyInherits.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickySpookyInherits_ElideImplied
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickySpookyInherits/root.usda" 
+    TESTENV testenv/testPcpMuseum_TrickySpookyInherits.testenv
+    STDOUT_REDIRECT compositionResults_TrickySpookyInherits_ElideImplied.txt
+    DIFF_COMPARE compositionResults_TrickySpookyInherits_ElideImplied.txt
+    ENV
+        PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS=1
+)
+
 pxr_register_test(testPcpMuseum_TrickySpookyInheritsInSymmetricArmRig
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickySpookyInheritsInSymmetricArmRig/root.usda" 
@@ -943,6 +1001,32 @@ pxr_register_test(testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim
     TESTENV testenv/testPcpMuseum_TrickyInheritsAndRelocatesToNewRootPrim.testenv
     STDOUT_REDIRECT compositionResults_TrickyInheritsAndRelocatesToNewRootPrim.txt
     DIFF_COMPARE compositionResults_TrickyInheritsAndRelocatesToNewRootPrim.txt compositionErrors_TrickyInheritsAndRelocatesToNewRootPrim.txt
+)
+
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits.txt
+)
+
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits2/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits2.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits2.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits2.txt
+)
+
+pxr_register_test(testPcpMuseum_TrickyNestedRelocatesAndInherits2_ElideImplied
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNestedRelocatesAndInherits2/root.usda"
+    TESTENV testenv/testPcpMuseum_TrickyNestedRelocatesAndInherits2.testenv
+    STDOUT_REDIRECT compositionResults_TrickyNestedRelocatesAndInherits2_ElideImplied.txt
+    DIFF_COMPARE compositionResults_TrickyNestedRelocatesAndInherits2_ElideImplied.txt
+    ENV
+        PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS=1
 )
 
 pxr_register_test(testPcpMuseum_TrickyInheritsInVariants

@@ -163,6 +163,10 @@ HdStBufferArrayRegistry::ReallocateAll(HdStAggregationStrategy *strategy)
                             numElements - maxTotalElements);
 
                     range->Resize(maxTotalElements);
+
+                    // Refresh the count so the over aggregation check below
+                    // doesn't act on the stale, oversized value.
+                    numElements = range->GetNumElements();
                 }
                 
                 // over aggregation check of non-uniform buffer

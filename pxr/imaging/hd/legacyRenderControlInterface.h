@@ -143,6 +143,9 @@ public:
     ///
     virtual SdfPath GetRprimPathFromPrimId(int primIdx) = 0;
 
+    /// Dirties materials and replaces
+    // HdResourceRegistry::InvalidateShaderRegistry.
+    virtual void ReloadShaderPrograms() = 0;
     /// @}
 };
 

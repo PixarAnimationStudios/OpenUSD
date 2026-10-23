@@ -344,7 +344,7 @@ class PropInfo(object):
         # If the property name in the layer exactly matches the multiple apply 
         # API schema instance name placeholder, it indicates the special intention
         # defining the "{nameSpacePrefix}:{instanceName}" property in the 
-        # generatedSchema. This would be the equivalent of definining a property
+        # generatedSchema. This would be the equivalent of defining a property
         # with an empty base name in the source schema.usda, but since an empty
         # property name is not allowed, we treat this case as if it were an empty
         # property name for generation purposes.
@@ -791,7 +791,7 @@ def GetClassInfo(classes, cppClassName):
 
 def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
     # Multiple apply API schemas are allowed to specify other built-in 
-    # mulitple apply API schemas with or without a sub-instance name.
+    # multiple apply API schemas with or without a sub-instance name.
     # For example a multiple apply API schema named "MultiApplyAPI" can include
     # the metadata:
     #
@@ -1543,7 +1543,7 @@ def _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls):
         instancesDict = {}
         for k, v in cls.apiSchemaInstances.items():
             instance = {}
-            # There can be canOnlyApplyTo metadata on a per isntance basis.
+            # There can be canOnlyApplyTo metadata on a per instance basis.
             if v.get(API_CAN_ONLY_APPLY):
                 instance.update(
                     {API_CAN_ONLY_APPLY: list(v.get(API_CAN_ONLY_APPLY))})

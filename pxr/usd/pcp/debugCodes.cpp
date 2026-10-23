@@ -20,6 +20,11 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(PCP_DEPENDENCIES, "Pcp dependencies");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        PCP_ELIDED_ORIGIN_LEAKS,
+        "Report opinions from nodes implied from relocation-elided nodes, "
+        "which PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS would elide");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         PCP_PRIM_INDEX, 
         "Print debug output to terminal during prim indexing");
 
@@ -34,6 +39,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "during prim indexing (requires PCP_PRIM_INDEX_GRAPHS)");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(PCP_NAMESPACE_EDIT, "Pcp namespace edits");
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

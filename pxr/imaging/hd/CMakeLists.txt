@@ -207,6 +207,7 @@ pxr_library(hd
         splitDiopterSchema
         sprim
         subdivisionTagsSchema
+        surfaceSchema
         systemMessages
         systemSchema
         task

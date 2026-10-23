@@ -49,7 +49,6 @@ HdChangeTracker::HdChangeTracker()
     , _rprimRenderTagVersion(1)
     , _taskRenderTagsVersion(1)
     , _emulationSceneIndex(nullptr)
-    , _disableEmulationAPI(false)
 {
     /*NOTHING*/
 }
@@ -110,10 +109,6 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         // XXX: During the migration, "DirtyPrimvar" implies DirtyPoints/etc.
         if (bits & DirtyPrimvar) {
             bits |= DirtyPoints | DirtyNormals | DirtyWidths;
@@ -330,7 +325,21 @@ HdChangeTracker::RemoveSprimFromSprimSprimDependencies(SdfPath const& sprimId)
         if (_sprimSprimTargetDependencies.find(a, sprimId)) {
             // If sprim is parent, mark its children dirty before removing.
             for (const SdfPath & childPath : a->second) {
-                MarkSprimDirty(childPath, ~Clean);
+                // This was MarkSprimDirty.
+                //
+                // Replacing it by a guarded call to _MarkSprimDirty to
+                // do what MarkSprimDirty did through the _emulationSceneIndex.
+                // That is, _emulationSceneIndex->DirtyPrims resulted in a call
+                // to HdSceneIndexAdapterSceneDelegate::PrimsDirtied which
+                // checked that the prim existed before calling _MarkSprimDirty.
+                //
+                // Without guarding _MarkSprimDirty, we hit TF_VERIFY in
+                // _MarkSprimDirty during ~HdSceneIndexAdapterSceneDelegate in
+                // some tests.
+                //
+                if (_sprimState.find(childPath) != _sprimState.end()) {
+                    _MarkSprimDirty(childPath, ~Clean);
+                }
                 _RemoveDependency(
                     _sprimSprimSourceDependencies, childPath, sprimId);
             }
@@ -410,10 +419,6 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkTaskDirty(id, bits);
     }
 }
@@ -501,10 +506,6 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkInstancerDirty(id, bits);
     }
 }
@@ -632,10 +633,6 @@ HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkSprimDirty(id, bits);
     }
 }
@@ -738,10 +735,6 @@ HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkBprimDirty(id, bits);
     }
 }
@@ -1015,11 +1008,6 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
         return;
     }
 
-    if (_disableEmulationAPI) {
-        TF_CODING_ERROR(
-            "Calling method on HdChangeTracker that requires emulation.");
-    }
-
     //
     // This function runs similar to calling MarkRprimDirty on every prim.
     // First it checks to see if the request will set any new dirty bits that
@@ -1135,23 +1123,18 @@ HdChangeTracker::MarkCollectionDirty(TfToken const& collectionName)
     HD_TRACE_FUNCTION();
 
     _CollectionStateMap::iterator it = _collectionState.find(collectionName);
-    if (!TF_VERIFY(it != _collectionState.end(),
-                      "Collection %s not found\n", collectionName.GetText())) {
+    if (it == _collectionState.end()) {
         return;
     }
     // bump the version number
     it->second += 1;
-
-    ++_sceneStateVersion;
 }
 
 unsigned
 HdChangeTracker::GetCollectionVersion(TfToken const& collectionName) const
 {
     _CollectionStateMap::const_iterator it = _collectionState.find(collectionName);
-    if (!(it != _collectionState.end())) {
-        TF_CODING_ERROR("Change Tracker unable to find collection %s",
-                        collectionName.GetText());
+    if (it == _collectionState.end()) {
         return _rprimIndexVersion;
     }
     return it->second + _rprimIndexVersion;
@@ -1311,12 +1294,6 @@ void
 HdChangeTracker::_SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex)
 {
     _emulationSceneIndex = emulationSceneIndex;
-}
-
-void
-HdChangeTracker::_SetDisableEmulationAPI(bool disable)
-{
-    _disableEmulationAPI = disable;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

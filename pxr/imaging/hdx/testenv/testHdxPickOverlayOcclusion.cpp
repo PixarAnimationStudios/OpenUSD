@@ -103,10 +103,6 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
         VtValue(HdRprimCollection(HdTokens->geometry, reprSelector)));
 
     _pickablesCol = HdRprimCollection(_tokens->pickables, reprSelector);
-    // We have to unfortunately explicitly add collections besides 'geometry'.
-    // See HdRenderIndex constructor.
-    delegate.GetRenderIndex().GetChangeTracker().AddCollection(
-        _tokens->pickables);
 }
 
 HdSelectionSharedPtr

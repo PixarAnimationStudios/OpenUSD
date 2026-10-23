@@ -76,11 +76,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((transformUtils,           "CoordUtils.Transform"))
     ((projectionUtils,          "CoordUtils.Projection"))
     ((depthUtils,               "CoordUtils.Depth"))
+
+    // shape-agnostic wireframe sections
+    ((edgeCommonFS,             "ImplicitSurfaceWire.Fragment.EdgeCommon"))
+    ((edgeOpacityNoForceFS,     "ImplicitSurfaceWire.Fragment.FinalEdgeOpacityNoForce"))
+    ((edgeOpacityForceFS,       "ImplicitSurfaceWire.Fragment.FinalEdgeOpacityForce"))
+    ((edgeOnlyCommonFS,         "ImplicitSurfaceWire.Fragment.EdgeOnlyCommon"))
+    ((noEdgeFS,                 "ImplicitSurfaceWire.Fragment.NoEdge"))
+    ((edgeOnSurfaceFS,          "ImplicitSurfaceWire.Fragment.EdgeOnSurface"))
+    ((edgeOnlyBlendFS,          "ImplicitSurfaceWire.Fragment.EdgeOnlyBlendColor"))
+    ((edgeOnlyNoBlendFS,        "ImplicitSurfaceWire.Fragment.EdgeOnlyNoBlend"))
+
+    // shape-specific wireframe sections
+    ((sphereEdge,               "ImplicitSurface.Edge.Sphere"))
+    ((sphereWire,               "ImplicitSurface.Wire.Sphere"))
+    ((conicalEdge,              "ImplicitSurface.Edge.ConicalFrustum"))
+    ((conicalWire,              "ImplicitSurface.Wire.ConicalFrustum"))
+    ((capsuleWire,              "ImplicitSurface.Wire.Capsule"))
 );
 
 namespace {
-const TfToken _CullStyleToken(const HdCullStyle cullStyle,
-                              const bool doubleSided)
+const TfToken& _CullStyleToken(const HdCullStyle cullStyle,
+                               const bool doubleSided)
 {
     if (cullStyle == HdCullStyleFront ||
         (cullStyle == HdCullStyleFrontUnlessDoubleSided && !doubleSided)) {
@@ -95,13 +112,40 @@ const TfToken _CullStyleToken(const HdCullStyle cullStyle,
     }
 }
 
-const TfToken _NormalsToken(const bool doubleSided)
+const TfToken& _NormalsToken(const bool doubleSided)
 {
     if (doubleSided) {
         return _tokens->normalsDoubleSidedFS;
     }
     else {
         return _tokens->normalsSingleSidedFS;
+    }
+}
+
+bool _DrawsEdges(const HdImplicitSurfaceGeomStyle geomStyle)
+{
+    return geomStyle == HdImplicitSurfaceGeomStyleEdgeOnSurf ||
+           geomStyle == HdImplicitSurfaceGeomStyleEdgeOnly;
+}
+
+const TfToken& _EdgeOpacityToken(const bool forceOpaqueEdges)
+{
+    return forceOpaqueEdges ? _tokens->edgeOpacityForceFS
+                            : _tokens->edgeOpacityNoForceFS;
+}
+
+const TfToken& _WireframeModeToken(const HdImplicitSurfaceGeomStyle geomStyle,
+                                   const bool blendWireframeColor)
+{
+    switch (geomStyle) {
+        case HdImplicitSurfaceGeomStyleEdgeOnSurf:
+            return _tokens->edgeOnSurfaceFS;
+        case HdImplicitSurfaceGeomStyleEdgeOnly:
+            return blendWireframeColor
+                   ? _tokens->edgeOnlyBlendFS
+                   : _tokens->edgeOnlyNoBlendFS;
+        default:
+            return _tokens->noEdgeFS;
     }
 }
 
@@ -125,6 +169,9 @@ struct _ShapeSections
 
     // required: added to FS only
     TfToken fragmentGlue;
+
+    // optional: added to FS only when edges are drawn, after fragmentGlue
+    TfSmallVector<TfToken, 2> wireSections;
 };
 
 const _ShapeSections &_GetShapeSections(TfToken const &primType)
@@ -137,14 +184,18 @@ const _ShapeSections &_GetShapeSections(TfToken const &primType)
             { _tokens->sphereBounds },
             _tokens->sphereVertex,
             { _tokens->sphereIntersection },
-            _tokens->sphereFragment } },
+            _tokens->sphereFragment,
+            { _tokens->sphereEdge,
+              _tokens->sphereWire } } },
         { HdStNativeImplicitsTokens->conicalFrustum,
           { { _tokens->conicalTypeDef },
             _tokens->conicalCommon,
             { _tokens->conicalBounds },
             _tokens->conicalVertex,
             { _tokens->conicalIntersection },
-            _tokens->conicalFragment } },
+            _tokens->conicalFragment,
+            { _tokens->conicalEdge,
+              _tokens->conicalWire } } },
         { HdStNativeImplicitsTokens->capsule,
           { { _tokens->conicalTypeDef,
               _tokens->sphereTypeDef   },
@@ -153,7 +204,9 @@ const _ShapeSections &_GetShapeSections(TfToken const &primType)
             _tokens->capsuleVertex,
             { _tokens->conicalIntersection,
               _tokens->sphereIntersection },
-            _tokens->capsuleFragment } },
+            _tokens->capsuleFragment,
+            { _tokens->conicalEdge,
+              _tokens->capsuleWire } } },
     };
 
     auto it = shapeMap.find(primType);
@@ -172,7 +225,10 @@ HdSt_ImplicitSurfaceShaderKey::HdSt_ImplicitSurfaceShaderKey(
     const HdCullStyle cullStyle,
     const bool doubleSided,
     const uint32_t vertexCount,
-    TfToken const &primType)
+    TfToken const &primType,
+    const HdImplicitSurfaceGeomStyle geomStyle,
+    const bool blendWireframeColor,
+    const bool forceOpaqueEdges)
     : cullStyle(cullStyle)
     , doubleSided(doubleSided)
     , vertexCount(vertexCount)
@@ -228,6 +284,24 @@ HdSt_ImplicitSurfaceShaderKey::HdSt_ImplicitSurfaceShaderKey(
     }
 
     FS.push_back(shapeSections.fragmentGlue);
+
+    // Wireframe sections must follow the shape fragment section and precede
+    // main.
+    if (_DrawsEdges(geomStyle)) {
+        for (const TfToken &section : shapeSections.wireSections) {
+            FS.push_back(section);
+        }
+
+        FS.push_back(_tokens->edgeCommonFS);
+        FS.push_back(_EdgeOpacityToken(forceOpaqueEdges));
+    }
+
+    if (geomStyle == HdImplicitSurfaceGeomStyleEdgeOnly) {
+        FS.push_back(_tokens->edgeOnlyCommonFS);
+    }
+
+    FS.push_back(_WireframeModeToken(geomStyle, blendWireframeColor));
+
     FS.push_back(_tokens->mainFS);
     FS.push_back(_tokens->pointIdFallbackFS);
     FS.push_back(TfToken());

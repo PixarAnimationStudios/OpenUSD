@@ -39,27 +39,28 @@ scene index observers and components built around the scene index API:
 
 Note that the transition from Hydra 1.0 to 2.0 has been happening in several
 stages:
-- The emulation between Hydra 1.0 to 2.0 and back to 1.0 was implemented
-  within the HdRenderIndex itself. This allowed applications to benefit from
-  some of the new Hydra 2.0 features while using the Hydra 1.0 API itself.
-  It also allowed the switch away from the UsdImagingDelegate.
-  This can be disabled by setting the now deprecated
-  \c HD_ENABLE_SCENE_INDEX_EMULATION to \c false.
+- **Completed:**
+  - The emulation between Hydra 1.0 to 2.0 and back to 1.0 was implemented
+    within the HdRenderIndex itself. This allowed applications to benefit from
+    some of the new Hydra 2.0 features while using the Hydra 1.0 API itself.
+    It also allowed the switch away from the UsdImagingDelegate.
 
-  \image html legacy_scene_delegate_emulation.png
+    \image html legacy_scene_delegate_emulation.png
 
-- The switch from the HdxTaskController to the HdxTaskControllerSceneIndex.
-- The switch from UsdImagingDelegate to the usd imaging scene indices.
-  This can be disabled by setting \c USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX to
-  \c false.
-- Applications (such as UsdImagingGLEngine) switch to the Hydra 2.0 API but still
-  need to use some legacy API (through HdLegacyRenderControlInterface).
+  - The switch from the HdxTaskController to the HdxTaskControllerSceneIndex.
+  - The switch from UsdImagingDelegate to the UsdImaging scene indices.
+
+- **In progress:**
+- Applications (such as UsdImagingGLEngine) switch to the Hydra 2.0 API but
+  still need to use some legacy API (through HdLegacyRenderControlInterface).
   This is shown in more detail in \ref Hydra_Getting_Started_Application.
-  An application can still use a renderer implemented by an Hydra 1.0 render delegate since it
-  is automatically wrapped in an HdRenderDelegateAdapterRenderer. An application can still use
+  An application can still use a renderer implemented by an Hydra 1.0
+  render delegate since it is automatically wrapped in an
+  HdRenderDelegateAdapterRenderer. An application can still use
   Hydra 1.0 scene delegates by instantiating the HdRenderIndexAdapterSceneIndex.
   This can be disabled by setting
   \c USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_OBSERVERER_RENDERER to \c false.
+
 - **The future:**
   Applications fully switch to a pure Hydra 2.0 API.
   This requires new API on the HdRenderer for:

@@ -1,0 +1,68 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+-- configuration
+{
+    "metadata":{
+        "limitSurfaceEvaluation" : true
+    },
+    "parameters": {
+        "backPlateColor":   { "default": [1.0, 0.0, 0.0], 
+                              "role": "color",
+                              "description": "Back plate image color (unlit)." },
+        "opacity":          { "default": 1.0,
+                              "description": "Back plate opacity (unlit)." },
+        "slope":            { "default": [1.0, 1.0, 1.0], 
+                              "role": "color",
+                              "description": "Per-plate RGB slope." },
+        "offset":           { "default": [1.0, 0.0, 0.0],
+                              "role": "color",
+                              "description": "Per-plate RGB offset." },
+        "power":            { "default": [1.0, 1.0, 1.0], 
+                              "role": "color",
+                              "description": "Per-plate RGB power." },
+        "displacement":     { "default": 0.0, 
+                              "description": "Displacement along normal" },
+        "depthMinOffset":   { "default": 0.0, 
+                              "description": "Adjusts minimum depth value" },
+        "depthNormalizingFactor": { "default": 1.0,
+                                    "description": "Scales depth value." },
+        "depthCameraSpaceOffset": { "default": 0.0, 
+                                    "description": " depth in camera space." }
+    },
+    "techniques": {
+        "default": { 
+            "displacementShader": { "source": [ "BackPlate.Displacement" ] },
+            "surfaceShader": { "source": [ "BackPlate.Surface" ] }
+        }
+    }
+}
+
+-- glsl BackPlate.Displacement
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    // Displaces vertices along a mesh while leaving them connected
+    float displacement = 
+        HdTextureLod_displacement(HdGetCoord_displacement(index), 0.0).r;
+    displacement = (displacement - HdGetScalar_depthMinOffset())
+            * HdGetScalar_depthNormalizingFactor()
+            + HdGetScalar_depthCameraSpaceOffset();
+    Peye.xyz += displacement * normalize(Neye);
+    return Peye;
+}
+
+-- glsl BackPlate.Surface
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    vec3 offset =  HdGet_offset().rgb;
+    vec3 power =  HdGet_power().rgb;
+    vec3 slope =  HdGet_slope().rgb;
+    vec3 finalColor = pow(HdGet_backPlateColor().rgb * slope + offset, power);
+    return vec4(finalColor, HdGetScalar_opacity());
+}

@@ -76,6 +76,13 @@ HdRenderPassState::~HdRenderPassState() = default;
 
 /* virtual */
 void
+HdRenderPassState::Copy(HdRenderPassState const& src)
+{
+    *this = src;
+}
+
+/* virtual */
+void
 HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 {
 }

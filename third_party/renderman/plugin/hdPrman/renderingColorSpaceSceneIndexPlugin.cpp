@@ -113,14 +113,6 @@ TF_MAKE_STATIC_DATA(
     _filterLightCallbacks->clear();
 }
 
-TF_MAKE_STATIC_DATA(
-    std::vector<
-        HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransformCallback>,
-    _disableTransformCallbacks)
-{
-    _disableTransformCallbacks->clear();
-}
-
 namespace {
 
 using VtArrayVec3f = VtArray<GfVec3f>;
@@ -1044,11 +1036,6 @@ public:
         const HdSceneIndexBaseRefPtr& si = _GetInputSceneIndex();
         HdSceneIndexPrim prim = si->GetPrim(primPath);
 
-        // Do nothing if we should disable this color space transformation
-        if (HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransform(si)) {
-            return prim;
-        }
-
         if (prim.dataSource) {
             if (prim.primType == HdPrimTypeTokens->material) {
                 prim.dataSource =
@@ -1225,26 +1212,6 @@ HdPrman_RenderingColorSpaceSceneIndexPlugin::FilterLight(
 {
     for (const auto& callback : *_filterLightCallbacks) {
         if (callback(interface, primPath, nodeName, renderingCS)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/* static */
-void
-HdPrman_RenderingColorSpaceSceneIndexPlugin::RegisterDisableTransformCallback(
-    const DisableTransformCallback& callback)
-{
-    _disableTransformCallbacks->push_back(callback);
-}
-
-bool
-HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransform(
-    const HdSceneIndexBaseRefPtr& si)
-{
-    for (const auto& callback : *_disableTransformCallbacks) {
-        if (callback(si)) {
             return true;
         }
     }

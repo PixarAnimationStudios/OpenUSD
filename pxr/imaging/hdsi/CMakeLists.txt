@@ -26,6 +26,7 @@ pxr_library(hdsi
         debuggingSceneIndex
         debuggingSceneIndexPlugin
         domeLightCameraVisibilitySceneIndex
+        expressionEvaluatingSceneIndexBase
         extComputationDependencySceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
@@ -47,6 +48,7 @@ pxr_library(hdsi
         primTypeAndPathPruningSceneIndex
         primTypeNoticeBatchingSceneIndex
         primTypePruningSceneIndex
+        purposeFilteringSceneIndex
         renderPassPruneSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
@@ -63,7 +65,6 @@ pxr_library(hdsi
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/unlitShader.glslfx
 )
 
 pxr_build_test(testHdsiComputeSceneIndexDiff

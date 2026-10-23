@@ -85,6 +85,7 @@
 #include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
+#include "pxr/imaging/hd/surfaceSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
@@ -700,6 +701,26 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
     HdSceneIndexPrim prim = _GetInputPrim(id);
 
+    if (prim.primType == HdPrimTypeTokens->basisCurves) {
+        // TODO: We assume all basis curves are double-sided in Hydra. This is
+        //       inconsistent with the USD schema, which allows sidedness to be
+        //       declared on the USD gprim. Note however that sidedness only
+        //       affects basis curves with authored normals (i.e., ribbons).
+        return true;
+    }
+
+    HdSurfaceSchema surfaceSchema =
+        HdSurfaceSchema::GetFromParent(prim.dataSource);
+
+    if (surfaceSchema.IsDefined()) {
+        HdBoolDataSourceHandle doubleSidedDs =
+            surfaceSchema.GetDoubleSided();
+        if (doubleSidedDs) {
+            return doubleSidedDs->GetTypedValue(0.0f);
+        }
+    }
+
+    // Deprecated fallback: read from mesh schema.
     HdMeshSchema meshSchema =
         HdMeshSchema::GetFromParent(prim.dataSource);
     if (meshSchema.IsDefined()) {
@@ -707,12 +728,6 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
         if (doubleSidedDs) {
             return doubleSidedDs->GetTypedValue(0.0f);
         }
-    } else if (prim.primType == HdPrimTypeTokens->basisCurves) {
-        // TODO: We assume all basis curves are double-sided in Hydra. This is
-        //       inconsistent with the USD schema, which allows sidedness to be
-        //       declared on the USD gprim. Note however that sidedness only
-        //       affects basis curves with authored normals (i.e., ribbons).
-        return true;
     }
     return false;
 }

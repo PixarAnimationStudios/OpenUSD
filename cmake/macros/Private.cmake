@@ -358,6 +358,85 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
 
 endfunction() # _install_resource_files
 
+# Installs resource files for a test-only library named LIBRARY_NAME.
+#
+# plugInfo.json files are installed with @VARIABLE@ placeholders filled in.
+# If the resourceFile matches *_plugInfo.json, then it is installed as
+# plugInfo.json.
+#
+# Test-only resource files are installed to a structure that looks like this:
+#
+#   inst/tests/INSTALL_PREFIX/
+#       lib/LIBRARY_NAME/Resources/
+#           plugInfo.json
+#           generatedSchema.usda
+#           etc.
+#
+function(_install_test_resource_files LIBRARY_NAME)
+    set(oneValueArgs
+        INSTALL_PREFIX)
+    set(multiValueArgs
+        FILES)
+    cmake_parse_arguments(args
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
+    if(NOT args_FILES)
+        return()
+    endif()
+
+    # If installing a plugInfo.json file, this function substitutes variables in
+    # the file, and installs the modified file instead. Determine the values of
+    # TEST_PLUG_INFO_XXX that will be substituted into the file.
+
+    set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
+    set(TEST_PLUG_INFO_ROOT "..")
+    
+    set(libraryFile  "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(testPlugInfoLibDir "tests/${args_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
+    set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
+    set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
+
+    file(RELATIVE_PATH 
+        TEST_PLUG_INFO_LIBRARY_PATH
+        "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
+        "${CMAKE_INSTALL_PREFIX}/tests/lib/${libraryFile}")
+
+    # Historically, test-only plugInfo.json files only substituted variables
+    # named TEST_PLUG_INFO_XXX, but to support plugInfo.json files produced by
+    # usdGenSchema, we also substitute variables named PLUG_INFO_XXX.
+    set(PLUG_INFO_RESOURCE_PATH "${TEST_PLUG_INFO_RESOURCE_PATH}")
+    set(PLUG_INFO_ROOT "${TEST_PLUG_INFO_ROOT}")
+    set(PLUG_INFO_LIBRARY_PATH "${TEST_PLUG_INFO_LIBRARY_PATH}")
+
+    set(foundPlugInfoFile FALSE)
+    foreach(resourceFile ${args_FILES})
+        # If the resourceFile is a plugInfo.json file, apply substitutions, and
+        # install the substituted file. Note that test plugins have plugInfo
+        # files named 'pluginName_plugInfo.json', so we check that the file name
+        # ends with plugInfo instead of matching exactly. We should only install
+        # a single plugInfo file.
+        if("${resourceFile}" MATCHES ".*plugInfo.json$")
+            if(foundPlugInfoFile)
+                message(FATAL_ERROR
+                    "Library ${LIBRARY_NAME} installs more than one plugInfo.json")
+            endif()
+            set(foundPlugInfoFile TRUE)
+            configure_file("${resourceFile}" "${testPlugInfoPath}")
+            set(resourceFile "${testPlugInfoPath}")
+        endif()
+
+        # Install the resource file.
+        install(
+            FILES "${resourceFile}"
+            DESTINATION "${testPlugInfoResourceDir}"
+        )
+    endforeach()
+endfunction() # _install_test_resource_files
+
 function(_install_pyside_ui_files LIBRARY_NAME)
     set(uiFiles "")
     foreach(uiFile ${ARGN})
@@ -1560,3 +1639,90 @@ function(pxr_create_apple_framework)
     # Run the shell script for the primary configuration
     install(CODE "execute_process(COMMAND zsh ${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh )")
 endfunction() # pxr_create_apple_framework
+
+# Parses the generatedSchema.classes.txt file produced by usdGenSchema.
+#
+# Public classes, python module files, and resource files in FILE are set
+# to output variables named by OUT_PUBLIC_CLASSES, OUT_PYTHON_MODULE_FILES, and
+# OUT_RESOURCE_FILES respectively.
+#
+# If SKIP_INSTALL_PATHS is present, files that include an explicit install path
+# are ignored. (e.g. 'schema.usda:mylib/usd/schema.usda'). This can be specified
+# for callers that are not prepared to parse the install path.
+#
+function(_pxr_parse_generated_schema_classes FILE)
+    set(options
+        SKIP_INSTALL_PATHS)
+    set(oneValueArgs
+        OUT_PUBLIC_CLASSES
+        OUT_PYTHON_MODULE_FILES
+        OUT_RESOURCE_FILES)
+    cmake_parse_arguments(args
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
+    # Read the generated classes
+    file(STRINGS ${FILE} fileContents)
+
+    set(publicClasses)
+    set(pythonModuleFiles)
+    set(resourceFiles)
+
+    # fileType potential values:
+    # -1: Skip line
+    # 0: Public Classes
+    # 1: Python Module Files
+    # 2: Resource Files
+    set(fileType -1)
+
+    foreach(line ${fileContents})
+        # Determine which section of the generated file we are in.
+        if (${fileType} EQUAL -1)
+            string(FIND ${line} "# Public Classes" found)
+            if (NOT ${found} EQUAL -1)
+                set(fileType 0)
+                continue()
+            endif()
+        elseif(${fileType} EQUAL 0)
+            string(FIND ${line} "# Python Module Files" found)
+            if (NOT ${found} EQUAL -1)
+                set(fileType 1)
+                continue()
+            endif()
+        elseif(${fileType} EQUAL 1)
+            string(FIND ${line} "# Resource Files" found)
+            if (NOT ${found} EQUAL -1)
+                set(fileType 2)
+                continue()
+            endif()
+        endif()
+
+        # Files that include an explicit install path may be skipped.
+        if(args_SKIP_INSTALL_PATHS AND "${line}" MATCHES ":")
+            continue()
+        endif()
+
+        # Depending on the file type, append to the appropriate list.
+        if (${fileType} EQUAL 0)
+            list(APPEND publicClasses ${line})
+        elseif(${fileType} EQUAL 1 AND args_OUT_PYTHON_MODULE_FILES)
+            list(APPEND pythonModuleFiles ${line})
+        elseif(${fileType} EQUAL 2 AND args_OUT_RESOURCE_FILES)
+            list(APPEND resourceFiles ${line})
+        endif()
+    endforeach()
+
+    # Set result variables in the parent scope.
+    if(args_OUT_PUBLIC_CLASSES)
+        set(${args_OUT_PUBLIC_CLASSES} ${publicClasses} PARENT_SCOPE)
+    endif()
+    if(args_OUT_PYTHON_MODULE_FILES)
+        set(${args_OUT_PYTHON_MODULE_FILES} ${pythonModuleFiles} PARENT_SCOPE)
+    endif()
+    if(args_OUT_RESOURCE_FILES)
+        set(${args_OUT_RESOURCE_FILES} ${resourceFiles} PARENT_SCOPE)
+    endif()
+endfunction() # _pxr_parse_generated_schema_classes

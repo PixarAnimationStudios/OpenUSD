@@ -1,0 +1,38 @@
+#usda 1.0
+
+def "Asset" (
+    specializes = </_class_Lib>
+)
+{
+    class "_class_Mat"
+    {
+        int fromAssetClass = 1
+
+        def "Kid"
+        {
+        }
+    }
+}
+
+class "_class_Lib"
+{
+    def "Model"
+    {
+        def "InheritsMat" (
+            inherits = </_class_Lib/_class_Mat>
+        )
+        {
+        }
+
+        def "SpecializesMat" (
+            specializes = </_class_Lib/_class_Mat>
+        )
+        {
+        }
+    }
+
+    class "_class_Mat"
+    {
+        int fromLibClass = 1
+    }
+}

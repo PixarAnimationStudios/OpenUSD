@@ -41,7 +41,6 @@ HgiGLDevice::SetCurrentArena(HgiGLContextArenaHandle const& arena)
     }
 }
 
-HGIGL_API
 HgiGLContextArena*
 HgiGLDevice::GetCurrentArena() const
 {

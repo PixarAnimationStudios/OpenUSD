@@ -35,6 +35,14 @@ ComputeMax3(float a, float b, float c)
     return max(a, max(b, c));
 }
 
+// Normalizes v, or returns fallback if v is (nearly) zero length.
+vec2
+SafeNormalize(const vec2 v, const vec2 fallback)
+{
+    const float lenSq = dot(v, v);
+    return lenSq > 1e-20 ? v * inversesqrt(lenSq) : fallback;
+}
+
 // Computes the inverse of the scaling of an affine transform.
 // Approximately - since most transforms have uniform scaling
 // and no shear, this is fine.

@@ -6,12 +6,15 @@
 //
 #include "pxr/usdImaging/usdImaging/backPlateAPIAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
+#include "pxr/usdImaging/usdImaging/dataSourceMapped.h"
 
 #include "pxr/imaging/hd/backPlateSchema.h"
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/usd/usdGeom/backPlateAPI.h"
+
+#include <tbb/concurrent_unordered_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -27,6 +30,79 @@ UsdImagingBackPlateAPIAdapter() = default;
 UsdImagingBackPlateAPIAdapter::
 ~UsdImagingBackPlateAPIAdapter() = default;
 
+namespace {
+using _PropertyMappingsUniquePtr = 
+    std::unique_ptr<UsdImagingDataSourceMapped::PropertyMappings>;
+// Pairs of USD multi-apply template and Hydra back plate schema property 
+// names
+const std::vector<std::pair<TfToken, TfToken>> &
+_GetUsdGeomToHdPropertyNames() {
+    static const  std::vector<std::pair<TfToken, TfToken>> namePairs {
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_AlphaImage,
+            HdBackPlateSchemaTokens->alphaImage},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthCameraSpaceOffset,
+            HdBackPlateSchemaTokens->depthCameraSpaceOffset},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthImage,
+            HdBackPlateSchemaTokens->depthImage},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthMinOffset,
+            HdBackPlateSchemaTokens->depthMinOffset},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthNormalizingFactor,
+            HdBackPlateSchemaTokens->depthNormalizingFactor},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_Image,
+            HdBackPlateSchemaTokens->image},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaOffset,
+            HdBackPlateSchemaTokens->lumaOffset},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaPower,
+            HdBackPlateSchemaTokens->lumaPower},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaSlope, 
+            HdBackPlateSchemaTokens->lumaSlope},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_PlateVisibility,
+            HdBackPlateSchemaTokens->plateVisibility},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_RotateXYZTweak,
+            HdBackPlateSchemaTokens->rotateXYZTweak},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_ScaleTweak,
+             HdBackPlateSchemaTokens->scaleTweak},
+        {UsdGeomTokens->backPlate_MultipleApplyTemplate_TranslateTweak,
+             HdBackPlateSchemaTokens->translateTweak},
+    };
+    return namePairs;
+}
+
+_PropertyMappingsUniquePtr _GetMappingsUncached(const TfToken &instanceName) {
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
+    for (const auto &[usdGeomName, hdName] : _GetUsdGeomToHdPropertyNames())
+    {
+        result.push_back(
+            UsdImagingDataSourceMapped::AttributeMapping{{
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    usdGeomName, instanceName),
+                HdDataSourceLocator(hdName) }
+            });
+    }
+    return std::make_unique<UsdImagingDataSourceMapped::PropertyMappings>(
+        result,
+        HdCameraSchema::GetBackPlateLocator().Append(instanceName));
+}
+
+const UsdImagingDataSourceMapped::PropertyMappings &
+_GetMappings(const TfToken &instanceName)
+{
+    // Cache each instance's property mappings
+    static tbb::concurrent_unordered_map<
+        TfToken,
+        _PropertyMappingsUniquePtr,
+        TfToken::HashFunctor> instanceToMappingsMap;
+
+    const auto it = instanceToMappingsMap.find(instanceName);
+    if (it != instanceToMappingsMap.end()) {
+        return *(it->second);
+    }
+
+    return *(instanceToMappingsMap.emplace(
+        instanceName, _GetMappingsUncached(instanceName)).first->second);
+}
+}
+
 HdContainerDataSourceHandle
 UsdImagingBackPlateAPIAdapter::GetImagingSubprimData(
     UsdPrim const& prim,
@@ -37,89 +113,21 @@ UsdImagingBackPlateAPIAdapter::GetImagingSubprimData(
     if (appliedInstanceName.IsEmpty()) {
         return nullptr;
     }
-    UsdGeomBackPlateAPI backPlate(prim, appliedInstanceName);
-
-    TfToken plateVisibility = HdBackPlateSchemaTokens->solo;
-    backPlate.GetPlateVisibilityAttr().Get(&plateVisibility);
-
-    HdDataSourceLocator plateLocator = 
-        HdCameraSchema::GetBackPlateLocator().Append(appliedInstanceName);
-
-    HdContainerDataSourceHandle backPlateDs =
-        HdBackPlateSchema::Builder()
-            .SetScaleTweak(
-                UsdImagingDataSourceAttribute<GfVec2f>::New(
-                    backPlate.GetScaleTweakAttr(), 
-                    stageGlobals, 
-                    prim.GetPath(),
-                    plateLocator.Append(HdBackPlateSchemaTokens->scaleTweak))) 
-            .SetRotateXYZTweak(
-                UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetRotateXYZTweakAttr(), 
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->rotateXYZTweak))) 
-            .SetTranslateTweak(
-                UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetTranslateTweakAttr(),
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->translateTweak))) 
-            .SetImage(
-                UsdImagingDataSourceAttribute<SdfAssetPath>::New(
-                    backPlate.GetImageAttr(), 
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->image)))
-            .SetAlphaImage(
-                UsdImagingDataSourceAttribute<SdfAssetPath>::New(
-                    backPlate.GetAlphaImageAttr(), stageGlobals))
-            .SetDepthImage(
-                UsdImagingDataSourceAttribute<SdfAssetPath>::New(
-                    backPlate.GetDepthImageAttr(), stageGlobals))
-            .SetDepthMinOffset(
-                UsdImagingDataSourceAttribute<float>::New(
-                    backPlate.GetDepthMinOffsetAttr(), stageGlobals))
-            .SetDepthNormalizingFactor(
-                UsdImagingDataSourceAttribute<float>::New(
-                    backPlate.GetDepthNormalizingFactorAttr(), stageGlobals))
-            .SetDepthCameraSpaceOffset(
-                UsdImagingDataSourceAttribute<float>::New(
-                    backPlate.GetDepthCameraSpaceOffsetAttr(), stageGlobals))
-            .SetLumaSlope(
-               UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaSlopeAttr(), 
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->lumaSlope)))
-            .SetLumaPower(
-                UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaPowerAttr(), 
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->lumaPower))) 
-            .SetLumaOffset(
-                UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaOffsetAttr(), 
-                    stageGlobals,
-                    prim.GetPath(),
-                    plateLocator.Append(
-                        HdBackPlateSchemaTokens->lumaOffset))) 
-            .SetPlateVisibility(
-                HdBackPlateSchema::BuildPlateVisibilityDataSource(plateVisibility))
-            .Build();
 
     return HdRetainedContainerDataSource::New(
-            HdCameraSchema::GetSchemaToken(),
-            HdRetainedContainerDataSource::New(
+        HdCameraSchema::GetSchemaToken(),
+        HdRetainedContainerDataSource::New(
             HdBackPlateSchema::GetSchemaToken(),
             HdRetainedContainerDataSource::New(
-                appliedInstanceName, backPlateDs)));
+                appliedInstanceName,
+                UsdImagingDataSourceMapped::New(
+                    prim, 
+                    prim.GetPath(),
+                    _GetMappings(appliedInstanceName),
+                    stageGlobals)
+            )
+        )
+    );
 }
 
 HdDataSourceLocatorSet
@@ -133,16 +141,9 @@ UsdImagingBackPlateAPIAdapter::InvalidateImagingSubprim(
     if (!subprim.IsEmpty() || appliedInstanceName.IsEmpty()) {
         return HdDataSourceLocatorSet();
     }
-    const std::string prefix = TfStringPrintf(
-        "backPlate:%s:", appliedInstanceName.data());
 
-    for (const TfToken &propertyName : properties) {
-        if (TfStringStartsWith(propertyName.GetString(), prefix)) {
-            return HdCameraSchema::GetBackPlateLocator()
-                .Append(appliedInstanceName);
-        }
-    }
-    return HdDataSourceLocatorSet();
+    return UsdImagingDataSourceMapped::Invalidate(
+        properties, _GetMappings(appliedInstanceName));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

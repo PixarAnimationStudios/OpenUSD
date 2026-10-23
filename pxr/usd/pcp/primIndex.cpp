@@ -40,10 +40,12 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/smallVector.h"
 
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 
 // Un-comment for extra runtime validation.
@@ -58,6 +60,13 @@ TF_DEFINE_ENV_SETTING(
     PCP_ENABLE_CONSISTENCY_CHECKS, false,
     "Enable self-consistency checks when composing prim indexes. "
     "This is for testing and debugging only.");
+
+TF_DEFINE_ENV_SETTING(
+    PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS, false,
+    "Elide nodes that were implied from a node that relocation processing "
+    "has since elided, so that the set of elided nodes is closed under origin. "
+    "When off (the legacy behavior) such nodes can still contribute opinions. "
+    "Enable the PCP_ELIDED_ORIGIN_LEAKS debug code to report them.");
 
 static inline PcpPrimIndex const *
 _GetOriginatingIndex(PcpPrimIndex_StackFrame *previousFrame,
@@ -515,7 +524,11 @@ _GetPropagatedSpecializesNode(
             break;
         }
 
-        if (rootChild.GetOriginNode() == node &&
+        // Match by site rather than by origin.  _PropagateNodeToRoot reuses an
+        // existing propagated node for the same site, so several placeholders
+        // may share one propagated node whose origin is only the first of them.
+        // See the SpecializesAndDuplicateArcs2 museum case.
+        if (rootChild.HasSameSiteAs(node) &&
             Pcp_IsPropagatedSpecializesNode(rootChild)) {
             return rootChild;
         }
@@ -1419,6 +1432,26 @@ struct Pcp_PrimIndexer
                 if (PcpNodeRef base = _FindStartingNodeForImpliedClasses(n)) {
                     AddTask(Task(Task::EvalImpliedClasses, base));
                 }
+
+                // A propagated specializes node may arrive with class-based
+                // children built in its own recursive frame, where it was the
+                // root and its placeholder's parent was not available, so
+                // their implied classes were not evaluated there.  The chain
+                // above starts at or above the placeholder and so does not
+                // reach these children.  Evaluate each child's chain as if it
+                // had been added after this node.  See the
+                // SpecializesAndPropagatedClasses museum case.
+                if (Pcp_IsPropagatedSpecializesNode(n)) {
+                    TF_FOR_ALL(child, Pcp_GetChildrenRange(n)) {
+                        if (!PcpIsClassBasedArc(child->GetArcType())) {
+                            continue;
+                        }
+                        if (PcpNodeRef base =
+                            _FindStartingNodeForImpliedClasses(*child)) {
+                            AddTask(Task(Task::EvalImpliedClasses, base));
+                        }
+                    }
+                }
             } else if (_HasClassBasedChild(n)) {
                 // The new node is not class-based -- but it has class-based
                 // children.  Such children represent inherits found during the
@@ -1779,6 +1812,19 @@ _AddArc(
         return PcpNodeRef();
     }
 
+    // Nodes implied from an elided node are elided too: the set of elided nodes
+    // is closed under origin.  Here we enforce this for nodes that would be
+    // added after their origin was elided; _ElideNodesWithElidedOrigins handles
+    // nodes that already existed.  Without this, an elided class can be implied
+    // across an arc into a context where its opinions contribute.  See the
+    // TrickyNestedRelocatesAndInherits museum case.
+    if (origin && Pcp_IsElided(origin)) {
+        PCP_INDEXING_MSG(
+            indexer, parent, "Skipping because origin %s was elided.",
+            Pcp_FormatSite(origin.GetSite()).c_str());
+        return PcpNodeRef();
+    }
+
     // Check for cycles.  If found, report an error and bail.
     if (PcpErrorArcCyclePtr err =
         _CheckForCycle(parent, origin, arcType, site, indexer->previousFrame)) {
@@ -1797,7 +1843,11 @@ _AddArc(
         opts.skipDuplicateNodes |= indexer->previousFrame->skipDuplicateNodes;
     }
 
-    if (opts.skipDuplicateNodes) {
+    // A node that does not contribute specs cannot introduce duplicate
+    // opinions, so it is never skipped.  Such nodes are placeholders that keep
+    // class-based arcs present for propagation, and skipping one would stop
+    // that propagation.
+    if (opts.skipDuplicateNodes && opts.directNodeShouldContributeSpecs) {
         PcpLayerStackSite siteToAddInCurrentGraph = site;
 
         bool foundDuplicateNode = false;
@@ -2807,9 +2857,89 @@ _ElideSubtree(
     // ensure "ancestral" tasks (e.g. ancestral variants) will also
     // be skipped.
     node.SetSpecContributionRestrictedDepth(1);
+    Pcp_SetElided(node);
 
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         _ElideSubtree(*child, cull);
+    }
+}
+
+// Elide every node in the graph whose origin is elided, and so on transitively.
+// For example, an implied class may already have been propagated from a class
+// node that relocation processing has just elided.  See the
+// TrickyNestedRelocatesAndInherits2 museum case.  An origin may follow the
+// nodes implied from it in traversal order, so repeat until nothing changes.
+//
+// Eliding a node may detach the graph's shared node pool, which would
+// invalidate a subtree iterator, so collect the nodes before eliding them.
+//
+// This does nothing unless PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS is set,
+// since existing assets depend on these opinions.  The PCP_ELIDED_ORIGIN_LEAKS
+// debug code reports them.
+static void
+_ElideNodesWithElidedOrigins(
+    const Pcp_PrimIndexer& indexer,
+    const PcpNodeRef& root)
+{
+    if (!TfGetEnvSetting(PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS)) {
+        return;
+    }
+
+    TfSmallVector<PcpNodeRef, /*LocalCap=*/16> toElide;
+    do {
+        toElide.clear();
+        for (const PcpNodeRef& node : Pcp_GetSubtreeRange(root)) {
+            const PcpNodeRef origin = node.GetOriginNode();
+            if (origin && Pcp_IsElided(origin) && !Pcp_IsElided(node)) {
+                toElide.push_back(node);
+            }
+        }
+        for (const PcpNodeRef& node : toElide) {
+            _ElideSubtree(node, indexer.inputs.cull);
+            PCP_INDEXING_UPDATE(
+                &indexer, node,
+                "Elided subtree whose origin %s was elided",
+                Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
+        }
+    } while (!toElide.empty());
+}
+
+// Report the nodes in the finished graph that _ElideNodesWithElidedOrigins
+// would have elided and that contribute specs.  These are the opinions that
+// PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS removes.  Nodes are visited in
+// strength order, which is not necessarily origin order, so iterate to a
+// fixed point as _ElideNodesWithElidedOrigins does.
+static void
+_ReportNodesWithElidedOrigins(const PcpPrimIndex& index)
+{
+    std::unordered_set<PcpNodeRef, PcpNodeRef::Hash> wouldElide;
+    const auto isElided = [&wouldElide](const PcpNodeRef& node) {
+        return Pcp_IsElided(node) || wouldElide.count(node);
+    };
+    bool changed;
+    do {
+        changed = false;
+        for (const PcpNodeRef& node : Pcp_GetSubtreeRange(index.GetRootNode())) {
+            const PcpNodeRef origin = node.GetOriginNode();
+            if (origin && isElided(origin) && !isElided(node)) {
+                for (const PcpNodeRef& sub : Pcp_GetSubtreeRange(node)) {
+                    changed |= wouldElide.insert(sub).second;
+                }
+            }
+        }
+    } while (changed);
+
+    for (const PcpNodeRef& node : Pcp_GetSubtreeRange(index.GetRootNode())) {
+        if (wouldElide.count(node) &&
+            node.HasSpecs() && node.CanContributeSpecs()) {
+            TfDebug::Helper().Msg(
+                "Pcp: <%s> has opinions from %s, which "
+                "PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS would elide "
+                "(origin %s was elided)\n",
+                index.GetPath().GetText(),
+                Pcp_FormatSite(node.GetSite()).c_str(),
+                Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
+        }
     }
 }
 
@@ -3032,6 +3162,8 @@ _EvalNodeRelocations(
         // See RelocatePrimsWithSameName test case for an example of this.
         _ElideRelocatedSubtrees(*indexer, newNode);
     }
+
+    _ElideNodesWithElidedOrigins(*indexer, node.GetRootNode());
 }
 
 static void
@@ -3295,8 +3427,9 @@ _AddClassBasedArc(
     if (PcpNodeRef child = findMatchingChild()) {
         PCP_INDEXING_MSG(
             indexer, parent, child,
+            "A%s %s arc to <%s> already exists. Skipping.",
+            arcType == PcpArcTypeInherit ? "n" : "",
             TfEnum::GetDisplayName(arcType).c_str(),
-            "A %s arc to <%s> already exists. Skipping.",
             inheritPath.GetText());
 
         // TODO Need some policy to resolve multiple arcs.  Existing Csd
@@ -3631,10 +3764,19 @@ _EvalImpliedClassTree(
         // We do NOT want to add an implied class arc directly
         // from otherNode to destNode.
         //
+        // The arc that continues the chain is introduced at srcNode's level of
+        // namespace or above.  It is above when it is an ancestral arc, for
+        // example when srcNode is /A/B and otherNode is reached from an arc
+        // authored on /A.  In that case srcChild is further below its
+        // introduction than srcNode is, so compare with >= rather than ==.
+        // Otherwise the chain is shortcut by an implied arc directly from
+        // otherNode to destNode, and for specializes that arc can take a
+        // stronger position than the chain it bypasses.  See the
+        // SpecializesAndAncestralArcs6 museum case.
         if (srcNodeIsStartOfTree
             && PcpIsClassBasedArc(srcNode.GetArcType())
-            && srcNode .GetDepthBelowIntroduction() ==
-               srcChild.GetDepthBelowIntroduction()) {
+            && srcChild.GetDepthBelowIntroduction() >=
+               srcNode .GetDepthBelowIntroduction()) {
 
             PCP_INDEXING_MSG(indexer, srcChild, destNode,
                              "Skipping ancestral class");
@@ -3874,7 +4016,7 @@ _IsRelocatesPlaceholderImpliedArc(
     const bool nodeIsRelocatesPlaceholder =
         parentNode != node.GetOriginNode() && 
         parentNode.GetArcType() == PcpArcTypeRelocate &&
-        parentNode.GetSite() == node.GetSite();
+        parentNode.HasSameSiteAs(node);
     return nodeIsRelocatesPlaceholder;
 }
 
@@ -4867,8 +5009,8 @@ _NodeCanBeCulled(
     const PcpNodeRef& node,
     const PcpLayerStackSite& rootSite)
 {
-    // Trivial case if this node has already been culled. 
-    // This could happen if this node was culled ancestrally.
+    // Trivial case if this node has already been culled.  This happens if
+    // this node was elided.  See _CullSubtreesWithNoOpinionsHelper.
     if (node.IsCulled()) {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
         TF_VERIFY(!node.IsRootNode());
@@ -4973,6 +5115,23 @@ _CullSubtreesWithNoOpinionsHelper(
     const PcpLayerStackSite& rootSite,
     std::vector<PcpCulledDependency>* culledDeps)
 {
+    // A node that is culled but not elided was culled when computing an
+    // ancestral prim index, and this index started from that graph.  Decide
+    // again here: the node may no longer be cullable, because arcs added at
+    // this level of namespace can introduce live nodes beneath it.  For
+    // example, implied classes are evaluated through specializes placeholders,
+    // which are inert, and may be added beneath their parents.  See the
+    // SpecializesAndCulledAncestors museum case.
+    //
+    // Unculling resets the node's contribution restriction depth, so save it
+    // and then restore it if the node is culled again, to keep the depth at
+    // which it was first restricted.
+    const bool wasCulled = node.IsCulled() && !Pcp_IsElided(node);
+    const size_t restrictionDepth = node.GetSpecContributionRestrictedDepth();
+    if (wasCulled) {
+        node.SetCulled(false);
+    }
+
     // Recurse and attempt to cull all children first. Order doesn't matter.
     TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
         _CullSubtreesWithNoOpinionsHelper(*child, rootSite, culledDeps);
@@ -4982,6 +5141,9 @@ _CullSubtreesWithNoOpinionsHelper(
     // removed from the prim index at the end of prim indexing.
     if (_NodeCanBeCulled(node, rootSite)) {
         node.SetCulled(true);
+        if (wasCulled) {
+            node.SetSpecContributionRestrictedDepth(restrictionDepth);
+        }
     }
 }
 
@@ -5487,6 +5649,13 @@ PcpComputePrimIndex(
     // instead of in Pcp_BuildPrimIndex.
     outputs->primIndex.GetGraph()->SetIsInstanceable(
         Pcp_PrimIndexIsInstanceable(outputs->primIndex));
+
+    // If asked, report contributing opinions in leaked elided implied nodes
+    // with elided origins; a bug whose behavior is relied upon by real assets.
+    if (ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_ELIDED_ORIGIN_LEAKS)) &&
+        !TfGetEnvSetting(PCP_ELIDE_IMPLIED_NODES_OF_ELIDED_ORIGINS)) {
+        _ReportNodesWithElidedOrigins(outputs->primIndex);
+    }
 
     // We're done modifying the graph, so finalize it.
     outputs->primIndex.GetGraph()->Finalize();

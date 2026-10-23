@@ -1,0 +1,84 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    subLayers = [
+        @./chemistry.usda@
+    ]
+    doc = """
+    Non-instanced variant of chemistry.usda.
+    Sublayers chemistry.usda and overrides all instanceable = true to false.
+    """
+)
+
+# ---------------------------------------------------------------------------
+# Override atom-level instanceable in NI class templates
+
+over "_class_WaterMoleculeNI"
+{
+    over "Atoms"
+    {
+        over "Oxygen"     ( instanceable = false ) {}
+        over "Hydrogen_1" ( instanceable = false ) {}
+        over "Hydrogen_2" ( instanceable = false ) {}
+    }
+}
+
+over "_class_MethaneMoleculeNI"
+{
+    over "Atoms"
+    {
+        over "Carbon"     ( instanceable = false ) {}
+        over "Hydrogen_1" ( instanceable = false ) {}
+        over "Hydrogen_2" ( instanceable = false ) {}
+        over "Hydrogen_3" ( instanceable = false ) {}
+        over "Hydrogen_4" ( instanceable = false ) {}
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Override molecule-level instanceable in Row_NI_1Level
+
+over "World"
+{
+    over "Row_NI_1Level"
+    {
+        over "WaterMoleculeNI_A" ( instanceable = false ) {}
+        over "WaterMoleculeNI_B" ( instanceable = false ) {}
+        over "MethaneNI_A"       ( instanceable = false ) {}
+        over "MethaneNI_B"       ( instanceable = false ) {}
+        over "MethaneNI_C"       ( instanceable = false ) {}
+    }
+
+    over "Row_NI_2Level"
+    {
+        over "WaterMoleculeNI2_A" ( instanceable = false ) {}
+        over "WaterMoleculeNI2_B" ( instanceable = false ) {}
+        over "MethaneNI2_A"       ( instanceable = false ) {}
+        over "MethaneNI2_B"       ( instanceable = false ) {}
+        over "MethaneNI2_C"       ( instanceable = false ) {}
+    }
+
+    over "Row_PI_NI1"
+    {
+        over "PI"
+        {
+            over "Prototypes"
+            {
+                over "MethaneMolecule" ( instanceable = false ) {}
+                over "WaterMolecule"   ( instanceable = false ) {}
+            }
+        }
+    }
+
+    over "Row_PI_NI2"
+    {
+        over "PI"
+        {
+            over "Prototypes"
+            {
+                over "MethaneMolecule" ( instanceable = false ) {}
+                over "WaterMolecule"   ( instanceable = false ) {}
+            }
+        }
+    }
+}

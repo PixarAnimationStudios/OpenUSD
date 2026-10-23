@@ -374,8 +374,7 @@ class StageView(QGLWidget):
     signalBboxUpdateTimeChanged = QtCore.Signal(int)
 
     # First arg is primPath, (which could be empty Path)
-    # Second arg is instanceIndex (or UsdImagingGL.ALL_INSTANCES for all
-    #  instances)
+    # Second arg is instanceIndex (or ALL_INSTANCES for all instances)
     # Third and fourth arg are primPath, instanceIndex, of root level
     #  boundable (if applicable).
     # Fifth arg is selectedPoint
@@ -521,9 +520,12 @@ class StageView(QGLWidget):
         self._allowAsync = bool(value)
 
     def __init__(self, parent=None, dataModel=None, makeTimer=Timer):
-        # Note: The default format *disables* the alpha component and so the
-        # default backbuffer uses GL_RGB.
+        # Note: we disable the alpha component so that the backbuffer uses
+        # GL_RGB. Without this, the platform is free to pick a pixel format
+        # that has an alpha channel, which makes grabbed framebuffers RGBA on
+        # some platforms and RGB on others.
         glFormat = QGLFormat()
+        glFormat.DisableAlphaBuffer()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
             glFormat.setSampleBuffers(True)
@@ -1102,8 +1104,7 @@ class StageView(QGLWidget):
                     for instanceIndex in primInstances:
                         renderer.AddSelected(prim.GetPath(), instanceIndex)
                 else:
-                    renderer.AddSelected(
-                        prim.GetPath(), UsdImagingGL.ALL_INSTANCES)
+                    renderer.AddSelected(prim.GetPath(), ALL_INSTANCES)
         except Tf.ErrorException as e:
             # If we encounter an error, we want to continue running. Just log
             # the error and continue.  The CatchAndRepostErrors decorator will

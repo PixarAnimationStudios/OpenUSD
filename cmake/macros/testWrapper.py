@@ -156,25 +156,38 @@ def _cleanOutput(pathPattern, fileName, verbose):
     _stripPath(fileName, pathPattern)
     return True
 
+def _readNormalized(path):
+    # Read as bytes so the comparison doesn't depend on the file's encoding,
+    # and normalize CRLF line endings so output generated on Windows
+    # matches the baselines.
+    with open(path, 'rb') as f:
+        return f.read().replace(b'\r\n', b'\n')
+
+def _diffTextFiles(baselineFile, fileToDiff):
+    import difflib
+    baseline = _readNormalized(baselineFile)
+    result = _readNormalized(fileToDiff)
+    if baseline == result:
+        return True
+
+    # Print a unified diff, similar to what "diff -u" would produce.
+    diffLines = difflib.diff_bytes(
+        difflib.unified_diff,
+        baseline.splitlines(keepends=True),
+        result.splitlines(keepends=True),
+        fromfile=os.fsencode(baselineFile),
+        tofile=os.fsencode(fileToDiff))
+    sys.stdout.flush()
+    sys.stdout.buffer.writelines(diffLines)
+    sys.stdout.buffer.flush()
+    return False
+
 def _diff(fileName, baselineDir, verbose, failuresDir=None):
-    # Use the diff program or equivalent, rather than filecmp or similar
+    # Use the diff program if available, rather than filecmp or similar
     # because it's possible we might want to specify other diff programs
-    # in the future.
-
-    import platform
-    isWindows = platform.system() == 'Windows'
-
+    # in the future. Otherwise fall back to a line-ending-agnostic
+    # comparison in python.
     diffTool = shutil.which('diff')
-    diffToolBaseArgs = ['--strip-trailing-cr']
-    if not diffTool and isWindows:
-        diffTool = 'fc.exe'
-        diffToolBaseArgs = ['/t']
-
-    if not diffTool:
-        sys.stderr.write(
-            "Error: could not find \"diff\" or \"fc.exe\" tool. "
-            "Make sure it's in your PATH.\n")
-        return False
 
     filesToDiff = glob.glob(fileName)
     if not filesToDiff:
@@ -184,12 +197,18 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
 
     for fileToDiff in filesToDiff:
         baselineFile = _resolvePath(baselineDir, fileToDiff)
-        cmd = [diffTool, *diffToolBaseArgs, baselineFile, fileToDiff]
-        if verbose:
-            print("diffing with {0}".format(cmd))
+        if diffTool:
+            cmd = [diffTool, '--strip-trailing-cr', baselineFile, fileToDiff]
+            if verbose:
+                print("diffing with {0}".format(cmd))
+            # This will print any diffs to stdout which is a nice side-effect
+            matched = subprocess.call(cmd) == 0
+        else:
+            if verbose:
+                print("diffing {0} and {1}".format(baselineFile, fileToDiff))
+            matched = _diffTextFiles(baselineFile, fileToDiff)
 
-        # This will print any diffs to stdout which is a nice side-effect
-        if subprocess.call(cmd) != 0:
+        if not matched:
             if failuresDir is not None:
                 _copyFailedDiffFiles(failuresDir, baselineFile, fileToDiff)
             return False

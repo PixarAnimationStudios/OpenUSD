@@ -317,6 +317,11 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                          << "   'samples' : " << GetTimes().size() << " }" << std::endl;
         }
     }
+
+    if (!GetSceneIndexOutputFilePath().empty()) {
+        WriteSceneIndexToFile(_engine.get(), GetSceneIndexOutputFilePath(),
+                              GetSceneIndexDumpMode());
+    }
 }
 
 void

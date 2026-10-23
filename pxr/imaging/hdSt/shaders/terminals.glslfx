@@ -390,6 +390,19 @@ ReprStyle GetReprStyle()
 --- --------------------------------------------------------------------------
 -- glsl Fragment.PointShaded
 
+#ifdef HD_HAS_integrateLights
+#ifndef HD_HAS_definedIntegrateLights
+#define HD_HAS_definedIntegrateLights
+
+LightingContribution
+integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
+{
+    return integrateLightsDefault(Peye, Neye, props);
+}
+
+#endif // HD_HAS_definedIntegrateLights
+#endif
+
 ReprStyle GetReprStyle()
 {
     vec4 pointColor = vec4(vec3(0.18), 1.0);

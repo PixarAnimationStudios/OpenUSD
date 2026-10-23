@@ -16,6 +16,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/trace/trace.h"
@@ -32,6 +33,10 @@ namespace {
 // Constants for constructing GfInterval objects
 constexpr bool OPEN = false;
 constexpr bool CLOSED = true;
+
+// Env setting to disable inner looping deprecation warnings
+TF_DEFINE_ENV_SETTING(PXR_DISABLE_INNER_LOOPING_WARNINGS, false,
+                      "Disable warnings about inner looping deprecation.");
 
 } // annonymous namespace
 
@@ -216,7 +221,9 @@ void TsSpline::SetInnerLoopParams(
     const Ts_LoopParams &params)
 {
     static std::atomic_flag warned = ATOMIC_FLAG_INIT;
-    if (!warned.test_and_set()) {
+    if (!warned.test_and_set() &&
+        !TfGetEnvSetting(PXR_DISABLE_INNER_LOOPING_WARNINGS))
+    {
         TF_WARN("TsSpline inner looping is deprecated.");
     }
 
@@ -260,7 +267,9 @@ void TsSpline::_SetInnerLoopParams(
 Ts_LoopParams TsSpline::GetInnerLoopParams() const
 {
     static std::atomic_flag warned = ATOMIC_FLAG_INIT;
-    if (!warned.test_and_set()) {
+    if (!warned.test_and_set() &&
+        !TfGetEnvSetting(PXR_DISABLE_INNER_LOOPING_WARNINGS))
+    {
         TF_WARN("TsSpline inner looping is deprecated.");
     }
 
@@ -415,7 +424,9 @@ void TsSpline::RemoveKnot(
 bool TsSpline::BakeInnerLoops()
 {
     static std::atomic_flag warned = ATOMIC_FLAG_INIT;
-    if (!warned.test_and_set()) {
+    if (!warned.test_and_set() &&
+        !TfGetEnvSetting(PXR_DISABLE_INNER_LOOPING_WARNINGS))
+    {
         TF_WARN("TsSpline inner looping is deprecated.");
     }
 
@@ -450,7 +461,9 @@ bool TsSpline::_BakeInnerLoops()
 TsKnotMap TsSpline::GetKnotsWithInnerLoopsBaked() const
 {
     static std::atomic_flag warned = ATOMIC_FLAG_INIT;
-    if (!warned.test_and_set()) {
+    if (!warned.test_and_set() &&
+        !TfGetEnvSetting(PXR_DISABLE_INNER_LOOPING_WARNINGS))
+    {
         TF_WARN("TsSpline inner looping is deprecated.");
     }
 
@@ -813,7 +826,9 @@ bool TsSpline::HasLoops() const
 bool TsSpline::HasInnerLoops() const
 {
     static std::atomic_flag warned = ATOMIC_FLAG_INIT;
-    if (!warned.test_and_set()) {
+    if (!warned.test_and_set() &&
+        !TfGetEnvSetting(PXR_DISABLE_INNER_LOOPING_WARNINGS))
+    {
         TF_WARN("TsSpline inner looping is deprecated.");
     }
 

@@ -96,7 +96,6 @@ int main(int argc, char *argv[])
     delegate->WriteRenderBufferToFile(colorAovId, "color2.png");
 
     // update collection
-    index->GetChangeTracker().AddCollection(_tokens->testCollection);
     HdRprimCollection collection(_tokens->testCollection,
         HdReprSelector(HdReprTokens->wire));
     delegate->SetTaskParam(renderTask1, HdTokens->collection, VtValue(collection));

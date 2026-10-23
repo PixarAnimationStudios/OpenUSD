@@ -7,6 +7,7 @@
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/material.h"
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/utils.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -375,8 +376,8 @@ _ProcessUVTextureNode(
         }
         std::string ext = ArGetResolver().GetExtension(path);
 
-        if (!ext.empty() && !HdPrmanMaterial::IsTexExt(ext) &&
-            !_RtxPath(path)) {
+        if (!_RtxPath(path) &&
+            HdPrman_Utils::IsRtxHioNeeded(path)) {
             std::string pluginName = 
                 std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
             // Check for wrap mode. In Renderman, the
@@ -427,7 +428,7 @@ _ProcessUVTextureNode(
             netInterface->SetNodeParameterValue(
                 nodeName, _tokens->file, VtValue(path));
 
-        } else if (HdPrmanMaterial::IsTexExt(ext)) {
+        } else if (!HdPrman_Utils::IsRtxHioNeeded(path)) {
             // USD Preview Materials use a texture coordinate
             // convention where (0,0) is in the bottom-left;
             // RenderMan's texture system uses a convention
