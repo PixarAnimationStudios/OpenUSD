@@ -24,6 +24,7 @@
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/usd/usdGeom/metrics.h"
 
@@ -31,6 +32,7 @@
 
 #include "pxr/usd/usdPhysics/parseUtils.h"
 #include "pxr/usd/usdPhysics/parseDesc.h"
+#include "pxr/usd/usdPhysics/bodyResolution.h"
 
 #include "pxr/usd/usdPhysics/scene.h"
 #include "pxr/usd/usdPhysics/collisionGroup.h"
@@ -59,6 +61,7 @@
 
 #include <algorithm>
 #include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -922,117 +925,33 @@ bool _ParseCollisionGroupDesc(const UsdPhysicsCollisionGroup& collisionGroup,
     return true;
 }
 
-// Get joint rel target
-SdfPath _GetRel(const UsdRelationship& ref, const UsdPrim& jointPrim)
+// Resolve one side of a joint from its relationship's target prim, returning
+// the owning body path and rebasing the authored local pose in place.
+SdfPath _FinalizeJointSide(const UsdPrim& target,
+                           UsdGeomXformCache* xformCache,
+                           GfVec3f* localPosition, GfQuatf* localOrientation)
 {
-    SdfPathVector targets;
-    ref.GetTargets(&targets);
-
-    if (targets.size() == 0)
-    {
-        return SdfPath();
-    }
-    return targets.at(0);
-}
-
-// Get body for a given path, the body can be on a parent prim
-UsdPrim _GetBodyPrim(UsdStageWeakPtr stage, const SdfPath& relPath, 
-                    UsdPrim& relPrim)
-{
-    UsdPrim parent = stage->GetPrimAtPath(relPath);
-    relPrim = parent;
-    UsdPrim collisionPrim = UsdPrim();
-    while (parent && parent != stage->GetPseudoRoot())
-    {
-        const UsdPhysicsRigidBodyAPI rigidBodyAPI(parent);
-        if (rigidBodyAPI)
-        {
-            // A disabled body takes no part in simulation and does not own
-            // this prim, so keep searching the ancestors as though the API
-            // were not applied at all.
-            bool rigidBodyEnabled = true;
-            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
-            if (rigidBodyEnabled)
-            {
-                return parent;
-            }
-        }
-        if (parent.HasAPI<UsdPhysicsCollisionAPI>())
-        {
-            collisionPrim = parent;
-        }
-        parent = parent.GetParent();
-    }
-
-    return collisionPrim;
-}
-
-// Get joint local pose base on provided body rel path
-SdfPath _GetLocalPose(UsdStageWeakPtr stage, const SdfPath& relPath, GfVec3f* outT,
-    GfQuatf* outQ)
-{
-    UsdPrim relPrim;
-    const UsdPrim body = _GetBodyPrim(stage, relPath, relPrim);
-
-    // get scale and apply it into localPositions vectors
-    const UsdGeomXformable xform(relPrim);
-    const GfMatrix4d worldRel = relPrim ? xform.ComputeLocalToWorldTransform(
-        UsdTimeCode::Default()) : GfMatrix4d(1.0);
-
-    // we need to apply scale to the localPose, the scale comes from the rigid 
-    // body
-    GfVec3f sc;
-    // if we had a rel not to rigid body, we need to recompute the localPose
-    if (relPrim != body)
-    {
-        GfMatrix4d localAnchor;
-        localAnchor.SetIdentity();
-        localAnchor.SetTranslate(GfVec3d(*outT));
-        localAnchor.SetRotateOnly(GfQuatd(*outQ));
-
-        GfMatrix4d bodyMat;
-        if (body)
-        {
-            bodyMat = UsdGeomXformable(body).ComputeLocalToWorldTransform(
-                UsdTimeCode::Default());
-        }
-        else
-        {
-            bodyMat.SetIdentity();
-        }
-
-        const GfMatrix4d worldAnchor = localAnchor * worldRel;
-        GfMatrix4d bodyLocalAnchor = worldAnchor * bodyMat.GetInverse();
-        bodyLocalAnchor = bodyLocalAnchor.RemoveScaleShear();
-
-        *outT = GfVec3f(bodyLocalAnchor.ExtractTranslation());
-        *outQ = GfQuatf(bodyLocalAnchor.ExtractRotationQuat());
-        outQ->Normalize();
-
-        const GfTransform tr(bodyMat);
-        sc = GfVec3f(tr.GetScale());
-    }
-    else
-    {
-        const GfTransform tr(worldRel);
-        sc = GfVec3f(tr.GetScale());
-    }
-
-    // apply the scale, this is not obvious, but in physics there is no scale, 
-    // so we need to apply it before its send to physics
-    for (int i = 0; i < 3; i++)
-    {
-        (*outT)[i] *= sc[i];
-    }
-
+    const GfVec3f authoredPosition = *localPosition;
+    const GfQuatf authoredOrientation = *localOrientation;
+    const UsdPrim body = UsdPhysics_ResolveJointSide(
+        target, authoredPosition, authoredOrientation, xformCache,
+        localPosition, localOrientation);
     return body ? body.GetPrimPath() : SdfPath();
 }
 
 // Finalize joint desc
 void _FinalizeJoint(const UsdPhysicsJoint& jointPrim, 
+                   UsdGeomXformCache* xformCache,
                    UsdPhysicsJointDesc* outJointDesc)
 {
-    // joint bodies anchor point local transforms    
+    // Read each side's target once, then resolve its owning body and the
+    // joint-local anchor pose in that body's frame through the same functions
+    // as UsdPhysicsJoint::GetBody0 / GetLocalPose0 (see bodyResolution.h).
+    const UsdPrim target0 = UsdPhysics_GetJointBodyTarget(
+        jointPrim.GetBody0Rel(), &outJointDesc->rel0);
+    const UsdPrim target1 = UsdPhysics_GetJointBodyTarget(
+        jointPrim.GetBody1Rel(), &outJointDesc->rel1);
+
     GfVec3f t0(0.f);
     GfVec3f t1(0.f);
     GfQuatf q0(1.f);
@@ -1042,21 +961,8 @@ void _FinalizeJoint(const UsdPhysicsJoint& jointPrim,
     jointPrim.GetLocalPos1Attr().Get(&t1);
     jointPrim.GetLocalRot1Attr().Get(&q1);
 
-    q0.Normalize();
-    q1.Normalize();
-
-    UsdStageWeakPtr stage = jointPrim.GetPrim().GetStage();
-
-    // get scale and apply it into localPositions vectors
-    if (outJointDesc->rel0 != SdfPath())
-    {
-        outJointDesc->body0 = _GetLocalPose(stage, outJointDesc->rel0, &t0, &q0);
-    }
-
-    if (outJointDesc->rel1 != SdfPath())
-    {
-        outJointDesc->body1 = _GetLocalPose(stage, outJointDesc->rel1, &t1, &q1);
-    }
+    outJointDesc->body0 = _FinalizeJointSide(target0, xformCache, &t0, &q0);
+    outJointDesc->body1 = _FinalizeJointSide(target1, xformCache, &t1, &q1);
 
     outJointDesc->localPose0Position = t0;
     outJointDesc->localPose0Orientation = q0;
@@ -1066,6 +972,7 @@ void _FinalizeJoint(const UsdPhysicsJoint& jointPrim,
 
 // Parse common joint parameters
 bool _ParseCommonJointDesc(const UsdPhysicsJoint& jointPrim, 
+                          UsdGeomXformCache* xformCache,
                           UsdPhysicsJointDesc* outJointDesc)
 {
     const UsdPrim prim = jointPrim.GetPrim();
@@ -1080,22 +987,21 @@ bool _ParseCommonJointDesc(const UsdPhysicsJoint& jointPrim,
     jointPrim.GetExcludeFromArticulationAttr().Get(
         &outJointDesc->excludeFromArticulation);
 
-    outJointDesc->rel0 = _GetRel(jointPrim.GetBody0Rel(), prim);
-    outJointDesc->rel1 = _GetRel(jointPrim.GetBody1Rel(), prim);
-
-    _FinalizeJoint(jointPrim, outJointDesc);
+    _FinalizeJoint(jointPrim, xformCache, outJointDesc);
 
     return true;
 }
 
 // Parse distance joint desc
 bool _ParseDistanceJointDesc(const UsdPhysicsDistanceJoint& distanceJoint,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsDistanceJointDesc* outDistanceJointDesc)
 {
     if (outDistanceJointDesc && distanceJoint)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(distanceJoint, outDistanceJointDesc))
+        if (!_ParseCommonJointDesc(distanceJoint, xformCache,
+                                   outDistanceJointDesc))
         {
             return false;
         }
@@ -1159,12 +1065,14 @@ bool _ParseDrive(const UsdPhysicsDriveAPI& drive,
 
 // Parse fixed joint desc
 bool _ParseFixedJointDesc(const UsdPhysicsFixedJoint& fixedJoint,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsFixedJointDesc* outFixedJointDesc)
 {
     if (outFixedJointDesc && fixedJoint)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(fixedJoint, outFixedJointDesc))
+        if (!_ParseCommonJointDesc(fixedJoint, xformCache,
+                                   outFixedJointDesc))
         {
             return false;
         }
@@ -1207,12 +1115,14 @@ bool _ParseLimit(const UsdPhysicsLimitAPI& limit,
 
 // Parse generic D6 joint desc
 bool _ParseD6JointDesc(const UsdPhysicsJoint& jointPrim, 
+                      UsdGeomXformCache* xformCache,
                       UsdPhysicsD6JointDesc* outJointDesc)
 {
     if (outJointDesc && jointPrim)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(jointPrim, outJointDesc))
+        if (!_ParseCommonJointDesc(jointPrim, xformCache,
+                                   outJointDesc))
         {
             return false;
         }
@@ -1275,12 +1185,14 @@ bool _ParseD6JointDesc(const UsdPhysicsJoint& jointPrim,
 
 // Parse custom joint desc
 bool _ParseCustomJointDesc(const UsdPhysicsJoint& jointPrim,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsCustomJointDesc* outCustomJointDesc)
 {
     if (outCustomJointDesc && jointPrim)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(jointPrim, outCustomJointDesc))
+        if (!_ParseCommonJointDesc(jointPrim, xformCache,
+                                   outCustomJointDesc))
         {
             return false;
         }
@@ -1338,12 +1250,14 @@ bool _ParseLinearDrive(const UsdPrim& usdPrim, UsdPhysicsJointDrive* outDst)
 
 // Parse prismatic joint desc
 bool _ParsePrismaticJointDesc(const UsdPhysicsPrismaticJoint& prismaticJoint,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsPrismaticJointDesc* outPrismaticJointDesc)
 {
     if (outPrismaticJointDesc && prismaticJoint)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(prismaticJoint, outPrismaticJointDesc))
+        if (!_ParseCommonJointDesc(prismaticJoint, xformCache,
+                                   outPrismaticJointDesc))
         {
             return false;
         }
@@ -1403,12 +1317,14 @@ bool _ParseAngularDrive(const UsdPrim& usdPrim, UsdPhysicsJointDrive* outDst)
 
 // Parse revolute joint desc
 bool _ParseRevoluteJointDesc(const UsdPhysicsRevoluteJoint& revoluteJoint,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsRevoluteJointDesc* outRevoluteJointDesc)
 {
     if (outRevoluteJointDesc && revoluteJoint)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(revoluteJoint, outRevoluteJointDesc))
+        if (!_ParseCommonJointDesc(revoluteJoint, xformCache,
+                                   outRevoluteJointDesc))
         {
             return false;
         }
@@ -1517,12 +1433,14 @@ bool _ParseRigidBodyDesc(const UsdPhysicsRigidBodyAPI& rigidBodyAPI,
 
 // Parse spherical joint desc
 bool _ParseSphericalJointDesc(const UsdPhysicsSphericalJoint& sphericalJoint,
+    UsdGeomXformCache* xformCache,
     UsdPhysicsSphericalJointDesc* outSphericalJointDesc)
 {
     if (outSphericalJointDesc && sphericalJoint)
     {
         // parse the joint common parameters
-        if (!_ParseCommonJointDesc(sphericalJoint, outSphericalJointDesc))
+        if (!_ParseCommonJointDesc(sphericalJoint, xformCache,
+                                   outSphericalJointDesc))
         {
             return false;
         }
@@ -2908,36 +2826,49 @@ bool UsdPhysicsLoadStageFromPrimRange(
     _ProcessPhysicsPrims<UsdPhysicsRigidBodyMaterialDesc, UsdPhysicsMaterialAPI>
         (materialPrims, materialDescs, _ParseRigidBodyMaterialDesc);
 
-    // Joints
+    // Joints. Each thread keeps one xform cache across all joint types, since
+    // joints commonly share bodies and anchors, and UsdGeomXformCache is not
+    // thread-safe.
+    tbb::enumerable_thread_specific<UsdGeomXformCache> jointXformCaches;
+    const auto withXformCache = [&jointXformCaches](auto parseFn) {
+        return [&jointXformCaches, parseFn](const auto& joint, auto* desc) {
+            return parseFn(joint, &jointXformCaches.local(), desc);
+        };
+    };
+
     std::vector<UsdPhysicsD6JointDesc> jointDescs;
     _ProcessPhysicsPrims<UsdPhysicsD6JointDesc, UsdPhysicsJoint>
-        (physicsD6JointPrims, jointDescs, _ParseD6JointDesc);
+        (physicsD6JointPrims, jointDescs, withXformCache(_ParseD6JointDesc));
 
     std::vector<UsdPhysicsRevoluteJointDesc> revoluteJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsRevoluteJointDesc, UsdPhysicsRevoluteJoint>
-        (physicsRevoluteJointPrims, revoluteJointDescs, _ParseRevoluteJointDesc);
+        (physicsRevoluteJointPrims, revoluteJointDescs,
+         withXformCache(_ParseRevoluteJointDesc));
 
     std::vector<UsdPhysicsPrismaticJointDesc> prismaticJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsPrismaticJointDesc, UsdPhysicsPrismaticJoint>
         (physicsPrismaticJointPrims, prismaticJointDescs, 
-         _ParsePrismaticJointDesc);
+         withXformCache(_ParsePrismaticJointDesc));
 
     std::vector<UsdPhysicsSphericalJointDesc> sphericalJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsSphericalJointDesc, UsdPhysicsSphericalJoint>
         (physicsSphericalJointPrims, sphericalJointDescs, 
-         _ParseSphericalJointDesc);
+         withXformCache(_ParseSphericalJointDesc));
 
     std::vector<UsdPhysicsFixedJointDesc> fixedJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsFixedJointDesc, UsdPhysicsFixedJoint>
-        (physicsFixedJointPrims, fixedJointDescs, _ParseFixedJointDesc);
+        (physicsFixedJointPrims, fixedJointDescs,
+         withXformCache(_ParseFixedJointDesc));
 
     std::vector<UsdPhysicsDistanceJointDesc> distanceJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsDistanceJointDesc, UsdPhysicsDistanceJoint>
-        (physicsDistanceJointPrims, distanceJointDescs, _ParseDistanceJointDesc);
+        (physicsDistanceJointPrims, distanceJointDescs,
+         withXformCache(_ParseDistanceJointDesc));
 
     std::vector<UsdPhysicsCustomJointDesc> customJointDescs;
     _ProcessPhysicsPrims<UsdPhysicsCustomJointDesc, UsdPhysicsJoint>
-        (physicsCustomJointPrims, customJointDescs, _ParseCustomJointDesc);
+        (physicsCustomJointPrims, customJointDescs,
+         withXformCache(_ParseCustomJointDesc));
 
     // A.B. construct joint map revisit    
     JointMap jointMap;

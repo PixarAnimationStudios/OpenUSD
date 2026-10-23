@@ -313,3 +313,223 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/bodyResolution.h"
+#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/base/gf/transform.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Walk from \p prim up the ancestor hierarchy to the nearest enabled
+// UsdPhysicsRigidBodyAPI prim, which is the rigid body that owns \p prim. A
+// body whose physics:rigidBodyEnabled resolves to false takes no part in
+// simulation and is skipped. Returns an invalid prim when there is no enabled
+// body in the ancestry.
+static UsdPrim
+_FindEnclosingBody(const UsdPrim& prim)
+{
+    UsdPrim cur = prim;
+    while (cur && !cur.IsPseudoRoot())
+    {
+        const UsdPhysicsRigidBodyAPI rigidBodyAPI(cur);
+        if (rigidBodyAPI)
+        {
+            bool rigidBodyEnabled = true;
+            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
+            if (rigidBodyEnabled)
+            {
+                return cur;
+            }
+        }
+        cur = cur.GetParent();
+    }
+
+    return UsdPrim();
+}
+
+UsdPrim
+UsdPhysics_GetJointBodyTarget(const UsdRelationship& bodyRel,
+                              SdfPath* targetPath)
+{
+    SdfPathVector targets;
+    if (bodyRel)
+    {
+        bodyRel.GetTargets(&targets);
+    }
+    const SdfPath path = targets.empty() ? SdfPath() : targets.front();
+    if (targetPath)
+    {
+        *targetPath = path;
+    }
+    if (path.IsEmpty())
+    {
+        return UsdPrim();
+    }
+    return bodyRel.GetPrim().GetStage()->GetPrimAtPath(path);
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody0() const
+{
+    return _FindEnclosingBody(UsdPhysics_GetJointBodyTarget(GetBody0Rel()));
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody1() const
+{
+    return _FindEnclosingBody(UsdPhysics_GetJointBodyTarget(GetBody1Rel()));
+}
+
+// Local-to-world for \p prim, using \p cache when one is supplied so repeated
+// resolutions across a nested mechanism (e.g. a Franka arm) reuse ancestor
+// transforms instead of walking to the root every call.
+static GfMatrix4d
+_LocalToWorld(const UsdPrim& prim, UsdGeomXformCache* cache)
+{
+    if (!prim)
+    {
+        return GfMatrix4d(1.0);
+    }
+    if (cache)
+    {
+        return cache->GetLocalToWorldTransform(prim);
+    }
+    return UsdGeomXformable(prim).ComputeLocalToWorldTransform(
+        UsdTimeCode::Default());
+}
+
+UsdPrim
+UsdPhysics_ResolveJointSide(const UsdPrim& target,
+                            const GfVec3f& authoredPosition,
+                            const GfQuatf& authoredOrientation,
+                            UsdGeomXformCache* xformCache,
+                            GfVec3f* outPosition,
+                            GfQuatf* outOrientation)
+{
+    GfVec3f position = authoredPosition;
+    GfQuatf orientation = authoredOrientation;
+    orientation.Normalize();
+
+    // With no target (an unset or dangling relationship) there is no frame to
+    // rebase into or scale to bake, so the side is anchored to the world at
+    // its authored local pose.
+    if (!target)
+    {
+        *outPosition = position;
+        *outOrientation = orientation;
+        return UsdPrim();
+    }
+
+    // Resolve the nearest enclosing enabled body. When one exists and it is a
+    // proper ancestor of the target, the authored pose is expressed against the
+    // target and must be rebased into the body's frame. When no enclosing body
+    // exists the target is owned by the world (a static collider): the
+    // authored pose is still expressed against the target, so it must be
+    // rebased into the world frame rather than passed through, or the
+    // target's own placement is lost. Only when the target is itself the body
+    // is the authored pose already in the right frame and just scaled.
+    const UsdPrim body = _FindEnclosingBody(target);
+
+    GfVec3f scale;
+    if (body != target)
+    {
+        // body is either a proper ancestor of the target, or invalid (the
+        // world). Rebase the authored anchor from the target frame into the
+        // owning body's frame; the world body is identity, so its inverse is
+        // identity and the anchor stays in world.
+        const GfMatrix4d worldRel = _LocalToWorld(target, xformCache);
+        const GfMatrix4d bodyMat =
+            body ? _LocalToWorld(body, xformCache) : GfMatrix4d(1.0);
+
+        GfMatrix4d localAnchor;
+        localAnchor.SetIdentity();
+        localAnchor.SetTranslate(GfVec3d(position));
+        localAnchor.SetRotateOnly(GfQuatd(orientation));
+
+        const GfMatrix4d worldAnchor = localAnchor * worldRel;
+        GfMatrix4d bodyLocalAnchor = worldAnchor * bodyMat.GetInverse();
+        bodyLocalAnchor = bodyLocalAnchor.RemoveScaleShear();
+
+        position = GfVec3f(bodyLocalAnchor.ExtractTranslation());
+        orientation = GfQuatf(bodyLocalAnchor.ExtractRotationQuat());
+        orientation.Normalize();
+
+        scale = GfVec3f(GfTransform(bodyMat).GetScale());
+    }
+    else
+    {
+        scale = GfVec3f(
+            GfTransform(_LocalToWorld(target, xformCache)).GetScale());
+    }
+
+    // Physics simulation has no notion of scale, so the resolved frame's scale
+    // is baked into the local translation here.
+    for (int i = 0; i < 3; ++i)
+    {
+        position[i] *= scale[i];
+    }
+
+    *outPosition = position;
+    *outOrientation = orientation;
+    return body;
+}
+
+// Compute the joint's local pose for one body relationship, in the frame of the
+// prim the joint attaches to. Seeds from the authored localPos/localRot for that
+// side, then rebases into the attachment frame when the rel target is not itself
+// the attachment prim (e.g. a collider under the body, or an arbitrary anchor
+// prim), and folds in that frame's scale. The out pose is always written: an
+// unset or dangling relationship yields the authored local pose unchanged,
+// since there is no resolved frame to rebase into or scale to bake. Returns
+// false only for a dangling relationship (target does not resolve to a prim on
+// the stage); an unset relationship succeeds with the authored world-anchor
+// pose.
+static bool
+_ComputeJointLocalPose(const UsdRelationship& bodyRel,
+                       const GfVec3f& authoredPosition,
+                       const GfQuatf& authoredOrientation,
+                       UsdGeomXformCache* cache,
+                       GfVec3f* outPosition,
+                       GfQuatf* outOrientation)
+{
+    SdfPath targetPath;
+    const UsdPrim target = UsdPhysics_GetJointBodyTarget(bodyRel, &targetPath);
+    UsdPhysics_ResolveJointSide(target, authoredPosition, authoredOrientation,
+                                cache, outPosition, outOrientation);
+
+    // An unset relationship and a dangling one both pass the authored pose
+    // through. The return value distinguishes them: an unset relationship is a
+    // valid world anchor (true), while a dangling relationship is malformed
+    // authoring (false).
+    return targetPath.IsEmpty() || target;
+}
+
+bool
+UsdPhysicsJoint::GetLocalPose0(GfVec3f* position, GfQuatf* orientation,
+                               UsdGeomXformCache* xformCache) const
+{
+    GfVec3f authoredPosition(0.0f);
+    GfQuatf authoredOrientation(1.0f);
+    GetLocalPos0Attr().Get(&authoredPosition);
+    GetLocalRot0Attr().Get(&authoredOrientation);
+    return _ComputeJointLocalPose(GetBody0Rel(), authoredPosition,
+                                  authoredOrientation, xformCache,
+                                  position, orientation);
+}
+
+bool
+UsdPhysicsJoint::GetLocalPose1(GfVec3f* position, GfQuatf* orientation,
+                               UsdGeomXformCache* xformCache) const
+{
+    GfVec3f authoredPosition(0.0f);
+    GfQuatf authoredOrientation(1.0f);
+    GetLocalPos1Attr().Get(&authoredPosition);
+    GetLocalRot1Attr().Get(&authoredOrientation);
+    return _ComputeJointLocalPose(GetBody1Rel(), authoredPosition,
+                                  authoredOrientation, xformCache,
+                                  position, orientation);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

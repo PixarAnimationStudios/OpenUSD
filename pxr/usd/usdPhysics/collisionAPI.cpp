@@ -155,3 +155,35 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdPrim
+UsdPhysicsCollisionAPI::GetBody() const
+{
+    // Walk from this collider up the ancestor hierarchy and return the nearest
+    // prim with an enabled UsdPhysicsRigidBodyAPI. A disabled body takes no
+    // part in simulation and does not own this collider, so keep searching as
+    // though the API were not applied at all.
+    UsdPrim prim = GetPrim();
+    while (prim && !prim.IsPseudoRoot())
+    {
+        const UsdPhysicsRigidBodyAPI rigidBodyAPI(prim);
+        if (rigidBodyAPI)
+        {
+            bool rigidBodyEnabled = true;
+            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
+            if (rigidBodyEnabled)
+            {
+                return prim;
+            }
+        }
+        prim = prim.GetParent();
+    }
+
+    return UsdPrim();
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

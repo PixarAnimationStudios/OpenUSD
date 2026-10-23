@@ -1,0 +1,454 @@
+#!/pxrpythonsubst
+#
+# Copyright 2026 Pixar
+#
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
+
+from __future__ import print_function
+
+import unittest
+from pxr import Gf, Usd, Sdf, UsdGeom, UsdPhysics
+
+
+class TestUsdPhysicsJoint(unittest.TestCase):
+
+    def setup_scene(self):
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+        self.stage = stage
+        UsdGeom.SetStageUpAxis(stage, "Z")
+        UsdGeom.SetStageMetersPerUnit(stage, 1.0)
+
+    def assertQuatClose(self, actual, expected, eps=1e-5):
+        """Assert two quaternions represent the same rotation. q and -q are the
+        same rotation, so compare by |dot| ~ 1 rather than component-wise; a
+        component compare spuriously fails when a platform returns the negated
+        (but equivalent) quaternion.
+        """
+        actual = Gf.Quatf(actual).GetNormalized()
+        expected = Gf.Quatf(expected).GetNormalized()
+        dot = (actual.real * expected.real
+               + Gf.Dot(actual.imaginary, expected.imaginary))
+        self.assertTrue(abs(dot) > 1.0 - eps,
+                        "%s not the same rotation as %s (|dot|=%r)"
+                        % (actual, expected, abs(dot)))
+
+    def test_get_body_resolves_to_owning_body(self):
+        self.setup_scene()
+
+        # A rigid body with a collider nested below it. The joint's body rel
+        # points at the collider, not the body; GetBody0 walks the ancestors
+        # and reports the owning rigid body.
+        body0 = UsdGeom.Xform.Define(self.stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+        collider0 = UsdGeom.Cube.Define(self.stage, "/body0/geo/collider")
+        UsdPhysics.CollisionAPI.Apply(collider0.GetPrim())
+
+        body1 = UsdGeom.Xform.Define(self.stage, "/body1")
+        UsdPhysics.RigidBodyAPI.Apply(body1.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider0.GetPrim().GetPath()])
+        joint.CreateBody1Rel().SetTargets([body1.GetPrim().GetPath()])
+
+        self.assertEqual(joint.GetBody0().GetPath(),
+                         body0.GetPrim().GetPath())
+        self.assertEqual(joint.GetBody1().GetPath(),
+                         body1.GetPrim().GetPath())
+
+    def test_get_body_skips_disabled_body(self):
+        self.setup_scene()
+
+        # A collider below a DISABLED nested body. The disabled body takes no
+        # part in simulation, so the joint resolves to the nearest enabled body
+        # above it.
+        outer = UsdGeom.Xform.Define(self.stage, "/outer")
+        UsdPhysics.RigidBodyAPI.Apply(outer.GetPrim())
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/outer/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        collider = UsdGeom.Cube.Define(
+            self.stage, "/outer/disabledBody/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        self.assertEqual(joint.GetBody0().GetPath(),
+                         outer.GetPrim().GetPath())
+
+    def test_get_body_unset_or_no_enabled_body(self):
+        self.setup_scene()
+
+        body0 = UsdGeom.Xform.Define(self.stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([body0.GetPrim().GetPath()])
+
+        # body1 has no target set: a joint with an unset body attaches to the
+        # simulation world, so GetBody1 returns an invalid prim.
+        self.assertFalse(joint.GetBody1())
+
+        # A body rel pointing at a subtree with only a disabled body has no
+        # enabled owner and resolves to an invalid prim.
+        disabled = UsdGeom.Xform.Define(self.stage, "/disabled")
+        disabledAPI = UsdPhysics.RigidBodyAPI.Apply(disabled.GetPrim())
+        disabledAPI.GetRigidBodyEnabledAttr().Set(False)
+        collider = UsdGeom.Cube.Define(self.stage, "/disabled/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+        joint.GetBody1Rel().SetTargets([collider.GetPrim().GetPath()])
+        self.assertFalse(joint.GetBody1())
+
+    def test_get_local_pose_unset_is_world_anchor(self):
+        self.setup_scene()
+
+        body0 = UsdGeom.Xform.Define(self.stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([body0.GetPrim().GetPath()])
+
+        # body1 is unset: the joint anchors to the world. This is a well defined
+        # pose (the authored local pose), not a failure. GetLocalPose1
+        # succeeds and returns the authored values (identity here).
+        pose1 = joint.GetLocalPose1()
+        self.assertTrue(pose1)
+        position1, orientation1 = pose1
+        self.assertEqual(position1, Gf.Vec3f(0.0, 0.0, 0.0))
+        self.assertEqual(orientation1, Gf.Quatf(1.0))
+
+        # An unset side with an authored world-anchor pose returns that pose:
+        # both position and orientation pass through unchanged.
+        authored_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
+        joint.CreateLocalPos1Attr().Set(Gf.Vec3f(7.0, 8.0, 9.0))
+        joint.CreateLocalRot1Attr().Set(authored_rot)
+        position1, orientation1 = joint.GetLocalPose1()
+        self.assertEqual(position1, Gf.Vec3f(7.0, 8.0, 9.0))
+        self.assertTrue(Gf.IsClose(
+            Gf.Vec4f(orientation1.real, *orientation1.imaginary),
+            Gf.Vec4f(authored_rot.real, *authored_rot.imaginary), 1e-6))
+
+        # A non-unit authored orientation is normalized on the way out.
+        joint.CreateLocalRot1Attr().Set(Gf.Quatf(2.0, Gf.Vec3f(0.0, 0.0, 0.0)))
+        _, orientation1 = joint.GetLocalPose1()
+        self.assertEqual(orientation1, Gf.Quatf(1.0))
+
+        # body0 targets the body directly, so the authored pose passes through
+        # unchanged (no scale on the body frame).
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(1.0, 2.0, 3.0))
+        pose0 = joint.GetLocalPose0()
+        self.assertTrue(pose0)
+        position0, orientation0 = pose0
+        self.assertEqual(position0, Gf.Vec3f(1.0, 2.0, 3.0))
+        self.assertEqual(orientation0, Gf.Quatf(1.0))
+
+    def test_get_local_pose_dangling_target_fails(self):
+        self.setup_scene()
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        # A relationship target that does not resolve to a prim on the stage is
+        # malformed authoring. GetLocalPose reports failure, which the Python
+        # binding surfaces as an empty tuple. (In C++ the authored pose is
+        # still written to the out parameters so a caller can pass it through;
+        # the Python binding returns nothing on failure by convention.)
+        joint.CreateBody0Rel().SetTargets(["/does/not/exist"])
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(7.0, 8.0, 9.0))
+        self.assertEqual(joint.GetLocalPose0(), ())
+
+    def test_get_local_pose_bakes_scale(self):
+        self.setup_scene()
+
+        # A scaled body with a collider under it. The joint's rel points at the
+        # collider (not the body), so the authored local pose is rebased into
+        # the body frame and the body's scale is baked into the translation,
+        # because physics has no notion of scale.
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        body.AddScaleOp().Set(Gf.Vec3f(2.0, 2.0, 2.0))
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/body/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(1.0, 0.0, 0.0))
+
+        self.assertEqual(joint.GetBody0().GetPath(), body.GetPrim().GetPath())
+
+        pose0 = joint.GetLocalPose0()
+        self.assertTrue(pose0)
+        position, _ = pose0
+        # The collider sits at the body origin; the authored (1,0,0) is in the
+        # collider frame, which coincides with the body frame here, and the
+        # body's 2x scale is folded into the translation -> (2,0,0).
+        self.assertTrue(Gf.IsClose(position, Gf.Vec3f(2.0, 0.0, 0.0), 1e-5))
+
+    def test_get_local_pose_resolution_and_scale(self):
+        """GetLocalPose resolves the attachment frame and bakes its scale: a
+        collider resolves to its owning body; a target with no enclosing body is
+        owned by the world and its pose is rebased into world frame.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        UsdPhysics.Scene.Define(stage, "/scene")
+        UsdGeom.SetStageUpAxis(stage, "Z")
+        UsdGeom.SetStageMetersPerUnit(stage, 1.0)
+
+        # body0 -> a collider at the origin of a scaled body: resolves to the
+        # body, authored pose is already in the body frame, only the body's 2x
+        # scale is baked -> (2,0,0).
+        body = UsdGeom.Xform.Define(stage, "/body")
+        body.AddTranslateOp().Set(Gf.Vec3d(0.0, 3.0, 0.0))
+        body.AddScaleOp().Set(Gf.Vec3f(2.0, 2.0, 2.0))
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(stage, "/body/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        # body1 -> a non-body anchor root. With no enclosing body the joint is
+        # owned by the world (a static collider). The authored
+        # pose is expressed against the anchor prim, so it is rebased into world
+        # frame: the anchor's translation and scale both apply. Anchor is at
+        # (10,0,0) with 3x scale, authored local (1,0,0) -> 10 + 1*3 = (13,0,0).
+        anchor = UsdGeom.Xform.Define(stage, "/anchor")
+        anchor.AddTranslateOp().Set(Gf.Vec3d(10.0, 0.0, 0.0))
+        anchor.AddScaleOp().Set(Gf.Vec3f(3.0, 3.0, 3.0))
+
+        joint = UsdPhysics.FixedJoint.Define(stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        joint.CreateBody1Rel().SetTargets([anchor.GetPrim().GetPath()])
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(1.0, 0.0, 0.0))
+        joint.CreateLocalPos1Attr().Set(Gf.Vec3f(1.0, 0.0, 0.0))
+
+        # body0 resolves to a real body; body1 has no enclosing body.
+        self.assertEqual(joint.GetBody0().GetPath(), body.GetPrim().GetPath())
+        self.assertFalse(joint.GetBody1())
+
+        pos0, _ = joint.GetLocalPose0()
+        pos1, _ = joint.GetLocalPose1()
+        # body0 goes through the body-frame rebasing path; allow for float
+        # round-off. body1 has no enclosing body, so its pose is rebased into
+        # world frame: the anchor's translation (10) plus the scaled authored
+        # offset (1*3) give (13,0,0).
+        self.assertTrue(Gf.IsClose(pos0, Gf.Vec3f(2.0, 0.0, 0.0), 1e-5))
+        self.assertTrue(Gf.IsClose(pos1, Gf.Vec3f(13.0, 0.0, 0.0), 1e-5))
+
+        # An optional UsdGeomXformCache does not change the result on an
+        # unchanged stage.
+        cache = UsdGeom.XformCache()
+        cpos0, _ = joint.GetLocalPose0(cache)
+        cpos1, _ = joint.GetLocalPose1(cache)
+        self.assertEqual(cpos0, pos0)
+        self.assertEqual(cpos1, pos1)
+
+    def test_get_local_pose_uses_xform_cache(self):
+        """A supplied UsdGeomXformCache is actually consulted for the ancestor
+        transforms: it memoizes them, so an edit to an ancestor after the cache
+        is populated is not reflected until the cache is cleared, whereas an
+        uncached call sees the edit immediately.
+        """
+        self.setup_scene()
+
+        # A deep hierarchy so the body's world transform depends on several
+        # ancestors. The joint targets a collider under the body, so resolving
+        # the pose requires the body's world transform (the cached quantity).
+        root = UsdGeom.Xform.Define(self.stage, "/root")
+        root_scale = root.AddScaleOp()
+        root_scale.Set(Gf.Vec3f(1.0, 1.0, 1.0))
+        mid = UsdGeom.Xform.Define(self.stage, "/root/mid")
+        mid.AddTranslateOp().Set(Gf.Vec3d(0.0, 1.0, 0.0))
+        body = UsdGeom.Xform.Define(self.stage, "/root/mid/body")
+        body.AddScaleOp().Set(Gf.Vec3f(2.0, 2.0, 2.0))
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/root/mid/body/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(1.0, 0.0, 0.0))
+
+        # Body world scale is 1 * 2 = 2, so the baked position is (2,0,0).
+        cache = UsdGeom.XformCache()
+        cached_before, _ = joint.GetLocalPose0(cache)
+        self.assertEqual(cached_before, Gf.Vec3f(2.0, 0.0, 0.0))
+
+        # Scale an ancestor: the body's world scale is now 5 * 2 = 10.
+        root_scale.Set(Gf.Vec3f(5.0, 5.0, 5.0))
+
+        # The same (now stale) cache still returns the pre-edit transform,
+        # proving the cache was used rather than recomputed.
+        cached_after, _ = joint.GetLocalPose0(cache)
+        self.assertEqual(cached_after, Gf.Vec3f(2.0, 0.0, 0.0))
+
+        # An uncached call recomputes and reflects the edit.
+        fresh_after, _ = joint.GetLocalPose0()
+        self.assertEqual(fresh_after, Gf.Vec3f(10.0, 0.0, 0.0))
+
+        # After clearing, the cache recomputes and agrees with the uncached
+        # result.
+        cache.Clear()
+        cleared, _ = joint.GetLocalPose0(cache)
+        self.assertEqual(cleared, Gf.Vec3f(10.0, 0.0, 0.0))
+
+    def test_get_local_pose_world_owned_preserves_target_frame(self):
+        """A joint side whose target has no enclosing enabled body is owned by
+        the world (a static collider). Its authored pose is
+        expressed against the target prim, so it must be rebased into world
+        frame: the target's full placement (translation and rotation), not just
+        its scale, has to survive or the joint is anchored in the wrong place.
+        """
+        self.setup_scene()
+
+        # A standalone collider (CollisionAPI, no RigidBodyAPI) offset from the
+        # world origin and rotated 90 degrees about X.
+        collider = UsdGeom.Cube.Define(self.stage, "/collider")
+        xform = collider.AddTransformOp()
+        m = Gf.Matrix4d(1.0)
+        m.SetRotateOnly(Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 90.0))
+        m.SetTranslateOnly(Gf.Vec3d(0.0, 0.0, 10.0))
+        xform.Set(m)
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        # Authored local pose is identity: the resolved pose is then exactly the
+        # collider's own world placement.
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(0.0, 0.0, 0.0))
+        joint.CreateLocalRot0Attr().Set(Gf.Quatf(1.0))
+
+        # No enclosing enabled body -> world-owned.
+        self.assertFalse(joint.GetBody0())
+
+        pose0 = joint.GetLocalPose0()
+        self.assertTrue(pose0)
+        position0, orientation0 = pose0
+        # The collider's translation (0,0,10) and its 90-degree-about-X rotation
+        # are both preserved, not dropped.
+        self.assertTrue(Gf.IsClose(position0, Gf.Vec3f(0.0, 0.0, 10.0), 1e-5))
+        expected_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
+        self.assertQuatClose(orientation0, expected_rot)
+
+        # A non-identity authored offset composes on top of the collider
+        # frame, in both position and rotation. Authored pose is (0,1,0) with a
+        # 90-degree-about-Z rotation. The (0,1,0) offset, rotated by the
+        # collider's 90-about-X, maps +Y onto +Z, landing one unit above the
+        # collider origin -> (0, 0, 11). The resolved rotation is the collider's
+        # 90-about-X composed with the authored 90-about-Z.
+        authored_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 0, 1), 90.0).GetQuat())
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(0.0, 1.0, 0.0))
+        joint.CreateLocalRot0Attr().Set(authored_rot)
+        position0, orientation0 = joint.GetLocalPose0()
+        self.assertTrue(Gf.IsClose(position0, Gf.Vec3f(0.0, 0.0, 11.0), 1e-5))
+        collider_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(1, 0, 0), 90.0).GetQuat())
+        expected_composed = collider_rot * authored_rot
+        self.assertQuatClose(orientation0, expected_composed)
+
+    def test_getters_match_parser(self):
+        """The joint parser and the public getters resolve joint sides through
+        the same functions, so every parsed joint must report the bodies and
+        local poses GetBody0/1 and GetLocalPose0/1 return, with or without an
+        xform cache. A dangling side has no getter pose; the parser reports
+        its authored pose, normalized.
+        """
+        self.setup_scene()
+        stage = self.stage
+        UsdPhysics.Scene.Define(stage, "/physicsScene")
+
+        def define_body(path, translate, scale=None, enabled=True):
+            xform = UsdGeom.Xform.Define(stage, path)
+            xform.AddTranslateOp().Set(Gf.Vec3d(*translate))
+            if scale:
+                xform.AddScaleOp().Set(Gf.Vec3f(*scale))
+            bodyAPI = UsdPhysics.RigidBodyAPI.Apply(xform.GetPrim())
+            if not enabled:
+                bodyAPI.GetRigidBodyEnabledAttr().Set(False)
+            return xform.GetPrim().GetPath()
+
+        def define_collider(path, translate, rotateX):
+            cube = UsdGeom.Cube.Define(stage, path)
+            cube.AddTranslateOp().Set(Gf.Vec3d(*translate))
+            cube.AddRotateXOp().Set(rotateX)
+            UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+            return cube.GetPrim().GetPath()
+
+        # Each target exercises one resolution case: the body itself, a scaled
+        # body, a collider below a body, a collider below a disabled body with
+        # an enabled body above it, a nested body, a non-collider anchor below
+        # a body, and a world-owned static collider.
+        bodyA = define_body("/bodyA", (1, 2, 3))
+        bodyB = define_body("/bodyB", (-4, 0, 1), scale=(2, 2, 2))
+        colliderA = define_collider("/bodyA/geo/collider", (0, 0.5, 0), 30)
+        define_body("/outer", (0, 5, 0))
+        define_body("/outer/disabled", (1, 0, 0), enabled=False)
+        underDisabled = define_collider(
+            "/outer/disabled/collider", (0, 0, 2), 15)
+        nested = define_body("/outer/nested", (0, 0, 1))
+        anchor = UsdGeom.Xform.Define(stage, "/bodyB/anchor")
+        anchor.AddTranslateOp().Set(Gf.Vec3d(0.25, 0, 0))
+        anchor.AddRotateZOp().Set(45)
+        static = define_collider("/static", (0, 0, 10), 90)
+
+        # body0 targets, with None for an unset relationship and a path that
+        # does not exist for a dangling one.
+        authoredPos = Gf.Vec3f(0.1, 0.2, 0.3)
+        authoredRot = Gf.Quatf(0.9238795, Gf.Vec3f(0.3826834, 0, 0))
+        cases = [
+            (UsdPhysics.RevoluteJoint, bodyA, bodyB),
+            (UsdPhysics.FixedJoint, colliderA, anchor.GetPrim().GetPath()),
+            (UsdPhysics.PrismaticJoint, underDisabled, nested),
+            (UsdPhysics.SphericalJoint, static, bodyA),
+            (UsdPhysics.DistanceJoint, None, bodyB),
+            (UsdPhysics.Joint, Sdf.Path("/does/not/exist"), nested),
+        ]
+        joints = []
+        for index, (schema, target0, target1) in enumerate(cases):
+            joint = schema.Define(stage, "/joint%d" % index)
+            if target0 is not None:
+                joint.CreateBody0Rel().SetTargets([target0])
+            joint.CreateBody1Rel().SetTargets([target1])
+            joint.CreateLocalPos0Attr().Set(authoredPos)
+            joint.CreateLocalRot0Attr().Set(authoredRot)
+            joint.CreateLocalPos1Attr().Set(-authoredPos)
+            joint.CreateLocalRot1Attr().Set(authoredRot)
+            joints.append(joint)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+        parsed = {}
+        for prim_paths, descs in ret_dict.values():
+            for prim_path, desc in zip(prim_paths, descs):
+                if hasattr(desc, "body0"):
+                    parsed[prim_path] = desc
+        self.assertEqual(sorted(parsed),
+                         sorted(joint.GetPath() for joint in joints))
+
+        cache = UsdGeom.XformCache()
+        for joint in joints:
+            desc = parsed[joint.GetPath()]
+            sides = [
+                (joint.GetBody0Rel(), joint.GetBody0, joint.GetLocalPose0,
+                 desc.rel0, desc.body0, desc.localPose0Position,
+                 desc.localPose0Orientation, authoredPos),
+                (joint.GetBody1Rel(), joint.GetBody1, joint.GetLocalPose1,
+                 desc.rel1, desc.body1, desc.localPose1Position,
+                 desc.localPose1Orientation, -authoredPos),
+            ]
+            for (bodyRel, getBody, getLocalPose, parsedRel, parsedBody,
+                 parsedPos, parsedRot, sideAuthoredPos) in sides:
+                # rel0/rel1 report the authored first target, even when it is
+                # dangling and resolves to no body.
+                targets = bodyRel.GetTargets()
+                self.assertEqual(parsedRel,
+                                 targets[0] if targets else Sdf.Path())
+                body = getBody()
+                self.assertEqual(parsedBody,
+                                 body.GetPath() if body else Sdf.Path())
+                for pose in (getLocalPose(), getLocalPose(cache)):
+                    expectedPos, expectedRot = (
+                        pose if pose else (sideAuthoredPos, authoredRot))
+                    self.assertTrue(
+                        Gf.IsClose(parsedPos, expectedPos, 1e-5),
+                        "%s: parsed %s, getter %s"
+                        % (joint.GetPath(), parsedPos, expectedPos))
+                    self.assertQuatClose(parsedRot, expectedRot)
+
+
+if __name__ == "__main__":
+    unittest.main()
