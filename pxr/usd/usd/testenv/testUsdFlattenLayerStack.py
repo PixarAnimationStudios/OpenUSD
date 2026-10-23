@@ -630,6 +630,71 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         expectedTargets.explicitItems = [Sdf.Path('/A')]
         self.assertEqual(attrSpec.GetInfo('targetPaths'), expectedTargets)
 
+    def test_FlattenPreservesReferenceTimeSemanticsAcrossTcps(self):
+        """Flattening must preserve composed animation timing when references
+        and payloads survive into a layer with a different frame rate."""
+
+        testCases = [
+            (
+                'tcpsFlattenSemantics/basic_root.usda',
+                [0.0, 25.0, 50.0],
+            ),
+            (
+                'tcpsFlattenSemantics/nested_root.usda',
+                [45.0, 105.0, 165.0],
+            ),
+            (
+                'tcpsFlattenSemantics/cancelled_root.usda',
+                [0.0, 24.0, 48.0],
+            ),
+        ]
+
+        for rootLayer, expectedSamples in testCases:
+            with self.subTest(rootLayer=rootLayer):
+                stage = Usd.Stage.Open(rootLayer)
+                self.assertIsNotNone(stage)
+
+                flattenedLayer = Usd.FlattenLayerStack(
+                    stage._GetPcpCache().layerStack)
+                self.assertIsNotNone(flattenedLayer)
+
+                flattenedStage = Usd.Stage.Open(flattenedLayer)
+                self.assertIsNotNone(flattenedStage)
+
+                for primPath in ['/World/Reference', '/World/Payload']:
+                    sourceAttr = stage.GetPrimAtPath(
+                        primPath).GetAttribute('value')
+                    flattenedAttr = flattenedStage.GetPrimAtPath(
+                        primPath).GetAttribute('value')
+
+                    self.assertTrue(sourceAttr)
+                    self.assertTrue(flattenedAttr)
+
+                    sourceSamples = sourceAttr.GetTimeSamples()
+                    flattenedSamples = flattenedAttr.GetTimeSamples()
+
+                    # Validate the fixture first. The nested case is important:
+                    # its final start time includes interactions between
+                    # authored offsets and automatic frame-rate conversion.
+                    self.assertEqual(expectedSamples, sourceSamples)
+
+                    # Flattening changes storage, not scene behavior.
+                    self.assertEqual(
+                        sourceSamples,
+                        flattenedSamples,
+                        msg=(
+                            f'flattening changed time samples for {primPath} '
+                            f'in {rootLayer}: {sourceSamples} -> '
+                            f'{flattenedSamples}'))
+
+                    for time in sourceSamples:
+                        self.assertEqual(
+                            sourceAttr.Get(time),
+                            flattenedAttr.Get(time),
+                            msg=(
+                                f'flattening changed the value for {primPath} '
+                                f'at time {time} in {rootLayer}'))
+
     def test_LayerOffsetsForReferencesAndPayloads(self):
         """Tests that layer offsets are correctly applied to references and 
         payloads for sublayers with timeCodesPerSecond values that differ
@@ -649,8 +714,7 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
 
         expectedPayloadListOp = Sdf.PayloadListOp.Create(
             prependedItems = [Sdf.Payload(os.path.normcase(
-                os.path.abspath("mixedTimeCodesPerSecondListOps/asset.usda")), 
-            layerOffset=Sdf.LayerOffset(0.0, 2.5))]
+                os.path.abspath("mixedTimeCodesPerSecondListOps/asset.usda")))]
         )
         actualPayloadListOp = primSpec.GetInfo('payload')
         actualPayloadListOp.prependedItems = [Sdf.Payload(
@@ -666,8 +730,7 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
 
         expectedReferenceListOp = Sdf.ReferenceListOp.Create(
             prependedItems = [Sdf.Reference(os.path.normcase(
-                os.path.abspath("mixedTimeCodesPerSecondListOps/asset.usda")), 
-            layerOffset=Sdf.LayerOffset(0.0, 2.5))]
+                os.path.abspath("mixedTimeCodesPerSecondListOps/asset.usda")))]
         )
         actualReferenceListOp = primSpec.GetInfo('references')
         actualReferenceListOp.prependedItems = [Sdf.Reference(
@@ -784,7 +847,7 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         expectedPayloadListOp = Sdf.PayloadListOp.Create(
             prependedItems = [Sdf.Payload(os.path.normcase(
                 os.path.abspath("mixedTimeCodesPerSecondListOps/asset.usda")),
-            layerOffset=Sdf.LayerOffset(0.0, 5.0))]
+            layerOffset=Sdf.LayerOffset(0.0, 2.0))]
         )
         actualPayloadListOp = primSpec.GetInfo('payload')
         actualPayloadListOp.prependedItems = [Sdf.Payload(
