@@ -34,7 +34,16 @@ static size_t
 Arch_ObtainCacheLineSize()
 {
 #if defined(ARCH_OS_LINUX)
-    return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#if defined(_SC_LEVEL1_DCACHE_LINESIZE)
+    const long cacheLineSize = sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+    if (cacheLineSize > 0) {
+        return static_cast<size_t>(cacheLineSize);
+    }
+#endif
+    // Some Linux libc implementations, including musl, do not expose
+    // _SC_LEVEL1_DCACHE_LINESIZE. Fall back to the architecture constant
+    // used throughout libarch when runtime discovery is unavailable.
+    return ARCH_CACHE_LINE_SIZE;
 #elif defined(ARCH_OS_WASM_VM)
     return 64;
 #elif defined(ARCH_OS_DARWIN)
