@@ -12,15 +12,12 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stl.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
-
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/vector.h>
 
 namespace {
     
@@ -32,7 +29,7 @@ public:
         return *_trap;
     }
 
-    void __exit__(object, object, object) {
+    void __exit__(nanobind::args) {
         _trap->Dismiss();
     }
 
@@ -42,42 +39,46 @@ private:
 
 template <class Ret>
 static auto
-_MakeCallback(object callable)
+_MakeCallback(nanobind::object callable)
 {
-    auto fn = extract<std::function<Ret (object)>>(callable)();
+    auto call = [callable](nanobind::object arg) -> Ret {
+        nanobind::object res = callable(arg);
+        if constexpr (!std::is_void_v<Ret>) {
+            return nanobind::cast<Ret>(res);
+        }
+    };
     return TfOverloads {
-        [fn](TfError const &e)   { return fn(object(e)); },
-        [fn](TfWarning const &w) { return fn(object(w)); },
-        [fn](TfStatus const &s)  { return fn(object(s)); }
+        [call](TfError const &e)   { return call(nanobind::cast(e)); },
+        [call](TfWarning const &w) { return call(nanobind::cast(w)); },
+        [call](TfStatus const &s)  { return call(nanobind::cast(s)); }
     };
 }
 
-static object
+static nanobind::object
 __iter__(TfDiagnosticTrap const &trap)
 {
-    list diagnostics;
+    nanobind::list diagnostics;
     trap.ForEach(TfOverloads {
-            [&diagnostics](TfError const &e)   { diagnostics.append(e); },
-            [&diagnostics](TfWarning const &w) { diagnostics.append(w); },
-            [&diagnostics](TfStatus const &s)  { diagnostics.append(s); }
+            [&diagnostics](TfError const &e)   { diagnostics.append(nanobind::cast(e)); },
+            [&diagnostics](TfWarning const &w) { diagnostics.append(nanobind::cast(w)); },
+            [&diagnostics](TfStatus const &s)  { diagnostics.append(nanobind::cast(s)); }
         });
     return diagnostics.attr("__iter__")();
 }
 
 } // anon
 
-void wrapDiagnosticTrap()
+void wrapDiagnosticTrap(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     {
         // for ForEach() and predicates -- see USD-12000 that tracks providing a
         // single shared registration mechanism for these.
-        TfPyFunctionFromPython<bool (object)>();
-        TfPyFunctionFromPython<void (object)>();
+        TfPyFunctionFromPython<bool (nb::object)>();
+        TfPyFunctionFromPython<void (nb::object)>();
 
-        const auto seqToList = return_value_policy<TfPySequenceToList>();
-        
         using This = TfDiagnosticTrap;
-        class_<This, noncopyable>("_DiagnosticTrapCtx", no_init)
+        nb::class_<This>(m, "_DiagnosticTrapCtx")
             .def("Dismiss",       &This::Dismiss)
             .def("Clear",         &This::Clear)
             .def("ClearErrors",   &This::ClearErrors)
@@ -87,22 +88,28 @@ void wrapDiagnosticTrap()
             .def("HasErrors",     &This::HasErrors)
             .def("HasWarnings",   &This::HasWarnings)
             .def("HasStatuses",   &This::HasStatuses)
-            .def("GetErrors",     &This::GetErrors,   seqToList)
-            .def("GetWarnings",   &This::GetWarnings, seqToList)
-            .def("GetStatuses",   &This::GetStatuses, seqToList)
-            .def("ForEach", +[](This const &trap, object callable) {
+            .def("GetErrors",     [](This const &trap) {
+                return std::vector<TfError>(trap.GetErrors().begin(), trap.GetErrors().end());
+            })
+            .def("GetWarnings",   [](This const &trap) {
+                return std::vector<TfWarning>(trap.GetWarnings().begin(), trap.GetWarnings().end());
+            })
+            .def("GetStatuses",   [](This const &trap) {
+                return std::vector<TfStatus>(trap.GetStatuses().begin(), trap.GetStatuses().end());
+            })
+            .def("ForEach", +[](This const &trap, nb::object callable) {
                 trap.ForEach(_MakeCallback<void>(callable));
             })
-            .def("HasAnyMatching", +[](This const &trap, object callable) {
+            .def("HasAnyMatching", +[](This const &trap, nb::object callable) {
                 return trap.HasAnyMatching(_MakeCallback<bool>(callable));
             })
-            .def("HasAllMatching", +[](This const &trap, object callable) {
+            .def("HasAllMatching", +[](This const &trap, nb::object callable) {
                 return trap.HasAllMatching(_MakeCallback<bool>(callable));
             })
-            .def("CountMatching", +[](This const &trap, object callable) {
+            .def("CountMatching", +[](This const &trap, nb::object callable) {
                 return trap.CountMatching(_MakeCallback<bool>(callable));
             })
-            .def("EraseMatching", +[](This &trap, object callable) {
+            .def("EraseMatching", +[](This &trap, nb::object callable) {
                 trap.EraseMatching(_MakeCallback<bool>(callable));
             })
             .def("__iter__",      &__iter__)
@@ -110,8 +117,9 @@ void wrapDiagnosticTrap()
     }
     {
         using This = Tf_PyDiagnosticTrap;
-        class_<This, noncopyable>("DiagnosticTrap")
-            .def("__enter__", &This::__enter__, return_internal_reference<>())
+        nb::class_<This>(m, "DiagnosticTrap")
+            .def(nb::init<>())
+            .def("__enter__", &This::__enter__, nb::rv_policy::reference_internal)
             .def("__exit__",  &This::__exit__)
             ;
     }

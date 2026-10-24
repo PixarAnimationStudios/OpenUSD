@@ -14,7 +14,9 @@
 #include "pxr/base/tf/pyExceptionState.h"
 #include "pxr/base/tf/pyInterpreter.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <iostream>
 #include <string>
 
@@ -71,13 +73,13 @@ static void TestInvokeAndExtract_NoArgs()
 
 static void TestInvokeAndReturn_NoArgs()
 {
-    pxr_boost::python::object result;
+    nanobind::object result;
     const bool ok = TfPyInvokeAndReturn(
         "pxr.Tf.testenv.testTfPyInvoke_callees",
         "_ReturnInt",
         &result);
     TF_AXIOM(ok == true);
-    TF_AXIOM(pxr_boost::python::extract<double>(result) == 42);
+    TF_AXIOM(nanobind::cast<double>(result) == 42);
 }
 
 static void TestInvoke_Simple()

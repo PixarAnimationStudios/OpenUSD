@@ -12,9 +12,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Notice );
-    TF_WRAP( Plugin );    
-    TF_WRAP( Registry );    
+    TF_WRAP_NB( Notice );
+    TF_WRAP_NB( Plugin );    
+    TF_WRAP_NB( Registry );    
 
-    TF_WRAP( _TestPlugBase );    
+    TF_WRAP_NB( _TestPlugBase );    
 }

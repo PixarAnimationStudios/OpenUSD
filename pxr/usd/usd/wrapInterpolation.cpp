@@ -7,11 +7,14 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/interpolation.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void
-wrapUsdInterpolationType()
+wrapUsdInterpolationType(nanobind::module_ &m)
 {
-    TfPyWrapEnum<UsdInterpolationType>();
+    TfNbWrapEnum<UsdInterpolationType>(m);
 }

@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,70 +40,70 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateProtoIndicesAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateProtoIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIdsAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePositionsAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePositionsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOrientationsAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrientationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuathArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOrientationsfAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrientationsfAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateScalesAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateScalesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVelocitiesAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVelocitiesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAccelerationsAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateAccelerationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAngularVelocitiesAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateAngularVelocitiesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInvisibleIdsAttr(UsdGeomPointInstancer &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInvisibleIdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
@@ -113,106 +119,101 @@ _Repr(const UsdGeomPointInstancer &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomPointInstancer()
+void wrapUsdGeomPointInstancer(nb::module_ &m)
 {
     typedef UsdGeomPointInstancer This;
 
-    class_<This, bases<UsdGeomBoundable> >
-        cls("PointInstancer");
+    nb::class_<This, UsdGeomBoundable> cls(m, "PointInstancer");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetProtoIndicesAttr",
              &This::GetProtoIndicesAttr)
         .def("CreateProtoIndicesAttr",
              &_CreateProtoIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIdsAttr",
              &This::GetIdsAttr)
         .def("CreateIdsAttr",
              &_CreateIdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetPositionsAttr",
              &This::GetPositionsAttr)
         .def("CreatePositionsAttr",
              &_CreatePositionsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOrientationsAttr",
              &This::GetOrientationsAttr)
         .def("CreateOrientationsAttr",
              &_CreateOrientationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOrientationsfAttr",
              &This::GetOrientationsfAttr)
         .def("CreateOrientationsfAttr",
              &_CreateOrientationsfAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetScalesAttr",
              &This::GetScalesAttr)
         .def("CreateScalesAttr",
              &_CreateScalesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVelocitiesAttr",
              &This::GetVelocitiesAttr)
         .def("CreateVelocitiesAttr",
              &_CreateVelocitiesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetAccelerationsAttr",
              &This::GetAccelerationsAttr)
         .def("CreateAccelerationsAttr",
              &_CreateAccelerationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetAngularVelocitiesAttr",
              &This::GetAngularVelocitiesAttr)
         .def("CreateAngularVelocitiesAttr",
              &_CreateAngularVelocitiesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInvisibleIdsAttr",
              &This::GetInvisibleIdsAttr)
         .def("CreateInvisibleIdsAttr",
              &_CreateInvisibleIdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetPrototypesRel",
@@ -249,11 +250,11 @@ void wrapUsdGeomPointInstancer()
 namespace {
 
 static
-pxr_boost::python::list
+nb::list
 _ComputeMaskAtTime(const UsdGeomPointInstancer& self,
                    const UsdTimeCode time)
 {
-    pxr_boost::python::list items;
+    nb::list items;
     for (const auto& b : self.ComputeMaskAtTime(time)) {
         items.append(static_cast<bool>(b));
     }
@@ -332,76 +333,70 @@ WRAP_CUSTOM {
     typedef UsdGeomPointInstancer This;
 
     // class needs to be in-scope for enums to get wrapped properly
-    scope obj = _class;
+    TfNbWrapEnum<This::MaskApplication>(_class);
 
-    TfPyWrapEnum<This::MaskApplication>();
-
-    TfPyWrapEnum<This::ProtoXformInclusion>();
+    TfNbWrapEnum<This::ProtoXformInclusion>(_class);
 
     _class
         .def("ActivateId", 
              &This::ActivateId,
-             (arg("id")))
+             nb::arg("id"))
         .def("ActivateIds", 
              &This::ActivateIds,
-             (arg("ids")))
+             nb::arg("ids"))
         .def("ActivateAllIds", 
              &This::ActivateAllIds)
         .def("DeactivateId", 
              &This::DeactivateId,
-             (arg("id")))
+             nb::arg("id"))
         .def("DeactivateIds", 
              &This::DeactivateIds,
-             (arg("ids")))
+             nb::arg("ids"))
 
         .def("VisId", 
              &This::VisId,
-             (arg("id"), arg("time")))
+             nb::arg("id"), nb::arg("time"))
         .def("VisIds", 
              &This::VisIds,
-             (arg("ids"), arg("time")))
+             nb::arg("ids"), nb::arg("time"))
         .def("VisAllIds", 
              &This::VisAllIds,
-             (arg("time")))
+             nb::arg("time"))
         .def("InvisId", 
              &This::InvisId,
-             (arg("id"), arg("time")))
+             nb::arg("id"), nb::arg("time"))
         .def("InvisIds", 
              &This::InvisIds,
-             (arg("ids"), arg("time")))
+             nb::arg("ids"), nb::arg("time"))
         
         // The cost to fetch 'ids' is likely dwarfed by python marshalling
         // costs, so let's not worry about the 'ids' optional arg
         .def("ComputeMaskAtTime",
              &_ComputeMaskAtTime,
-             (arg("time")))
+             nb::arg("time"))
 
         .def("ComputeInstanceTransformsAtTime",
              &_ComputeInstanceTransformsAtTime,
-             (arg("time"), arg("baseTime"),
-              arg("doProtoXforms")=This::IncludeProtoXform,
-              arg("applyMask")=This::ApplyMask))
+             nb::arg("time"), nb::arg("baseTime"),
+              nb::arg("doProtoXforms")=This::IncludeProtoXform,
+              nb::arg("applyMask")=This::ApplyMask)
         .def("ComputeInstanceTransformsAtTimes",
              &_ComputeInstanceTransformsAtTimes,
-             (arg("times"), arg("baseTime"),
-              arg("doProtoXforms")=This::IncludeProtoXform,
-              arg("applyMask")=This::ApplyMask))
+             nb::arg("times"), nb::arg("baseTime"),
+              nb::arg("doProtoXforms")=This::IncludeProtoXform,
+              nb::arg("applyMask")=This::ApplyMask)
 
         .def("ComputeExtentAtTime",
              &_ComputeExtentAtTime,
-             (arg("time"), arg("baseTime")))
+             nb::arg("time"), nb::arg("baseTime"))
         .def("ComputeExtentAtTimes",
              &_ComputeExtentAtTimes,
-             (arg("times"), arg("baseTime")))
+             nb::arg("times"), nb::arg("baseTime"))
 
         .def("GetInstanceCount", &UsdGeomPointInstancer::GetInstanceCount,
-            arg("timeCode")=UsdTimeCode::Default()) 
+            nb::arg("timeCode")=UsdTimeCode::Default()) 
         ;
     TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
-    to_python_converter<std::vector<VtArray<GfMatrix4d>>,
-        TfPySequenceToPython<std::vector<VtArray<GfMatrix4d>>>>();
-    to_python_converter<std::vector<VtVec3fArray>,
-        TfPySequenceToPython<std::vector<VtVec3fArray>>>();
 }
 
 } // anonymous namespace

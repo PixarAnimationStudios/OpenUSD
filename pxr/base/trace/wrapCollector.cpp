@@ -11,15 +11,11 @@
 
 #include "pxr/base/tf/pySingleton.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 using PythonKey = std::string;
 
@@ -75,7 +71,7 @@ IsEnabledHelper(const TraceCollectorPtr& self) {
 //
 static void
 PythonGarbageCollectionCallback(
-    const std::string& phase, const object& info)
+    const std::string& phase, nanobind::dict info)
 {
     if (!TraceCollector::IsEnabled()) {
         return;
@@ -94,7 +90,7 @@ PythonGarbageCollectionCallback(
         {"Python Garbage Collection (generation: 2)"},
     };
 
-    const std::size_t generation = extract<std::size_t>(info["generation"]);
+    const std::size_t generation = nanobind::cast<std::size_t>(info["generation"]);
     if (generation >= std::size(keys)) {
         TF_WARN("'generation' %zu is out of range", generation);
         return;
@@ -110,33 +106,32 @@ PythonGarbageCollectionCallback(
     }
 }
 
-void wrapCollector()
+void wrapCollector(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = TraceCollector;
-    using ThisPtr = TfWeakPtr<TraceCollector>;
 
-    class_<This, ThisPtr, noncopyable>("Collector", no_init)
-        .def(TfPySingleton())
-
-        .def("BeginEvent", BeginEventHelper)
+    nb::class_<This> cls(m, "Collector",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbSingleton(cls);
+    cls.def("BeginEvent", BeginEventHelper)
         .def("EndEvent", EndEventHelper)
 
         .def("BeginEventAtTime", BeginEventAtTimeHelper)
         .def("EndEventAtTime", EndEventAtTimeHelper)
 
-        .def("GetLabel", &This::GetLabel,
-             return_value_policy<return_by_value>())
+        .def("GetLabel", &This::GetLabel)
         
         .def("Clear", &This::Clear)
 
-        .add_property("enabled", IsEnabledHelper, &This::SetEnabled)
-        .add_property("pythonTracingEnabled",
-                      &This::IsPythonTracingEnabled,
-                      &This::SetPythonTracingEnabled)
+        .def_prop_rw("enabled", IsEnabledHelper, &This::SetEnabled)
+        .def_prop_rw("pythonTracingEnabled",
+                     &This::IsPythonTracingEnabled,
+                     &This::SetPythonTracingEnabled)
         ;
     
-    def("GetElapsedSeconds", GetElapsedSeconds);
-    def("PythonGarbageCollectionCallback", PythonGarbageCollectionCallback);
+    m.def("GetElapsedSeconds", GetElapsedSeconds);
+    m.def("PythonGarbageCollectionCallback", PythonGarbageCollectionCallback);
 };
 
 

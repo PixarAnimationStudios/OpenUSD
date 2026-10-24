@@ -10,12 +10,10 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_by_value.hpp"
-
+#include <nanobind/nanobind.h>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,36 +57,40 @@ struct TfPyAnnotatedBoolResult
     }
 
     template <class Derived>
-    static pxr_boost::python::class_<Derived>
+    static nanobind::class_<Derived>
     Wrap(char const *name, char const *annotationName) {
+        return WrapNb<Derived>(TfPyGetCurrentNanobindModule(), name, annotationName);
+    }
+
+    template <class Derived>
+    static nanobind::class_<Derived>
+    Wrap(nanobind::handle scope, char const *name, char const *annotationName) {
+        return WrapNb<Derived>(scope, name, annotationName);
+    }
+
+    template <class Derived>
+    static nanobind::class_<Derived>
+    WrapNb(nanobind::handle scope, char const *name, char const *annotationName) {
         typedef TfPyAnnotatedBoolResult<Annotation> This;
-        using namespace pxr_boost::python;
         TfPyLock lock;
-        return class_<Derived>(name, init<bool, Annotation>())
+        auto cls = nanobind::class_<Derived>(scope, name)
+            .def(nanobind::init<bool, Annotation>())
             .def("__bool__", &Derived::GetValue)
             .def("__repr__", &Derived::GetRepr)
-            .def(self == bool())
-            .def(self != bool())
-            .def(bool() == self)
-            .def(bool() != self)
-            // Use a helper function.  We'd like to def_readonly the
-            // _annotation member but there are two problems with that.
-            // First, we can't control the return_value_policy and if the
-            // Annotation type has a custom to-Python converter then the
-            // def_readonly return_value_policy of return_internal_reference
-            // won't work since the object needs conversion.  Second, if we
-            // try to use GetAnnotation() with add_property then we'll get
-            // a failure at runtime because Python has a Derived but
-            // GetAnnotation takes a TfPyAnnotatedBoolResult<Annotation>
-            // and boost python doesn't know the former is-a latter because
-            // TfPyAnnotatedBoolResult<Annotation> is not wrapped.
-            //
-            // So we provide a templated static method that takes a Derived
-            // and returns Annotation by value.  We can add_property that
-            // with no problem.
-            .add_property(annotationName, &This::_GetAnnotation<Derived>)
-            .def("__getitem__", &This::_GetItem<Derived>)
-            ;
+            .def("__eq__", [](const Derived &self, bool rhs) { return self == rhs; })
+            .def("__ne__", [](const Derived &self, bool rhs) { return self != rhs; })
+            .def_prop_ro(annotationName, &This::_GetAnnotation<Derived>)
+            .def("__getitem__", [](const Derived &x, int i) -> nanobind::object {
+                if (i == 0) {
+                    return nanobind::cast(x._val);
+                }
+                if (i == 1) {
+                    return nanobind::cast(x._annotation);
+                }
+                throw nanobind::index_error("Index must be 0 or 1.");
+            });
+        Py_INCREF(cls.ptr());
+        return cls;
     }
 
     using AnnotationType = Annotation;
@@ -99,22 +101,6 @@ private:
     static Annotation _GetAnnotation(const Derived& x)
     {
         return x.GetAnnotation();
-    }
-
-    template <class Derived>
-    static pxr_boost::python::object _GetItem(const Derived& x, int i)
-    {
-        if (i == 0) {
-            return pxr_boost::python::object(x._val);
-        }
-        if (i == 1) {
-            return pxr_boost::python::object(x._annotation);
-        }
-        
-        PyErr_SetString(PyExc_IndexError, "Index must be 0 or 1.");
-        pxr_boost::python::throw_error_already_set();
-
-        return pxr_boost::python::object();
     }
 
 private:

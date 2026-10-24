@@ -19,7 +19,8 @@
 // XXX: This include is a hack to avoid build errors due to
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
-#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
 
 #include <deque>
 #include <string>
@@ -71,7 +72,7 @@ class TfScriptModuleLoader : public TfWeakBase {
     /// Return a python dict containing all currently known modules under
     /// their canonical names.
     TF_API
-    pxr_boost::python::dict GetModulesDict() const;
+    nanobind::dict GetModulesDict() const;
     
     /// Write a graphviz dot-file for the dependency graph of all currently
     /// registered libraries/modules to \a file.

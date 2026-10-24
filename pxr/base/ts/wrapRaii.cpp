@@ -7,16 +7,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/raii.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include <nanobind/nanobind.h>
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
-
 
 namespace
 {
@@ -33,7 +29,7 @@ namespace
             _selector.reset(new TsAntiRegressionAuthoringSelector(_mode));
         }
 
-        void Exit(const object &, const object &, const object &)
+        void Exit()
         {
             _selector.reset();
         }
@@ -61,24 +57,34 @@ namespace
     };
 }
 
-
-void wrapRaii()
+void wrapRaii(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     // Context-manager class that temporarily sets the current anti-regression
     // authoring mode for the calling thread.  Use in a 'with' statement.
-    class_<_PyAntiRegressionSelector, noncopyable>(
-        "AntiRegressionAuthoringSelector", no_init)
-        .def(init<TsAntiRegressionMode>())
-        .def("__enter__", &_PyAntiRegressionSelector::Enter, return_self<>())
-        .def("__exit__", &_PyAntiRegressionSelector::Exit)
+    nb::class_<_PyAntiRegressionSelector>(
+        m, "AntiRegressionAuthoringSelector")
+        .def(nb::init<TsAntiRegressionMode>())
+        .def("__enter__", [](nb::object self) {
+            nb::cast<_PyAntiRegressionSelector&>(self).Enter();
+            return self;
+        })
+        .def("__exit__", [](_PyAntiRegressionSelector& self, nb::args) {
+            self.Exit();
+        })
         ;
 
     // Context-manager class that temporarily prevents automatic behaviors when
     // editing splines.  Use in a 'with' statement.
-    class_<_PyBehaviorBlock, noncopyable>(
-        "EditBehaviorBlock")
-        // Default init not suppressed, so automatically created.
-        .def("__enter__", &_PyBehaviorBlock::Enter, return_self<>())
-        .def("__exit__", &_PyBehaviorBlock::Exit)
+    nb::class_<_PyBehaviorBlock>(
+        m, "EditBehaviorBlock")
+        .def(nb::init<>())
+        .def("__enter__", [](nb::object self) {
+            nb::cast<_PyBehaviorBlock&>(self).Enter();
+            return self;
+        })
+        .def("__exit__", [](_PyBehaviorBlock& self, nb::args) {
+            self.Exit();
+        })
         ;
 }

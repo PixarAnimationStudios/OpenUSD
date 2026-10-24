@@ -5,18 +5,21 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 #include "pxr/usd/usdContrived/tokens.h"
+
+namespace nb = nanobind;
 
 using namespace foo;
 
 #define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return UsdContrivedTokens->name.GetString(); });
+    cls.def_prop_ro_static(#name, [](nb::handle) { return UsdContrivedTokens->name.GetString(); });
 
-void wrapUsdContrivedTokens()
+void wrapUsdContrivedTokens(nb::module_ &m)
 {
-    pxr_boost::python::class_<UsdContrivedTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
+    nb::class_<UsdContrivedTokensType> cls(m, "Tokens");
     _ADD_TOKEN(cls, libraryToken1);
     _ADD_TOKEN(cls, libraryToken2);
     _ADD_TOKEN(cls, myColorFloat);

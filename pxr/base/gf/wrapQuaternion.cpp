@@ -9,15 +9,14 @@
 #include "pxr/base/gf/quaternion.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
@@ -25,24 +24,8 @@ using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 namespace {
-
-PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( GetNormalized_overloads,
-                                        GetNormalized, 0, 1 );
-PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( Normalize_overloads,
-                                        Normalize, 0, 1 );
-
-static GfQuaternion __truediv__(const GfQuaternion &self, double value)
-{
-    return self / value;
-}
-
-static GfQuaternion& __itruediv__(GfQuaternion &self, double value)
-{
-    return self /= value;
-}
 
 static string _Repr(GfQuaternion const &self) {
     return TF_PY_REPR_PREFIX + "Quaternion(" + TfPyRepr(self.GetReal()) + ", " +
@@ -53,79 +36,61 @@ static size_t __hash__(GfQuaternion const &self) { return TfHash{}(self); }
 
 } // anonymous namespace 
 
-void wrapQuaternion()
+void wrapQuaternion(nanobind::module_ &m)
 {    
     typedef GfQuaternion This;
 
-    object getImaginary =
-        make_function(&This::GetImaginary,return_value_policy<return_by_value>());
-
-    def( "Dot", (double (*)(const GfQuaternion &, const GfQuaternion &))GfDot);
-    def( "Slerp", (GfQuaternion (*)(double, const GfQuaternion&, const GfQuaternion&))GfSlerp);
+    m.def( "Dot", (double (*)(const GfQuaternion &, const GfQuaternion &))GfDot);
+    m.def( "Slerp", (GfQuaternion (*)(double, const GfQuaternion&, const GfQuaternion&))GfSlerp);
     
-    class_<This> cls( "Quaternion", "Quaternion class", init<>());
+    nanobind::class_<This> cls(m, "Quaternion", "Quaternion class");
     cls
+        .def(nanobind::init<>())
 
-        .def(init<int>())
+        .def(nanobind::init<int>())
 
-        .def(init<double, const GfVec3d &>())
+        .def(nanobind::init<double, const GfVec3d &>())
 
-        .def(init<This>())
+        .def(nanobind::init<const This &>())
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .def("GetZero", &This::GetZero)
-        .staticmethod("GetZero")
+        .def_static("GetZero", &This::GetZero)
 
-        .def("GetIdentity", &This::GetIdentity)
-        .staticmethod("GetIdentity")
+        .def_static("GetIdentity", &This::GetIdentity)
 
-        .add_property("real", &This::GetReal, &This::SetReal)
-        .add_property("imaginary", getImaginary, &This::SetImaginary)
+        .def_prop_rw("real", &This::GetReal, &This::SetReal)
+        .def_prop_rw("imaginary", &This::GetImaginary, &This::SetImaginary,
+                     nanobind::rv_policy::copy)
 
-        .def("GetImaginary", getImaginary)
+        .def("GetImaginary", &This::GetImaginary, nanobind::rv_policy::copy)
         .def("GetInverse", &This::GetInverse)
         .def("GetLength", &This::GetLength)
         .def("GetReal", &This::GetReal)
 
-        .def("GetNormalized", &This::GetNormalized, GetNormalized_overloads())
-        .def("Normalize", &This::Normalize,
-             Normalize_overloads()[return_self<>()])
+        .def("GetNormalized", &This::GetNormalized,
+             nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH)
+        .def("Normalize", [](This &self, double eps) -> This & {
+            self.Normalize(eps);
+            return self;
+        }, nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH, nanobind::rv_policy::reference)
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self *= self )
-        .def( self *= double() )
-        .def( self /= double() )
-        .def( self += self )
-        .def( self -= self )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self / double() )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def( nanobind::self == nanobind::self )
+        .def( nanobind::self != nanobind::self )
+        .def( nanobind::self *= nanobind::self )
+        .def( nanobind::self *= double() )
+        .def( nanobind::self /= double() )
+        .def( nanobind::self += nanobind::self )
+        .def( nanobind::self -= nanobind::self )
+        .def( nanobind::self + nanobind::self )
+        .def( nanobind::self - nanobind::self )
+        .def( nanobind::self * nanobind::self )
+        .def( nanobind::self * double() )
+        .def( double() * nanobind::self )
+        .def( nanobind::self / double() )
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>{});
-    }
-    
 }

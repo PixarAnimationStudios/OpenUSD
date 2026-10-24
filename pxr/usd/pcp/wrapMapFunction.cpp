@@ -7,13 +7,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapFunction.h"
-#include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
-#include "pxr/external/boost/python.hpp"
 
 using std::string;
 
@@ -32,8 +31,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
 static string
@@ -44,7 +41,7 @@ _Repr(const PcpMapFunction &f)
     }
     string s = "Pcp.MapFunction(";
     if (!f.IsNull()) {
-        const pxr_boost::python::dict sourceToTargetMap =
+        const nanobind::dict sourceToTargetMap =
             TfPyCopyMapToDictionary(f.GetSourceToTargetMap());
 
         s += TfPyObjectRepr(sourceToTargetMap);
@@ -82,97 +79,84 @@ _Str(const PcpMapFunction& f)
     return f.GetString();
 }
 
-static PcpMapFunction*
-_Create(const pxr_boost::python::dict & sourceToTargetMap, 
+static PcpMapFunction
+_Create(const nanobind::dict & sourceToTargetMap, 
         SdfLayerOffset offset)
 {
     PcpMapFunction::PathMap pathMap;
-    pxr_boost::python::list keys = sourceToTargetMap.keys();
-    for (int i=0; i < pxr_boost::python::len(keys); ++i) {
-        // Just blindly try to extract SdfPaths.
-        // If the dict is not holding the right types,
-        // we'll raise a boost exception, which boost
-        // will turn into a suitable TypeError.
-        SdfPath source =
-            pxr_boost::python::extract<SdfPath>(keys[i]);
-        SdfPath target =
-            pxr_boost::python::extract<SdfPath>(sourceToTargetMap[keys[i]]);
+    for (auto item : sourceToTargetMap) {
+        SdfPath source = nanobind::cast<SdfPath>(item.first);
+        SdfPath target = nanobind::cast<SdfPath>(item.second);
         pathMap[source] = target;
     }
 
-    PcpMapFunction mapFunction = PcpMapFunction::Create(pathMap, offset);
-
-    // Return a newly allocated instance.  pxr_boost::python will free this
-    // object when the holding python object expires.
-    return new PcpMapFunction(mapFunction);
+    return PcpMapFunction::Create(pathMap, offset);
 }
 
 } // anonymous namespace 
 
-void wrapMapFunction()
+void wrapMapFunction(nanobind::module_ &m)
 {    
+    namespace nb = nanobind;
     typedef PcpMapFunction This;
 
     TfPyContainerConversions::from_python_sequence<
         std::vector< PcpMapFunction >,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    class_<This>("MapFunction")
-        .def(init<const This &>())
+    nb::class_<This>(m, "MapFunction")
+        .def(nb::init<>())
+        .def(nb::init<const This &>())
         .def("__init__",
-             pxr_boost::python::make_constructor(
-                &_Create,
-                default_call_policies(),
-                (arg("sourceToTargetMap"),
-                 arg("timeOffset") = SdfLayerOffset())))
+             [](This *self, const nb::dict &sourceToTargetMap, SdfLayerOffset offset) {
+                 new (self) This(_Create(sourceToTargetMap, offset));
+             },
+             nb::arg("sourceToTargetMap"),
+             nb::arg("timeOffset") = SdfLayerOffset())
 
         .def("__repr__", _Repr)
         .def("__str__", _Str)
 
-        .def("Identity", &This::Identity,
-             return_value_policy<return_by_value>())
-        .staticmethod("Identity")
-        .def("IdentityPathMap", &This::IdentityPathMap,
-             return_value_policy<TfPyMapToDictionary>())
-        .staticmethod("IdentityPathMap")
+        .def_static("Identity", &This::Identity,
+                    nb::rv_policy::copy)
+        .def_static("IdentityPathMap", &This::IdentityPathMap,
+                    nb::rv_policy::copy)
 
-        .def("DeferredComposition", &This::DeferredComposition)
-        .staticmethod("DeferredComposition")
+        .def_static("DeferredComposition", &This::DeferredComposition)
+        .def_static("ImpliedClass", &This::ImpliedClass)
 
-        .def("ImpliedClass", &This::ImpliedClass)
-        .staticmethod("ImpliedClass")
-
-        .add_property("isIdentity", &This::IsIdentity)
-        .add_property("isIdentityPathMapping", &This::IsIdentityPathMapping)
-        .add_property("isNull", &This::IsNull)
-        .add_property("isDeferredComposition", &This::IsDeferredComposition)
+        .def_prop_ro("isIdentity", &This::IsIdentity)
+        .def_prop_ro("isIdentityPathMapping", &This::IsIdentityPathMapping)
+        .def_prop_ro("isNull", &This::IsNull)
+        .def_prop_ro("isDeferredComposition", &This::IsDeferredComposition)
 
         .def("MapSourceToTarget",
-             +[](This const &self, SdfPathExpression const &pathExpr) {
+             [](This const &self, const SdfPathExpression &pathExpr) {
                  return self.MapSourceToTarget(pathExpr);
-             }, arg("pathExpr"))
+             },
+             nb::arg("pathExpr"))
         .def("MapTargetToSource",
-             +[](This const &self, SdfPathExpression const &pathExpr) {
+             [](This const &self, const SdfPathExpression &pathExpr) {
                  return self.MapTargetToSource(pathExpr);
-             }, arg("pathExpr"))
+             },
+             nb::arg("pathExpr"))
 
         .def("MapSourceToTarget", (SdfPath (This::*)(const SdfPath &) const)
-             &This::MapSourceToTarget, (arg("path")))
+             &This::MapSourceToTarget, nb::arg("path"))
         .def("MapTargetToSource", (SdfPath (This::*)(const SdfPath &) const)
-             &This::MapTargetToSource, (arg("path")))
+             &This::MapTargetToSource, nb::arg("path"))
 
         .def("Compose", &This::Compose)
-        .def("ComposeOffset", &This::ComposeOffset, arg("offset"))
+        .def("ComposeOffset", &This::ComposeOffset, nb::arg("offset"))
         .def("GetInverse", &This::GetInverse)
 
-        .add_property("sourceToTargetMap",
-            make_function( &This::GetSourceToTargetMap,
-                           return_value_policy<TfPyMapToDictionary>()) )
-        .add_property("timeOffset",
-            make_function( &This::GetTimeOffset,
-                           return_value_policy<return_by_value>()) )
+        .def_prop_ro("sourceToTargetMap", &This::GetSourceToTargetMap,
+                     nb::rv_policy::copy)
+        .def_prop_ro("timeOffset", &This::GetTimeOffset,
+                     nb::rv_policy::copy)
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
+
 }

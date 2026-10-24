@@ -8,13 +8,13 @@
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/vt/types.h"
-
-#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static VtVec3fArray
 _WrapGeneratePoints(
@@ -53,7 +53,7 @@ _WrapGenerateNormals(
     return normals;
 }
 
-void wrapSphereMeshGenerator()
+void wrapSphereMeshGenerator(nb::module_& m)
 {
     using This = GeomUtilSphereMeshGenerator;
 
@@ -63,26 +63,21 @@ void wrapSphereMeshGenerator()
 
     // Note: These are only "classes" for name scoping, and are uninstantiable;
     // hence no need to bother declaring bases.
-    class_<This>("SphereMeshGenerator", no_init)
-        .def_readonly("minNumRadial", minNumRadial)
-        .def_readonly("minNumAxial", minNumAxial)
+    nb::class_<This>(m, "SphereMeshGenerator")
+        .def_ro_static("minNumRadial", &minNumRadial)
+        .def_ro_static("minNumAxial", &minNumAxial)
 
-        .def("ComputeNumPoints", &This::ComputeNumPoints)
-        .staticmethod("ComputeNumPoints")
-
-        .def("ComputeNumNormals", &This::ComputeNumNormals)
-        .staticmethod("ComputeNumNormals")
-
-        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
-        .staticmethod("GetNormalsInterpolation")
-
-        .def("GenerateTopology", &This::GenerateTopology)
-        .staticmethod("GenerateTopology")
-
-        .def("GeneratePoints", &_WrapGeneratePoints)
-        .staticmethod("GeneratePoints")
-
-        .def("GenerateNormals", &_WrapGenerateNormals)
-        .staticmethod("GenerateNormals")
+        .def_static("ComputeNumPoints", &This::ComputeNumPoints,
+                    nb::arg("numRadial"), nb::arg("numAxial"),
+                    nb::arg("closedSweep") = true)
+        .def_static("ComputeNumNormals", &This::ComputeNumNormals,
+                    nb::arg("numRadial"), nb::arg("numAxial"),
+                    nb::arg("closedSweep") = true)
+        .def_static("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .def_static("GenerateTopology", &This::GenerateTopology,
+                    nb::arg("numRadial"), nb::arg("numAxial"),
+                    nb::arg("closedSweep") = true)
+        .def_static("GeneratePoints", &_WrapGeneratePoints)
+        .def_static("GenerateNormals", &_WrapGenerateNormals)
     ;
 }

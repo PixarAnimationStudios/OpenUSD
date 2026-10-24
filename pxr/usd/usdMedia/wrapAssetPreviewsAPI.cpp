@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -31,7 +37,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdMediaAssetPreviewsAPI &self)
@@ -59,42 +64,34 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdMediaAssetPreviewsAPI()
+void wrapUsdMediaAssetPreviewsAPI(nb::module_ &m)
 {
     typedef UsdMediaAssetPreviewsAPI This;
 
-    UsdMediaAssetPreviewsAPI_CanApplyResult::Wrap<UsdMediaAssetPreviewsAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdMediaAssetPreviewsAPI_CanApplyResult::WrapNb<UsdMediaAssetPreviewsAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("AssetPreviewsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "AssetPreviewsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -123,15 +120,15 @@ void wrapUsdMediaAssetPreviewsAPI()
 
 namespace {
 static 
-object _WrapGetDefaultThumbnails(const UsdMediaAssetPreviewsAPI &self)
+nb::object _WrapGetDefaultThumbnails(const UsdMediaAssetPreviewsAPI &self)
 {
     UsdMediaAssetPreviewsAPI::Thumbnails  t;
 
     if (self.GetDefaultThumbnails(&t)){
-        return object(t);
+        return nb::cast(t);
     }
     else {
-        return object();
+        return nb::none();
     }
 }
 
@@ -148,41 +145,33 @@ std::string _ThumbnailsRepr(const UsdMediaAssetPreviewsAPI::Thumbnails &self)
         TfStringJoin(initList) + ")";
 }
 
-
-
 WRAP_CUSTOM {
     using This = UsdMediaAssetPreviewsAPI;
 
     _class
         .def("GetDefaultThumbnails", &_WrapGetDefaultThumbnails,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("SetDefaultThumbnails", &This::SetDefaultThumbnails,
-             (arg("thumbnails")))
+             nb::arg("thumbnails"))
         .def("ClearDefaultThumbnails", &This::ClearDefaultThumbnails)
-        .def("GetAssetDefaultPreviews", 
+        .def_static("GetAssetDefaultPreviews", 
              (This (*)(const std::string &layerPath))
              &This::GetAssetDefaultPreviews,
-             (arg("layerPath")))
-        .def("GetAssetDefaultPreviews", 
+             nb::arg("layerPath"))
+        .def_static("GetAssetDefaultPreviews", 
              (This (*)(const SdfLayerHandle &layer))
              &This::GetAssetDefaultPreviews,
-             (arg("layer")))
-            .staticmethod("GetAssetDefaultPreviews")
+             nb::arg("layer"))
         ;
-
-    // Create a root scope so that Thumbnails is scoped under 
-    // UsdMedia.AssetPreviewsAPI
-    scope assetPreviewsAPI = _class;
 
     // wrap UsdMediaAssetPreviewsAPI::Thumbnails struct, available as
     // UsdMedia.AssetPreviewsAPI.Thumbnails
-    class_<This::Thumbnails>("Thumbnails")
-        .def(init<SdfAssetPath>(
-                 (arg("defaultImage")=SdfAssetPath())))
-        .def_readwrite("defaultImage", &This::Thumbnails::defaultImage)
+    nb::class_<This::Thumbnails>(_class, "Thumbnails")
+        .def(nb::init<SdfAssetPath>(),
+             nb::arg("defaultImage")=SdfAssetPath())
+        .def_rw("defaultImage", &This::Thumbnails::defaultImage)
         .def("__repr__", _ThumbnailsRepr)
         ;
-
 }
 
 }

@@ -19,16 +19,18 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/stl_iterator.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -124,7 +126,6 @@ _SetAssetInfo(const SdfPrimSpec& self,
     self.GetAssetInfo() = dictionary;
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 
 static
@@ -167,36 +168,15 @@ _ApplyPropertyOrder(
 
 } // anonymous namespace 
 
-void wrapPrimSpec()
+void wrapPrimSpec(nb::module_& m)
 {
-    def("CreatePrimInLayer", SdfCreatePrimInLayer);
-    def("JustCreatePrimInLayer", SdfJustCreatePrimInLayer);
+    m.def("CreatePrimInLayer", SdfCreatePrimInLayer);
+    m.def("JustCreatePrimInLayer", SdfJustCreatePrimInLayer);
 
     typedef SdfPrimSpec This;
 
-    // Register python conversions for vector<SdfPrimSpecHandle>
-    to_python_converter< SdfPrimSpecHandleVector,
-                         TfPySequenceToPython<SdfPrimSpecHandleVector> >();
-    TfPyContainerConversions::from_python_sequence<
-        SdfPrimSpecHandleVector,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    // Register python conversions for vector<SdfPrimSpecConstHandle>
-    to_python_converter< SdfPrimSpecConstHandleVector,
-                         TfPySequenceToPython<SdfPrimSpecConstHandleVector> >();
-    TfPyContainerConversions::from_python_sequence<
-        SdfPrimSpecConstHandleVector,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    // Register python coversions for SdfVariantSets
-    typedef SdfVariantSetSpecHandleMap::value_type VSSHVT;
-    to_python_converter<VSSHVT,
-                        TfPyContainerConversions::to_tuple<VSSHVT> >();
-    to_python_converter<SdfVariantSetSpecHandleMap,
-                        TfPySequenceToPython<SdfVariantSetSpecHandleMap> >();
-
-    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
-        ("PrimSpec", no_init)
+    nb::class_<This, SdfSpec> cls(m, "PrimSpec");
+    cls
         .def(SdfPySpec())
 
         .def(SdfMakePySpecConstructor(&_NewFromLayer))
@@ -204,23 +184,22 @@ void wrapPrimSpec()
         .def(SdfMakePySpecConstructor(&_NewPrim))
         .def(SdfMakePySpecConstructor(&_NewTypelessPrim))
 
-        .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+        .def_prop_rw("name",
+            [](const This& self) { return self.GetName(); },
             &_WrapSetName,
             "The prim's name.")
 
-        .add_property("comment",
+        .def_prop_rw("comment",
             &This::GetComment,
             &This::SetComment,
             "The prim's comment string.")
 
-        .add_property("documentation",
+        .def_prop_rw("documentation",
             &This::GetDocumentation,
             &This::SetDocumentation,
             "The prim's documentation string.")
 
-        .add_property("active",
+        .def_prop_rw("active",
             &This::GetActive,
             &This::SetActive,
             "Whether this prim spec is active.\n"
@@ -229,13 +208,13 @@ void wrapPrimSpec()
         .def("HasActive", &This::HasActive)
         .def("ClearActive", &This::ClearActive)
 
-        .add_property("hidden",
+        .def_prop_rw("hidden",
             &This::GetHidden,
             &This::SetHidden,
             "Whether this prim spec will be hidden in browsers.\n"
             "The default value is false.")
 
-        .add_property("kind",
+        .def_prop_rw("kind",
             &This::GetKind,
             &This::SetKind,
             "What kind of model this prim spec represents, if any.\n"
@@ -244,7 +223,7 @@ void wrapPrimSpec()
         .def("HasKind", &This::HasKind)
         .def("ClearKind", &This::ClearKind)
 
-        .add_property("instanceable",
+        .def_prop_rw("instanceable",
             &This::GetInstanceable,
             &This::SetInstanceable,
             "Whether this prim spec is flagged as instanceable.\n"
@@ -253,13 +232,13 @@ void wrapPrimSpec()
         .def("HasInstanceable", &This::HasInstanceable)
         .def("ClearInstanceable", &This::ClearInstanceable)
 
-        .add_property("permission",
+        .def_prop_rw("permission",
             &This::GetPermission,
             &This::SetPermission,
             "The prim's permission restriction.\n"
             "The default value is SdfPermissionPublic.")
 
-        .add_property("clipSetsList",
+        .def_prop_ro("clipSetsList",
             &This::GetClipSetsList,
             "A StringListEditor for the prim's value clip sets.\n\n"
             "The list of the clip sets for this prim may be "
@@ -268,21 +247,21 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See NameListEditor "
             "for more information.")
 
-        .add_property("clips",
+        .def_prop_rw("clips",
             &This::GetClips,
             &_SetClips,
             "Dictionary with value clips information.")
 
-        .add_property("hasClipSets",
+        .def_prop_ro("hasClipSets",
             &This::HasClipSets,
             "Returns true if this prim has clipSets set.")
 
-        .add_property("symmetryFunction",
+        .def_prop_rw("symmetryFunction",
             &This::GetSymmetryFunction,
             &This::SetSymmetryFunction,
             "The prim's symmetry function.")
 
-        .add_property("symmetryArguments",
+        .def_prop_rw("symmetryArguments",
             &This::GetSymmetryArguments,
             &_SetSymmetryArguments,
             "Dictionary with prim symmetry arguments.\n\n"
@@ -290,12 +269,12 @@ void wrapPrimSpec()
             "modify the contents to add, change, and clear symmetry "
             "arguments.")
 
-        .add_property("symmetricPeer",
+        .def_prop_rw("symmetricPeer",
             &This::GetSymmetricPeer,
             &This::SetSymmetricPeer,
             "The prims's symmetric peer.")
 
-        .add_property("customData",
+        .def_prop_rw("customData",
             &This::GetCustomData,
             &_SetCustomData,
             "The custom data for this prim.\n\n"
@@ -308,7 +287,7 @@ void wrapPrimSpec()
             "relationships or as annotations on reference arcs, then custom data\n"
             "is an appropriate choice.")
 
-        .add_property("assetInfo",
+        .def_prop_rw("assetInfo",
             &This::GetAssetInfo,
             &_SetAssetInfo,
             "Returns the asset info dictionary for this prim.\n\n"
@@ -318,21 +297,21 @@ void wrapPrimSpec()
             "various data related to asset management. For example, asset "
             "name, root layer identifier, asset version etc.")
 
-        .add_property("specifier",
+        .def_prop_rw("specifier",
             &This::GetSpecifier,
             &This::SetSpecifier,
             "The prim's specifier (SpecifierDef or SpecifierOver).\n"
             "The default value is SpecifierOver.")
 
-        .add_property("nameRoot",
+        .def_prop_ro("nameRoot",
             &This::GetNameRoot,
             "The name pseudo-root of this prim.")
 
-        .add_property("nameParent",
+        .def_prop_ro("nameParent",
             &This::GetNameParent,
             "The name parent of this prim.")
 
-        .add_property("realNameParent",
+        .def_prop_ro("realNameParent",
             &This::GetRealNameParent,
             "The name parent of this prim.")
 
@@ -354,34 +333,34 @@ void wrapPrimSpec()
         .def("GetVariantNames", &This::GetVariantNames)
         .def("BlockVariantSelection", &This::BlockVariantSelection)
 
-        .add_property("variantSelections",
+        .def_prop_ro("variantSelections",
             &This::GetVariantSelections,
             "Dictionary whose keys are variant set names and whose values are "
             "the variants chosen for each set.\n\n"
             "Although this property is marked read-only, you can "
             "modify the contents to add, change, and clear variants.")
 
-        .add_property("prefix",
+        .def_prop_rw("prefix",
             &This::GetPrefix,
             &This::SetPrefix,
             "The prim's prefix.")
 
-        .add_property("prefixSubstitutions",
+        .def_prop_rw("prefixSubstitutions",
             &This::GetPrefixSubstitutions,
             &This::SetPrefixSubstitutions,
             "Dictionary of prefix substitutions.")
 
-        .add_property("suffix",
+        .def_prop_rw("suffix",
             &This::GetSuffix,
             &This::SetSuffix,
             "The prim's suffix.")
 
-        .add_property("suffixSubstitutions",
+        .def_prop_rw("suffixSubstitutions",
             &This::GetSuffixSubstitutions,
             &This::SetSuffixSubstitutions,
             "Dictionary of prefix substitutions.")
 
-        .add_property("variantSetNameList",
+        .def_prop_ro("variantSetNameList",
             &This::GetVariantSetNameList,
             "A StringListEditor for the names of the variant \n"
             "sets for this prim.\n\n"
@@ -393,7 +372,7 @@ void wrapPrimSpec()
             "Although this property is marked as read-only, the returned object "
             "is modifiable.")
 
-        .add_property("variantSets",
+        .def_prop_ro("variantSets",
             &_WrapGetVariantSetsProxy,
             "The VariantSetSpecs for this prim indexed by name.\n\n"
             "Although this property is marked as read-only, you can \n"
@@ -402,12 +381,12 @@ void wrapPrimSpec()
             "Although this property is marked as read-only, the returned object\n"
             "is modifiable.")
 
-        .add_property("typeName",
+        .def_prop_rw("typeName",
             &This::GetTypeName,
             &This::SetTypeName,
             "The type of this prim.")
 
-        .add_property("nameChildren",
+        .def_prop_ro("nameChildren",
             &_WrapGetNameChildrenProxy,
             "The prim name children of this prim, as an ordered "
             "dictionary.\n\n"
@@ -415,34 +394,34 @@ void wrapPrimSpec()
             "read-only, you can modify the contents to add, "
             "remove, or reorder children.")
 
-        .add_property("nameChildrenOrder",
+        .def_prop_rw("nameChildrenOrder",
             &This::GetNameChildrenOrder,
             &This::SetNameChildrenOrder,
             "Get/set the list of child names for this prim's 'reorder "
             "nameChildren' statement.")
 
-        .add_property("properties",
+        .def_prop_ro("properties",
             &_WrapGetPropertiesProxy,
             "The properties of this prim, as an ordered dictionary.\n\n"
             "Note that although this property is described as being "
             "read-only, you can modify the contents to add, "
             "remove, or reorder properties.")
 
-        .add_property("attributes",
+        .def_prop_ro("attributes",
             &This::GetAttributes,
             "The attributes of this prim, as an ordered dictionary.")
 
-        .add_property("relationships",
+        .def_prop_ro("relationships",
             &This::GetRelationships,
             "The relationships of this prim, as an ordered dictionary.")
 
-        .add_property("propertyOrder",
+        .def_prop_rw("propertyOrder",
             &This::GetPropertyOrder,
             &This::SetPropertyOrder,
             "Get/set the list of property names for this prim's 'reorder "
             "properties' statement.")
 
-        .add_property("inheritPathList",
+        .def_prop_ro("inheritPathList",
             &This::GetInheritPathList,
             "A PathListEditor for the prim's inherit paths.\n\n"
             "The list of the inherit paths for this prim may be "
@@ -451,7 +430,7 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See PathListEditor "
             "for more information.")
 
-        .add_property("specializesList",
+        .def_prop_ro("specializesList",
             &This::GetSpecializesList,
             "A PathListEditor for the prim's specializes.\n\n"
             "The list of the specializes for this prim may be "
@@ -460,7 +439,7 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See PathListEditor "
             "for more information.")
 
-        .add_property("referenceList",
+        .def_prop_ro("referenceList",
             &This::GetReferenceList,
             "A ReferenceListEditor for the prim's references.\n\n"
             "The list of the references for this prim may be "
@@ -469,7 +448,7 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See "
             "ReferenceListEditor for more information.")
 
-        .add_property("payloadList",
+        .def_prop_ro("payloadList",
             &This::GetPayloadList,
             "A PayloadListEditor for the prim's payloads.\n\n"
             "The list of the payloads for this prim may be "
@@ -478,19 +457,19 @@ void wrapPrimSpec()
             "value or as a set of list editing operations.  See "
             "PayloadListEditor for more information.")
 
-        .add_property("hasReferences",
+        .def_prop_ro("hasReferences",
             &This::HasReferences,
             "Returns true if this prim has references set.")
 
-        .add_property("hasPayloads",
+        .def_prop_ro("hasPayloads",
             &This::HasPayloads,
             "Returns true if this prim has payloads set.")
 
-        .add_property("hasInheritPaths",
+        .def_prop_ro("hasInheritPaths",
             &This::HasInheritPaths,
             "Returns true if this prim has inherits set.")
 
-        .add_property("hasSpecializes",
+        .def_prop_ro("hasSpecializes",
             &This::HasSpecializes,
             "Returns true if this prim has specializes set.")
 
@@ -504,34 +483,32 @@ void wrapPrimSpec()
 
         .def("CanSetName", &_WrapCanSetName)
 
-        .def("ApplyNameChildrenOrder", &_ApplyNameChildrenOrder,
-             return_value_policy<TfPySequenceToList>())
-        .def("ApplyPropertyOrder", &_ApplyPropertyOrder,
-             return_value_policy<TfPySequenceToList>())
-
-        .setattr("ActiveKey", SdfFieldKeys->Active)
-        .setattr("AnyTypeToken", SdfTokens->AnyTypeToken)
-        .setattr("CommentKey", SdfFieldKeys->Comment)
-        .setattr("CustomDataKey", SdfFieldKeys->CustomData)
-        .setattr("DisplayName", SdfFieldKeys->DisplayName)
-        .setattr("DocumentationKey", SdfFieldKeys->Documentation)
-        .setattr("HiddenKey", SdfFieldKeys->Hidden)
-        .setattr("InheritPathsKey", SdfFieldKeys->InheritPaths)
-        .setattr("KindKey", SdfFieldKeys->Kind)
-        .setattr("PrimOrderKey", SdfFieldKeys->PrimOrder)
-        .setattr("PayloadKey", SdfFieldKeys->Payload)
-        .setattr("PermissionKey", SdfFieldKeys->Permission)
-        .setattr("PrefixKey", SdfFieldKeys->Prefix)
-        .setattr("PrefixSubstitutionsKey", SdfFieldKeys->PrefixSubstitutions)
-        .setattr("PropertyOrderKey", SdfFieldKeys->PropertyOrder)
-        .setattr("ReferencesKey", SdfFieldKeys->References)
-        .setattr("SpecializesKey", SdfFieldKeys->Specializes)
-        .setattr("SpecifierKey", SdfFieldKeys->Specifier)
-        .setattr("SymmetricPeerKey", SdfFieldKeys->SymmetricPeer)
-        .setattr("SymmetryArgumentsKey", SdfFieldKeys->SymmetryArguments)
-        .setattr("SymmetryFunctionKey", SdfFieldKeys->SymmetryFunction)
-        .setattr("TypeNameKey", SdfFieldKeys->TypeName)
-        .setattr("VariantSelectionKey", SdfFieldKeys->VariantSelection)
-        .setattr("VariantSetNamesKey", SdfFieldKeys->VariantSetNames)
+        .def("ApplyNameChildrenOrder", &_ApplyNameChildrenOrder)
+        .def("ApplyPropertyOrder", &_ApplyPropertyOrder)
         ;
+
+    cls.attr("ActiveKey") = nb::cast(SdfFieldKeys->Active);
+    cls.attr("AnyTypeToken") = nb::cast(SdfTokens->AnyTypeToken);
+    cls.attr("CommentKey") = nb::cast(SdfFieldKeys->Comment);
+    cls.attr("CustomDataKey") = nb::cast(SdfFieldKeys->CustomData);
+    cls.attr("DisplayName") = nb::cast(SdfFieldKeys->DisplayName);
+    cls.attr("DocumentationKey") = nb::cast(SdfFieldKeys->Documentation);
+    cls.attr("HiddenKey") = nb::cast(SdfFieldKeys->Hidden);
+    cls.attr("InheritPathsKey") = nb::cast(SdfFieldKeys->InheritPaths);
+    cls.attr("KindKey") = nb::cast(SdfFieldKeys->Kind);
+    cls.attr("PrimOrderKey") = nb::cast(SdfFieldKeys->PrimOrder);
+    cls.attr("PayloadKey") = nb::cast(SdfFieldKeys->Payload);
+    cls.attr("PermissionKey") = nb::cast(SdfFieldKeys->Permission);
+    cls.attr("PrefixKey") = nb::cast(SdfFieldKeys->Prefix);
+    cls.attr("PrefixSubstitutionsKey") = nb::cast(SdfFieldKeys->PrefixSubstitutions);
+    cls.attr("PropertyOrderKey") = nb::cast(SdfFieldKeys->PropertyOrder);
+    cls.attr("ReferencesKey") = nb::cast(SdfFieldKeys->References);
+    cls.attr("SpecializesKey") = nb::cast(SdfFieldKeys->Specializes);
+    cls.attr("SpecifierKey") = nb::cast(SdfFieldKeys->Specifier);
+    cls.attr("SymmetricPeerKey") = nb::cast(SdfFieldKeys->SymmetricPeer);
+    cls.attr("SymmetryArgumentsKey") = nb::cast(SdfFieldKeys->SymmetryArguments);
+    cls.attr("SymmetryFunctionKey") = nb::cast(SdfFieldKeys->SymmetryFunction);
+    cls.attr("TypeNameKey") = nb::cast(SdfFieldKeys->TypeName);
+    cls.attr("VariantSelectionKey") = nb::cast(SdfFieldKeys->VariantSelection);
+    cls.attr("VariantSetNamesKey") = nb::cast(SdfFieldKeys->VariantSetNames);
 }

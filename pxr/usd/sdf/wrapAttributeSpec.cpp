@@ -12,20 +12,24 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include "pxr/base/ts/spline.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -49,10 +53,14 @@ _WrapSetAllowedTokens(
 }
 
 static
-std::set<double>
+nb::list
 _ListTimeSamples(SdfAttributeSpec const &self)
 {
-    return self.ListTimeSamples();
+    nb::list result;
+    for (double t : self.ListTimeSamples()) {
+        result.append(t);
+    }
+    return result;
 }
 
 static
@@ -72,12 +80,12 @@ _QueryTimeSample(SdfAttributeSpec const &self, double time)
 }
 
 static
-tuple
+nb::tuple
 _GetBracketingTimeSamples(SdfAttributeSpec const &self, double time)
 {
     double tLower = 0, tUpper = 0;
     bool found = self.GetBracketingTimeSamples(time, &tLower, &tUpper);
-    return pxr_boost::python::make_tuple(found, tLower, tUpper);
+    return nb::make_tuple(found, tLower, tUpper);
 }
 
 static
@@ -97,21 +105,17 @@ _EraseTimeSample(SdfAttributeSpec &self, double time)
 
 } // anonymous namespace 
 
-void wrapAttributeSpec()
+void wrapAttributeSpec(nb::module_& m)
 {
-    def("CreatePrimAttributeInLayer", SdfCreatePrimAttributeInLayer,
-        (arg("layer"), arg("attrPath"), arg("typeName"),
-         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
-    def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
-        (arg("layer"), arg("attrPath"), arg("typeName"),
-         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
+    m.def("CreatePrimAttributeInLayer", SdfCreatePrimAttributeInLayer,
+        nb::arg("layer"), nb::arg("attrPath"), nb::arg("typeName"),
+        nb::arg("variability")=SdfVariabilityVarying, nb::arg("isCustom")=false);
+    m.def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
+        nb::arg("layer"), nb::arg("attrPath"), nb::arg("typeName"),
+        nb::arg("variability")=SdfVariabilityVarying, nb::arg("isCustom")=false);
 
     typedef SdfAttributeSpec This;
     typedef SdfAttributeSpecHandle ThisHandle;
-
-    TfPyContainerConversions::from_python_sequence<
-        std::vector< SdfAttributeSpecHandle >,
-        TfPyContainerConversions::variable_capacity_policy >();
 
     // Get function pointers to static New methods.
     ThisHandle (*wrapNewPrimAttr)(const SdfPrimSpecHandle&,
@@ -120,13 +124,10 @@ void wrapAttributeSpec()
                                   SdfVariability,
                                   bool) = &This::New;
                                 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, noncopyable>
-        ("AttributeSpec", no_init)
-        
+    nb::class_<This, SdfPropertySpec> cls(m, "AttributeSpec");
+    cls
         .def(SdfPySpec())
-        .def("__unused__",
-            SdfMakePySpecConstructor(wrapNewPrimAttr,
+        .def(SdfMakePySpecConstructor(wrapNewPrimAttr,
                 "__init__(ownerPrimSpec, name, typeName, "
                 "variability = Sdf.VariabilityVarying, "
                 "declaresCustom = False)\n"
@@ -137,31 +138,31 @@ void wrapAttributeSpec()
                 "declaresCustom : bool\n\n"
                 "Create a custom attribute spec that is an attribute of "
                 "ownerPrimSpec with the given name and type."),
-                (arg("ownerPrimSpec"),
-                 arg("name"),
-                 arg("typeName"),
-                 arg("variability") = SdfVariabilityVarying,
-                 arg("declaresCustom") = false))
+             nb::arg("ownerPrimSpec"),
+             nb::arg("name"),
+             nb::arg("typeName"),
+             nb::arg("variability") = SdfVariabilityVarying,
+             nb::arg("declaresCustom") = false)
 
         // XXX valueType and typeName are actually implemented on PropertySpec,
         //     but are only exposed on AttributeSpec for some reason
-        .add_property("valueType",
+        .def_prop_ro("valueType",
             &This::GetValueType,
             "The value type of this attribute.")
-        .add_property("typeName",
+        .def_prop_ro("typeName",
             &This::GetTypeName,
             "The typename of this attribute.")
 
-        .add_property("roleName",
+        .def_prop_ro("roleName",
             &This::GetRoleName,
             "The roleName for this attribute's typeName.")
 
-        .add_property("displayUnit",
+        .def_prop_rw("displayUnit",
             &This::GetDisplayUnit,
             &This::SetDisplayUnit,
             "The display unit for this attribute.")
 
-        .add_property("connectionPathList",
+        .def_prop_ro("connectionPathList",
             &This::GetConnectionPathList,
             "A PathListEditor for the attribute's connection paths.\n\n"
             "The list of the connection paths for this attribute may be "
@@ -170,12 +171,12 @@ void wrapAttributeSpec()
             "value or as a set of list editing operations.  See GdListEditor "
             "for more information.")
 
-        .add_property("allowedTokens",
+        .def_prop_rw("allowedTokens",
             &_WrapGetAllowedTokens,
             &_WrapSetAllowedTokens,
-	    "The allowed value tokens for this property")
+            "The allowed value tokens for this property")
 
-        .add_property("colorSpace",
+        .def_prop_rw("colorSpace",
             &This::GetColorSpace,
             &This::SetColorSpace,
             "The color-space in which the attribute value is authored.")
@@ -183,7 +184,7 @@ void wrapAttributeSpec()
         .def("HasColorSpace", &This::HasColorSpace)
         .def("ClearColorSpace", &This::ClearColorSpace)
 
-        .add_property("limits",
+        .def_prop_rw("limits",
             &This::GetLimits,
             &This::SetLimits,
             "The limits dictionary for this attribute.")
@@ -191,15 +192,14 @@ void wrapAttributeSpec()
         .def("HasLimits", &This::HasLimits)
         .def("ClearLimits", &This::ClearLimits)
 
-        .add_property("arraySizeConstraint",
+        .def_prop_rw("arraySizeConstraint",
             &This::GetArraySizeConstraint,
             &This::SetArraySizeConstraint,
             "The array size constraint value of this attribute.")
         .def("HasArraySizeConstraint", &This::HasArraySizeConstraint)
         .def("ClearArraySizeConstraint", &This::ClearArraySizeConstraint)
 
-        .def("ListTimeSamples", &_ListTimeSamples,
-             return_value_policy<TfPySequenceToList>())
+        .def("ListTimeSamples", &_ListTimeSamples)
         .def("GetNumTimeSamples", &_GetNumTimeSamples)
         .def("GetBracketingTimeSamples",
              &_GetBracketingTimeSamples)
@@ -211,20 +211,20 @@ void wrapAttributeSpec()
         .def("HasSpline", &This::HasSpline)
         .def("GetSpline",
              &This::GetSpline,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("SetSpline",
-             &This::SetSpline, arg("spline"))
+             &This::SetSpline, nb::arg("spline"))
         .def("ClearSpline",
              &This::ClearSpline)
-
-        // property keys
-        .setattr("ArraySizeConstraintKey", SdfFieldKeys->ArraySizeConstraint)
-        .setattr("ConnectionPathsKey", SdfFieldKeys->ConnectionPaths)
-        // XXX DefaultValueKey are actually
-        //     implemented on PropertySpec, but are only exposed on
-        //     AttributeSpec for some reason
-        .setattr("DefaultValueKey", SdfFieldKeys->Default)
-        .setattr("DisplayUnitKey", SdfFieldKeys->DisplayUnit)
-        .setattr("LimitsKey", SdfFieldKeys->Limits)
         ;
+
+    // property keys
+    cls.attr("ArraySizeConstraintKey") = nb::cast(SdfFieldKeys->ArraySizeConstraint);
+    cls.attr("ConnectionPathsKey") = nb::cast(SdfFieldKeys->ConnectionPaths);
+    // XXX DefaultValueKey are actually
+    //     implemented on PropertySpec, but are only exposed on
+    //     AttributeSpec for some reason
+    cls.attr("DefaultValueKey") = nb::cast(SdfFieldKeys->Default);
+    cls.attr("DisplayUnitKey") = nb::cast(SdfFieldKeys->DisplayUnit);
+    cls.attr("LimitsKey") = nb::cast(SdfFieldKeys->Limits);
 }

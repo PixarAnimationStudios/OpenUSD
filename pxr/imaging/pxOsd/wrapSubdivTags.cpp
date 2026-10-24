@@ -6,17 +6,15 @@
 //
 #include "pxr/imaging/pxOsd/subdivTags.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
 
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static std::string
 _ReprSubdivTags(
@@ -37,18 +35,23 @@ _ReprSubdivTags(
     return repr.str();
 }
 
-void wrapSubdivTags()
+void wrapSubdivTags(nb::module_& m)
 {
     using This = PxOsdSubdivTags;
 
-    class_<This>("SubdivTags", init<>())
-        .def(init<TfToken, TfToken, TfToken, TfToken,
-                  VtIntArray, VtIntArray, VtFloatArray,
-                  VtIntArray, VtFloatArray>())
+    nb::class_<This>(m, "SubdivTags")
+        .def(nb::init<>())
+        .def(nb::init<TfToken, TfToken, TfToken, TfToken,
+                      VtIntArray, VtIntArray, VtFloatArray,
+                      VtIntArray, VtFloatArray>())
         .def("__repr__", &::_ReprSubdivTags)
-        .def(self == self)
-        .def(self != self)
-        .def(str(self))
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__str__", [](const This& self) {
+            std::ostringstream s;
+            s << self;
+            return s.str();
+        })
 
         .def("GetVertexInterpolationRule", &This::GetVertexInterpolationRule)
         .def("SetVertexInterpolationRule", &This::SetVertexInterpolationRule)
@@ -60,20 +63,15 @@ void wrapSubdivTags()
         .def("SetCreaseMethod", &This::SetCreaseMethod)
         .def("GetTriangleSubdivision", &This::GetTriangleSubdivision)
         .def("SetTriangleSubdivision", &This::SetTriangleSubdivision)
-        .def("GetCreaseIndices", &This::GetCreaseIndices,
-             return_value_policy<copy_const_reference>())
+        .def("GetCreaseIndices", &This::GetCreaseIndices)
         .def("SetCreaseIndices", &This::SetCreaseIndices)
-        .def("GetCreaseLengths", &This::GetCreaseLengths,
-             return_value_policy<copy_const_reference>())
+        .def("GetCreaseLengths", &This::GetCreaseLengths)
         .def("SetCreaseLengths", &This::SetCreaseLengths)
-        .def("GetCreaseWeights", &This::GetCreaseWeights,
-             return_value_policy<copy_const_reference>())
+        .def("GetCreaseWeights", &This::GetCreaseWeights)
         .def("SetCreaseWeights", &This::SetCreaseWeights)
-        .def("GetCornerIndices", &This::GetCornerIndices,
-             return_value_policy<copy_const_reference>())
+        .def("GetCornerIndices", &This::GetCornerIndices)
         .def("SetCornerIndices", &This::SetCornerIndices)
-        .def("GetCornerWeights", &This::GetCornerWeights,
-             return_value_policy<copy_const_reference>())
+        .def("GetCornerWeights", &This::GetCornerWeights)
         .def("SetCornerWeights", &This::SetCornerWeights)
         .def("ComputeHash", &This::ComputeHash)
     ;

@@ -15,7 +15,9 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
-#include "pxr/external/boost/python/module.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 // Helper macros for module files.  If you implement your wrappers for classes
 // as functions named wrapClassName(), then you can create your module like
@@ -32,6 +34,12 @@
 static void WrapModule();
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_API
+nanobind::module_ TfPyGetCurrentNanobindModule();
+
+TF_API
+PyObject* Tf_PyInitModule(PyModuleDef& moduledef, void (*init_function)());
 
 TF_API
 void Tf_PyInitWrapModule(void (*wrapModule)(),
@@ -54,7 +62,7 @@ void TF_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-// When we generate boost python bindings for a library named Foo, 
+// When we generate python bindings for a library named Foo, 
 // we generate a python package that has __init__.py and _Foo.so, 
 // and we put all the python bindings in _Foo.so.  The __init__.py 
 // file imports _Foo and then publishes _Foo's symbols as its own.  
@@ -80,7 +88,7 @@ PyObject* TF_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return pxr_boost::python::detail::init_module(moduledef,
+    return Tf_PyInitModule(moduledef,
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
@@ -113,7 +121,7 @@ PyObject* TF_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return pxr_boost::python::detail::init_module(moduledef, 
+    return Tf_PyInitModule(moduledef, 
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
@@ -122,3 +130,8 @@ PyObject* TF_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
 
 // Declares and calls the class wrapper for x
 #define TF_WRAP(x) ARCH_HIDDEN void wrap ## x (); wrap ## x ()
+
+// Declares and calls the nanobind class wrapper for x
+#define TF_WRAP_NB(x) \
+    ARCH_HIDDEN void wrap ## x (nanobind::module_ &); \
+    { nanobind::module_ _nb_mod = PXR_NS::TfPyGetCurrentNanobindModule(); wrap ## x (_nb_mod); }

@@ -13,12 +13,10 @@
 #include "pxr/base/tf/refPtrTracker.h"
 #include "pxr/base/tf/pySingleton.h"
 
-#include "pxr/external/boost/python/class.hpp"
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -51,14 +49,16 @@ _ReportTracesForWatched(TfRefPtrTracker& tracker, uintptr_t ptr)
 
 } // anonymous namespace 
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+
 void
-wrapRefPtrTracker()
+wrapRefPtrTracker(nanobind::module_& m)
 {
      typedef TfRefPtrTracker This;
-     typedef TfWeakPtr<TfRefPtrTracker> ThisPtr;
      
-     class_<This, ThisPtr, noncopyable>("RefPtrTracker", no_init)
-        .def(TfPySingleton())
+     nanobind::class_<This>(m, "RefPtrTracker", nanobind::is_weak_referenceable())
+        .def(TfNbSingleton())
 
         .def("GetAllWatchedCountsReport", _ReportAllWatchedCounts)
         .def("GetAllTracesReport", _ReportAllTraces)

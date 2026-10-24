@@ -4,7 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -25,132 +26,131 @@ using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapMath()
+void wrapMath(nanobind::module_ &m)
 {    
 
-    def("IsClose", (bool (*)(double, double, double))GfIsClose);
-    def("RadiansToDegrees", GfRadiansToDegrees);
-    def("DegreesToRadians", GfDegreesToRadians);
+    m.def("IsClose", (bool (*)(double, double, double))GfIsClose);
+    m.def("RadiansToDegrees", GfRadiansToDegrees);
+    m.def("DegreesToRadians", GfDegreesToRadians);
 
-    def("SmoothStep", GfSmoothStep, 
-        (arg("slope0") = 0.0,
-         arg("slope1") = 0.0));
+    m.def("SmoothStep", GfSmoothStep, 
+          nanobind::arg("x"), nanobind::arg("min"), nanobind::arg("max"),
+          nanobind::arg("slope0") = 0.0,
+          nanobind::arg("slope1") = 0.0);
 
-    def("Sqr", GfSqr<double>);
-    def("Sqr", GfSqr<int>);
+    m.def("Sqr", GfSqr<int>);
+    m.def("Sqr", GfSqr<double>);
 
-    def("Sqr", GfSqr<GfVec2i>);
-    def("Sqr", GfSqr<GfVec3i>);
-    def("Sqr", GfSqr<GfVec2f>);
-    def("Sqr", GfSqr<GfVec3f>);
-    def("Sqr", GfSqr<GfVec4f>);
-    def("Sqr", GfSqr<GfVec2d>);
-    def("Sqr", GfSqr<GfVec3d>);
-    def("Sqr", GfSqr<GfVec4d>);
+    m.def("Sqr", GfSqr<GfVec2i>);
+    m.def("Sqr", GfSqr<GfVec3i>);
+    m.def("Sqr", GfSqr<GfVec2d>);
+    m.def("Sqr", GfSqr<GfVec3d>);
+    m.def("Sqr", GfSqr<GfVec4d>);
+    m.def("Sqr", GfSqr<GfVec2f>);
+    m.def("Sqr", GfSqr<GfVec3f>);
+    m.def("Sqr", GfSqr<GfVec4f>);
 
-    def("Sgn", GfSgn<double>);
-    def("Sgn", GfSgn<int>);
+    m.def("Sgn", GfSgn<int>);
+    m.def("Sgn", GfSgn<double>);
     
-    def("Sqrt", (double (*)(double))GfSqrt);
-    def("Sqrtf", (float (*)(float))GfSqrt, 
+    m.def("Sqrt", (double (*)(double))GfSqrt);
+    m.def("Sqrtf", (float (*)(float))GfSqrt, 
         "Sqrtf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Sqrt() to return the square root of f as a float instead of a double.");
 
-    def("Exp", (double (*)(double))GfExp);
-    def("Expf", (float (*)(float))GfExp, 
+    m.def("Exp", (double (*)(double))GfExp);
+    m.def("Expf", (float (*)(float))GfExp, 
         "Expf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Exp() to return the exponent of f as a float instead of a double.");
 
-    def("Log", (double (*)(double))GfLog);
-    def("Logf", (float (*)(float))GfLog, 
+    m.def("Log", (double (*)(double))GfLog);
+    m.def("Logf", (float (*)(float))GfLog, 
         "Logf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Log() to return the logarithm of f as a float instead of a double.");
 
-    def("Floor", (double (*)(double))GfFloor);
-    def("Floorf", (float (*)(float))GfFloor, 
+    m.def("Floor", (double (*)(double))GfFloor);
+    m.def("Floorf", (float (*)(float))GfFloor, 
         "Floorf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Floor() to return the floor of f as a float instead of a double.");
 
-    def("Ceil", (double (*)(double))GfCeil);
-    def("Ceilf", (float (*)(float))GfCeil, 
+    m.def("Ceil", (double (*)(double))GfCeil);
+    m.def("Ceilf", (float (*)(float))GfCeil, 
         "Ceilf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Ceil() to return the ceiling of f as a float instead of a double.");
 
-    def("Abs", (double (*)(double))GfAbs);
-    def("Absf", (float (*)(float))GfAbs, 
+    m.def("Abs", (double (*)(double))GfAbs);
+    m.def("Absf", (float (*)(float))GfAbs, 
         "Absf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Abs() to return the absolute value of f as a float instead of a double.");
 
-    def("Round", (double (*)(double))GfRound);
-    def("Roundf", (float (*)(float))GfRound, 
+    m.def("Round", (double (*)(double))GfRound);
+    m.def("Roundf", (float (*)(float))GfRound, 
         "Roundf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Round() to return the rounded value of f as a float instead of a double.");
 
-    def("Pow", (double (*)(double, double))GfPow);
-    def("Powf", (float (*)(float, float))GfPow, 
+    m.def("Pow", (double (*)(double, double))GfPow);
+    m.def("Powf", (float (*)(float, float))GfPow, 
         "Powf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Pow() to return the power of f as a float instead of a double.");
 
-    def("Clamp", (double (*)(double, double, double))GfClamp);
-    def("Clampf", (float (*)(float, float, float))GfClamp, 
+    m.def("Clamp", (double (*)(double, double, double))GfClamp);
+    m.def("Clampf", (float (*)(float, float, float))GfClamp, 
         "Clampf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Clamp() to return the clamped value of f as a float instead of a double.");
             
-    def("Mod", (double (*)(double, double))GfMod);
-    def("Modf", (float (*)(float, float))GfMod, 
+    m.def("Mod", (double (*)(double, double))GfMod);
+    m.def("Modf", (float (*)(float, float))GfMod, 
         "Modf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Mod() to return the modulus of f as a float instead of a double.");
 
-    def("Lerp", GfLerp<double>);
-    def("Lerpf", GfLerp<float>, 
+    m.def("Lerp", GfLerp<double>);
+    m.def("Lerpf", GfLerp<float>, 
          "Lerpf(f) -> float\n\n"
         "f : float\n\n"
         "Use instead of Lerp() to return the linear interpolation of f as a float instead of a double.");
 
-    def("Lerp", GfLerp<GfVec2i>);
-    def("Lerp", GfLerp<GfVec3i>);
-    def("Lerp", GfLerp<GfVec2f>);
-    def("Lerp", GfLerp<GfVec3f>);
-    def("Lerp", GfLerp<GfVec4f>);
-    def("Lerp", GfLerp<GfVec2d>);
-    def("Lerp", GfLerp<GfVec3d>);
-    def("Lerp", GfLerp<GfVec4d>);
+    m.def("Lerp", GfLerp<GfVec2i>);
+    m.def("Lerp", GfLerp<GfVec3i>);
+    m.def("Lerp", GfLerp<GfVec2d>);
+    m.def("Lerp", GfLerp<GfVec3d>);
+    m.def("Lerp", GfLerp<GfVec4d>);
+    m.def("Lerp", GfLerp<GfVec2f>);
+    m.def("Lerp", GfLerp<GfVec3f>);
+    m.def("Lerp", GfLerp<GfVec4f>);
 
-    def("Min", (double (*)(double, double)) GfMin<double>);
-    def("Min", (double (*)(double, double, double)) GfMin<double>);
-    def("Min", (double (*)(double, double, double, double)) GfMin<double>);
-    def("Min", (double (*)(double, double, double, double, double))
+    m.def("Min", (int (*)(int, int)) GfMin<int>);
+    m.def("Min", (int (*)(int, int, int)) GfMin<int>);
+    m.def("Min", (int (*)(int, int, int, int)) GfMin<int>);
+    m.def("Min", (int (*)(int, int, int, int, int)) GfMin<int>);
+    m.def("Min", (double (*)(double, double)) GfMin<double>);
+    m.def("Min", (double (*)(double, double, double)) GfMin<double>);
+    m.def("Min", (double (*)(double, double, double, double)) GfMin<double>);
+    m.def("Min", (double (*)(double, double, double, double, double))
         GfMin<double>);
-    def("Min", (int (*)(int, int)) GfMin<int>);
-    def("Min", (int (*)(int, int, int)) GfMin<int>);
-    def("Min", (int (*)(int, int, int, int)) GfMin<int>);
-    def("Min", (int (*)(int, int, int, int, int)) GfMin<int>);
 
-    def("Max", (double (*)(double, double)) GfMax<double>);
-    def("Max", (double (*)(double, double, double)) GfMax<double>);
-    def("Max", (double (*)(double, double, double, double)) GfMax<double>);
-    def("Max", (double (*)(double, double, double, double, double))
+    m.def("Max", (int (*)(int, int)) GfMax<int>);
+    m.def("Max", (int (*)(int, int, int)) GfMax<int>);
+    m.def("Max", (int (*)(int, int, int, int)) GfMax<int>);
+    m.def("Max", (int (*)(int, int, int, int, int)) GfMax<int>);
+    m.def("Max", (double (*)(double, double)) GfMax<double>);
+    m.def("Max", (double (*)(double, double, double)) GfMax<double>);
+    m.def("Max", (double (*)(double, double, double, double)) GfMax<double>);
+    m.def("Max", (double (*)(double, double, double, double, double))
         GfMax<double>);
-    def("Max", (int (*)(int, int)) GfMax<int>);
-    def("Max", (int (*)(int, int, int)) GfMax<int>);
-    def("Max", (int (*)(int, int, int, int)) GfMax<int>);
-    def("Max", (int (*)(int, int, int, int, int)) GfMax<int>);
 
-    def("Dot", (double (*)(double, double)) GfDot);
-    def("CompMult", (double (*)(double, double)) GfCompMult);
-    def("CompDiv", (double (*)(double, double)) GfCompDiv);
+    m.def("Dot", (double (*)(double, double)) GfDot);
+    m.def("CompMult", (double (*)(double, double)) GfCompMult);
+    m.def("CompDiv", (double (*)(double, double)) GfCompDiv);
 
     TfPyContainerConversions::from_python_sequence< std::vector<int>, TfPyContainerConversions::variable_capacity_policy>();
 

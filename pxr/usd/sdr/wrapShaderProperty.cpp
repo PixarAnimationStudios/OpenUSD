@@ -6,67 +6,63 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapShaderProperty()
+void wrapShaderProperty(nanobind::module_ &m)
 {
     typedef SdrShaderProperty This;
-    typedef SdrShaderPropertyPtr ThisPtr;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "PropertyTypes", SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "PropertyTypes", SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS
     );
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-
-    register_ptr_to_python<SdrShaderPropertyConstPtr>();
-
-    class_<This, ThisPtr, noncopyable>("ShaderProperty", no_init)
+    nb::class_<This>(m, "ShaderProperty")
         .def("__repr__", &This::GetInfoString)
-        .def("GetName", &This::GetName, copyRefPolicy)
-        .def("GetType", &This::GetType, copyRefPolicy)
-        .def("GetDefaultValue", &This::GetDefaultValue, copyRefPolicy)
+        .def("GetName", &This::GetName)
+        .def("GetType", &This::GetType)
+        .def("GetDefaultValue", &This::GetDefaultValue)
         .def("IsOutput", &This::IsOutput)
         .def("IsArray", &This::IsArray)
         .def("IsDynamicArray", &This::IsDynamicArray)
         .def("GetArraySize", &This::GetArraySize)
         .def("GetTupleSize", &This::GetTupleSize)
         .def("GetInfoString", &This::GetInfoString)
-        .def("GetMetadata", &This::GetMetadata,
-            return_value_policy<TfPyMapToDictionary>())
-        .def("GetMetadataObject", &This::GetMetadataObject, copyRefPolicy)
+        .def("GetMetadata", &This::GetMetadata)
+        .def("GetMetadataObject", &This::GetMetadataObject)
         .def("IsConnectable", &This::IsConnectable)
         .def("CanConnectTo", &This::CanConnectTo)
         .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)
-        .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
-                copyRefPolicy)
-        .def("GetLabel", &This::GetLabel, copyRefPolicy)
+        .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType)
+        .def("GetLabel", &This::GetLabel)
         .def("GetHelp", &This::GetHelp)
-        .def("GetPage", &This::GetPage, copyRefPolicy)
-        .def("GetWidget", &This::GetWidget, copyRefPolicy)
-        .def("GetHints", &This::GetHints,
-            return_value_policy<TfPyMapToDictionary>())
-        .def("GetOptions", &This::GetOptions,
-            return_value_policy<TfPySequenceToList>())
+        .def("GetPage", &This::GetPage)
+        .def("GetWidget", &This::GetWidget)
+        .def("GetHints", &This::GetHints)
+        .def("GetOptions", &This::GetOptions)
         .def("GetImplementationName", &This::GetImplementationName)
         .def("GetShownIf", &This::GetShownIf)
-        .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
-        .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
+        .def("GetVStructMemberOf", &This::GetVStructMemberOf)
+        .def("GetVStructMemberName", &This::GetVStructMemberName)
         .def("GetVStructConditionalExpr",
-            &This::GetVStructConditionalExpr, copyRefPolicy)
+            &This::GetVStructConditionalExpr)
         .def("IsVStructMember", &This::IsVStructMember)
         .def("IsVStruct", &This::IsVStruct)
-        .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,
-            copyRefPolicy)
+        .def("GetValidConnectionTypes", &This::GetValidConnectionTypes)
         .def("IsAssetIdentifier", &This::IsAssetIdentifier)
         .def("IsDefaultInput", &This::IsDefaultInput)
         ;

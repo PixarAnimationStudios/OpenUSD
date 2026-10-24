@@ -10,6 +10,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -19,30 +20,30 @@
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usdGeom/boundable.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
 namespace {
 
-
-object
+nb::object
 _ComputeJointInfluences(const UsdSkelSkinningQuery& self, UsdTimeCode time)
 {
     VtIntArray indices;
     VtFloatArray weights;
     if (self.ComputeJointInfluences(&indices, &weights, time)) {
-        return pxr_boost::python::make_tuple(indices, weights);
+        return nb::make_tuple(indices, weights);
     }
-    return object();
+    return nb::none();
 }
 
-
-object
+nb::object
 _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
                                size_t numPoints,
                                UsdTimeCode time)
@@ -51,11 +52,10 @@ _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
     VtFloatArray weights;
     if (self.ComputeVaryingJointInfluences(numPoints, &indices,
                                           &weights, time)) {
-        return pxr_boost::python::make_tuple(indices, weights);
+        return nb::make_tuple(indices, weights);
     }
-    return object();
+    return nb::none();
 }
-
 
 std::vector<double>
 _GetTimeSamples(const UsdSkelSkinningQuery& self)
@@ -64,7 +64,6 @@ _GetTimeSamples(const UsdSkelSkinningQuery& self)
     self.GetTimeSamples(&times);
     return times;
 }
-
 
 std::vector<double>
 _GetTimeSamplesInInterval(const UsdSkelSkinningQuery& self,
@@ -75,24 +74,22 @@ _GetTimeSamplesInInterval(const UsdSkelSkinningQuery& self,
     return times;
 }
 
-
-object
+nb::object
 _GetJointOrder(const UsdSkelSkinningQuery& self)
 {
     VtTokenArray jointOrder;
     if (self.GetJointOrder(&jointOrder))
-        return object(jointOrder);
-    return {};
+        return nb::cast(jointOrder);
+    return nb::none();
 }
 
-
-object
+nb::object
 _GetBlendShapeOrder(const UsdSkelSkinningQuery& self)
 {
     VtTokenArray blendShapeOrder;
     if (self.GetBlendShapeOrder(&blendShapeOrder))
-        return object(blendShapeOrder);
-    return {};
+        return nb::cast(blendShapeOrder);
+    return nb::none();
 }
 
 template <typename Matrix4>
@@ -105,7 +102,6 @@ _ComputeSkinnedPoints(const UsdSkelSkinningQuery& self,
     return self.ComputeSkinnedPoints(xforms, &points, time);
 }
 
-
 template <typename Matrix4>
 Matrix4
 _ComputeSkinnedTransform(const UsdSkelSkinningQuery& self,
@@ -117,22 +113,21 @@ _ComputeSkinnedTransform(const UsdSkelSkinningQuery& self,
     return xform;
 }
 
-
 } // namespace
 
-
-void wrapUsdSkelSkinningQuery()
+void wrapUsdSkelSkinningQuery(nb::module_ &m)
 {
     using This = UsdSkelSkinningQuery;
 
-    class_<This>("SkinningQuery")
+    nb::class_<This>(m, "SkinningQuery")
 
-        .def(!self)
+        .def(nb::init<>())
+
+        .def("__bool__", [](const This& self) { return bool(self); })
 
         .def("__str__", &This::GetDescription)
 
-        .def("GetPrim", &This::GetPrim,
-             return_value_policy<return_by_value>())
+        .def("GetPrim", &This::GetPrim, nb::rv_policy::copy)
 
         .def("HasJointInfluences", &This::HasJointInfluences)
 
@@ -141,38 +136,35 @@ void wrapUsdSkelSkinningQuery()
         .def("GetNumInfluencesPerComponent",
              &This::GetNumInfluencesPerComponent)
 
-        .def("GetInterpolation", &This::GetInterpolation,
-             return_value_policy<return_by_value>())
+        .def("GetInterpolation", &This::GetInterpolation, nb::rv_policy::copy)
 
         .def("IsRigidlyDeformed", &This::IsRigidlyDeformed)
 
         .def("GetSkinningMethodAttr", &This::GetSkinningMethodAttr,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetGeomBindTransformAttr", &This::GetGeomBindTransformAttr,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetJointIndicesPrimvar", &This::GetJointIndicesPrimvar,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetJointWeightsPrimvar", &This::GetJointWeightsPrimvar,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetBlendShapesAttr", &This::GetBlendShapesAttr,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetBlendShapeTargetsRel", &This::GetBlendShapeTargetsRel,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         // deprecated
-        .def("GetMapper", &This::GetMapper,
-             return_value_policy<return_by_value>())
+        .def("GetMapper", &This::GetMapper, nb::rv_policy::copy)
 
-        .def("GetJointMapper", &This::GetJointMapper,
-             return_value_policy<return_by_value>())
+        .def("GetJointMapper", &This::GetJointMapper, nb::rv_policy::copy)
 
         .def("GetBlendShapeMapper", &This::GetBlendShapeMapper,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetJointOrder", &_GetJointOrder)
 
@@ -183,48 +175,47 @@ void wrapUsdSkelSkinningQuery()
         .def("GetTimeSamplesInInterval", &_GetTimeSamplesInInterval)
 
         .def("ComputeJointInfluences", &_ComputeJointInfluences,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeVaryingJointInfluences", &_ComputeVaryingJointInfluences,
-             (arg("numPoints"), arg("time")=UsdTimeCode::Default()))
+             nb::arg("numPoints"), nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4d>,
-             (arg("xforms"), arg("points"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("xforms"), nb::arg("points"),
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeSkinnedPoints", &_ComputeSkinnedPoints<GfMatrix4f>,
-             (arg("xforms"), arg("points"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("xforms"), nb::arg("points"),
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4d>,
-             (arg("xforms"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("xforms"),
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeSkinnedTransform", &_ComputeSkinnedTransform<GfMatrix4f>,
-             (arg("xforms"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("xforms"),
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeExtentsPadding",
              static_cast<float (UsdSkelSkinningQuery::*)(
                  const VtMatrix4dArray&,
                  const UsdGeomBoundable&) const>(
                      &This::ComputeExtentsPadding),
-             (arg("skelRestXforms"),
-              arg("boundable"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("skelRestXforms"),
+             nb::arg("boundable"))
 
         .def("ComputeExtentsPadding",
              static_cast<float (UsdSkelSkinningQuery::*)(
                  const VtMatrix4fArray&,
                  const UsdGeomBoundable&) const>(
                      &This::ComputeExtentsPadding),
-             (arg("skelRestXforms"),
-              arg("boundable"),
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("skelRestXforms"),
+             nb::arg("boundable"))
 
         .def("GetSkinningMethod", &This::GetSkinningMethod)
 
         .def("GetGeomBindTransform", &This::GetGeomBindTransform,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time")=UsdTimeCode::Default())
         ;
+
 }

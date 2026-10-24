@@ -31,22 +31,16 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python/slice.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -67,7 +61,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfVec3i &vec = extract<GfVec3i &>(self);
+    GfVec3i &vec = *nanobind::inst_ptr<GfVec3i>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(vec.data());
@@ -100,11 +94,9 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return 0;
 }
 
-// This structure serves to instantiate a PyBufferProcs instance with pointers
-// to the right buffer protocol functions.
-static PyBufferProcs bufferProcs = {
-    (getbufferproc) getbuffer,
-    (releasebufferproc) 0,
+static const PyType_Slot bufferSlots[] = {
+    { Py_bf_getbuffer, (void *)getbuffer },
+    { 0, nullptr }
 };
 
 // End python buffer protocol support.
@@ -123,9 +115,6 @@ static size_t __hash__(GfVec3i const &self) {
     return TfHash{}(self);
 }
 
- 
-
- 
 static int
 normalizeIndex(int index) {
     return TfPyNormalizeIndex(index, 3, true /*throw error*/);
@@ -138,113 +127,66 @@ static int __getitem__(const GfVec3i &self, int index) {
     return self[normalizeIndex(index)];
 }
 
-// Implements __getitem__ for a slice
-static list __getslice__(const GfVec3i &self, slice indices) {
-    list result;
-
-    const int* begin = self.data();
-    const int* end = begin + 3;
-
-    slice::range<const int*> bounds;
-    try {
-        // This appears to be a typo in the boost headers.  The method
-        // name should be "get_indices".
-        //
-        bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument const &) {
-        return result;
-    }
-
-    while (bounds.start != bounds.stop) {
-        result.append(*bounds.start);
-        bounds.start += bounds.step;
-    }
-    // Unlike STL ranges, bounds represents a *closed* interval.  This
-    // means that we must append exactly one more item at the end of
-    // the list.
-    //
-    result.append(*bounds.start);
-
-    return result;
-}
-
 static void __setitem__(GfVec3i &self, int index, int value) {
     self[normalizeIndex(index)] = value;
 }
 
 // Handles refcounting & extraction for PySequence_GetItem.
 static int _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
-    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<int>(pxr_boost::python::object(h));
+    nanobind::object h = nanobind::steal(PySequence_GetItem(seq, i));
+    int val;
+    if (!nanobind::try_cast<int>(h, val)) {
+        TfPyThrowTypeError("cannot convert element");
+    }
+    return val;
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
-    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<int> e((pxr_boost::python::object(h)));
-    return e.check();
+    nanobind::object h = nanobind::steal(PySequence_GetItem(seq, i));
+    int val;
+    return nanobind::try_cast<int>(h, val);
 }
 
-static void __setslice__(GfVec3i &self, slice indices, object values) {
-    // Verify our arguments
-    //
+// Implements __getitem__ for a slice
+static nanobind::list __getslice__(const GfVec3i &self, nanobind::slice indices) {
+    nanobind::list result;
+    auto [start, stop, step, sliceLength] = indices.compute(3);
+    for (size_t i = 0; i < sliceLength; ++i) {
+        result.append(self[start]);
+        start += step;
+    }
+    return result;
+}
+
+static void __setslice__(GfVec3i &self, nanobind::slice indices, nanobind::object values) {
     PyObject* valuesObj = values.ptr();
 
     if (!PySequence_Check(valuesObj)) {
         TfPyThrowTypeError("value must be a sequence");
     }
 
-    int* begin = self.data();
-    int* end = begin + 3;
+    auto [start, stop, step, sliceLength] = indices.compute(3);
 
-    Py_ssize_t sliceLength = -1;
-
-    slice::range<int*> bounds;
-
-    // Convince g++ that we're not using uninitialized values.
-    //
-    bounds.start = 0;
-    bounds.stop  = 0;
-    bounds.step  = 0;
-
-    try {
-        // This appears to be a typo in the boost headers.  The method
-        // name should be "get_indices".
-        //
-        bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument const &) {
-        sliceLength = 0;
-    }
-
-    // If sliceLength was not set in the exception handling code above,
-    // figure out how long it really is.
-    //
-    if (sliceLength == -1) {
-        sliceLength = ((bounds.stop - bounds.start) / bounds.step) + 1;
-    }
-
-    if (PySequence_Length(valuesObj) != sliceLength) {
+    if (PySequence_Length(valuesObj) != (Py_ssize_t)sliceLength) {
         TfPyThrowValueError(
             TfStringPrintf(
                 "attempt to assign sequence of size %zd to slice of size %zd",
-                PySequence_Length(valuesObj), sliceLength));
+                PySequence_Length(valuesObj), (Py_ssize_t)sliceLength));
     }
 
-    // Short circuit for empty slices
-    //
     if (sliceLength == 0) {
         return;
     }
 
     // Make sure that all items can be extracted before changing the GfVec3i.
-    //
-    for (Py_ssize_t i = 0; i < sliceLength; ++i) {
+    for (size_t i = 0; i < sliceLength; ++i) {
         // This will throw a TypeError if any of the items cannot be converted.
         _SequenceGetItem(valuesObj, i);
     }
 
-    for (Py_ssize_t i = 0; i < sliceLength; ++i) {
-        *bounds.start = _SequenceGetItem(valuesObj, i);
-        bounds.start += bounds.step;
+    for (size_t i = 0; i < sliceLength; ++i) {
+        self[start] = _SequenceGetItem(valuesObj, i);
+        start += step;
     }
 }
 
@@ -256,31 +198,7 @@ static bool __contains__(const GfVec3i &self, int value) {
     return false;
 }
 
-static GfVec3i __truediv__(const GfVec3i &self, int value)
-{
-    return self / value;
-}
-
-static GfVec3i& __itruediv__(GfVec3i &self, int value)
-{
-    return self /= value;
-}
-
-template <class V>
-static V *__init__() {
-    // Default contstructor zero-initializes from python.
-    return new V(0);
-}
-
 struct FromPythonTuple {
-    FromPythonTuple() {
-        converter::registry::
-            push_back(&_convertible, &_construct,
-                      pxr_boost::python::type_id<GfVec3i>());
-    }
-
-  private:
-    
     static void *_convertible(PyObject *obj_ptr) {
         // If this object is a GfVec already, disregard.
         if (PyObject_HasAttrString(obj_ptr, "__isGfVec"))
@@ -299,34 +217,11 @@ struct FromPythonTuple {
         }
         return 0;
     }
-
-    static void _construct(PyObject *obj_ptr, converter::
-                           rvalue_from_python_stage1_data *data) {
-        typedef int Scalar;
-        void *storage = ((converter::rvalue_from_python_storage<GfVec3i>*)data)
-	    ->storage.bytes;
-        new (storage)
-	    GfVec3i(
-                _SequenceGetItem(obj_ptr, 0),
-                _SequenceGetItem(obj_ptr, 1),
-                _SequenceGetItem(obj_ptr, 2));
-        data->convertible = storage;
-    }
-};
-
-// This adds support for python's builtin pickling library
-// This is used by our Shake plugins which need to pickle entire classes
-// (including code), which we don't support in pxml.
-struct PickleSuite : pxr_boost::python::pickle_suite
-{
-    static pxr_boost::python::tuple getinitargs(const GfVec3i &v) {
-        return pxr_boost::python::make_tuple(v[0], v[1], v[2]);
-    }
 };
 
 } // anonymous namespace 
 
-void wrapVec3i()
+void wrapVec3i(nanobind::module_ &m)
 {
     typedef GfVec3i Vec;
     typedef int Scalar;
@@ -334,22 +229,36 @@ void wrapVec3i()
     static const size_t _dimension = 3;
     static const bool _true = true;
     
-    def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
+    m.def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
     
  
-    class_<GfVec3i> cls("Vec3i", no_init);
+    nanobind::class_<GfVec3i> cls(m, "Vec3i", nanobind::type_slots(bufferSlots));
     cls
-        .def("__init__", make_constructor(__init__<Vec>))
+        .def("__init__", [](Vec *self) { new (self) Vec(0); })
 
         // A tag indicating that this is a GfVec class, for internal use.
-        .def_readonly("__isGfVec", _true)
+        .def_ro_static("__isGfVec", &_true)
 
-        .def_pickle(PickleSuite())
+        .def("__getinitargs__", [](const Vec &v) {
+            return nanobind::make_tuple(v[0], v[1], v[2]);
+        })
 
         
-        .def(init<Vec>())
-        .def(init<Scalar>())
-        .def(init<Scalar, Scalar, Scalar>())
+        .def(nanobind::init<Vec>())
+        .def(nanobind::init<Scalar>())
+        .def(nanobind::init<Scalar, Scalar, Scalar>())
+        .def("__init__", [](Vec *self, nanobind::tuple obj) {
+            if (!FromPythonTuple::_convertible(obj.ptr())) {
+                throw nanobind::type_error("Invalid tuple for Vec3i");
+            }
+            new (self) Vec(_SequenceGetItem(obj.ptr(), 0), _SequenceGetItem(obj.ptr(), 1), _SequenceGetItem(obj.ptr(), 2));
+        })
+        .def("__init__", [](Vec *self, nanobind::list obj) {
+            if (!FromPythonTuple::_convertible(obj.ptr())) {
+                throw nanobind::type_error("Invalid list for Vec3i");
+            }
+            new (self) Vec(_SequenceGetItem(obj.ptr(), 0), _SequenceGetItem(obj.ptr(), 1), _SequenceGetItem(obj.ptr(), 2));
+        })
 
         .def(TfTypePythonClass())
 
@@ -360,29 +269,29 @@ void wrapVec3i()
         .def("__setitem__", __setslice__ )
         .def("__contains__", __contains__ )
 
-        .def_readonly("dimension", _dimension)
+        .def_ro_static("dimension", &_dimension)
         
 
-        .def(self == self)
-        .def(self != self)
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self * double())
-        .def(double() * self)
-        .def(self /= int())
-        .def(self / int())
-        .def(-self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(str(self))
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self * double())
+        .def(double() * nanobind::self)
+        .def(nanobind::self /= int())
+        .def(nanobind::self / int())
+        .def(-nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def("__str__", [](const Vec &self) { return TfStringify(self); })
 
-        .def("Axis", &Vec::Axis).staticmethod("Axis")
+        .def_static("Axis", &Vec::Axis)
 
-        .def("XAxis", &Vec::XAxis).staticmethod("XAxis")
-        .def("YAxis", &Vec::YAxis).staticmethod("YAxis")
-        .def("ZAxis", &Vec::ZAxis).staticmethod("ZAxis")
+        .def_static("XAxis", &Vec::XAxis)
+        .def_static("YAxis", &Vec::YAxis)
+        .def_static("ZAxis", &Vec::ZAxis)
 
         .def("GetDot", (Scalar (*)(const Vec &, const Vec &))GfDot)
         
@@ -398,13 +307,13 @@ void wrapVec3i()
         // has none -- it converts to and from a Python float by value, see
         // wrapHalf.cpp -- so no reference can be formed.  By value also matches
         // __getitem__, so v.x and v[0] yield the same Python type.
-        .add_property("x",
+        .def_prop_rw("x",
             +[](Vec const &self) { return self.x; },
             +[](Vec &self, Scalar value) { self.x = value; })
-        .add_property("y",
+        .def_prop_rw("y",
             +[](Vec const &self) { return self.y; },
             +[](Vec &self, Scalar value) { self.y = value; })
-        .add_property("z",
+        .def_prop_rw("z",
             +[](Vec const &self) { return self.z; },
             +[](Vec &self, Scalar value) { self.z = value; })
 
@@ -413,78 +322,78 @@ void wrapVec3i()
         // read-only, Python permits assigning through them -- 'v.xy = a', and
         // 'v.xy += a' too, since Python rewrites that as a get followed by a
         // set.  No proxy is involved either way; values are copied in and out.
-        .add_property("xy",
+        .def_prop_rw("xy",
             +[](Vec const &self) { return self.xy(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.x = in[0];
                 self.y = in[1];
             })
-        .add_property("xz",
+        .def_prop_rw("xz",
             +[](Vec const &self) { return self.xz(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.x = in[0];
                 self.z = in[1];
             })
-        .add_property("yx",
+        .def_prop_rw("yx",
             +[](Vec const &self) { return self.yx(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.y = in[0];
                 self.x = in[1];
             })
-        .add_property("yz",
+        .def_prop_rw("yz",
             +[](Vec const &self) { return self.yz(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.y = in[0];
                 self.z = in[1];
             })
-        .add_property("zx",
+        .def_prop_rw("zx",
             +[](Vec const &self) { return self.zx(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.z = in[0];
                 self.x = in[1];
             })
-        .add_property("zy",
+        .def_prop_rw("zy",
             +[](Vec const &self) { return self.zy(); },
             +[](Vec &self, GfVec2i const &in) {
                 self.z = in[0];
                 self.y = in[1];
             })
-        .add_property("xyz",
+        .def_prop_rw("xyz",
             +[](Vec const &self) { return self.xyz(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.x = in[0];
                 self.y = in[1];
                 self.z = in[2];
             })
-        .add_property("xzy",
+        .def_prop_rw("xzy",
             +[](Vec const &self) { return self.xzy(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.x = in[0];
                 self.z = in[1];
                 self.y = in[2];
             })
-        .add_property("yxz",
+        .def_prop_rw("yxz",
             +[](Vec const &self) { return self.yxz(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.y = in[0];
                 self.x = in[1];
                 self.z = in[2];
             })
-        .add_property("yzx",
+        .def_prop_rw("yzx",
             +[](Vec const &self) { return self.yzx(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.y = in[0];
                 self.z = in[1];
                 self.x = in[2];
             })
-        .add_property("zxy",
+        .def_prop_rw("zxy",
             +[](Vec const &self) { return self.zxy(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.z = in[0];
                 self.x = in[1];
                 self.y = in[2];
             })
-        .add_property("zyx",
+        .def_prop_rw("zyx",
             +[](Vec const &self) { return self.zyx(); },
             +[](Vec &self, GfVec3i const &in) {
                 self.z = in[0];
@@ -493,35 +402,14 @@ void wrapVec3i()
             })
 
         ;
-    to_python_converter<std::vector<GfVec3i>,
-        TfPySequenceToPython<std::vector<GfVec3i> > >();
-
-    // Install buffer protocol: set the tp_as_buffer slot to point to a
-    // structure of function pointers that implement the buffer protocol for
-    // this type.
-    auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
 
     // Allow appropriate tuples to be passed where Vecs are expected.
-    FromPythonTuple();
-
-    // Allow conversion of lists of GfVec3i to std::vector<GfVec3i>
-    TfPyContainerConversions::from_python_sequence<
-        std::vector<GfVec3i>,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>{});
-    }
+    NB_CALL(implicitly_convertible)(
+        NB_CTX,
+        &typeid(Vec),
+        (void *)+[](PyTypeObject *, PyObject *src,
+                    nanobind::detail::cleanup_list *) noexcept -> bool {
+            return FromPythonTuple::_convertible(src) != nullptr;
+        },
+        true);
 }

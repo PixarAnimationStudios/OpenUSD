@@ -12,7 +12,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/vt/pyOperators.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 #include "pxr/base/arch/math.h"
 #include "pxr/base/arch/inttypes.h"
@@ -22,6 +22,7 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -32,20 +33,9 @@
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/iterator.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/slice.hpp"
-#include "pxr/external/boost/python/type_id.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
+#include <nanobind/make_iterator.h>
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <algorithm>
 #include <numeric>
@@ -58,61 +48,155 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_WrapArray {
 
-using namespace pxr_boost::python;
-
 using std::unique_ptr;
 using std::vector;
 using std::string;
 
-template <typename T>
-object
-getitem_ellipsis(VtArray<T> const &self, object idx)
+template <typename Iter>
+struct Vt_SliceRange {
+    Iter start;
+    Iter stop;
+    Py_ssize_t step;
+};
+
+template <typename Iter>
+bool
+Vt_GetSliceIndices(nanobind::slice const &idx, Iter begin, Iter end,
+                   Vt_SliceRange<Iter> *rangeOut, size_t *setSizeOut)
 {
-    object ellipsis = object(handle<>(borrowed(Py_Ellipsis)));
-    if (idx != ellipsis) {
-        PyErr_SetString(PyExc_TypeError, "unsupported index type");
-        throw_error_already_set();
+    Py_ssize_t start = 0, stop = 0, step = 0;
+    if (PySlice_Unpack(idx.ptr(), &start, &stop, &step) < 0) {
+        if (PyErr_ExceptionMatches(PyExc_ValueError)) {
+            PyErr_SetString(PyExc_IndexError, "step size cannot be zero.");
+        }
+        throw nanobind::python_error();
     }
-    return object(self);
+    const Py_ssize_t len = end - begin;
+    const size_t setSize = PySlice_AdjustIndices(len, &start, &stop, step);
+    if (setSize == 0) {
+        return false;
+    }
+    rangeOut->start = begin + start;
+    rangeOut->stop =
+        begin + start + (static_cast<Py_ssize_t>(setSize) - 1) * step;
+    rangeOut->step = step;
+    *setSizeOut = setSize;
+    return true;
 }
 
 template <typename T>
-object
+bool
+Vt_TryExtractElement(nanobind::handle h, T *out, bool throwOnOverflow = false)
+{
+    if constexpr (std::is_same_v<T, bool>) {
+        if (h.is_none() || PyBool_Check(h.ptr()) || PyLong_Check(h.ptr())) {
+            int isTrue = PyObject_IsTrue(h.ptr());
+            if (isTrue < 0) {
+                PyErr_Clear();
+                return false;
+            }
+            if (out) {
+                *out = static_cast<bool>(isTrue);
+            }
+            return true;
+        }
+        return false;
+    } else {
+        nanobind::detail::make_caster<T> caster;
+        nanobind::detail::cleanup_list cleanup(h.ptr());
+        bool ok = caster.from_python(
+            h, static_cast<uint8_t>(nanobind::detail::cast_flags::convert),
+            &cleanup);
+        if (ok) {
+            if (out) {
+                *out = static_cast<T>(
+                    caster.operator nanobind::detail::cast_t<T>());
+            }
+            cleanup.release();
+            return true;
+        }
+        cleanup.release();
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+        }
+        if constexpr (std::is_integral_v<T> && !std::is_same_v<T, char>) {
+            if (throwOnOverflow && PyLong_Check(h.ptr())) {
+                PyErr_SetString(PyExc_OverflowError,
+                                "bad integer conversion: overflow");
+                throw nanobind::python_error();
+            }
+        }
+        return false;
+    }
+}
+
+template <typename T>
+T
+Vt_ExtractElementOrThrow(nanobind::handle h)
+{
+    T val{};
+    if (!Vt_TryExtractElement<T>(h, &val, /*throwOnOverflow=*/true)) {
+        PyErr_SetString(PyExc_TypeError, "Element is of incorrect type.");
+        throw nanobind::python_error();
+    }
+    return val;
+}
+
+} // namespace Vt_WrapArray
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#include "pxr/base/vt/pyOperators.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+namespace Vt_WrapArray {
+
+template <typename T>
+nanobind::object
+getitem_ellipsis(VtArray<T> const &self, nanobind::object idx)
+{
+    if (idx.ptr() != Py_Ellipsis) {
+        PyErr_SetString(PyExc_TypeError, "unsupported index type");
+        throw nanobind::python_error();
+    }
+    return nanobind::cast(self);
+}
+
+template <typename T>
+nanobind::object
 getitem_index(VtArray<T> const &self, int64_t idx)
 {
     static const bool throwError = true;
     idx = TfPyNormalizeIndex(idx, self.size(), throwError);
-    return object(self[idx]);
+    return nanobind::cast(self[idx]);
 }
 
 template <typename T>
-object
-getitem_slice(VtArray<T> const &self, slice idx)
+nanobind::object
+getitem_slice(VtArray<T> const &self, nanobind::slice idx)
 {
-    try {
-        slice::range<typename VtArray<T>::const_iterator> range =
-            idx.get_indices(self.begin(), self.end());
-        const size_t setSize = 1 + (range.stop - range.start) / range.step;
-        VtArray<T> result(setSize);
-        size_t i = 0;
-        for (; range.start != range.stop; range.start += range.step, ++i) {
-            result[i] = *range.start;
-        }
+    Vt_SliceRange<typename VtArray<T>::const_iterator> range;
+    size_t setSize = 0;
+    if (!Vt_GetSliceIndices(idx, self.begin(), self.end(), &range, &setSize)) {
+        return nanobind::none();
+    }
+    VtArray<T> result(setSize);
+    size_t i = 0;
+    for (; range.start != range.stop; range.start += range.step, ++i) {
         result[i] = *range.start;
-        return object(result);
     }
-    catch (std::invalid_argument const &) {
-        return object();
-    }
+    result[i] = *range.start;
+    return nanobind::cast(result);
 }
 
 template <typename T, typename S>
 void
 setArraySlice(VtArray<T> &self, S value,
-              slice::range<T*>& range, size_t setSize, bool tile = false)
+              Vt_SliceRange<T*>& range, size_t setSize, bool tile = false)
 {
     // Check size.
-    const size_t length = len(value);
+    const size_t length = nanobind::len(value);
     if (length == 0)
         TfPyThrowValueError("No values with which to set array slice.");
     if (!tile && length < setSize) {
@@ -122,19 +206,11 @@ setArraySlice(VtArray<T> &self, S value,
         TfPyThrowValueError(msg);
     }
 
-    // Extract the values before setting any.  If we can extract the
-    // whole vector at once then do that since it should be faster.
+    // Extract the values before setting any.
     std::vector<T> extracted;
-    extract<std::vector<T> > vectorExtraction(value);
-    if (vectorExtraction.check()) {
-        std::vector<T> tmp = vectorExtraction();
-        extracted.swap(tmp);
-    }
-    else {
-        extracted.reserve(length);
-        for (size_t i = 0; i != length; ++i) {
-            extracted.push_back(extract<T>(value[i]));
-        }
+    extracted.reserve(length);
+    for (size_t i = 0; i != length; ++i) {
+        extracted.push_back(Vt_ExtractElementOrThrow<T>(value[i]));
     }
 
     // We're fine, go through and set them.  Handle common case as a fast
@@ -151,29 +227,27 @@ setArraySlice(VtArray<T> &self, S value,
 
 template <typename T>
 void
-setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
+setArraySlice(VtArray<T> &self, nanobind::slice idx, nanobind::handle value,
+              bool tile = false)
 {
     // Get the range.
-    slice::range<T*> range;
-    try {
-        T* data = self.data();
-        range = idx.get_indices(data, data + self.size());
-    }
-    catch (std::invalid_argument const &) {
-        // Do nothing
+    Vt_SliceRange<T*> range;
+    size_t setSize = 0;
+    T* data = self.data();
+    if (!Vt_GetSliceIndices(idx, data, data + self.size(), &range, &setSize)) {
         return;
     }
-
-    // Get the number of items to be set.
-    const size_t setSize = 1 + (range.stop - range.start) / range.step;
 
     // Copy from VtArray.  We only want to take this path if the passed value is
     // *exactly* a VtArray.  That is, we don't want to take this path if it can
     // merely *convert* to a VtArray, so we check that we can extract a mutable
     // lvalue reference from the python object, which requires that there be a
     // real VtArray there.
-    if (extract< VtArray<T> &>(value).check()) {
-        const VtArray<T> val = extract< VtArray<T> >(value);
+    VtArray<T> *arrPtr = nullptr;
+    if (NB_CALL(nb_type_get)(NB_CTX, &typeid(VtArray<T>), value.ptr(), 0,
+                             nullptr, reinterpret_cast<void **>(&arrPtr)) &&
+        arrPtr) {
+        const VtArray<T> val = *arrPtr;
         const size_t length = val.size();
         if (length == 0)
             TfPyThrowValueError("No values with which to set array slice.");
@@ -188,62 +262,69 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
         for (size_t i = 0; i != setSize; range.start += range.step, ++i) {
             *range.start = val[i % length];
         }
+        return;
     }
 
     // Copy from scalar.
-    else if (extract<T>(value).check()) {
+    T scalarVal{};
+    if (Vt_TryExtractElement<T>(value, &scalarVal, /*throwOnOverflow=*/true)) {
         if (!tile) {
             // XXX -- We're allowing implicit tiling;  do we want to?
             //TfPyThrowValueError("can only assign an iterable.");
         }
 
         // Use scalar to fill entire slice.
-        const T val = extract<T>(value);
         for (size_t i = 0; i != setSize; range.start += range.step, ++i) {
-            *range.start = val;
+            *range.start = scalarVal;
         }
     }
 
     // Copy from list.
-    else if (extract<list>(value).check()) {
-        setArraySlice(self, extract<list>(value)(), range, setSize, tile);
+    else if (PyList_Check(value.ptr())) {
+        setArraySlice(self, nanobind::borrow<nanobind::list>(value),
+                      range, setSize, tile);
     }
 
     // Copy from tuple.
-    else if (extract<tuple>(value).check()) {
-        setArraySlice(self, extract<tuple>(value)(), range, setSize, tile);
+    else if (PyTuple_Check(value.ptr())) {
+        setArraySlice(self, nanobind::borrow<nanobind::tuple>(value),
+                      range, setSize, tile);
     }
 
     // Copy from iterable.
     else {
-        setArraySlice(self, list(value), range, setSize, tile);
+        PyObject *pyList = PySequence_List(value.ptr());
+        if (!pyList) {
+            throw nanobind::python_error();
+        }
+        setArraySlice(self, nanobind::steal<nanobind::list>(pyList),
+                      range, setSize, tile);
     }
 }
 
 
 template <typename T>
 void
-setitem_ellipsis(VtArray<T> &self, object idx, object value)
+setitem_ellipsis(VtArray<T> &self, nanobind::object idx, nanobind::object value)
 {
-    object ellipsis = object(handle<>(borrowed(Py_Ellipsis)));
-    if (idx != ellipsis) {
+    if (idx.ptr() != Py_Ellipsis) {
         PyErr_SetString(PyExc_TypeError, "unsupported index type");
-        throw_error_already_set();
+        throw nanobind::python_error();
     }
-    setArraySlice(self, slice(0, self.size()), value);
+    setArraySlice(self, nanobind::slice(size_t(0), self.size()), value);
 }
 
 template <typename T>
 void
-setitem_index(VtArray<T> &self, int64_t idx, object value)
+setitem_index(VtArray<T> &self, int64_t idx, nanobind::object value)
 {
     idx = TfPyNormalizeIndex(idx, self.size(), /*throwError=*/true);
-    setArraySlice(self, slice(idx, idx+1), value, /*tile=*/true);
+    setArraySlice(self, nanobind::slice(idx, idx+1), value, /*tile=*/true);
 }
 
 template <typename T>
 void
-setitem_slice(VtArray<T> &self, slice idx, object value)
+setitem_slice(VtArray<T> &self, nanobind::slice idx, nanobind::object value)
 {
     setArraySlice(self, idx, value);
 }
@@ -355,29 +436,19 @@ string __repr__(VtArray<T> const &self)
 }
 
 template <typename T>
-VtArray<T> *VtArray__init__(object const &values)
+void VtArray__init__(VtArray<T> *self, nanobind::object const &values)
 {
-    // Make an array.
-    unique_ptr<VtArray<T> > ret(new VtArray<T>(len(values)));
-
-    // Set the values.  This is equivalent to saying 'ret[...] = values'
-    // in python, except that we allow tiling here.
+    new (self) VtArray<T>(nanobind::len(values));
     static const bool tile = true;
-    setArraySlice(*ret, slice(0, ret->size()), values, tile);
-    return ret.release();
+    setArraySlice(*self, nanobind::slice(size_t(0), self->size()), values, tile);
 }
+
 template <typename T>
-VtArray<T> *VtArray__init__2(size_t size, object const &values)
+void VtArray__init__2(VtArray<T> *self, size_t size, nanobind::object const &values)
 {
-    // Make the array.
-    unique_ptr<VtArray<T> > ret(new VtArray<T>(size));
-
-    // Set the values.  This is equivalent to saying 'ret[...] = values'
-    // in python, except that we allow tiling here.
+    new (self) VtArray<T>(size);
     static const bool tile = true;
-    setArraySlice(*ret, slice(0, ret->size()), values, tile);
-
-    return ret.release();
+    setArraySlice(*self, nanobind::slice(size_t(0), self->size()), values, tile);
 }
 
 // overloading for operator special methods, to allow tuple / list & array
@@ -390,6 +461,7 @@ VTOPERATOR_WRAP(__add__,__radd__)
 VTOPERATOR_WRAP_NONCOMM(__sub__,__rsub__)
 VTOPERATOR_WRAP(__mul__,__rmul__)
 VTOPERATOR_WRAP_NONCOMM(__div__,__rdiv__)
+VTOPERATOR_WRAP_NONCOMM(__truediv__,__rtruediv__)
 VTOPERATOR_WRAP_NONCOMM(__mod__,__rmod__)
 
 ARCH_PRAGMA_POP
@@ -402,7 +474,7 @@ static std::string _VtStr(T const &self)
 }
 
 template <typename T>
-pxr_boost::python::class_<T> VtWrapArray()
+nanobind::class_<T> VtWrapArray()
 {
     using namespace Vt_WrapArray;
 
@@ -412,36 +484,39 @@ pxr_boost::python::class_<T> VtWrapArray()
     string name = GetVtArrayName<This>();
     string typeStr = ArchGetDemangled(typeid(Type));
     string docStr = TfStringPrintf("An array of type %s.", typeStr.c_str());
-    
-    auto selfCls = class_<This>(name.c_str(), docStr.c_str(), no_init)
-        .setattr("_isVtArray", true)
+
+    nanobind::module_ m = TfPyGetCurrentNanobindModule();
+    nanobind::class_<This> selfCls(m, name.c_str(), docStr.c_str());
+    selfCls.attr("_isVtArray") = true;
+    selfCls
         .def(TfTypePythonClass())
-        .def(init<>())
-        .def("__init__", make_constructor(VtArray__init__<Type>),
-            (const char *)
+        .def(nanobind::init<>())
+        .def(nanobind::init<unsigned int>())
+        .def("__init__", VtArray__init__<Type>,
             "__init__(values)\n\n"
             "values: a sequence (tuple, list, or another VtArray with "
             "element type convertible to the new array's element type)\n\n"
             )
-        .def("__init__", make_constructor(VtArray__init__2<Type>))
-        .def(init<unsigned int>())
+        .def("__init__", VtArray__init__2<Type>)
 
-        .def("__getitem__", getitem_ellipsis<Type>)
-        .def("__getitem__", getitem_slice<Type>)
         .def("__getitem__", getitem_index<Type>)
-        .def("__setitem__", setitem_ellipsis<Type>)
-        .def("__setitem__", setitem_slice<Type>)
+        .def("__getitem__", getitem_slice<Type>)
+        .def("__getitem__", getitem_ellipsis<Type>)
         .def("__setitem__", setitem_index<Type>)
+        .def("__setitem__", setitem_slice<Type>)
+        .def("__setitem__", setitem_ellipsis<Type>)
 
         .def("__len__", &This::size)
-        .def("__iter__", iterator<This>())
+        .def("__iter__", [](This const &self) {
+            return nanobind::make_iterator<nanobind::rv_policy::copy>(
+                nanobind::type<This>(), "Iterator", self.cbegin(), self.cend());
+        }, nanobind::keep_alive<0, 1>())
 
         .def("__repr__", __repr__<Type>)
 
-//        .def(str(self))
         .def("__str__", _VtStr<T>)
-        .def(self == self)
-        .def(self != self)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
 
 #ifdef NUMERIC_OPERATORS
 #define ADDITION_OPERATOR
@@ -461,33 +536,27 @@ pxr_boost::python::class_<T> VtWrapArray()
         VTOPERATOR_WRAPDECLARE(*,__mul__,__rmul__)
 #endif
 #ifdef DIVISION_OPERATOR
-        VTOPERATOR_WRAPDECLARE(/,__div__,__rdiv__)
+        VTOPERATOR_WRAPDECLARE(/,__truediv__,__rtruediv__)
+        .def("__div__", __div__tuple<Type>, nanobind::is_operator())
+        .def("__div__", __div__list<Type>, nanobind::is_operator())
+        .def("__rdiv__", __rdiv__tuple<Type>, nanobind::is_operator())
+        .def("__rdiv__", __rdiv__list<Type>, nanobind::is_operator())
 #endif
 #ifdef MOD_OPERATOR
         VTOPERATOR_WRAPDECLARE(%,__mod__,__rmod__)
 #endif
 #ifdef DOUBLE_MULT_OPERATOR
-        .def(self * double())
-        .def(double() * self)
+        .def(nanobind::self * double())
+        .def(double() * nanobind::self)
 #endif
 #ifdef DOUBLE_DIV_OPERATOR
-        .def(self / double())
+        .def(nanobind::self / double())
 #endif
 #ifdef UNARY_NEG_OPERATOR
-        .def(- self)
+        .def(- nanobind::self)
 #endif
 
         ;
-
-    // Wrap conversions from python sequences.
-    TfPyContainerConversions::from_python_sequence<
-        This,
-        TfPyContainerConversions::
-        variable_capacity_all_items_convertible_policy>();
-
-    // Wrap implicit conversions from VtArray to TfSpan.
-    implicitly_convertible<This, TfSpan<Type> >();
-    implicitly_convertible<This, TfSpan<const Type> >();
 
     return selfCls;
 }
@@ -500,34 +569,36 @@ Vt_ConvertFromPySequenceOrIter(TfPyObjWrapper const &obj)
     TfPyLock lock;
     if (PySequence_Check(obj.ptr())) {
         Py_ssize_t len = PySequence_Length(obj.ptr());
+        if (len < 0) {
+            PyErr_Clear();
+            return VtValue();
+        }
         Array result(len);
         ElemType *elem = result.data();
         for (Py_ssize_t i = 0; i != len; ++i) {
-            pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
-            if (!h) {
+            nanobind::object item = nanobind::steal(PySequence_ITEM(obj.ptr(), i));
+            if (!item.ptr()) {
                 if (PyErr_Occurred())
                     PyErr_Clear();
                 return VtValue();
             }
-            pxr_boost::python::extract<ElemType> e(h.get());
-            if (!e.check())
+            if (!Vt_WrapArray::Vt_TryExtractElement<ElemType>(item, elem))
                 return VtValue();
-            *elem++ = e();
+            ++elem;
         }
         return VtValue(result);
     } else if (PyIter_Check(obj.ptr())) {
         Array result;
-        while (PyObject *item = PyIter_Next(obj.ptr())) {
-            pxr_boost::python::handle<> h(item);
-            if (!h) {
-                if (PyErr_Occurred())
-                    PyErr_Clear();
+        while (PyObject *rawItem = PyIter_Next(obj.ptr())) {
+            nanobind::object item = nanobind::steal(rawItem);
+            ElemType elem{};
+            if (!Vt_WrapArray::Vt_TryExtractElement<ElemType>(item, &elem))
                 return VtValue();
-            }
-            pxr_boost::python::extract<ElemType> e(h.get());
-            if (!e.check())
-                return VtValue();
-            result.push_back(e());
+            result.push_back(elem);
+        }
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            return VtValue();
         }
         return VtValue(result);
     }

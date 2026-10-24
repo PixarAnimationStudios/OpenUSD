@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdShadeConnectableAPI &self)
@@ -43,33 +48,28 @@ _Repr(const UsdShadeConnectableAPI &self)
 
 } // anonymous namespace
 
-void wrapUsdShadeConnectableAPI()
+void wrapUsdShadeConnectableAPI(nb::module_ &m)
 {
     typedef UsdShadeConnectableAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ConnectableAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ConnectableAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -100,9 +100,7 @@ void wrapUsdShadeConnectableAPI()
 
 namespace {
 
-#include "pxr/external/boost/python/tuple.hpp"
-
-static object
+static nb::object
 _GetConnectedSource(const UsdAttribute &shadingAttr)
 {
     UsdShadeConnectableAPI source;
@@ -111,20 +109,20 @@ _GetConnectedSource(const UsdAttribute &shadingAttr)
     
     if (UsdShadeConnectableAPI::GetConnectedSource(shadingAttr, 
             &source, &sourceName, &sourceType)){
-        return pxr_boost::python::make_tuple(source, sourceName, sourceType);
+        return nb::make_tuple(source, sourceName, sourceType);
     } else {
-        return object();
+        return nb::none();
     }
 }
 
-static object
+static nb::object
 _GetConnectedSources(const UsdAttribute &shadingAttr)
 {
     SdfPathVector invalidSourcePaths;
     UsdShadeSourceInfoVector sources =
         UsdShadeConnectableAPI::GetConnectedSources(shadingAttr,
                                                     &invalidSourcePaths);
-    return pxr_boost::python::make_tuple(
+    return nb::make_tuple(
         std::vector<UsdShadeConnectionSourceInfo>(
             sources.begin(), sources.end()),
         invalidSourcePaths);
@@ -224,118 +222,102 @@ WRAP_CUSTOM {
         .def("RequiresEncapsulation", 
                 &UsdShadeConnectableAPI::RequiresEncapsulation)
 
-        .def("CanConnect", CanConnect_Input,
-            (arg("input"), arg("source")))
-        .def("CanConnect", CanConnect_Output,
-            (arg("output"), arg("source")=UsdAttribute()))
-        .staticmethod("CanConnect")
+        .def_static("CanConnect", CanConnect_Input,
+            nb::arg("input"), nb::arg("source"))
+        .def_static("CanConnect", CanConnect_Output,
+            nb::arg("output"), nb::arg("source")=UsdAttribute())
 
-        .def("ConnectToSource", ConnectToSource_1, 
-            (arg("shadingAttr"), 
-             arg("source"), arg("sourceName"), 
-             arg("sourceType")=UsdShadeAttributeType::Output,
-             arg("typeName")=SdfValueTypeName()))
-        .def("ConnectToSource", ConnectToSource_2,
-            (arg("shadingAttr"), arg("sourcePath")))
-        .def("ConnectToSource", ConnectToSource_3,
-            (arg("shadingAttr"), arg("input")))
-        .def("ConnectToSource", ConnectToSource_4,
-            (arg("shadingAttr"), arg("output")))
-        .def("ConnectToSource", ConnectToSource_5,
-            (arg("shadingAttr"),
-             arg("source"),
-             arg("mod")=UsdShadeConnectionModification::Replace))
-        .staticmethod("ConnectToSource")
+        .def_static("ConnectToSource", ConnectToSource_1, 
+            nb::arg("shadingAttr"), 
+             nb::arg("source"), nb::arg("sourceName"), 
+             nb::arg("sourceType")=UsdShadeAttributeType::Output,
+             nb::arg("typeName")=SdfValueTypeName())
+        .def_static("ConnectToSource", ConnectToSource_2,
+            nb::arg("shadingAttr"), nb::arg("sourcePath"))
+        .def_static("ConnectToSource", ConnectToSource_3,
+            nb::arg("shadingAttr"), nb::arg("input"))
+        .def_static("ConnectToSource", ConnectToSource_4,
+            nb::arg("shadingAttr"), nb::arg("output"))
+        .def_static("ConnectToSource", ConnectToSource_5,
+            nb::arg("shadingAttr"),
+             nb::arg("source"),
+             nb::arg("mod")=UsdShadeConnectionModification::Replace)
 
-        .def("SetConnectedSources",
+        .def_static("SetConnectedSources",
                 &UsdShadeConnectableAPI::SetConnectedSources)
-        .staticmethod("SetConnectedSources")
 
-        .def("GetConnectedSource", _GetConnectedSource,
-            (arg("shadingAttr")))
-            .staticmethod("GetConnectedSource")
+        .def_static("GetConnectedSource", _GetConnectedSource,
+            nb::arg("shadingAttr"))
 
-        .def("GetConnectedSources", _GetConnectedSources,
-            (arg("shadingAttr")))
-            .staticmethod("GetConnectedSources")
+        .def_static("GetConnectedSources", _GetConnectedSources,
+            nb::arg("shadingAttr"))
 
-        .def("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths, 
-            (arg("shadingAttr")),
-            return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetRawConnectedSourcePaths")
+        .def_static("GetRawConnectedSourcePaths", _GetRawConnectedSourcePaths, 
+            nb::arg("shadingAttr"),
+             nb::rv_policy::copy)
 
-        .def("HasConnectedSource", HasConnectedSource,
-            (arg("shadingAttr")))
-            .staticmethod("HasConnectedSource")
+        .def_static("HasConnectedSource", HasConnectedSource,
+            nb::arg("shadingAttr"))
 
-        .def("IsSourceConnectionFromBaseMaterial",
+        .def_static("IsSourceConnectionFromBaseMaterial",
                 IsSourceConnectionFromBaseMaterial,
-            (arg("shadingAttr")))
-            .staticmethod("IsSourceConnectionFromBaseMaterial")
+            nb::arg("shadingAttr"))
 
-        .def("DisconnectSource", DisconnectSource,
-            (arg("shadingAttr"), arg("sourceAttr")=UsdAttribute()))
-            .staticmethod("DisconnectSource")
+        .def_static("DisconnectSource", DisconnectSource,
+            nb::arg("shadingAttr"), nb::arg("sourceAttr")=UsdAttribute())
 
-        .def("ClearSources", ClearSources,
-            (arg("shadingAttr")))
-            .staticmethod("ClearSources")
+        .def_static("ClearSources", ClearSources,
+            nb::arg("shadingAttr"))
 
-        .def("ClearSource", ClearSource,
-            (arg("shadingAttr")))
-            .staticmethod("ClearSource")
+        .def_static("ClearSource", ClearSource,
+            nb::arg("shadingAttr"))
 
-        .def("HasConnectableAPI", HasConnectableAPI,
-            (arg("schemaType")))
-            .staticmethod("HasConnectableAPI")
+        .def_static("HasConnectableAPI", HasConnectableAPI,
+            nb::arg("schemaType"))
 
         .def("CreateOutput", &UsdShadeConnectableAPI::CreateOutput,
-             (arg("name"), arg("type")))
-        .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetOutput", &UsdShadeConnectableAPI::GetOutput, nb::arg("name"))
         .def("GetOutputs", &UsdShadeConnectableAPI::GetOutputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
 
         .def("CreateInput", &UsdShadeConnectableAPI::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeConnectableAPI::GetInput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetInput", &UsdShadeConnectableAPI::GetInput, nb::arg("name"))
         .def("GetInputs", &UsdShadeConnectableAPI::GetInputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
 
     ;
 
-    class_<ConnectionSourceInfo>("ConnectionSourceInfo")
-        .def(init<UsdShadeConnectableAPI const &,
-                  TfToken const &,
-                  UsdShadeAttributeType,
-                  SdfValueTypeName>((arg("source"),
-                                     arg("sourceName"),
-                                     arg("sourceType"),
-                                     arg("typeName")=SdfValueTypeName())))
-        .def(init<UsdShadeInput const &>(arg("input")))
-        .def(init<UsdShadeOutput const &>(arg("output")))
-        .def(init<UsdStagePtr const&, SdfPath const&>())
+    nb::module_ m = TfPyGetCurrentNanobindModule();
+    nb::class_<ConnectionSourceInfo>(m, "ConnectionSourceInfo")
+        .def(nb::init<>())
+        .def(nb::init<UsdShadeConnectableAPI const &,
+                      TfToken const &,
+                      UsdShadeAttributeType,
+                      SdfValueTypeName>(),
+             nb::arg("source"),
+             nb::arg("sourceName"),
+             nb::arg("sourceType"),
+             nb::arg("typeName")=SdfValueTypeName())
+        .def(nb::init<UsdShadeInput const &>(), nb::arg("input"))
+        .def(nb::init<UsdShadeOutput const &>(), nb::arg("output"))
+        .def(nb::init<UsdStagePtr const&, SdfPath const&>())
 
-        .def_readwrite("source", &ConnectionSourceInfo::source)
-        .add_property("sourceName", &_GetSourceName, &_SetSourceName)
-        .def_readwrite("sourceType", &ConnectionSourceInfo::sourceType)
-        .def_readwrite("typeName", &ConnectionSourceInfo::typeName)
+        .def_rw("source", &ConnectionSourceInfo::source)
+        .def_prop_rw("sourceName", &_GetSourceName, &_SetSourceName)
+        .def_rw("sourceType", &ConnectionSourceInfo::sourceType)
+        .def_rw("typeName", &ConnectionSourceInfo::typeName)
 
         .def("__repr__", _ConnectionSourceInfoRepr)
         .def("IsValid", &ConnectionSourceInfo::IsValid)
         .def("__bool__", &ConnectionSourceInfo::IsValid)
+        .def("__hash__", [](const ConnectionSourceInfo &self) { return TfHash()(self); })
         .def("__eq__", &ConnectionSourceInfo::operator==)
         .def("__ne__", &ConnectionSourceInfo::operator!=)
     ;
-
-    to_python_converter<
-        std::vector<ConnectionSourceInfo>,
-        TfPySequenceToPython<std::vector<ConnectionSourceInfo>>>();
-    TfPyContainerConversions::from_python_sequence<
-        std::vector<ConnectionSourceInfo>,
-        TfPyContainerConversions::variable_capacity_policy>();
-
 }
 
 } // anonymous namespace

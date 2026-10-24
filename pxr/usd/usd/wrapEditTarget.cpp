@@ -9,43 +9,48 @@
 
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/sdf/pySpec.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdEditTarget()
+void wrapUsdEditTarget(nb::module_ &m)
 {
-    class_<UsdEditTarget>("EditTarget")
-        .def(init<SdfLayerHandle, optional<PcpNodeRef> >(
-                 (arg("layer"), arg("node"))))
-        .def("ForLocalDirectVariant", &UsdEditTarget::ForLocalDirectVariant,
-             (arg("layer"), arg("varSelPath")))
-        .staticmethod("ForLocalDirectVariant")
-        .def(self == self)
-        .def(self != self)
+    nb::class_<UsdEditTarget>(m, "EditTarget")
+        .def(nb::init<>())
+        .def(nb::init<SdfLayerHandle>(), nb::arg("layer"))
+        .def(nb::init<SdfLayerHandle, PcpNodeRef>(),
+             nb::arg("layer"), nb::arg("node"))
+        .def_static("ForLocalDirectVariant", &UsdEditTarget::ForLocalDirectVariant,
+             nb::arg("layer"), nb::arg("varSelPath"))
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("IsNull", &UsdEditTarget::IsNull)
         .def("IsValid", &UsdEditTarget::IsValid)
         .def("GetLayer", static_cast<SdfLayerHandle (*)(UsdEditTarget const &)>(
                  [](UsdEditTarget const &et) { return et.GetLayer(); }))
         .def("GetMapFunction", &UsdEditTarget::GetMapFunction,
-             return_value_policy<return_by_value>())
-        .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, arg("scenePath"))
+             nb::rv_policy::copy)
+        .def("MapToSpecPath", &UsdEditTarget::MapToSpecPath, nb::arg("scenePath"))
         .def("GetPrimSpecForScenePath",
-             &UsdEditTarget::GetPrimSpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetPrimSpecForScenePath, nb::arg("scenePath"))
         .def("GetPropertySpecForScenePath",
-             &UsdEditTarget::GetPropertySpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetPropertySpecForScenePath, nb::arg("scenePath"))
         .def("GetAttributeSpecForScenePath",
-             &UsdEditTarget::GetAttributeSpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetAttributeSpecForScenePath, nb::arg("scenePath"))
         .def("GetRelationshipSpecForScenePath",
-             &UsdEditTarget::GetRelationshipSpecForScenePath, arg("scenePath"))
+             &UsdEditTarget::GetRelationshipSpecForScenePath, nb::arg("scenePath"))
         .def("GetSpecForScenePath",
-             &UsdEditTarget::GetSpecForScenePath, arg("scenePath"))
-        .def("ComposeOver", &UsdEditTarget::ComposeOver, arg("weaker"))
+             &UsdEditTarget::GetSpecForScenePath, nb::arg("scenePath"))
+        .def("ComposeOver", &UsdEditTarget::ComposeOver, nb::arg("weaker"))
         ;
 
     // Allow passing SdLayerHandle to wrapped functions expecting UsdEditTarget.
-    implicitly_convertible<SdfLayerHandle, UsdEditTarget>();
+    nb::implicitly_convertible<SdfLayer, UsdEditTarget>();
+    nb::implicitly_convertible<SdfLayerHandle, UsdEditTarget>();
 }

@@ -8,11 +8,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void
-wrapTypes()
+wrapTypes(nanobind::module_ &m)
 {
-    TfPyWrapEnum<PcpArcType>();
+    TfNbWrapEnum<PcpArcType>(m);
 }

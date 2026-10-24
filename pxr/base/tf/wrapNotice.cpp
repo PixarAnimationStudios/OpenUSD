@@ -14,22 +14,14 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyWeakObject.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/type.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/manage_new_object.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/scope.hpp"
+#include <nanobind/nanobind.h>
 
 #include <functional>
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 class Tf_PyNotice {
 public:
@@ -50,17 +42,14 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-// TfNotice is passed for both the type and the base to indicate the root of the
-// hierarchy.
-TF_INSTANTIATE_NOTICE_WRAPPER(TfNotice, TfNotice);
-
 class Tf_PyNoticeInternal
 {
   public:
 
     struct Listener : public TfWeakBase {
 
-        typedef void CallbackSig(object const &, handle<> const &);
+        typedef void CallbackSig(nanobind::object const &,
+                                 nanobind::object const &);
         typedef std::function<CallbackSig> Callback;
 
         static Listener *New(TfType const &noticeType,
@@ -94,27 +83,20 @@ class Tf_PyNoticeInternal
                  noticeType, sender);
         }
 
-        object _GetDeliverableNotice(TfNotice const &notice,
-                                     TfType const &noticeType) {
+        nanobind::object _GetDeliverableNotice(TfNotice const &notice,
+                                               TfType const &noticeType) {
             // If the notice type is not wrapped, return the type name in a
             // string.
             TfPyLock lock;
-            /// XXX noticeType is incorrect when the notice is
-            /// python-implemented.  We should fix this when TfType optimization
-            /// work is done.
-            object noticeClass = TfPyGetClassObject(typeid(notice));
-            if (TfPyIsNone(noticeClass))
-                return object(TfType::Find(notice).GetTypeName());
-
-            // If it's a python notice, use the embedded python object.
-            if (TfPyNoticeWrapperBase const *pyNotice =
-                TfSafeDynamic_cast<TfPyNoticeWrapperBase const *>(&notice))
-                return object(pyNotice->GetNoticePythonObject());
-
-            // Otherwise convert the notice to python like normal.  We
-            // can't just use object(notice) because that won't produce
-            // a notice of the correct derived type.
-            return Tf_PyNoticeObjectGenerator::Invoke(notice);
+            nanobind::object pyNotice = nanobind::find(notice);
+            if (pyNotice.is_valid()) {
+                return pyNotice;
+            }
+            pyNotice = Tf_PyNoticeObjectGenerator::Invoke(notice);
+            if (pyNotice.is_valid()) {
+                return pyNotice;
+            }
+            return nanobind::cast(TfType::Find(notice).GetTypeName());
         }
     
         void _HandleNotice(TfNotice const &notice,
@@ -123,12 +105,15 @@ class Tf_PyNoticeInternal
                            void const *senderUniqueId,
                            const std::type_info &) {
             TfPyLock lock;
-            object pyNotice = _GetDeliverableNotice(notice, type);
-            if (!TfPyIsNone(pyNotice)) {
+            nanobind::object pyNotice = _GetDeliverableNotice(notice, type);
+            if (pyNotice.is_valid() && !pyNotice.is_none()) {
                 // Get the python sender.
-                handle<> pySender = sender ?
-                    handle<>(allow_null(Tf_PyIdentityHelper::
-                                        Get(senderUniqueId))) : handle<>();
+                nanobind::object pySender = nanobind::none();
+                if (sender) {
+                    if (PyObject *id = Tf_PyIdentityHelper::Get(senderUniqueId)) {
+                        pySender = nanobind::steal(id);
+                    }
+                }
                 _callback(pyNotice, pySender);
             }
         }
@@ -149,7 +134,7 @@ class Tf_PyNoticeInternal
     static Listener *
     RegisterWithPythonSender(TfType const &noticeType,
                              Listener::Callback const &cb,
-                             object const &sender) {
+                             nanobind::handle sender) {
         Tf_PyWeakObjectPtr weakSender = Tf_PyWeakObject::GetOrCreate(sender);
         if (!weakSender)
             TfPyThrowTypeError("Cannot register to listen to notices from the "
@@ -166,17 +151,28 @@ class Tf_PyNoticeInternal
             (noticeType, cb, TfAnyWeakPtr());
     }
 
+    static TfType
+    _GetNoticeType(nanobind::handle self, TfNotice const &notice) {
+        TfType noticeType = TfType::FindByPythonClass(
+            TfPyObjWrapper(nanobind::borrow<nanobind::object>(self.type())));
+        if (noticeType.IsUnknown()) {
+            noticeType = TfType::Find(&notice);
+        }
+        return noticeType;
+    }
+
     static size_t
-    SendWithAnyWeakPtrSender(TfNotice const &self,
+    SendWithAnyWeakPtrSender(nanobind::handle self,
                              TfAnyWeakPtr const &sender) {
-        return Tf_PyNotice::SendWithType(self, TfType::Find(&self),
+        TfNotice const &notice = nanobind::cast<TfNotice const &>(self);
+        return Tf_PyNotice::SendWithType(notice, _GetNoticeType(self, notice),
                                          sender.GetWeakBase(),
                                          sender.GetUniqueIdentifier(),
                                          sender.GetTypeInfo());
     }
 
     static size_t
-    SendWithPythonSender(TfNotice const &self, object const &sender) {
+    SendWithPythonSender(nanobind::handle self, nanobind::handle sender) {
         // Get a "WeakObjectPtr" corresponding to the sender -- this is a
         // TfWeakPtr to an object which holds a python weak reference.  This
         // object expires when the python object expires.  This is what lets us
@@ -189,8 +185,9 @@ class Tf_PyNoticeInternal
         return SendWithAnyWeakPtrSender(self, holder);
     }
     
-    static size_t SendGlobally(TfNotice const &self) {
-        return Tf_PyNotice::SendWithType(self, TfType::Find(&self),
+    static size_t SendGlobally(nanobind::handle self) {
+        TfNotice const &notice = nanobind::cast<TfNotice const &>(self);
+        return Tf_PyNotice::SendWithType(notice, _GetNoticeType(self, notice),
                                          0, 0, typeid(void));
     }
 
@@ -198,22 +195,22 @@ class Tf_PyNoticeInternal
 
 } // anonymous namespace 
 
-void wrapNotice()
+void wrapNotice(nanobind::module_ &m)
 {
-    // Make sure we can pass callbacks from python.
-    TfPyFunctionFromPython<Tf_PyNoticeInternal::Listener::CallbackSig>();
+    namespace nb = nanobind;
 
     // Passing TfNotice for both T and its base indicates that this is the root
     // of the notice hierarchy.
-    scope notice = TfPyNoticeWrapper<TfNotice, TfNotice>::Wrap("Notice")
-        .def(init<>())
+    auto notice = TfNbNoticeWrapper<TfNotice, TfNotice>::Wrap(m, "Notice");
+    notice
+        .def(nb::init<>())
         
-        // We register the method that takes any python object first, as this is
-        // the last overload that will be tried.  Thus, it will only be invoked
-        // if the python object is not already weak-pointable.
-        .def("Register",
-             Tf_PyNoticeInternal::RegisterWithPythonSender,
-             return_value_policy<manage_new_object>(),
+        .def_static("Register",
+             &Tf_PyNoticeInternal::RegisterWithAnyWeakPtrSender,
+             nb::rv_policy::take_ownership)
+        .def_static("Register",
+             &Tf_PyNoticeInternal::RegisterWithPythonSender,
+             nb::rv_policy::take_ownership,
          "Register( noticeType, callback, sender ) -> Listener \n\n"
          "noticeType : Tf.Notice\n"
          "callback : function\n"
@@ -231,14 +228,10 @@ void wrapNotice()
          "To reverse the registration, call Revoke() on the Listener "
          "object returned by this call. "
              )
-        .def("Register",
-             Tf_PyNoticeInternal::RegisterWithAnyWeakPtrSender,
-             return_value_policy<manage_new_object>())
-        .staticmethod("Register")
         
-        .def("RegisterGlobally",
-             Tf_PyNoticeInternal::RegisterGlobally,
-             return_value_policy<manage_new_object>(), 
+        .def_static("RegisterGlobally",
+             &Tf_PyNoticeInternal::RegisterGlobally,
+             nb::rv_policy::take_ownership, 
              "RegisterGlobally( noticeType, callback ) -> Listener \n\n"
              "noticeType : Tf.Notice\n"
              "callback : function\n\n"
@@ -246,12 +239,8 @@ void wrapNotice()
              "type from any sender.  The notice listener does not get sender "
              "as an argument. "
              "")
-        .staticmethod("RegisterGlobally")
 
-
-        // We register the method that takes any python object first, as this is
-        // the last overload that will be tried.  Thus, it will only be invoked
-        // if the python object is not already weak-pointable.
+        .def("Send", &Tf_PyNoticeInternal::SendWithAnyWeakPtrSender)
         .def("Send", &Tf_PyNoticeInternal::SendWithPythonSender,
              "Send(sender) \n\n"
              "sender : object \n\n"
@@ -261,7 +250,6 @@ void wrapNotice()
              "argument. "
              "Listeners that registered for the given sender AND listeners "
              "that registered globally will get the notice. ")
-        .def("Send", &Tf_PyNoticeInternal::SendWithAnyWeakPtrSender)
         .def("SendGlobally", &Tf_PyNoticeInternal::SendGlobally,
              "SendGlobally() \n\n"
              "Deliver the notice to interested listeners.   "
@@ -281,8 +269,7 @@ void wrapNotice()
     "You can also use the Revoke() function to break the connection. "
     "A Listener object is returned from the Register() and  "
     "RegisterGlobally() functions. ";
-    class_<Tf_PyNoticeInternal::Listener,
-           noncopyable>("Listener", Listener_string, no_init)
+    nb::class_<Tf_PyNoticeInternal::Listener>(notice, "Listener", Listener_string)
         .def("Revoke", &Tf_PyNoticeInternal::Listener::Revoke,
             "Revoke() \n\n"
             "Revoke interest by a notice listener. "

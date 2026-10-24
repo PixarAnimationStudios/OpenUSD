@@ -11,12 +11,16 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/childrenProxy.h"
+#include "pxr/usd/sdf/pySpec.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/slice.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -60,32 +64,32 @@ private:
     typedef typename View::const_iterator _view_const_iterator;
 
     struct _ExtractItem {
-        static pxr_boost::python::object Get(const _const_iterator& i)
+        static nanobind::object Get(const _const_iterator& i)
         {
-            return pxr_boost::python::make_tuple(i->first, i->second);
+            return nanobind::make_tuple(i->first, i->second);
         }
     };
 
     struct _ExtractKey {
-        static pxr_boost::python::object Get(const _const_iterator& i)
+        static nanobind::object Get(const _const_iterator& i)
         {
-            return pxr_boost::python::object(i->first);
+            return nanobind::cast(i->first);
         }
     };
 
     struct _ExtractValue {
-        static pxr_boost::python::object Get(const _const_iterator& i)
+        static nanobind::object Get(const _const_iterator& i)
         {
-            return pxr_boost::python::object(i->second);
+            return nanobind::cast(i->second);
         }
     };
 
     template <class E>
     class _Iterator {
     public:
-        _Iterator(const pxr_boost::python::object& object) :
+        _Iterator(const nanobind::object& object) :
             _object(object),
-            _owner(pxr_boost::python::extract<const This&>(object)()._proxy)
+            _owner(nanobind::cast<const This&>(object)._proxy)
         {
             _cur = _owner.begin();
         }
@@ -95,18 +99,18 @@ private:
             return *this;
         }
 
-        pxr_boost::python::object GetNext()
+        nanobind::object GetNext()
         {
             if (_cur == _owner.end()) {
                 TfPyThrowStopIteration("End of ChildrenProxy iteration");
             }
-            pxr_boost::python::object result = E::Get(_cur);
+            nanobind::object result = E::Get(_cur);
             ++_cur;
             return result;
         }
 
     private:
-        pxr_boost::python::object _object;
+        nanobind::object _object;
         const Proxy& _owner;
         _const_iterator _cur;
     };
@@ -118,51 +122,55 @@ private:
 
     static void _Wrap()
     {
-        using namespace pxr_boost::python;
+        namespace nb = nanobind;
 
         std::string name = _GetName();
+        nb::handle scope = TfPyGetCurrentNanobindModule();
+        if (!scope.is_valid()) {
+            scope = nb::borrow(PyImport_AddModule("pxr.Sdf"));
+        }
 
-        scope thisScope =
-        class_<This>(name.c_str(), no_init)
-            .def("__repr__", &This::_GetRepr, TfPyRaiseOnError<>())
-            .def("__len__", &This::_GetSize, TfPyRaiseOnError<>())
-            .def("__getitem__", &This::_GetItemByKey, TfPyRaiseOnError<>())
-            .def("__getitem__", &This::_GetItemByIndex, TfPyRaiseOnError<>())
-            .def("__setitem__", &This::_SetItemByKey, TfPyRaiseOnError<>())
-            .def("__setitem__", &This::_SetItemBySlice, TfPyRaiseOnError<>())
-            .def("__delitem__", &This::_DelItemByKey, TfPyRaiseOnError<>())
-            .def("__delitem__", &This::_DelItemByIndex, TfPyRaiseOnError<>())
-            .def("__contains__", &This::_HasKey, TfPyRaiseOnError<>())
-            .def("__contains__", &This::_HasValue, TfPyRaiseOnError<>())
-            .def("__iter__",   &This::_GetValueIterator, TfPyRaiseOnError<>())
-            .def("clear", &This::_Clear, TfPyRaiseOnError<>())
-            .def("append", &This::_AppendItem, TfPyRaiseOnError<>())
-            .def("insert", &This::_InsertItemByIndex, TfPyRaiseOnError<>())
-            .def("get", &This::_PyGet, TfPyRaiseOnError<>())
-            .def("get", &This::_PyGetDefault, TfPyRaiseOnError<>())
-            .def("items", &This::_GetItemIterator, TfPyRaiseOnError<>())
-            .def("keys", &This::_GetKeyIterator, TfPyRaiseOnError<>())
-            .def("values", &This::_GetValueIterator, TfPyRaiseOnError<>())
-            .def("index", &This::_FindIndexByKey, TfPyRaiseOnError<>())
-            .def("index", &This::_FindIndexByValue, TfPyRaiseOnError<>())
-            .def("__eq__", &This::operator==, TfPyRaiseOnError<>())
-            .def("__ne__", &This::operator!=, TfPyRaiseOnError<>())
+        nb::class_<This> cls(scope, name.c_str());
+        cls
+            .def("__repr__", &This::_GetRepr, TfPyRaiseOnError())
+            .def("__len__", &This::_GetSize, TfPyRaiseOnError())
+            .def("__getitem__", &This::_GetItemByKey, TfPyRaiseOnError())
+            .def("__getitem__", &This::_GetItemByIndex, TfPyRaiseOnError())
+            .def("__setitem__", &This::_SetItemByKey, TfPyRaiseOnError())
+            .def("__setitem__", &This::_SetItemBySlice, TfPyRaiseOnError())
+            .def("__delitem__", &This::_DelItemByKey, TfPyRaiseOnError())
+            .def("__delitem__", &This::_DelItemByIndex, TfPyRaiseOnError())
+            .def("__contains__", &This::_HasKey, TfPyRaiseOnError())
+            .def("__contains__", &This::_HasValue, TfPyRaiseOnError())
+            .def("__iter__",   &This::_GetValueIterator, TfPyRaiseOnError())
+            .def("clear", &This::_Clear, TfPyRaiseOnError())
+            .def("append", &This::_AppendItem, TfPyRaiseOnError())
+            .def("insert", &This::_InsertItemByIndex, TfPyRaiseOnError())
+            .def("get", &This::_PyGet, TfPyRaiseOnError())
+            .def("get", &This::_PyGetDefault, TfPyRaiseOnError())
+            .def("items", &This::_GetItemIterator, TfPyRaiseOnError())
+            .def("keys", &This::_GetKeyIterator, TfPyRaiseOnError())
+            .def("values", &This::_GetValueIterator, TfPyRaiseOnError())
+            .def("index", &This::_FindIndexByKey, TfPyRaiseOnError())
+            .def("index", &This::_FindIndexByValue, TfPyRaiseOnError())
+            .def(nb::self == nb::self, TfPyRaiseOnError())
+            .def(nb::self != nb::self, TfPyRaiseOnError())
             ;
 
-        class_<_Iterator<_ExtractItem> >
-            ((name + "_Iterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractItem> >(
+            cls, (name + "_Iterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractKey> >
-            ((name + "_KeyIterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractKey> >(
+            cls, (name + "_KeyIterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractValue> >
-            ((name + "_ValueIterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractValue> >(
+            cls, (name + "_ValueIterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractValue>::GetNext)
             ;
@@ -234,12 +242,12 @@ private:
                         _proxy._GetType().c_str());
     }
 
-    void _SetItemBySlice(const pxr_boost::python::slice& slice,
+    void _SetItemBySlice(const nanobind::slice& slice,
                          const mapped_vector_type& values)
     {
-        if (! TfPyIsNone(slice.start()) ||
-            ! TfPyIsNone(slice.stop()) ||
-            ! TfPyIsNone(slice.step())) {
+        if (! slice.attr("start").is_none() ||
+            ! slice.attr("stop").is_none() ||
+            ! slice.attr("step").is_none()) {
             TfPyThrowIndexError("can only assign to full slice [:]");
         }
         else {
@@ -280,19 +288,19 @@ private:
         _proxy._Insert(value, index);
     }
 
-    pxr_boost::python::object _PyGet(const key_type& key) const
+    nanobind::object _PyGet(const key_type& key) const
     {
         _view_const_iterator i = _GetView().find(key);
-        return i == _GetView().end() ? pxr_boost::python::object() :
-                                       pxr_boost::python::object(*i);
+        return i == _GetView().end() ? nanobind::none() :
+                                       nanobind::cast(*i);
     }
 
-    pxr_boost::python::object _PyGetDefault(const key_type& key,
-                                        const mapped_type& def) const
+    nanobind::object _PyGetDefault(const key_type& key,
+                                   const mapped_type& def) const
     {
         _view_const_iterator i = _GetView().find(key);
-        return i == _GetView().end() ? pxr_boost::python::object(def) :
-                                       pxr_boost::python::object(*i);
+        return i == _GetView().end() ? nanobind::cast(def) :
+                                       nanobind::cast(*i);
     }
 
     bool _HasKey(const key_type& key) const
@@ -306,27 +314,27 @@ private:
     }
 
     static
-    _Iterator<_ExtractItem> _GetItemIterator(const pxr_boost::python::object &x)
+    _Iterator<_ExtractItem> _GetItemIterator(const nanobind::object &x)
     {
         return _Iterator<_ExtractItem>(x);
     }
 
     static
-    _Iterator<_ExtractKey> _GetKeyIterator(const pxr_boost::python::object &x)
+    _Iterator<_ExtractKey> _GetKeyIterator(const nanobind::object &x)
     {
         return _Iterator<_ExtractKey>(x);
     }
 
     static
-    _Iterator<_ExtractValue> _GetValueIterator(const pxr_boost::python::object &x)
+    _Iterator<_ExtractValue> _GetValueIterator(const nanobind::object &x)
     {
         return _Iterator<_ExtractValue>(x);
     }
 
     template <class E>
-    pxr_boost::python::list _Get() const
+    nanobind::list _Get() const
     {
-        pxr_boost::python::list result;
+        nanobind::list result;
         for (_const_iterator i = _proxy.begin(), n = _proxy.end(); i != n; ++i){
             result.append(E::Get(i));
         }

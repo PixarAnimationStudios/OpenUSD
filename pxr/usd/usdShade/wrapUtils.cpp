@@ -6,34 +6,38 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/enum.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static object 
+static nb::object 
 _GetBaseNameAndType(const TfToken &fullName)
 {
     const auto &result = UsdShadeUtils::GetBaseNameAndType(fullName);
-    return make_tuple(result.first, result.second);
+    return nb::make_tuple(result.first, result.second);
 }
 
 } // anonymous namespace 
 
-void wrapUsdShadeUtils()
+void wrapUsdShadeUtils(nanobind::module_ &m)
 {
+    typedef UsdShadeUtils This;
+
     UsdShadeAttributeVector (*GetValueProducingAttributes_Input)(
         const UsdShadeInput &input, bool includeAuthoredValues) = 
             &UsdShadeUtils::GetValueProducingAttributes;
@@ -41,30 +45,24 @@ void wrapUsdShadeUtils()
         const UsdShadeOutput &output, bool includeAuthoredValues) = 
             &UsdShadeUtils::GetValueProducingAttributes;
 
-    scope thisScope = class_<UsdShadeUtils>("Utils", no_init)
-        .def("GetPrefixForAttributeType", 
-            UsdShadeUtils::GetPrefixForAttributeType)
-        .staticmethod("GetPrefixForAttributeType")
+    nb::class_<This>(m, "Utils")
+        .def_static("GetPrefixForAttributeType", 
+            &UsdShadeUtils::GetPrefixForAttributeType)
 
-        .def("GetConnectedSourcePath", 
-             UsdShadeUtils::GetConnectedSourcePath, 
-             (arg("connectionSourceInfo")))
-        .staticmethod("GetConnectedSourcePath")
+        .def_static("GetConnectedSourcePath", 
+             &UsdShadeUtils::GetConnectedSourcePath, 
+             nb::arg("connectionSourceInfo"))
 
-        .def("GetBaseNameAndType", _GetBaseNameAndType)
-        .staticmethod("GetBaseNameAndType")
+        .def_static("GetBaseNameAndType", _GetBaseNameAndType)
 
-        .def("GetType", UsdShadeUtils::GetType)
-        .staticmethod("GetType")
+        .def_static("GetType", &UsdShadeUtils::GetType)
 
-        .def("GetFullName", UsdShadeUtils::GetFullName)
-        .staticmethod("GetFullName")
+        .def_static("GetFullName", &UsdShadeUtils::GetFullName)
 
-        .def("GetValueProducingAttributes", GetValueProducingAttributes_Input,
-            (arg("input"), arg("shaderOutputsOnly")=false))
-        .def("GetValueProducingAttributes", GetValueProducingAttributes_Output,
-            (arg("output"), arg("shaderOutputsOnly")=false))
-        .staticmethod("GetValueProducingAttributes")
+        .def_static("GetValueProducingAttributes", GetValueProducingAttributes_Input,
+            nb::arg("input"), nb::arg("shaderOutputsOnly")=false)
+        .def_static("GetValueProducingAttributes", GetValueProducingAttributes_Output,
+            nb::arg("output"), nb::arg("shaderOutputsOnly")=false)
         ;
 
 }

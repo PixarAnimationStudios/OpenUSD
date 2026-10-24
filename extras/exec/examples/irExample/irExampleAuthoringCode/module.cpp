@@ -12,6 +12,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Authoring);
-    TF_WRAP(Query);
+    TF_WRAP_NB(Authoring);
+    TF_WRAP_NB(Query);
 }

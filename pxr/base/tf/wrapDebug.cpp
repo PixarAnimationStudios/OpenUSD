@@ -11,17 +11,18 @@
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/object.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 namespace {
 
 static void
-_SetOutputFile(object const &file)
+_SetOutputFile(nanobind::handle const &file)
 {
     int filefd = PyObject_AsFileDescriptor(file.ptr());
     if (filefd == ArchFileNo(stdout)) {
@@ -38,29 +39,29 @@ _SetOutputFile(object const &file)
 
 } // anonymous namespace 
 
-void wrapDebug()
+void wrapDebug(nanobind::module_& m)
 {
     typedef TfDebug This;
+    namespace nb = nanobind;
 
-    class_<This>("Debug", no_init)
-        .def("SetDebugSymbolsByName", &This::SetDebugSymbolsByName,
-             ( arg("pattern"), arg("value") ))
-        .staticmethod("SetDebugSymbolsByName")
+    nb::class_<This>(m, "Debug")
+        .def_static("SetDebugSymbolsByName", &This::SetDebugSymbolsByName,
+             nb::arg("pattern"), nb::arg("value"))
+        .def_static("SetDebugSymbolsByName",
+             [](const std::string &pattern, int value) {
+                 return This::SetDebugSymbolsByName(pattern, bool(value));
+             },
+             nb::arg("pattern"), nb::arg("value"))
 
-        .def("IsDebugSymbolNameEnabled", &This::IsDebugSymbolNameEnabled)
-        .staticmethod("IsDebugSymbolNameEnabled")
+        .def_static("IsDebugSymbolNameEnabled", &This::IsDebugSymbolNameEnabled)
 
-        .def("GetDebugSymbolDescriptions", &This::GetDebugSymbolDescriptions)
-        .staticmethod("GetDebugSymbolDescriptions")
+        .def_static("GetDebugSymbolDescriptions", &This::GetDebugSymbolDescriptions)
 
-        .def("GetDebugSymbolNames", &This::GetDebugSymbolNames)
-        .staticmethod("GetDebugSymbolNames")
+        .def_static("GetDebugSymbolNames", &This::GetDebugSymbolNames)
 
-        .def("GetDebugSymbolDescription", &This::GetDebugSymbolDescription)
-        .staticmethod("GetDebugSymbolDescription")
+        .def_static("GetDebugSymbolDescription", &This::GetDebugSymbolDescription)
 
-        .def("SetOutputFile", _SetOutputFile)
-        .staticmethod("SetOutputFile")
+        .def_static("SetOutputFile", _SetOutputFile)
 
         ;
 }

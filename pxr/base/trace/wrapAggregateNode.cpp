@@ -16,13 +16,11 @@
 
 #include "pxr/base/arch/timing.h"
 
-#include "pxr/external/boost/python/class.hpp"
 
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 
 static double
@@ -60,31 +58,26 @@ _New(const TfToken &key,
         key, ArchSecondsToTicks(timeMS / 1e3), count, exclusiveCount);
 }
 
-void wrapAggregateNode()
+void wrapAggregateNode(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = TraceAggregateNode;
-    using ThisPtr = TraceAggregateNodePtr;
 
-    class_<This, ThisPtr>("AggregateNode", no_init)
-        .def(TfPyWeakPtr())
-        .def("__init__", 
-            TfMakePyConstructor(_New),
-            (arg("key") = TfToken("root"),
-             arg("timeMS") = 0,
-             arg("count") = 1,
-             arg("exclusiveCount") = 1))
-        .add_property("key",
-            make_function(&This::GetKey,
-                          return_value_policy<return_by_value>()))
-        .add_property("count", GetCount)
-        .add_property("exclusiveCount", &This::GetExclusiveCount)
-        .add_property("inclusiveTime", GetInclusiveTime)
-        .add_property("exclusiveTime", GetExclusiveTime)
-        .add_property("children", 
-            make_function(&This::GetChildren,
-                          return_value_policy<TfPySequenceToList>()) )
-        .add_property("expanded", &This::IsExpanded, &This::SetExpanded)
+    nb::class_<This> cls(m, "AggregateNode",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbWeakPtr(cls);
+    cls.def(TfNbMakePyConstructor(_New),
+            nb::arg("key") = TfToken("root"),
+            nb::arg("timeMS") = 0,
+            nb::arg("count") = 1,
+            nb::arg("exclusiveCount") = 1)
+        .def_prop_ro("key", &This::GetKey)
+        .def_prop_ro("count", GetCount)
+        .def_prop_ro("exclusiveCount", &This::GetExclusiveCount)
+        .def_prop_ro("inclusiveTime", GetInclusiveTime)
+        .def_prop_ro("exclusiveTime", GetExclusiveTime)
+        .def_prop_ro("children", &This::GetChildren)
+        .def_prop_rw("expanded", &This::IsExpanded, &This::SetExpanded)
         .def("Append", _Append)
         ;
-
 };

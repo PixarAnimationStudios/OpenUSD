@@ -11,11 +11,17 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeBlock.h"
+#include "pxr/usd/sdf/pySpec.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,32 +45,32 @@ private:
     typedef std::pair<key_type, mapped_type> pair_type;
 
     struct _ExtractItem {
-        static pxr_boost::python::object Get(const const_iterator& i)
+        static nanobind::object Get(const const_iterator& i)
         {
-            return pxr_boost::python::make_tuple(i->first, i->second);
+            return nanobind::make_tuple(i->first, i->second);
         }
     };
 
     struct _ExtractKey {
-        static pxr_boost::python::object Get(const const_iterator& i)
+        static nanobind::object Get(const const_iterator& i)
         {
-            return pxr_boost::python::object(i->first);
+            return nanobind::cast(i->first);
         }
     };
 
     struct _ExtractValue {
-        static pxr_boost::python::object Get(const const_iterator& i)
+        static nanobind::object Get(const const_iterator& i)
         {
-            return pxr_boost::python::object(i->second);
+            return nanobind::cast(i->second);
         }
     };
 
     template <class E>
     class _Iterator {
     public:
-        _Iterator(const pxr_boost::python::object& object) :
+        _Iterator(const nanobind::object& object) :
             _object(object),
-            _owner(pxr_boost::python::extract<const Type&>(object)),
+            _owner(nanobind::cast<const Type&>(object)),
             _cur(_owner.begin()),
             _end(_owner.end())
         {
@@ -76,18 +82,18 @@ private:
             return *this;
         }
 
-        pxr_boost::python::object GetNext()
+        nanobind::object GetNext()
         {
             if (_cur == _end) {
                 TfPyThrowStopIteration("End of MapEditProxy iteration");
             }
-            pxr_boost::python::object result = E::Get(_cur);
+            nanobind::object result = E::Get(_cur);
             ++_cur;
             return result;
         }
 
     private:
-        pxr_boost::python::object _object;
+        nanobind::object _object;
         const Type& _owner;
         const_iterator _cur;
         const_iterator _end;
@@ -95,12 +101,17 @@ private:
 
     static void _Wrap()
     {
-        using namespace pxr_boost::python;
+        namespace nb = nanobind;
 
         std::string name = _GetName();
+        nb::handle scope = TfPyGetCurrentNanobindModule();
+        if (!scope.is_valid()) {
+            scope = nb::borrow(PyImport_AddModule("pxr.Sdf"));
+        }
 
-        scope thisScope =
-        class_<Type>(name.c_str())
+        nb::class_<Type> cls(scope, name.c_str());
+        cls
+            .def(nb::init<>())
             .def("__repr__", &This::_GetRepr)
             .def("__str__", &This::_GetStr)
             .def("__len__", &Type::size)
@@ -121,26 +132,26 @@ private:
             .def("update", &This::_UpdateDict)
             .def("update", &This::_UpdateList)
             .def("copy", &This::_Copy)
-            .add_property("expired", &Type::IsExpired)
+            .def_prop_ro("expired", &Type::IsExpired)
             .def("__bool__", &This::_IsValid)
-            .def(self == self)
-            .def(self != self)
+            .def(nb::self == nb::self)
+            .def(nb::self != nb::self)
             ;
 
-        class_<_Iterator<_ExtractItem> >
-            ((name + "_Iterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractItem> >(
+            cls, (name + "_Iterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractKey> >
-            ((name + "_KeyIterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractKey> >(
+            cls, (name + "_KeyIterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
-        class_<_Iterator<_ExtractValue> >
-            ((name + "_ValueIterator").c_str(), no_init)
+        nb::class_<_Iterator<_ExtractValue> >(
+            cls, (name + "_ValueIterator").c_str())
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
             .def("__next__", &This::template _Iterator<_ExtractValue>::GetNext)
             ;
@@ -216,28 +227,28 @@ private:
     }
 
     static _Iterator<_ExtractItem> 
-    _GetItemIterator(const pxr_boost::python::object& x)
+    _GetItemIterator(const nanobind::object& x)
     {
         return _Iterator<_ExtractItem>(x);
     }
 
     static _Iterator<_ExtractKey> 
-    _GetKeyIterator(const pxr_boost::python::object& x)
+    _GetKeyIterator(const nanobind::object& x)
     {
         return _Iterator<_ExtractKey>(x);
     }
 
     static _Iterator<_ExtractValue> 
-    _GetValueIterator(const pxr_boost::python::object& x)
+    _GetValueIterator(const nanobind::object& x)
     {
         return _Iterator<_ExtractValue>(x);
     }
 
-    static pxr_boost::python::object _PyGet(const Type& x, const key_type& key)
+    static nanobind::object _PyGet(const Type& x, const key_type& key)
     {
         const_iterator i = x.find(key);
-        return i == x.end() ? pxr_boost::python::object() :
-                              pxr_boost::python::object(i->second);
+        return i == x.end() ? nanobind::none() :
+                              nanobind::cast(i->second);
     }
 
     static mapped_type _PyGetDefault(const Type& x, const key_type& key,
@@ -248,9 +259,9 @@ private:
     }
 
     template <class E>
-    static pxr_boost::python::list _Get(const Type& x)
+    static nanobind::list _Get(const Type& x)
     {
-        pxr_boost::python::list result;
+        nanobind::list result;
         for (const_iterator i = x.begin(), n = x.end(); i != n; ++i) {
             result.append(E::Get(i));
         }
@@ -271,17 +282,17 @@ private:
         }
     }
 
-    static pxr_boost::python::tuple _PopItem(Type& x)
+    static nanobind::tuple _PopItem(Type& x)
     {
         if (x.empty()) {
             TfPyThrowKeyError("MapEditProxy is empty");
-            return pxr_boost::python::tuple();
+            return nanobind::tuple();
         }
         else {
             iterator i = x.begin();
             value_type result = *i;
             x.erase(i);
-            return pxr_boost::python::make_tuple(result.first, result.second);
+            return nanobind::make_tuple(result.first, result.second);
         }
     }
 
@@ -305,20 +316,24 @@ private:
         }
     }
 
-    static void _UpdateDict(Type& x, const pxr_boost::python::dict& d)
+    static void _UpdateDict(Type& x, const nanobind::dict& d)
     {
-        _UpdateList(x, d.items());
+        std::vector<pair_type> values;
+        for (auto item : d) {
+            values.push_back(pair_type(
+                nanobind::cast<key_type>(item.first),
+                nanobind::cast<mapped_type>(item.second)));
+        }
+        _Update(x, values);
     }
 
-    static void _UpdateList(Type& x, const pxr_boost::python::list& pairs)
+    static void _UpdateList(Type& x, const nanobind::list& pairs)
     {
-        using namespace pxr_boost::python;
-
         std::vector<pair_type> values;
-        for (int i = 0, n = len(pairs); i != n; ++i) {
+        for (size_t i = 0, n = pairs.size(); i != n; ++i) {
             values.push_back(pair_type(
-                extract<key_type>(pairs[i][0])(),
-                extract<mapped_type>(pairs[i][1])()));
+                nanobind::cast<key_type>(pairs[i][0]),
+                nanobind::cast<mapped_type>(pairs[i][1])));
         }
         _Update(x, values);
     }

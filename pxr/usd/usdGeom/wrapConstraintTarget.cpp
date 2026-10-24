@@ -9,14 +9,12 @@
 
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -31,34 +29,48 @@ _ComputeInWorldSpace(
 
 } // anonymous namespace 
 
-void wrapUsdGeomConstraintTarget()
+void wrapUsdGeomConstraintTarget(nanobind::module_ &m)
 {
     typedef UsdGeomConstraintTarget ConstraintTarget;
 
-    class_<ConstraintTarget>("ConstraintTarget")
-        .def(init<UsdAttribute>(arg("attr")))
-        .def(!self)
+    nb::class_<ConstraintTarget>(m, "ConstraintTarget")
+        .def(nb::init<>())
+        .def(nb::init<const UsdAttribute &>(), nb::arg("attr"))
+        .def("__bool__", [](const ConstraintTarget &self) { return bool(self); })
 
         .def("GetAttr", &ConstraintTarget::GetAttr,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("IsDefined", &ConstraintTarget::IsDefined)
 
+        .def("IsValid", [](const ConstraintTarget &self) {
+            return ConstraintTarget::IsValid(self);
+        })
         .def("IsValid", &ConstraintTarget::IsValid)
+        .def("IsValid", [](const ConstraintTarget &, const UsdAttribute &attr) {
+            return ConstraintTarget::IsValid(attr);
+        }, nb::arg("attr"))
 
-        .def("SetIdentifier", &ConstraintTarget::SetIdentifier, arg("identifier"))
+        .def("SetIdentifier", &ConstraintTarget::SetIdentifier, nb::arg("identifier"))
         .def("GetIdentifier", &ConstraintTarget::GetIdentifier,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
-        .def("Get", &ConstraintTarget::Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", &ConstraintTarget::Set, (arg("value"), 
-            arg("time")=UsdTimeCode::Default()))
+        .def("Get", &ConstraintTarget::Get,
+             nb::arg("value"), nb::arg("time") = UsdTimeCode::Default())
+        .def("Get", [](const ConstraintTarget &self, UsdTimeCode time) {
+            GfMatrix4d value;
+            self.Get(&value, time);
+            return value;
+        }, nb::arg("time") = UsdTimeCode::Default())
+        .def("Set", &ConstraintTarget::Set,
+             nb::arg("value"), nb::arg("time") = UsdTimeCode::Default())
 
-        .def("GetConstraintAttrName", &ConstraintTarget::GetConstraintAttrName)
-            .staticmethod("GetConstraintAttrName")
+        .def_static("GetConstraintAttrName", &ConstraintTarget::GetConstraintAttrName)
 
         .def("ComputeInWorldSpace", _ComputeInWorldSpace,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time") = UsdTimeCode::Default())
         ;
 
-    implicitly_convertible<ConstraintTarget, UsdAttribute>();
+    nb::implicitly_convertible<ConstraintTarget, UsdAttribute>();
+    nb::implicitly_convertible<ConstraintTarget, UsdProperty>();
+    nb::implicitly_convertible<ConstraintTarget, UsdObject>();
 }

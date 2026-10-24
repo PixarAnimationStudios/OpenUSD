@@ -9,16 +9,18 @@
 #include "resolverContext.h"
 
 #include "pxr/usd/ar/pyResolverContext.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 #include <string>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 static
 size_t
@@ -37,18 +39,22 @@ _Repr(const UsdResolverExampleResolverContext& ctx)
 }
 
 void
-wrapResolverContext()
+wrapResolverContext(nb::module_ &m)
 {
     using This = UsdResolverExampleResolverContext;
 
-    class_<UsdResolverExampleResolverContext>("ResolverContext")
-        .def(init<const std::string&>(args("mappingFile")))
-        
+    nb::class_<UsdResolverExampleResolverContext>(m, "ResolverContext")
+        .def(nb::init<>())
+        .def(nb::init<const std::string&>(), nb::arg("mappingFile"))
+
+        .def(nb::self == nb::self)
+        .def("__ne__", [](const This& a, const This& b) { return !(a == b); },
+             nb::is_operator())
         .def("__hash__", _Hash)
         .def("__repr__", _Repr)
 
         .def("GetMappingFile", &This::GetMappingFile,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
         ;
 
     ArWrapResolverContextForPython<This>();

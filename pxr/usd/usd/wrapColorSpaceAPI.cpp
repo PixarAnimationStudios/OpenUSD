@@ -14,15 +14,22 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/trampoline.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,7 +42,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateColorSpaceNameAttr(UsdColorSpaceAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateColorSpaceNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -66,49 +73,42 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdColorSpaceAPI()
+void wrapUsdColorSpaceAPI(nb::module_ &m)
 {
     typedef UsdColorSpaceAPI This;
 
-    UsdColorSpaceAPI_CanApplyResult::Wrap<UsdColorSpaceAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdColorSpaceAPI_CanApplyResult::WrapNb<UsdColorSpaceAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ColorSpaceAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ColorSpaceAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetColorSpaceNameAttr",
              &This::GetColorSpaceNameAttr)
         .def("CreateColorSpaceNameAttr",
              &_CreateColorSpaceNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -135,57 +135,52 @@ void wrapUsdColorSpaceAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/base/tf/pyContainerConversions.h"
-
 namespace {
 
 // Wrapper class to handle the abstract ColorSpaceCache
-struct ColorSpaceCacheWrapper : UsdColorSpaceAPI::ColorSpaceCache, 
-                                    wrapper<UsdColorSpaceAPI::ColorSpaceCache> {
+struct ColorSpaceCacheWrapper : UsdColorSpaceAPI::ColorSpaceCache {
+    NB_TRAMPOLINE(UsdColorSpaceAPI::ColorSpaceCache, 2);
+
     TfToken Find(const SdfPath& prim) override {
-        if (override find = this->get_override("Find")) {
-            return find(prim);
-        }
-        return {};
+        NB_OVERRIDE_PURE(Find, prim);
     }
 
     void Insert(const SdfPath& prim, const TfToken& colorSpace) override {
-        if (override insert = this->get_override("Insert")) {
-            insert(prim, colorSpace);
-        }
+        NB_OVERRIDE_PURE(Insert, prim, colorSpace);
     }
 };
 
 void wrapColorSpaceCache() {
     typedef UsdColorSpaceAPI::ColorSpaceCache This;
+    nb::module_ m = TfPyGetCurrentNanobindModule();
 
-    class_<ColorSpaceCacheWrapper, noncopyable>("ColorSpaceCache")
+    nb::class_<This, ColorSpaceCacheWrapper>(m, "ColorSpaceCache")
+        .def(nb::init<>())
         .def("Find", &This::Find)
         .def("Insert", &This::Insert)
     ;
 }
 
 // Wrapper class for ColorSpaceHashCache which inherits ColorSpaceCache
-struct ColorSpaceHashCacheWrapper : UsdColorSpaceAPI::ColorSpaceHashCache, 
-                                wrapper<UsdColorSpaceAPI::ColorSpaceHashCache> {
+struct ColorSpaceHashCacheWrapper : UsdColorSpaceAPI::ColorSpaceHashCache {
+    NB_TRAMPOLINE(UsdColorSpaceAPI::ColorSpaceHashCache, 2);
+
     TfToken Find(const SdfPath& prim) override {
-        if (override find = this->get_override("Find"))
-            return find(prim);
-        return ColorSpaceHashCache::Find(prim); // Optional fallback
+        NB_OVERRIDE(Find, prim);
     }
 
     void Insert(const SdfPath& prim, const TfToken& colorSpace) override {
-        if (override insert = this->get_override("Insert"))
-            insert(prim, colorSpace);
-        else
-            ColorSpaceHashCache::Insert(prim, colorSpace); // Optional fallback
+        NB_OVERRIDE(Insert, prim, colorSpace);
     }
 };
 
 void wrapColorSpaceHashCache() {
     typedef UsdColorSpaceAPI::ColorSpaceHashCache This;
+    nb::module_ m = TfPyGetCurrentNanobindModule();
 
-    class_<ColorSpaceHashCacheWrapper, bases<UsdColorSpaceAPI::ColorSpaceCache>, noncopyable>("ColorSpaceHashCache")
+    nb::class_<This, UsdColorSpaceAPI::ColorSpaceCache, ColorSpaceHashCacheWrapper>(
+        m, "ColorSpaceHashCache")
+        .def(nb::init<>())
         .def("Find", &This::Find)
         .def("Insert", &This::Insert)
     ;
@@ -197,28 +192,32 @@ WRAP_CUSTOM {
     wrapColorSpaceHashCache();
 
     _class
-        .def("ComputeColorSpaceName", 
+        .def_static("ComputeColorSpaceName", 
                 (TfToken (*)(UsdPrim, 
                              UsdColorSpaceAPI::ColorSpaceCache*)) 
-                &UsdColorSpaceAPI::ComputeColorSpaceName)
-        .def("ComputeColorSpaceName",
+                &UsdColorSpaceAPI::ComputeColorSpaceName,
+                nb::arg("prim"), nb::arg("cache") = nullptr)
+        .def_static("ComputeColorSpaceName",
                 (TfToken (*)(const UsdAttribute&, 
                              UsdColorSpaceAPI::ColorSpaceCache*))
-                &UsdColorSpaceAPI::ComputeColorSpaceName)
-        .def("ComputeColorSpace",
+                &UsdColorSpaceAPI::ComputeColorSpaceName,
+                nb::arg("attribute"), nb::arg("cache") = nullptr)
+        .def_static("ComputeColorSpace",
                 (GfColorSpace (*)(UsdPrim, 
                                   UsdColorSpaceAPI::ColorSpaceCache*))
-                &UsdColorSpaceAPI::ComputeColorSpace)
-        .def("ComputeColorSpace",
+                &UsdColorSpaceAPI::ComputeColorSpace,
+                nb::arg("prim"), nb::arg("cache") = nullptr)
+        .def_static("ComputeColorSpace",
                 (GfColorSpace (*)(const UsdAttribute&,
                                   UsdColorSpaceAPI::ColorSpaceCache*))
-                &UsdColorSpaceAPI::ComputeColorSpace)
-        .def("IsValidColorSpaceName",
+                &UsdColorSpaceAPI::ComputeColorSpace,
+                nb::arg("attribute"), nb::arg("cache") = nullptr)
+        .def_static("IsValidColorSpaceName",
                 (bool (*)(UsdPrim, const TfToken&, 
                           UsdColorSpaceAPI::ColorSpaceCache*))
-                &UsdColorSpaceAPI::IsValidColorSpaceName)
+                &UsdColorSpaceAPI::IsValidColorSpaceName,
+                nb::arg("prim"), nb::arg("colorSpace"), nb::arg("cache") = nullptr)
     ;
 }
-
 
 }

@@ -6,48 +6,55 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/payloads.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdPayloads()
+void wrapUsdPayloads(nb::module_ &m)
 {
-    class_<UsdPayloads>("Payloads", no_init)
+    nb::class_<UsdPayloads>(m, "Payloads")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddPayload",
              (bool (UsdPayloads::*)(const SdfPayload &, UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("payload"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("payload"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
         .def("AddPayload",
              (bool (UsdPayloads::*)(const string &, const SdfPath &,
                                     const SdfLayerOffset &, UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("assetPath"), arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("AddPayload",(bool (UsdPayloads::*)(const string &,
-                                                 const SdfLayerOffset &,
-                                                 UsdListPosition))
+             nb::arg("assetPath"), nb::arg("primPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("AddPayload", (bool (UsdPayloads::*)(const string &,
+                                                  const SdfLayerOffset &,
+                                                  UsdListPosition))
              &UsdPayloads::AddPayload,
-             (arg("assetPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("assetPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
         .def("AddInternalPayload",
              &UsdPayloads::AddInternalPayload, 
-             (arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("primPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
 
-        .def("RemovePayload", &UsdPayloads::RemovePayload, arg("payload"))
+        .def("RemovePayload", &UsdPayloads::RemovePayload, nb::arg("payload"))
         .def("ClearPayloads", &UsdPayloads::ClearPayloads)
         .def("SetPayloads", &UsdPayloads::SetPayloads)
         .def("GetPrim", (UsdPrim (UsdPayloads::*)()) &UsdPayloads::GetPrim)
-        .def(!self)
+        .def("__bool__", [](UsdPayloads &self) { return bool(self); })
         ;
 }

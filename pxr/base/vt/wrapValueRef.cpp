@@ -6,12 +6,10 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/vt/valueRef.h"
-
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static VtValue
 _test_ValueRefFromPython(VtValueRef valueRef)
@@ -19,7 +17,7 @@ _test_ValueRefFromPython(VtValueRef valueRef)
     return valueRef;
 }
 
-void wrapValueRef()
+void wrapValueRef(nanobind::module_& m)
 {
-    def("_test_ValueRefFromPython", _test_ValueRefFromPython);
+    m.def("_test_ValueRefFromPython", _test_ValueRefFromPython);
 }

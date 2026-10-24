@@ -10,41 +10,40 @@
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapMetrics()
+void wrapMetrics(nanobind::module_ &m)
 {
-    def("GetStageUpAxis", UsdGeomGetStageUpAxis, arg("stage"));
-    def("SetStageUpAxis", UsdGeomSetStageUpAxis, 
-        (arg("stage"), arg("upAxis")));
-    def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
+    m.def("GetStageUpAxis", UsdGeomGetStageUpAxis, nb::arg("stage"));
+    m.def("SetStageUpAxis", UsdGeomSetStageUpAxis,
+          nb::arg("stage"), nb::arg("upAxis"));
+    m.def("GetFallbackUpAxis", UsdGeomGetFallbackUpAxis);
 
-    def("GetStageMetersPerUnit", UsdGeomGetStageMetersPerUnit, arg("stage"));
-    def("StageHasAuthoredMetersPerUnit", UsdGeomStageHasAuthoredMetersPerUnit, arg("stage"));
-    def("SetStageMetersPerUnit", UsdGeomSetStageMetersPerUnit, 
-        (arg("stage"), arg("metersPerUnit")));
-    def("LinearUnitsAre", UsdGeomLinearUnitsAre, 
-        (arg("authoredUnits"), arg("standardUnits"), arg("epsilon")=1e-5));
+    m.def("GetStageMetersPerUnit", UsdGeomGetStageMetersPerUnit, nb::arg("stage"));
+    m.def("StageHasAuthoredMetersPerUnit", UsdGeomStageHasAuthoredMetersPerUnit, nb::arg("stage"));
+    m.def("SetStageMetersPerUnit", UsdGeomSetStageMetersPerUnit,
+          nb::arg("stage"), nb::arg("metersPerUnit"));
+    m.def("LinearUnitsAre", UsdGeomLinearUnitsAre,
+          nb::arg("authoredUnits"), nb::arg("standardUnits"), nb::arg("epsilon") = 1e-5);
 
-    pxr_boost::python::class_<UsdGeomLinearUnits>
-        cls("LinearUnits", pxr_boost::python::no_init);
+    nb::class_<UsdGeomLinearUnits> cls(m, "LinearUnits");
     cls
-        .def_readonly("nanometers", UsdGeomLinearUnits::nanometers)
-        .def_readonly("micrometers", UsdGeomLinearUnits::micrometers)
-        .def_readonly("millimeters", UsdGeomLinearUnits::millimeters)
-        .def_readonly("centimeters", UsdGeomLinearUnits::centimeters)
-        .def_readonly("decimeters", UsdGeomLinearUnits::decimeters)
-        .def_readonly("meters", UsdGeomLinearUnits::meters)
-        .def_readonly("kilometers", UsdGeomLinearUnits::kilometers)
-        .def_readonly("lightYears", UsdGeomLinearUnits::lightYears)
-        .def_readonly("inches", UsdGeomLinearUnits::inches)
-        .def_readonly("feet", UsdGeomLinearUnits::feet)
-        .def_readonly("yards", UsdGeomLinearUnits::yards)
-        .def_readonly("miles", UsdGeomLinearUnits::miles);
+        .def_ro_static("nanometers", &UsdGeomLinearUnits::nanometers)
+        .def_ro_static("micrometers", &UsdGeomLinearUnits::micrometers)
+        .def_ro_static("millimeters", &UsdGeomLinearUnits::millimeters)
+        .def_ro_static("centimeters", &UsdGeomLinearUnits::centimeters)
+        .def_ro_static("decimeters", &UsdGeomLinearUnits::decimeters)
+        .def_ro_static("meters", &UsdGeomLinearUnits::meters)
+        .def_ro_static("kilometers", &UsdGeomLinearUnits::kilometers)
+        .def_ro_static("lightYears", &UsdGeomLinearUnits::lightYears)
+        .def_ro_static("inches", &UsdGeomLinearUnits::inches)
+        .def_ro_static("feet", &UsdGeomLinearUnits::feet)
+        .def_ro_static("yards", &UsdGeomLinearUnits::yards)
+        .def_ro_static("miles", &UsdGeomLinearUnits::miles);
+
 }

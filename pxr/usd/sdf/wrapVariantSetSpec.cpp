@@ -13,11 +13,15 @@
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -38,32 +42,26 @@ _NewUnderVariant(const SdfVariantSpecHandle& owner, const std::string& name)
 
 } // anonymous namespace 
 
-void wrapVariantSetSpec()
+void wrapVariantSetSpec(nb::module_& m)
 {
     typedef SdfVariantSetSpec This;
 
-    to_python_converter<SdfVariantSetSpecHandleVector,
-                        TfPySequenceToPython<SdfVariantSetSpecHandleVector> >();
-
-    class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, noncopyable>
-        ("VariantSetSpec", no_init)
+    nb::class_<This, SdfSpec>(m, "VariantSetSpec")
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&_NewUnderPrim))
         .def(SdfMakePySpecConstructor(&_NewUnderVariant))
 
-        .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+        .def_prop_ro("name",
+            &This::GetName,
+            nb::rv_policy::copy,
             "The variant set's name.")
-        .add_property("owner", &This::GetOwner,
+        .def_prop_ro("owner", &This::GetOwner,
             "The prim that this variant set belongs to.")
 
-        .add_property("variants", &This::GetVariants,
+        .def_prop_ro("variants", &This::GetVariants,
             "The variants in this variant set as a dict.")
-        .add_property("variantList",
-            make_function(&This::GetVariantList,
-                          return_value_policy<TfPySequenceToList>()),
+        .def_prop_ro("variantList",
+            &This::GetVariantList,
             "The variants in this variant set as a list.")
         .def("RemoveVariant", &This::RemoveVariant)
 

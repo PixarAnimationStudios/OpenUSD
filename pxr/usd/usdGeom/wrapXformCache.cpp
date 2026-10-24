@@ -7,16 +7,17 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
 static
-tuple
+nb::tuple
 _GetLocalTransformation(
         UsdGeomXformCache& self,
         const UsdPrim& prim)
@@ -24,11 +25,11 @@ _GetLocalTransformation(
     bool resetsXformStack;
     GfMatrix4d localXform = self.GetLocalTransformation(prim, &resetsXformStack);
 
-    return make_tuple(localXform, resetsXformStack);
+    return nb::make_tuple(localXform, resetsXformStack);
 }
 
 static
-tuple
+nb::tuple
 _ComputeRelativeTransform(UsdGeomXformCache& self,
                           const UsdPrim& prim,
                           const UsdPrim& ancestor)
@@ -37,30 +38,31 @@ _ComputeRelativeTransform(UsdGeomXformCache& self,
     GfMatrix4d xform =
         self.ComputeRelativeTransform(prim, ancestor, &resetXformStack);
     
-    return make_tuple(xform, resetXformStack);
+    return nb::make_tuple(xform, resetXformStack);
 }
 
 } // anonymous namespace 
 
-void wrapUsdGeomXformCache()
+void wrapUsdGeomXformCache(nanobind::module_ &m)
 {
     typedef UsdGeomXformCache XformCache;
 
-    class_<XformCache>("XformCache")
-        .def(init<UsdTimeCode>(arg("time")))
+    nb::class_<XformCache>(m, "XformCache")
+        .def(nb::init<UsdTimeCode>(), nb::arg("time") = UsdTimeCode::Default())
         .def("GetLocalToWorldTransform",
-             &XformCache::GetLocalToWorldTransform, arg("prim"))
+             &XformCache::GetLocalToWorldTransform, nb::arg("prim"))
         .def("GetParentToWorldTransform",
-             &XformCache::GetParentToWorldTransform, arg("prim"))
+             &XformCache::GetParentToWorldTransform, nb::arg("prim"))
         .def("GetLocalTransformation",
-             &_GetLocalTransformation, arg("prim"))
+             &_GetLocalTransformation, nb::arg("prim"))
         .def("ComputeRelativeTransform",
-             &_ComputeRelativeTransform, (arg("prim"), arg("ancestor")))
+             &_ComputeRelativeTransform, nb::arg("prim"), nb::arg("ancestor"))
         .def("Clear", &XformCache::Clear)
-        .def("SetTime", &XformCache::SetTime, arg("time"))
+        .def("SetTime", &XformCache::SetTime, nb::arg("time"))
         .def("GetTime", &XformCache::GetTime)
 
-        .def("Swap", &XformCache::Swap, arg("other"))
+        .def("Swap", &XformCache::Swap, nb::arg("other"))
         ;
+
 }
 

@@ -4,7 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/gamma.h"
@@ -17,27 +18,25 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapGamma()
+void wrapGamma(nanobind::module_ &m)
 {    
-    def("ApplyGamma", (GfVec3f(*)(GfVec3f const &,double))GfApplyGamma);
-    def("ApplyGamma", (GfVec3d(*)(GfVec3d const &,double))GfApplyGamma);
-    def("ApplyGamma", (GfVec3h(*)(GfVec3h const &,double))GfApplyGamma);
-    def("ApplyGamma", (GfVec4f(*)(GfVec4f const &,double))GfApplyGamma);
-    def("ApplyGamma", (GfVec4d(*)(GfVec4d const &,double))GfApplyGamma);
-    def("ApplyGamma", (GfVec4h(*)(GfVec4h const &,double))GfApplyGamma);
-    def("GetDisplayGamma",GfGetDisplayGamma);
-    def("ConvertDisplayToLinear",(GfVec3f(*)(GfVec3f const &))GfConvertDisplayToLinear);
-    def("ConvertDisplayToLinear",(GfVec3d(*)(GfVec3d const &))GfConvertDisplayToLinear);
-    def("ConvertDisplayToLinear",(GfVec3h(*)(GfVec3h const &))GfConvertDisplayToLinear);
-    def("ConvertDisplayToLinear",(GfVec4f(*)(GfVec4f const &))GfConvertDisplayToLinear);
-    def("ConvertDisplayToLinear",(GfVec4d(*)(GfVec4d const &))GfConvertDisplayToLinear);
-    def("ConvertDisplayToLinear",(GfVec4h(*)(GfVec4h const &))GfConvertDisplayToLinear);
-    def("ConvertLinearToDisplay",(GfVec3f(*)(GfVec3f const &))GfConvertLinearToDisplay);
-    def("ConvertLinearToDisplay",(GfVec3d(*)(GfVec3d const &))GfConvertLinearToDisplay);
-    def("ConvertLinearToDisplay",(GfVec3h(*)(GfVec3h const &))GfConvertLinearToDisplay);
-    def("ConvertLinearToDisplay",(GfVec4f(*)(GfVec4f const &))GfConvertLinearToDisplay);
-    def("ConvertLinearToDisplay",(GfVec4d(*)(GfVec4d const &))GfConvertLinearToDisplay);
-    def("ConvertLinearToDisplay",(GfVec4h(*)(GfVec4h const &))GfConvertLinearToDisplay);
+    m.def("ApplyGamma", (GfVec3d(*)(GfVec3d const &,double))GfApplyGamma);
+    m.def("ApplyGamma", (GfVec3f(*)(GfVec3f const &,double))GfApplyGamma);
+    m.def("ApplyGamma", (GfVec3h(*)(GfVec3h const &,double))GfApplyGamma);
+    m.def("ApplyGamma", (GfVec4d(*)(GfVec4d const &,double))GfApplyGamma);
+    m.def("ApplyGamma", (GfVec4f(*)(GfVec4f const &,double))GfApplyGamma);
+    m.def("ApplyGamma", (GfVec4h(*)(GfVec4h const &,double))GfApplyGamma);
+    m.def("GetDisplayGamma",GfGetDisplayGamma);
+    m.def("ConvertDisplayToLinear",(GfVec3d(*)(GfVec3d const &))GfConvertDisplayToLinear);
+    m.def("ConvertDisplayToLinear",(GfVec3f(*)(GfVec3f const &))GfConvertDisplayToLinear);
+    m.def("ConvertDisplayToLinear",(GfVec3h(*)(GfVec3h const &))GfConvertDisplayToLinear);
+    m.def("ConvertDisplayToLinear",(GfVec4d(*)(GfVec4d const &))GfConvertDisplayToLinear);
+    m.def("ConvertDisplayToLinear",(GfVec4f(*)(GfVec4f const &))GfConvertDisplayToLinear);
+    m.def("ConvertDisplayToLinear",(GfVec4h(*)(GfVec4h const &))GfConvertDisplayToLinear);
+    m.def("ConvertLinearToDisplay",(GfVec3d(*)(GfVec3d const &))GfConvertLinearToDisplay);
+    m.def("ConvertLinearToDisplay",(GfVec3f(*)(GfVec3f const &))GfConvertLinearToDisplay);
+    m.def("ConvertLinearToDisplay",(GfVec3h(*)(GfVec3h const &))GfConvertLinearToDisplay);
+    m.def("ConvertLinearToDisplay",(GfVec4d(*)(GfVec4d const &))GfConvertLinearToDisplay);
+    m.def("ConvertLinearToDisplay",(GfVec4f(*)(GfVec4f const &))GfConvertLinearToDisplay);
+    m.def("ConvertLinearToDisplay",(GfVec4h(*)(GfVec4h const &))GfConvertLinearToDisplay);
 }

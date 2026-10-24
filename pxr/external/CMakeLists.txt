@@ -1,1 +1,1 @@
-add_subdirectory(boost)
+# pxr/external/boost is no longer built after full nanobind migration.

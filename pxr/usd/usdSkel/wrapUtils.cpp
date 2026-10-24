@@ -11,6 +11,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3f.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -24,13 +25,52 @@
 #include "pxr/usd/usdSkel/topology.h"
 #include "pxr/usd/usdSkel/utils.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
+
+namespace nanobind::detail {
+template <typename T>
+struct type_caster<PXR_NS::TfSpan<T>> {
+    NB_TYPE_CASTER(PXR_NS::TfSpan<T>, const_name("TfSpan"))
+
+    using ElemType = std::remove_const_t<T>;
+    using ArrayType = PXR_NS::VtArray<ElemType>;
+    std::optional<ArrayType> holder_;
+
+    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+        if (!src.is_valid() || src.is_none()) {
+            return false;
+        }
+        ArrayType *arr = nullptr;
+        if (NB_CALL(nb_type_get)(NB_CTX_C(cleanup), &typeid(ArrayType),
+                                 src.ptr(), flags, cleanup,
+                                 reinterpret_cast<void **>(&arr)) &&
+            arr) {
+            value = PXR_NS::TfSpan<T>(*arr);
+            return true;
+        }
+        if constexpr (std::is_const_v<T>) {
+            if (flags & static_cast<uint8_t>(cast_flags::convert)) {
+                make_caster<ArrayType> caster;
+                if (caster.from_python(src, flags, cleanup)) {
+                    holder_.emplace(static_cast<ArrayType &>(caster));
+                    value = PXR_NS::TfSpan<T>(*holder_);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static handle from_cpp(PXR_NS::TfSpan<T> src, rv_policy, cleanup_list *) noexcept {
+        ArrayType arr(src.begin(), src.end());
+        return type_caster<ArrayType>::from_cpp(arr, rv_policy::copy, nullptr);
+    }
+};
+} // namespace nanobind::detail
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 
 namespace {
@@ -78,7 +118,7 @@ _ConcatJointTransforms(const UsdSkelTopology& topology,
 
 
 template <typename Matrix4>
-tuple
+nb::tuple
 _DecomposeTransform(const Matrix4& mx)
 {
     GfVec3f t;
@@ -89,13 +129,13 @@ _DecomposeTransform(const Matrix4& mx)
         TF_CODING_ERROR("Failed decomposing transform. "
                         "The transform may be singular.");
     }
-    return pxr_boost::python::make_tuple(t, r, s);
+    return nb::make_tuple(t, r, s);
 }
 
 
 template <typename Matrix4>
-tuple
-_DecomposeTransforms(const TfSpan<Matrix4>& xforms)
+nb::tuple
+_DecomposeTransforms(TfSpan<const Matrix4> xforms)
 {
     VtVec3fArray t(xforms.size());
     VtQuatfArray r(xforms.size());
@@ -104,7 +144,7 @@ _DecomposeTransforms(const TfSpan<Matrix4>& xforms)
         TF_CODING_ERROR("Failed decomposing transforms. "
                         "Some transforms may be singular.");
     }
-    return pxr_boost::python::make_tuple(t, r, s);
+    return nb::make_tuple(t, r, s);
 }
 
 
@@ -226,245 +266,245 @@ _NonInterleavedSkinTransform(const TfToken& skinningMethod,
 
 
 template <class Matrix3, class Matrix4>
-void _WrapUtilsT()
+void _WrapUtilsT(nb::module_ &m)
 {
-    def("ComputeJointLocalTransforms",
-        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
-                             TfSpan<const Matrix4>, TfSpan<Matrix4>,
-                             const Matrix4*)>(
-                                 &UsdSkelComputeJointLocalTransforms),
-        (arg("topology"), arg("xforms"), arg("inverseXforms"),
-         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+    m.def("ComputeJointLocalTransforms",
+          static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                               TfSpan<const Matrix4>, TfSpan<Matrix4>,
+                               const Matrix4*)>(
+                                   &UsdSkelComputeJointLocalTransforms),
+          nb::arg("topology"), nb::arg("xforms"), nb::arg("inverseXforms"),
+          nb::arg("jointLocalXforms"), nb::arg("rootInverseXform")=nullptr);
 
-    def("ComputeJointLocalTransforms",
-        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
-                             TfSpan<Matrix4>, const Matrix4*)>(
-                                 &UsdSkelComputeJointLocalTransforms),
-        (arg("topology"), arg("xforms"),
-         arg("jointLocalXforms"), arg("rootInverseXform")=object()));
+    m.def("ComputeJointLocalTransforms",
+          static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                               TfSpan<Matrix4>, const Matrix4*)>(
+                                   &UsdSkelComputeJointLocalTransforms),
+          nb::arg("topology"), nb::arg("xforms"),
+          nb::arg("jointLocalXforms"), nb::arg("rootInverseXform")=nullptr);
 
-    def("ConcatJointTransforms",
-        static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
-                             TfSpan<Matrix4>, const Matrix4*)>(
-                                 &UsdSkelConcatJointTransforms),
-        (arg("topology"), arg("jointLocalXforms"),
-         arg("rootXform")=object()));
+    m.def("ConcatJointTransforms",
+          static_cast<bool (*)(const UsdSkelTopology&, TfSpan<const Matrix4>,
+                               TfSpan<Matrix4>, const Matrix4*)>(
+                                   &UsdSkelConcatJointTransforms),
+          nb::arg("topology"), nb::arg("jointLocalXforms"),
+          nb::arg("xforms"), nb::arg("rootXform")=nullptr);
 
-    def("DecomposeTransform", &_DecomposeTransform<Matrix4>,
-        "Decompose a transform into a (translate,rotate,scale) tuple.");
+    m.def("DecomposeTransform", &_DecomposeTransform<Matrix4>,
+          "Decompose a transform into a (translate,rotate,scale) tuple.");
 
-    def("DecomposeTransforms", &_DecomposeTransforms<Matrix4>,
-        "Decompose a transform array into a "
-        "(translations,rotations,scales) tuple.");
+    m.def("DecomposeTransforms", &_DecomposeTransforms<Matrix4>,
+          "Decompose a transform array into a "
+          "(translations,rotations,scales) tuple.");
 
-    def("ComputeJointsExtent", _ComputeJointsExtent<Matrix4>,
-        (arg("xforms"), arg("pad")=0.0f, arg("rootXform")=object()));
+    m.def("ComputeJointsExtent", _ComputeJointsExtent<Matrix4>,
+          nb::arg("xforms"), nb::arg("pad")=0.0f, nb::arg("rootXform")=nullptr);
 
-    def("SkinPointsLBS",
-        static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
-                             TfSpan<const int>, TfSpan<const float>,
-                             int, TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinPointsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
+    m.def("SkinPointsLBS",
+          static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
+                               TfSpan<const int>, TfSpan<const float>,
+                               int, TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinPointsLBS),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("points"),
+          nb::arg("inSerial")=true);
 
-    def("SkinPointsLBS",
-        static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
-                             TfSpan<const GfVec2f>, int,
-                             TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinPointsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
+    m.def("SkinPointsLBS",
+          static_cast<bool (*)(const Matrix4&, TfSpan<const Matrix4>,
+                               TfSpan<const GfVec2f>, int,
+                               TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinPointsLBS),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("points"),
+          nb::arg("inSerial")=true);
 
-    def("SkinPoints",
-        static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
-                             TfSpan<const int>, TfSpan<const float>,
-                             int, TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinPoints),
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
+    m.def("SkinPoints",
+          static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
+                               TfSpan<const int>, TfSpan<const float>,
+                               int, TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinPoints),
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("points"),
+          nb::arg("inSerial")=true);
 
-    def("SkinPoints",
-        static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
-                             TfSpan<const GfVec2f>, int,
-                             TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinPoints),
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("points"),
-         arg("inSerial")=true));
-
-
-
-    def("SkinNormalsLBS",
-        static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
-                             TfSpan<const int>, TfSpan<const float>,
-                             int, TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinNormalsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
-
-    def("SkinNormalsLBS",
-        static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
-                             TfSpan<const GfVec2f>, int,
-                             TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinNormalsLBS),
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
-
-    def("SkinNormals",
-        static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
-                             TfSpan<const int>, TfSpan<const float>,
-                             int, TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinNormals),
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
-
-    def("SkinNormals",
-        static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
-                             TfSpan<const GfVec2f>, int,
-                             TfSpan<GfVec3f>, bool)>(
-                                 &UsdSkelSkinNormals),
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences"),
-         arg("numInfluencesPerPoint"),
-         arg("normals"),
-         arg("inSerial")=true));
+    m.def("SkinPoints",
+          static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
+                               TfSpan<const GfVec2f>, int,
+                               TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinPoints),
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("points"),
+          nb::arg("inSerial")=true);
 
 
-    def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences")));
 
-    def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
-        (arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights")));
+    m.def("SkinNormalsLBS",
+          static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
+                               TfSpan<const int>, TfSpan<const float>,
+                               int, TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinNormalsLBS),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("normals"),
+          nb::arg("inSerial")=true);
 
-    def("SkinTransform", &_InterleavedSkinTransform<Matrix4>,
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("influences")));
+    m.def("SkinNormalsLBS",
+          static_cast<bool (*)(const Matrix3&, TfSpan<const Matrix3>,
+                               TfSpan<const GfVec2f>, int,
+                               TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinNormalsLBS),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("normals"),
+          nb::arg("inSerial")=true);
 
-    def("SkinTransform", &_NonInterleavedSkinTransform<Matrix4>,
-        (arg("skinningMethod"),
-         arg("geomBindTransform"),
-         arg("jointXforms"),
-         arg("jointIndices"),
-         arg("jointWeights")));
+    m.def("SkinNormals",
+          static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
+                               TfSpan<const int>, TfSpan<const float>,
+                               int, TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinNormals),
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("normals"),
+          nb::arg("inSerial")=true);
+
+    m.def("SkinNormals",
+          static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
+                               TfSpan<const GfVec2f>, int,
+                               TfSpan<GfVec3f>, bool)>(
+                                   &UsdSkelSkinNormals),
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"),
+          nb::arg("numInfluencesPerPoint"),
+          nb::arg("normals"),
+          nb::arg("inSerial")=true);
+
+
+    m.def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"));
+
+    m.def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"));
+
+    m.def("SkinTransform", &_InterleavedSkinTransform<Matrix4>,
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("influences"));
+
+    m.def("SkinTransform", &_NonInterleavedSkinTransform<Matrix4>,
+          nb::arg("skinningMethod"),
+          nb::arg("geomBindTransform"),
+          nb::arg("jointXforms"),
+          nb::arg("jointIndices"),
+          nb::arg("jointWeights"));
 }
 
 
 } // namespace
 
 
-void wrapUsdSkelUtils()
+void wrapUsdSkelUtils(nb::module_ &m)
 {
     // Wrap methods supporting different matrix precisions.
-    _WrapUtilsT<GfMatrix3d, GfMatrix4d>();
-    _WrapUtilsT<GfMatrix3f, GfMatrix4f>();
+    _WrapUtilsT<GfMatrix3d, GfMatrix4d>(m);
+    _WrapUtilsT<GfMatrix3f, GfMatrix4f>(m);
 
-    def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, (arg("prim")));
+    m.def("IsSkelAnimationPrim", &UsdSkelIsSkelAnimationPrim, nb::arg("prim"));
 
-    def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, (arg("prim")));
-
-    // deprecated
-    def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
-        (arg("topology"), arg("xforms"), arg("inverseXforms"),
-         arg("rootInverseXform")=object()));
+    m.def("IsSkinnablePrim", &UsdSkelIsSkinnablePrim, nb::arg("prim"));
 
     // deprecated
-    def("ComputeJointLocalTransforms",
-        &_ComputeJointLocalTransforms_NoInvXforms,
-        (arg("topology"), arg("xforms"),
-         arg("rootInverseXform")=object()));
+    m.def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
+          nb::arg("topology"), nb::arg("xforms"), nb::arg("inverseXforms"),
+          nb::arg("rootInverseXform")=nullptr);
 
     // deprecated
-    def("ConcatJointTransforms", &_ConcatJointTransforms,
-        (arg("topology"), arg("jointLocalXforms"),
-         arg("rootXform")=object()));
-
-    def("MakeTransform", &_MakeTransform,
-        (arg("translate"), arg("rotate"), arg("scale")));
+    m.def("ComputeJointLocalTransforms",
+          &_ComputeJointLocalTransforms_NoInvXforms,
+          nb::arg("topology"), nb::arg("xforms"),
+          nb::arg("rootInverseXform")=nullptr);
 
     // deprecated
-    def("MakeTransforms", &_MakeTransforms,
-        (arg("translations"), arg("rotations"), arg("scales")));
+    m.def("ConcatJointTransforms", &_ConcatJointTransforms,
+          nb::arg("topology"), nb::arg("jointLocalXforms"),
+          nb::arg("rootXform")=nullptr);
 
-    def("NormalizeWeights",
-        static_cast<bool (*)(TfSpan<float>,int,float)>(
-            &UsdSkelNormalizeWeights),
-        (arg("weights"), arg("numInfluencesPerComponent"),
-         arg("eps")=std::numeric_limits<float>::epsilon()));
+    m.def("MakeTransform", &_MakeTransform,
+          nb::arg("translate"), nb::arg("rotate"), nb::arg("scale"));
 
-    def("SortInfluences",
-        static_cast<bool (*)(TfSpan<int>, TfSpan<float>,int)>(
-            &UsdSkelSortInfluences),
-        (arg("indices"), arg("weights"), arg("numInfluencesPerComponent")));
+    // deprecated
+    m.def("MakeTransforms", &_MakeTransforms,
+          nb::arg("translations"), nb::arg("rotations"), nb::arg("scales"));
 
-    def("ExpandConstantInfluencesToVarying",
-        &_ExpandConstantInfluencesToVarying<int>,
-        (arg("array"), arg("size")));
+    m.def("NormalizeWeights",
+          static_cast<bool (*)(TfSpan<float>, int, float)>(
+              &UsdSkelNormalizeWeights),
+          nb::arg("weights"), nb::arg("numInfluencesPerComponent"),
+          nb::arg("eps")=std::numeric_limits<float>::epsilon());
 
-    def("ExpandConstantInfluencesToVarying",
-        &_ExpandConstantInfluencesToVarying<float>,
-        (arg("array"), arg("size")));
+    m.def("SortInfluences",
+          static_cast<bool (*)(TfSpan<int>, TfSpan<float>, int)>(
+              &UsdSkelSortInfluences),
+          nb::arg("indices"), nb::arg("weights"), nb::arg("numInfluencesPerComponent"));
 
-    def("ResizeInfluences", &_ResizeInfluences<int>,
-        (arg("array"),
-         arg("srcNumInfluencesPerComponent"),
-         arg("newNumInfluencesPerComponent")));
+    m.def("ExpandConstantInfluencesToVarying",
+          &_ExpandConstantInfluencesToVarying<int>,
+          nb::arg("array"), nb::arg("size"));
 
-    def("ResizeInfluences", &_ResizeInfluences<float>,
-        (arg("array"),
-         arg("srcNumInfluencesPerComponent"),
-         arg("newNumInfluencesPerComponent")));
+    m.def("ExpandConstantInfluencesToVarying",
+          &_ExpandConstantInfluencesToVarying<float>,
+          nb::arg("array"), nb::arg("size"));
 
-    def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
-        (arg("indices"), arg("weights"),
-         arg("interleavedInfluences")));
+    m.def("ResizeInfluences", &_ResizeInfluences<int>,
+          nb::arg("array"),
+          nb::arg("srcNumInfluencesPerComponent"),
+          nb::arg("newNumInfluencesPerComponent"));
 
-    def("ApplyBlendShape", &UsdSkelApplyBlendShape,
-        (arg("weight"),
-         arg("offsets"),
-         arg("indices"),
-         arg("points")));
+    m.def("ResizeInfluences", &_ResizeInfluences<float>,
+          nb::arg("array"),
+          nb::arg("srcNumInfluencesPerComponent"),
+          nb::arg("newNumInfluencesPerComponent"));
+
+    m.def("InterleaveInfluences", &UsdSkelInterleaveInfluences,
+          nb::arg("indices"), nb::arg("weights"),
+          nb::arg("interleavedInfluences"));
+
+    m.def("ApplyBlendShape", &UsdSkelApplyBlendShape,
+          nb::arg("weight"),
+          nb::arg("offsets"),
+          nb::arg("indices"),
+          nb::arg("points"));
 }

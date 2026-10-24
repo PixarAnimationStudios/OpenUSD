@@ -12,20 +12,20 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Types);
-    TF_WRAP(Knot);
-    TF_WRAP(KnotMap);
-    TF_WRAP(Raii);
-    TF_WRAP(RegressionPreventer);
-    TF_WRAP(Spline);
-    TF_WRAP(TangentConversions);
+    TF_WRAP_NB(Types);
+    TF_WRAP_NB(Knot);
+    TF_WRAP_NB(KnotMap);
+    TF_WRAP_NB(Raii);
+    TF_WRAP_NB(RegressionPreventer);
+    TF_WRAP_NB(Spline);
+    TF_WRAP_NB(TangentConversions);
 
 #ifdef TS_BUILD_TEST_FRAMEWORK
-    TF_WRAP(TsTest_Museum);
-    TF_WRAP(TsTest_SampleBezier);
-    TF_WRAP(TsTest_SampleTimes);
-    TF_WRAP(TsTest_TsEvaluator);
-    TF_WRAP(TsTest_Types);
+    TF_WRAP_NB(TsTest_Museum);
+    TF_WRAP_NB(TsTest_SampleBezier);
+    TF_WRAP_NB(TsTest_SampleTimes);
+    TF_WRAP_NB(TsTest_TsEvaluator);
+    TF_WRAP_NB(TsTest_Types);
 #endif
 
 }

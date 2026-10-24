@@ -12,15 +12,9 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -60,17 +54,18 @@ TfStatus__repr__(TfStatus const &self)
 
 } // anonymous namespace 
 
-void wrapStatus() {
-    def("_Status", &_Status);
-    def("_Status", &_QuietStatus);
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+
+void wrapStatus(nanobind::module_& m) {
+    m.def("_Status", &_Status);
+    m.def("_Status", &_QuietStatus);
 
     typedef TfStatus This;
 
     // Can't call this scope Status because Tf.Status() is a function def'd
     // above.
-    scope statusScope =
-        class_<This, bases<TfDiagnosticBase> >("StatusObject", no_init)
-
+    nanobind::class_<This, TfDiagnosticBase>(m, "StatusObject")
         .def("__repr__", TfStatus__repr__)
         ;
 }

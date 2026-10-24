@@ -16,20 +16,11 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,99 +34,6 @@ SetDirectionHelper( GfRay &self, const GfVec3d &direction ) {
     self.SetPointAndDirection( self.GetStartPoint(), direction );
 }
 
-static tuple
-FindClosestPointHelper( const GfRay &self, const GfVec3d &point ) {
-    double rayDist;
-    GfVec3d result = self.FindClosestPoint( point, &rayDist );
-    return make_tuple( result, rayDist );
-}
-
-static tuple
-FindClosestPointsHelper1( const GfRay &l1, const GfLine &l2 )
-{
-    GfVec3d p1(0), p2(0);
-    double t1 = 0.0, t2 = 0.0;
-    bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return make_tuple( result, p1, p2, t1, t2 );
-}
-
-static tuple
-FindClosestPointsHelper2( const GfRay &l1, const GfLineSeg &l2 )
-{
-    GfVec3d p1(0), p2(0);
-    double t1 = 0.0, t2 = 0.0;
-    bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return make_tuple( result, p1, p2, t1, t2 );
-}
-
-static tuple
-IntersectHelper1( const GfRay &self, const GfVec3d &p0,
-                  const GfVec3d &p1, const GfVec3d &p2 )
-{
-    double dist = 0;
-    GfVec3d barycentricCoords(0);
-    bool frontFacing = false;
-    bool result =
-        self.Intersect( p0, p1, p2, &dist, &barycentricCoords, &frontFacing );
-    return make_tuple( result, dist, barycentricCoords, frontFacing );
-}
-
-static tuple
-IntersectHelper2( const GfRay &self, const GfPlane &plane )
-{
-    double dist = 0;
-    bool frontFacing = false;
-    bool result = self.Intersect( plane, &dist, &frontFacing );
-    return make_tuple( result, dist, frontFacing );
-}
-
-static tuple
-IntersectHelper3( const GfRay &self, const GfRange3d &box )
-{
-    double enterDist = 0, exitDist = 0;
-    bool result = self.Intersect( box, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
-}
-
-static tuple
-IntersectHelper4( const GfRay &self, const GfBBox3d &box )
-{
-    double enterDist = 0, exitDist = 0;
-    bool result = self.Intersect( box, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
-}
-
-static tuple
-IntersectHelper5( const GfRay &self, const GfVec3d& center, double radius )
-{
-    double enterDist = 0, exitDist = 0;
-    bool result = self.Intersect( center, radius, &enterDist, &exitDist );
-    return make_tuple( result, enterDist, exitDist );
-}
-
-static tuple
-IntersectHelper6(const GfRay &self, 
-                 const GfVec3d &origin, 
-                 const GfVec3d &axis,
-                 double radius)
-{
-    double enter = 0, exit = 0;
-    bool result = self.Intersect(origin, axis, radius, &enter, &exit);
-    return make_tuple(result, enter, exit);
-}
-
-static tuple
-IntersectHelper7(const GfRay &self, 
-                 const GfVec3d &origin, 
-                 const GfVec3d &axis,
-                 double radius,
-                 double height)
-{
-    double enter = 0, exit = 0;
-    bool result = self.Intersect(origin, axis, radius, height, &enter, &exit);
-    return make_tuple(result, enter, exit);
-}
-
 static string _Repr(GfRay const &self) {
     return TF_PY_REPR_PREFIX + "Ray(" + TfPyRepr(self.GetStartPoint()) + ", " +
         TfPyRepr(self.GetDirection()) + ")";
@@ -143,11 +41,20 @@ static string _Repr(GfRay const &self) {
 
 } // anonymous namespace 
 
-void wrapRay()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+
+void wrapRay(nanobind::module_ &m)
 {    
     typedef GfRay This;
 
-    def("FindClosestPoints", FindClosestPointsHelper1, 
+    m.def("FindClosestPoints", [](const GfRay &l1, const GfLine &l2) {
+        GfVec3d p1(0), p2(0);
+        double t1 = 0.0, t2 = 0.0;
+        bool result = GfFindClosestPoints(l1, l2, &p1, &p2, &t1, &t2);
+        return nanobind::make_tuple(result, p1, p2, t1, t2);
+    },
         "FindClosestPoints( r1, l2 ) -> tuple<intersects=bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -161,7 +68,12 @@ void wrapRay()
         "returned in t1 and t2.\n"
         "----------------------------------------------------------------------"
         );
-    def("FindClosestPoints", FindClosestPointsHelper2, 
+    m.def("FindClosestPoints", [](const GfRay &l1, const GfLineSeg &l2) {
+        GfVec3d p1(0), p2(0);
+        double t1 = 0.0, t2 = 0.0;
+        bool result = GfFindClosestPoints(l1, l2, &p1, &p2, &t1, &t2);
+        return nanobind::make_tuple(result, p1, p2, t1, t2);
+    },
         "FindClosestPoints( r1, s2 ) -> tuple<intersects = bool, "
         "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
         "\n"
@@ -176,125 +88,93 @@ void wrapRay()
         "----------------------------------------------------------------------"
         );
 
-    class_<This>("Ray", "", init<>())
-        .def(init< const GfVec3d &, const GfVec3d & >())
+    nanobind::class_<This>(m, "Ray", "")
+        .def(nanobind::init<>())
+        .def(nanobind::init<const GfVec3d &, const GfVec3d &>())
 
         .def(TfTypePythonClass())
 
-        .def("SetPointAndDirection",
-             &This::SetPointAndDirection, return_self<>())
-        .def("SetEnds", &This::SetEnds, return_self<>())
+        .def("SetPointAndDirection", [](This &self, const GfVec3d &startPoint, const GfVec3d &direction) -> This& {
+            self.SetPointAndDirection(startPoint, direction);
+            return self;
+        }, nanobind::rv_policy::reference)
+        .def("SetEnds", [](This &self, const GfVec3d &startPoint, const GfVec3d &endPoint) -> This& {
+            self.SetEnds(startPoint, endPoint);
+            return self;
+        }, nanobind::rv_policy::reference)
 
-        .add_property( "startPoint", make_function
-                       (&This::GetStartPoint,
-                        return_value_policy<copy_const_reference>()),
-                       SetStartPointHelper )
-        .add_property( "direction", make_function
-                       (&This::GetDirection,
-                        return_value_policy<copy_const_reference>()),
-                       SetDirectionHelper )
+        .def_prop_rw("startPoint", &This::GetStartPoint, SetStartPointHelper,
+                     nanobind::rv_policy::copy)
+        .def_prop_rw("direction", &This::GetDirection, SetDirectionHelper,
+                     nanobind::rv_policy::copy)
 
-        .def("GetPoint", &This::GetPoint )
+        .def("GetPoint", &This::GetPoint)
 
-        .def("FindClosestPoint", FindClosestPointHelper)
+        .def("FindClosestPoint", [](const GfRay &self, const GfVec3d &point) {
+            double rayDist;
+            GfVec3d result = self.FindClosestPoint(point, &rayDist);
+            return nanobind::make_tuple(result, rayDist);
+        })
 
-        .def("Transform", &This::Transform, return_self<>())
+        .def("Transform", &This::Transform, nanobind::rv_policy::reference)
         
-        .def("Intersect", IntersectHelper1,
+        .def("Intersect", [](const GfRay &self, const GfVec3d &p0, const GfVec3d &p1, const GfVec3d &p2) {
+            double dist = 0;
+            GfVec3d barycentricCoords(0);
+            bool frontFacing = false;
+            bool result = self.Intersect(p0, p1, p2, &dist, &barycentricCoords, &frontFacing);
+            return nanobind::make_tuple(result, dist, barycentricCoords, frontFacing);
+        },
              "Intersect( p0, p1, p2 ) -> tuple<intersects = bool, dist =\n"
-             "float, barycentric = GfVec3d, frontFacing = bool>\n"
-             "\n"
-             "Intersects the ray with the triangle formed by points p0,\n"
-             "p1, and p2.  The first item in the tuple is true if the ray\n"
-             "intersects the triangle. dist is the the parametric\n"
-             "distance to the intersection point, the barycentric\n"
-             "coordinates of the intersection point, and the front-facing\n"
-             "flag. The barycentric coordinates are defined with respect\n"
-             "to the three vertices taken in order.  The front-facing\n"
-             "flag is True if the intersection hit the side of the\n"
-             "triangle that is formed when the vertices are ordered\n"
-             "counter-clockwise (right-hand rule).\n"
-             "\n"
-             "Barycentric coordinates are defined to sum to 1 and satisfy\n"
-             "this relationsip:\n"
-             "\n"
-             "    intersectionPoint = (barycentricCoords[0] * p0 +\n"
-             "                         barycentricCoords[1] * p1 +\n"
-             "                         barycentricCoords[2] * p2);\n"
-             "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper2,
+             "float, barycentric = GfVec3d, frontFacing = bool>")
+        .def("Intersect", [](const GfRay &self, const GfPlane &plane) {
+            double dist = 0;
+            bool frontFacing = false;
+            bool result = self.Intersect(plane, &dist, &frontFacing);
+            return nanobind::make_tuple(result, dist, frontFacing);
+        },
               "Intersect( plane ) -> tuple<intersects = bool, dist = float,\n"
-              "frontFacing = bool>\n"
-              "\n"
-              "Intersects the ray with the Gf.Plane.  The first item in\n"
-              "the returned tuple is true if the ray intersects the plane.\n"
-              "dist is the parametric distance to the intersection point\n"
-              "and frontfacing is true if the intersection is on the side\n"
-              "of the plane toward which the plane's normal points.\n"
-             "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper3,
+              "frontFacing = bool>")
+        .def("Intersect", [](const GfRay &self, const GfRange3d &box) {
+            double enterDist = 0, exitDist = 0;
+            bool result = self.Intersect(box, &enterDist, &exitDist);
+            return nanobind::make_tuple(result, enterDist, exitDist);
+        },
               "Intersect( range3d ) -> tuple<intersects = bool, enterDist\n"
-              "= float, exitDist = float>\n"
-              //\n"
-              "Intersects the plane with an axis-aligned box in a\n"
-              "Gf.Range3d.  intersects is true if the ray intersects it at\n"
-              "all within bounds. If there is an intersection then enterDist\n"
-              "and exitDist will be the parametric distances to the two\n"
-              "intersection points.\n"
-              "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper4,
+              "= float, exitDist = float>")
+        .def("Intersect", [](const GfRay &self, const GfBBox3d &box) {
+            double enterDist = 0, exitDist = 0;
+            bool result = self.Intersect(box, &enterDist, &exitDist);
+            return nanobind::make_tuple(result, enterDist, exitDist);
+        },
               "Intersect( bbox3d ) -> tuple<intersects = bool, enterDist\n"
-              "= float, exitDist = float>\n"
-              //\n"
-              "Intersects the plane with an oriented box in a Gf.BBox3d.\n"
-              "intersects is true if the ray intersects it at all within\n"
-              "bounds. If there is an intersection then enterDist and\n"
-              "exitDist will be the parametric distances to the two\n"
-              "intersection points.\n"
-              "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper5,
+              "= float, exitDist = float>")
+        .def("Intersect", [](const GfRay &self, const GfVec3d& center, double radius) {
+            double enterDist = 0, exitDist = 0;
+            bool result = self.Intersect(center, radius, &enterDist, &exitDist);
+            return nanobind::make_tuple(result, enterDist, exitDist);
+        },
               "Intersect( center, radius ) -> tuple<intersects = bool,\n"
-              "enterDist = float, exitDist = float>\n"
-              "\n"
-              "Intersects the plane with an sphere. intersects is true if\n"
-              "the ray intersects it at all within the sphere. If there is\n"
-              "an intersection then enterDist and exitDist will be the\n"
-              "parametric distances to the two intersection points.\n"
-              "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper6,
+              "enterDist = float, exitDist = float>")
+        .def("Intersect", [](const GfRay &self, const GfVec3d &origin, const GfVec3d &axis, double radius) {
+            double enter = 0, exit = 0;
+            bool result = self.Intersect(origin, axis, radius, &enter, &exit);
+            return nanobind::make_tuple(result, enter, exit);
+        },
               "Intersect( origin, axis, radius ) -> tuple<intersects = bool,\n"
-              "enterDist = float, exitDist = float>\n"
-              "\n"
-              "Intersects the plane with an infinite cylinder. intersects\n"
-              "is true if the ray intersects it at all within the\n"
-              "sphere. If there is an intersection then enterDist and\n"
-              "exitDist will be the parametric distances to the two\n"
-              "intersection points.\n"
-              "----------------------------------------------------------------------"
-            )
-        .def( "Intersect", IntersectHelper7,
+              "enterDist = float, exitDist = float>")
+        .def("Intersect", [](const GfRay &self, const GfVec3d &origin, const GfVec3d &axis, double radius, double height) {
+            double enter = 0, exit = 0;
+            bool result = self.Intersect(origin, axis, radius, height, &enter, &exit);
+            return nanobind::make_tuple(result, enter, exit);
+        },
               "Intersect( origin, axis, radius, height ) -> \n"
-              "tuple<intersects = bool, enterDist = float, exitDist = float>\n"
-              "\n"
-              "Intersects the plane with an cylinder. intersects\n"
-              "is true if the ray intersects it at all within the\n"
-              "sphere. If there is an intersection then enterDist and\n"
-              "exitDist will be the parametric distances to the two\n"
-              "intersection points.\n"
-              "----------------------------------------------------------------------"
-            )
+              "tuple<intersects = bool, enterDist = float, exitDist = float>")
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
 
         .def("__repr__", _Repr)
-
         ;
-    
 }

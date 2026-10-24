@@ -6,28 +6,35 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/specializes.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdSpecializes()
+void wrapUsdSpecializes(nb::module_ &m)
 {
-    class_<UsdSpecializes>("Specializes", no_init)
+    nb::class_<UsdSpecializes>(m, "Specializes")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddSpecialize", &UsdSpecializes::AddSpecialize,
-             (arg("primPath"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("primPath"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
         .def("RemoveSpecialize", &UsdSpecializes::RemoveSpecialize,
-             arg("primPath"))
+             nb::arg("primPath"))
         .def("ClearSpecializes", &UsdSpecializes::ClearSpecializes)
         .def("SetSpecializes", &UsdSpecializes::SetSpecializes)
         .def("GetPrim", 
              (UsdPrim (UsdSpecializes::*)()) &UsdSpecializes::GetPrim)
-        .def(!self)
+        .def("__bool__", [](UsdSpecializes &self) { return bool(self); })
         ;
 }

@@ -14,14 +14,12 @@
 #include "pxr/base/tf/pyErrorInternal.h"
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/scriptModuleLoader.h"
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/registryManager.h"
-
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"
 
 #include <mutex>
 #include <functional>
@@ -32,60 +30,46 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
 void
 TfPyThrowIndexError(const char* msg)
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }
 
 void
 TfPyThrowRuntimeError(const char *msg)
 {
     PyErr_SetString(PyExc_RuntimeError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }
 
 void
 TfPyThrowStopIteration(const char *msg)
 {
     PyErr_SetString(PyExc_StopIteration, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }
 
 void
 TfPyThrowKeyError(const char *msg)
 {
     PyErr_SetString(PyExc_KeyError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }
 
 void
 TfPyThrowValueError(const char *msg)
 {
     PyErr_SetString(PyExc_ValueError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }
 
 void
 TfPyThrowTypeError(const char *msg)
 {
     PyErr_SetString(PyExc_TypeError, msg);
-    pxr_boost::python::throw_error_already_set();
-}
-
-bool
-TfPyIsNone(pxr_boost::python::object const &obj)
-{
-    return obj.ptr() == Py_None;
-}
-
-bool
-TfPyIsNone(pxr_boost::python::handle<> const &obj)
-{
-    return !obj.get() || obj.get() == Py_None;
+    throw nanobind::python_error();
 }
 
 void Tf_PyLoadScriptModule(std::string const &moduleName)
@@ -100,6 +84,8 @@ void Tf_PyLoadScriptModule(std::string const &moduleName)
             TF_WARN("Import failed for module '%s'!", moduleName.c_str());
             TfPyPrintError();
             // CODE_COVERAGE_ON
+        } else {
+            Py_DECREF(result);
         }
     } else {
         // CODE_COVERAGE_OFF
@@ -116,7 +102,7 @@ TfPyIsInitialized()
 }
 
 string
-TfPyObjectRepr(pxr_boost::python::object const &t)
+TfPyObjectRepr(nanobind::handle const &t)
 {
     if (!TfPyIsInitialized()) {
         // CODE_COVERAGE_OFF
@@ -130,51 +116,55 @@ TfPyObjectRepr(pxr_boost::python::object const &t)
     // In case the try block throws, we'll return this string.
     string reprString("<invalid repr>");
 
-    try {
-        handle<> repr(PyObject_Repr(t.ptr()));
-        reprString = extract<string>(repr.get());
-
-        // Python's repr() for NaN and Inf are not valid python which evaluates
-        // to themselves.  Special case them here to produce python which has
-        // this property.  This is unpleasant since we're not producing the real
-        // python repr, but we want everything coming out of here (if at all
-        // possible) to have this property.
-        if (reprString == "nan")
-            reprString = "float('nan')";
-        if (reprString == "inf")
-            reprString = "float('inf')";
-        if (reprString == "-inf")
-            reprString = "-float('inf')";
-
-    } catch (error_already_set const &) {
+    PyObject *repr = PyObject_Repr(t.ptr());
+    if (repr) {
+        if (const char *s = PyUnicode_AsUTF8(repr)) {
+            reprString = s;
+            if (reprString == "nan")
+                reprString = "float('nan')";
+            if (reprString == "inf")
+                reprString = "float('inf')";
+            if (reprString == "-inf")
+                reprString = "-float('inf')";
+        } else {
+            PyErr_Clear();
+        }
+        Py_DECREF(repr);
+    } else {
         PyErr_Clear();
     }
     return reprString;
 }
 
 
-pxr_boost::python::object
-TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
+nanobind::object
+TfPyEvaluate(std::string const &expr, nanobind::dict const& extraGlobals)
 {
     TfPyLock lock;
     try {
         // Get the modules dict for the loaded script modules.
-        dict modulesDict =
+        nanobind::dict modulesDict =
             TfScriptModuleLoader::GetInstance().GetModulesDict();
 
         // Make sure the builtins are available
-        handle<> modHandle(PyImport_ImportModule("builtins"));
-        modulesDict["__builtins__"] = object(modHandle);
-        modulesDict.update(extraGlobals);
+        nanobind::object modHandle = nanobind::module_::import_("builtins");
+        modulesDict["__builtins__"] = modHandle;
+        if (extraGlobals.is_valid()) {
+            PyDict_Update(modulesDict.ptr(), extraGlobals.ptr());
+        }
 
-        // Eval the expression in that enviornment.
-        return object(TfPyRunString(expr, Py_eval_input,
-                                    modulesDict, modulesDict));
-    } catch (pxr_boost::python::error_already_set const &) {
+        // Eval the expression in that environment.
+        nanobind::object res =
+            TfPyRunString(expr, Py_eval_input, modulesDict, modulesDict);
+        return res.is_valid() ? res : nanobind::none();
+    } catch (nanobind::python_error &e) {
+        e.restore();
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
+    } catch (std::exception const &) {
+        PyErr_Clear();
     }
-    return pxr_boost::python::object();
+    return nanobind::none();
 }
 
 
@@ -195,7 +185,7 @@ TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError)
 
 TF_API void
 Tf_PyWrapOnceImpl(
-    pxr_boost::python::type_info const &type,
+    std::type_info const &type,
     std::function<void()> const &wrapFunc,
     bool * isTypeWrapped)
 {
@@ -218,10 +208,7 @@ Tf_PyWrapOnceImpl(
         return;
     }
 
-    pxr_boost::python::type_handle pyType =
-        pxr_boost::python::objects::registered_class_object(type);
-
-    if (!pyType) {
+    if (!NB_CALL(nb_type_lookup)(NB_CTX, &type)) {
         wrapFunc();
     }
 
@@ -229,53 +216,61 @@ Tf_PyWrapOnceImpl(
 }
 
 
-pxr_boost::python::object
+nanobind::object
 TfPyGetClassObject(std::type_info const &type) {
     TfPyLock pyLock;
-    return pxr_boost::python::object
-        (pxr_boost::python::objects::registered_class_object(type));
+    if (PyObject *nbType = NB_CALL(nb_type_lookup)(NB_CTX, &type)) {
+        return nanobind::borrow<nanobind::object>(nbType);
+    }
+    return nanobind::none();
 }
 
-string TfPyGetClassName(object const &obj)
+string TfPyGetClassName(nanobind::handle const &obj)
 {
     // Take the interpreter lock as we're about to call back to Python.
     TfPyLock pyLock;
 
-    object classObject(obj.attr("__class__"));
-    if (classObject) {
-        object typeNameObject(classObject.attr("__name__"));
-        extract<string> typeName(typeNameObject);
-        if (typeName.check())
-            return typeName();
+    if (obj.ptr()) {
+        PyObject *classObject = PyObject_GetAttrString(obj.ptr(), "__class__");
+        if (classObject) {
+            PyObject *typeNameObject =
+                PyObject_GetAttrString(classObject, "__name__");
+            Py_DECREF(classObject);
+            if (typeNameObject) {
+                const char *s = PyUnicode_AsUTF8(typeNameObject);
+                if (s) {
+                    string ret(s);
+                    Py_DECREF(typeNameObject);
+                    return ret;
+                }
+                PyErr_Clear();
+                Py_DECREF(typeNameObject);
+            } else {
+                PyErr_Clear();
+            }
+        } else {
+            PyErr_Clear();
+        }
     }
 
     // CODE_COVERAGE_OFF This shouldn't really happen.
     TF_WARN("Couldn't get class name for python object '%s'",
-            TfPyRepr(obj).c_str());
+            TfPyObjectRepr(obj).c_str());
     return "<unknown>";
     // CODE_COVERAGE_ON
 }
 
-pxr_boost::python::object
+nanobind::object
 TfPyCopyBufferToByteArray(const char* buffer, size_t size)
 {
     TfPyLock lock;
-    pxr_boost::python::object result;
-
-    try {
-        // boost python doesn't include a bytearray object, but we can return
-        // one through the C api directly. The c api takes an array of char
-        // and a size, so uses the name FromString, but this is really just
-        // a buffer.
-        PyObject* buf = PyByteArray_FromStringAndSize(buffer, size);
-        pxr_boost::python::handle<> hbuf(buf);
-        result = pxr_boost::python::object(hbuf); 
-    } catch (pxr_boost::python::error_already_set const &) {
+    PyObject* buf = PyByteArray_FromStringAndSize(buffer, size);
+    if (!buf) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
+        return nanobind::object();
     }
-
-    return result;
+    return nanobind::steal<nanobind::object>(buf);
 }
 
 vector<string> TfPyGetTraceback()
@@ -290,34 +285,28 @@ vector<string> TfPyGetTraceback()
     // should not affect the exception state.
     TfPyExceptionStateScope exceptionStateScope;
     try {
-        object tbModule(handle<>(PyImport_ImportModule("traceback")));
-        object stack = tbModule.attr("format_stack")();
-        size_t size = len(stack);
+        nanobind::object tbModule = nanobind::module_::import_("traceback");
+        nanobind::object stack = tbModule.attr("format_stack")();
+        size_t size = nanobind::len(stack);
         result.reserve(size);
         for (size_t i = 0; i < size; ++i) {
-            string s = extract<string>(stack[i]);
+            string s = nanobind::cast<string>(stack[i]);
             result.push_back(s);
         }
-    } catch (pxr_boost::python::error_already_set const &) {
+    } catch (nanobind::python_error &e) {
+        e.restore();
         TfPyConvertPythonExceptionToTfErrors();
+    } catch (std::exception const &) {
+        PyErr_Clear();
     }
     return result;
 }
 
-static object
+static nanobind::object
 _GetOsEnviron()
 {
-    // In theory, we could just check that the os module has been imported,
-    // rather than forcing an import ourself.  However, it's possible that
-    // os.environ is actually a re-export from another module (ie. posix,
-    // which is the case as of CPython 2.6) that may have been imported
-    // without importing os.  Rather than check a hardcoded list of potential
-    // modules, we always import os if Python is initialized.  If this turns
-    // out to be problematic, we may want to consider the other approach.
-    pxr_boost::python::object
-        module(pxr_boost::python::handle<>(PyImport_ImportModule("os")));
-    pxr_boost::python::object environObj(module.attr("environ"));
-    return environObj;
+    nanobind::object module = nanobind::module_::import_("os");
+    return module.attr("environ");
 }
 
 bool
@@ -331,11 +320,14 @@ TfPySetenv(const std::string & name, const std::string & value)
     TfPyLock lock;
 
     try {
-        object environObj(_GetOsEnviron());
-        environObj[name] = value;
+        nanobind::object environObj = _GetOsEnviron();
+        environObj[name.c_str()] = value;
         return true;
     }
-    catch (pxr_boost::python::error_already_set&) {
+    catch (nanobind::python_error &) {
+        PyErr_Clear();
+    }
+    catch (std::exception const &) {
         PyErr_Clear();
     }
 
@@ -353,14 +345,20 @@ TfPyUnsetenv(const std::string & name)
     TfPyLock lock;
 
     try {
-        object environObj(_GetOsEnviron());
-        object has_key = environObj.attr("__contains__");
-        if (has_key(name)) {
-            environObj[name].del();
+        nanobind::object environObj = _GetOsEnviron();
+        if (nanobind::cast<bool>(environObj.attr("__contains__")(name))) {
+            PyObject_DelItem(environObj.ptr(), nanobind::cast(name).ptr());
+            if (PyErr_Occurred()) {
+                PyErr_Clear();
+                return false;
+            }
         }
         return true;
     }
-    catch (pxr_boost::python::error_already_set&) {
+    catch (nanobind::python_error &) {
+        PyErr_Clear();
+    }
+    catch (std::exception const &) {
         PyErr_Clear();
     }
 
@@ -368,7 +366,7 @@ TfPyUnsetenv(const std::string & name)
 }
 
 bool Tf_PyEvaluateWithErrorCheck(
-    const std::string & expr, pxr_boost::python::object * obj)
+    const std::string & expr, nanobind::object * obj)
 {
     TfErrorMark m;
     *obj = TfPyEvaluate(expr);

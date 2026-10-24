@@ -24,10 +24,13 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
@@ -35,9 +38,9 @@
 using std::string;
 using std::vector;
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_OPEN_SCOPE
 
 const PcpPrimIndex &
 Usd_PrimGetSourcePrimIndex(const UsdPrim& prim)
@@ -55,13 +58,13 @@ static SdfPathVector
 _FindAllAttributeConnectionPaths(
     UsdPrim const &self,
     Usd_PrimFlagsPredicate const &traversal,
-    pxr_boost::python::object pypred,
+    nb::object pypred,
     bool recurseOnSources)
 {
     using Predicate = std::function<bool (UsdAttribute const &)>;
     Predicate pred;
     if (!pypred.is_none()) {
-        pred = pxr_boost::python::extract<Predicate>(pypred);
+        pred = nb::cast<Predicate>(pypred);
     }
     return self.FindAllAttributeConnectionPaths(
         traversal, pred, recurseOnSources);
@@ -70,9 +73,15 @@ _FindAllAttributeConnectionPaths(
 static SdfPathVector
 _FindAllAttributeConnectionPathsDefault(
     UsdPrim const &self,
-    pxr_boost::python::object pypred,
+    nb::object pypred,
     bool recurseOnSources)
 {
+    Usd_PrimFlagsPredicate traversal;
+    if (!pypred.is_none() &&
+        nb::try_cast<Usd_PrimFlagsPredicate>(pypred, traversal)) {
+        return _FindAllAttributeConnectionPaths(
+            self, traversal, nb::none(), recurseOnSources);
+    }
     return _FindAllAttributeConnectionPaths(
         self, UsdPrimDefaultPredicate, pypred, recurseOnSources);
 }
@@ -81,13 +90,13 @@ static SdfPathVector
 _FindAllRelationshipTargetPaths(
     UsdPrim const &self,
     Usd_PrimFlagsPredicate const &traversal,
-    pxr_boost::python::object pypred,
+    nb::object pypred,
     bool recurseOnTargets)
 {
     using Predicate = std::function<bool (UsdRelationship const &)>;
     Predicate pred;
     if (!pypred.is_none()) {
-        pred = pxr_boost::python::extract<Predicate>(pypred);
+        pred = nb::cast<Predicate>(pypred);
     }
     return self.FindAllRelationshipTargetPaths(
         traversal, pred, recurseOnTargets);
@@ -96,9 +105,15 @@ _FindAllRelationshipTargetPaths(
 static SdfPathVector
 _FindAllRelationshipTargetPathsDefault(
     UsdPrim const &self,
-    pxr_boost::python::object pypred,
+    nb::object pypred,
     bool recurseOnTargets)
 {
+    Usd_PrimFlagsPredicate traversal;
+    if (!pypred.is_none() &&
+        nb::try_cast<Usd_PrimFlagsPredicate>(pypred, traversal)) {
+        return _FindAllRelationshipTargetPaths(
+            self, traversal, nb::none(), recurseOnTargets);
+    }
     return _FindAllRelationshipTargetPaths(self, UsdPrimDefaultPredicate,
                                            pypred, recurseOnTargets);
 }
@@ -116,38 +131,38 @@ __repr__(const UsdPrim &self)
 
 static TfTokenVector _WrapGetPropertyNames(
     const UsdPrim &prim, 
-    pxr_boost::python::object predicate)
+    nb::object predicate)
 {
-    const auto &pred = predicate ? 
-        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+    const auto &pred = (!predicate.is_none() && nb::bool_(predicate)) ? 
+        nb::cast<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetPropertyNames(pred);
 }
 
 static TfTokenVector _WrapGetAuthoredPropertyNames(
     const UsdPrim &prim, 
-    pxr_boost::python::object predicate)
+    nb::object predicate)
 {
-    const auto &pred = predicate ? 
-        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+    const auto &pred = (!predicate.is_none() && nb::bool_(predicate)) ? 
+        nb::cast<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetAuthoredPropertyNames(pred);
 }
 
 static std::vector<UsdProperty>
-_WrapGetProperties(const UsdPrim &prim, pxr_boost::python::object predicate)
+_WrapGetProperties(const UsdPrim &prim, nb::object predicate)
 {
-    const auto &pred = predicate ? 
-        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+    const auto &pred = (!predicate.is_none() && nb::bool_(predicate)) ? 
+        nb::cast<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetProperties(pred);
 }
 
 static std::vector<UsdProperty>
-_WrapGetAuthoredProperties(const UsdPrim &prim, pxr_boost::python::object predicate)
+_WrapGetAuthoredProperties(const UsdPrim &prim, nb::object predicate)
 {
-    const auto &pred = predicate ? 
-        pxr_boost::python::extract<UsdPrim::PropertyPredicateFunc>(predicate) :
+    const auto &pred = (!predicate.is_none() && nb::bool_(predicate)) ? 
+        nb::cast<UsdPrim::PropertyPredicateFunc>(predicate) :
         UsdPrim::PropertyPredicateFunc();
     return prim.GetAuthoredProperties(pred);
 }
@@ -173,29 +188,29 @@ _UnsafeGetStageForTesting(UsdObject const &obj)
     return obj.GetStage();
 }
 
-static object
+static nb::object
 _WrapGetVersionIfIsInFamily(
     const UsdPrim &prim, const TfToken &schemaFamily) 
 {
     UsdSchemaVersion version;
     if (prim.GetVersionIfIsInFamily(schemaFamily, &version)) {
-        return object(version);
+        return nb::cast(version);
     }
-    return object();
+    return nb::none();
 }
 
-static object
+static nb::object
 _WrapGetVersionIfHasAPIInFamily_1(
     const UsdPrim &prim, const TfToken &schemaFamily) 
 {
     UsdSchemaVersion version;
     if (prim.GetVersionIfHasAPIInFamily(schemaFamily, &version)) {
-        return object(version);
+        return nb::cast(version);
     }
-    return object();
+    return nb::none();
 }
 
-static object
+static nb::object
 _WrapGetVersionIfHasAPIInFamily_2(
     const UsdPrim &prim, const TfToken &schemaFamily, 
     const TfToken &instanceName) 
@@ -203,9 +218,9 @@ _WrapGetVersionIfHasAPIInFamily_2(
     UsdSchemaVersion version;
     if (prim.GetVersionIfHasAPIInFamily(
             schemaFamily, instanceName, &version)) {
-        return object(version);
+        return nb::cast(version);
     }
-    return object();
+    return nb::none();
 }
 
 static TfToken _GetKind(const UsdPrim &self)
@@ -215,13 +230,12 @@ static TfToken _GetKind(const UsdPrim &self)
     return kind;
 }
 
-
 } // anonymous namespace 
 
-void wrapUsdPrim()
+void wrapUsdPrim(nb::module_ &m)
 {
-    Usd_PrimCanApplyAPIResult::Wrap<Usd_PrimCanApplyAPIResult>(
-        "_CanApplyAPIResult", "whyNot");
+    Usd_PrimCanApplyAPIResult::WrapNb<Usd_PrimCanApplyAPIResult>(
+        m, "_CanApplyAPIResult", "whyNot");
 
     // Predicate signature for FindAllRelationshipTargetPaths().
     TfPyFunctionFromPython<bool (UsdRelationship const &)>();
@@ -233,35 +247,35 @@ void wrapUsdPrim()
     // Get{Authored}Properties.
     TfPyFunctionFromPython<bool (TfToken const &)>();
 
-    class_<UsdPrim, bases<UsdObject> >("Prim")
+    nb::class_<UsdPrim, UsdObject>(m, "Prim")
+        .def(nb::init<>())
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
 
         .def("GetPrimTypeInfo", &UsdPrim::GetPrimTypeInfo,
-             return_internal_reference<>())
+             nb::rv_policy::reference_internal)
         .def("GetPrimDefinition", &UsdPrim::GetPrimDefinition,
-             return_internal_reference<>())
+             nb::rv_policy::reference_internal)
         .def("GetPrimStack", &UsdPrim::GetPrimStack)
         .def("GetPrimStackWithLayerOffsets", 
-             &UsdPrim::GetPrimStackWithLayerOffsets,
-             return_value_policy<TfPySequenceToList>())
+             &UsdPrim::GetPrimStackWithLayerOffsets)
 
         .def("GetSpecifier", &UsdPrim::GetSpecifier)
-        .def("SetSpecifier", &UsdPrim::SetSpecifier, arg("specifier"))
+        .def("SetSpecifier", &UsdPrim::SetSpecifier, nb::arg("specifier"))
 
         .def("GetTypeName", &UsdPrim::GetTypeName,
-             return_value_policy<return_by_value>())
-        .def("SetTypeName", &UsdPrim::SetTypeName, arg("typeName"))
+             nb::rv_policy::copy)
+        .def("SetTypeName", &UsdPrim::SetTypeName, nb::arg("typeName"))
         .def("ClearTypeName", &UsdPrim::ClearTypeName)
         .def("HasAuthoredTypeName", &UsdPrim::HasAuthoredTypeName)
 
         .def("IsActive", &UsdPrim::IsActive)
-        .def("SetActive", &UsdPrim::SetActive, arg("active"))
+        .def("SetActive", &UsdPrim::SetActive, nb::arg("active"))
         .def("ClearActive", &UsdPrim::ClearActive)
         .def("HasAuthoredActive", &UsdPrim::HasAuthoredActive)
 
         .def("GetKind", _GetKind)
-        .def("SetKind", &UsdPrim::SetKind, arg("value"))
+        .def("SetKind", &UsdPrim::SetKind, nb::arg("value"))
 
         .def("IsLoaded", &UsdPrim::IsLoaded)
         .def("IsModel", &UsdPrim::IsModel)
@@ -274,91 +288,81 @@ void wrapUsdPrim()
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
 
         .def("GetPropertyNames", &_WrapGetPropertyNames,
-             (arg("predicate")=pxr_boost::python::object()),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("predicate")=nb::none())
         .def("GetAuthoredPropertyNames", &_WrapGetAuthoredPropertyNames,
-             (arg("predicate")=pxr_boost::python::object()),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("predicate")=nb::none())
         
         .def("GetProperties", &_WrapGetProperties,
-             arg("predicate")=pxr_boost::python::object(),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("predicate")=nb::none())
 
         .def("GetAuthoredProperties", &_WrapGetAuthoredProperties,
-             arg("predicate")=pxr_boost::python::object(),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("predicate")=nb::none())
 
         .def("GetPropertiesInNamespace",
              (vector<UsdProperty> (UsdPrim::*)(const vector<string> &) const)
              &UsdPrim::GetPropertiesInNamespace,
-             arg("namespaces"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("namespaces"))
 
         .def("GetPropertiesInNamespace",
              (vector<UsdProperty> (UsdPrim::*)(const string &) const)
              &UsdPrim::GetPropertiesInNamespace,
-             arg("namespaces"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("namespaces"))
 
         .def("GetAuthoredPropertiesInNamespace",
              (vector<UsdProperty> (UsdPrim::*)(const vector<string> &) const)
              &UsdPrim::GetAuthoredPropertiesInNamespace,
-             arg("namespaces"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("namespaces"))
 
         .def("GetAuthoredPropertiesInNamespace",
              (vector<UsdProperty> (UsdPrim::*)(const string &) const)
              &UsdPrim::GetAuthoredPropertiesInNamespace,
-             arg("namespaces"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("namespaces"))
 
-        .def("GetAppliedSchemas", &UsdPrim::GetAppliedSchemas,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetAppliedSchemas", &UsdPrim::GetAppliedSchemas)
 
-        .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder,
-             return_value_policy<TfPySequenceToList>())
-        .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, arg("order"))
+        .def("GetPropertyOrder", &UsdPrim::GetPropertyOrder)
+        .def("SetPropertyOrder", &UsdPrim::SetPropertyOrder, nb::arg("order"))
         .def("ClearPropertyOrder", &UsdPrim::ClearPropertyOrder)
 
         .def("IsA",
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::IsA, 
-            (arg("schemaType")))
+            nb::arg("schemaType"))
         .def("IsA",
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::IsA, 
-            (arg("schemaIdentifier")))
+            nb::arg("schemaIdentifier"))
         .def("IsA",
             (bool (UsdPrim::*)(const TfToken&, 
                                UsdSchemaVersion) const)
             &UsdPrim::IsA, 
-            (arg("schemaFamily"),
-             arg("version")))
+            nb::arg("schemaFamily"),
+            nb::arg("version"))
 
         .def("IsInFamily",
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::IsInFamily, 
-            (arg("schemaFamily")))
+            nb::arg("schemaFamily"))
         .def("IsInFamily",
             (bool (UsdPrim::*)(const TfToken&, 
                                UsdSchemaVersion, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::IsInFamily, 
-            (arg("schemaFamily"),
-             arg("version"), 
-             arg("versionPolicy")))
+            nb::arg("schemaFamily"),
+            nb::arg("version"), 
+            nb::arg("versionPolicy"))
         .def("IsInFamily",
             (bool (UsdPrim::*)(const TfType&, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::IsInFamily, 
-            (arg("schemaType"), 
-             arg("versionPolicy")))
+            nb::arg("schemaType"), 
+            nb::arg("versionPolicy"))
         .def("IsInFamily",
             (bool (UsdPrim::*)(const TfToken&, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::IsInFamily, 
-            (arg("schemaIdentifier"), 
-             arg("versionPolicy")))
+            nb::arg("schemaIdentifier"), 
+            nb::arg("versionPolicy"))
 
         .def("GetVersionIfIsInFamily",
              &_WrapGetVersionIfIsInFamily)
@@ -366,73 +370,73 @@ void wrapUsdPrim()
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaType")))
+            nb::arg("schemaType"))
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaType"), arg("instanceName")))
+            nb::arg("schemaType"), nb::arg("instanceName"))
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaIdentifier")))
+            nb::arg("schemaIdentifier"))
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaIdentifier"), arg("instanceName")))
+            nb::arg("schemaIdentifier"), nb::arg("instanceName"))
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
             &UsdPrim::HasAPI,
-            (arg("schemaFamily"), arg("schemaVersion")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"))
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
                                const TfToken&) const)
             &UsdPrim::HasAPI,
-            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), nb::arg("instanceName"))
 
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfType&, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaType"), 
-             arg("versionPolicy")))
+            nb::arg("schemaType"), 
+            nb::arg("versionPolicy"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfType&, 
                                UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaType"), 
-             arg("versionPolicy"), arg("instanceName")))
+            nb::arg("schemaType"), 
+            nb::arg("versionPolicy"), nb::arg("instanceName"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaFamily")))
+            nb::arg("schemaFamily"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaFamily"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("instanceName"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaFamily"), arg("schemaVersion"), 
-             arg("versionPolicy")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), 
+            nb::arg("versionPolicy"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion,
                                UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaFamily"), arg("schemaVersion"), 
-             arg("versionPolicy"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), 
+            nb::arg("versionPolicy"), nb::arg("instanceName"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&, 
                                UsdSchemaRegistry::VersionPolicy) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaIdentifier"), 
-             arg("versionPolicy")))
+            nb::arg("schemaIdentifier"), 
+            nb::arg("versionPolicy"))
         .def("HasAPIInFamily", 
             (bool (UsdPrim::*)(const TfToken&, 
                                UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
             &UsdPrim::HasAPIInFamily,
-            (arg("schemaIdentifier"), 
-             arg("versionPolicy"), arg("instanceName")))
+            nb::arg("schemaIdentifier"), 
+            nb::arg("versionPolicy"), nb::arg("instanceName"))
 
         .def("GetVersionIfHasAPIInFamily", 
              &_WrapGetVersionIfHasAPIInFamily_1)
@@ -443,112 +447,113 @@ void wrapUsdPrim()
             +[](const UsdPrim& prim, const TfType &schemaType) {
                 return _WrapCanApply(prim, schemaType);
             },
-            (arg("schemaType")))
+            nb::arg("schemaType"))
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfType &schemaType, 
                 const TfToken &instanceName) {
                 return _WrapCanApply(prim, schemaType, instanceName);
             },
-            (arg("schemaType"), arg("instanceName")))
+            nb::arg("schemaType"), nb::arg("instanceName"))
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfToken &schemaIdentifier) {
                 return _WrapCanApply(prim, schemaIdentifier);
             },
-            (arg("schemaIdentifier")))
+            nb::arg("schemaIdentifier"))
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfToken &schemaIdentifier, 
                 const TfToken &instanceName) {
                 return _WrapCanApply(prim, schemaIdentifier, instanceName);
             },
-            (arg("schemaIdentifier"), arg("instanceName")))
+            nb::arg("schemaIdentifier"), nb::arg("instanceName"))
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfToken &schemaFamily, 
                 UsdSchemaVersion version) {
                 return _WrapCanApply(prim, schemaFamily, version);
             },
-            (arg("schemaFamily"), arg("schemaVersion")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"))
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfToken &schemaFamily, 
                 UsdSchemaVersion version, const TfToken &instanceName) {
                 return _WrapCanApply(prim, schemaFamily, version, instanceName);
             },
-            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), nb::arg("instanceName"))
 
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaType")))
+            nb::arg("schemaType"))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaType"), arg("instanceName")))
+            nb::arg("schemaType"), nb::arg("instanceName"))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaIdentifier")))
+            nb::arg("schemaIdentifier"))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaIdentifier"), arg("instanceName")))
+            nb::arg("schemaIdentifier"), nb::arg("instanceName"))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaFamily"), arg("schemaVersion")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"))
         .def("ApplyAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
                                const TfToken&) const)
             &UsdPrim::ApplyAPI,
-            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), nb::arg("instanceName"))
 
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaType")))
+            nb::arg("schemaType"))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfType&, const TfToken&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaType"), arg("instanceName")))
+            nb::arg("schemaType"), nb::arg("instanceName"))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfToken&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaIdentifier")))
+            nb::arg("schemaIdentifier"))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaIdentifier"), arg("instanceName")))
+            nb::arg("schemaIdentifier"), nb::arg("instanceName"))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaFamily"), arg("schemaVersion")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"))
         .def("RemoveAPI", 
             (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
                                const TfToken&) const)
             &UsdPrim::RemoveAPI,
-            (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+            nb::arg("schemaFamily"), nb::arg("schemaVersion"), nb::arg("instanceName"))
 
         .def("AddAppliedSchema", &UsdPrim::AddAppliedSchema)
         .def("RemoveAppliedSchema", &UsdPrim::RemoveAppliedSchema)
 
-        .def("GetChild", &UsdPrim::GetChild, arg("name"))
+        .def("GetChild", &UsdPrim::GetChild, nb::arg("name"))
 
-        .def("GetChildren", &UsdPrim::GetChildren,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetAllChildren", &UsdPrim::GetAllChildren,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetFilteredChildren", &UsdPrim::GetFilteredChildren,
-             arg("predicate"),
-             return_value_policy<TfPySequenceToList>())
+        .def("GetChildren", [](const UsdPrim &self) {
+            auto r = self.GetChildren();
+            return std::vector<UsdPrim>(r.begin(), r.end());
+        })
+        .def("GetAllChildren", [](const UsdPrim &self) {
+            auto r = self.GetAllChildren();
+            return std::vector<UsdPrim>(r.begin(), r.end());
+        })
+        .def("GetFilteredChildren", [](const UsdPrim &self, const Usd_PrimFlagsPredicate &predicate) {
+            auto r = self.GetFilteredChildren(predicate);
+            return std::vector<UsdPrim>(r.begin(), r.end());
+        }, nb::arg("predicate"))
 
-        .def("GetChildrenNames", &UsdPrim::GetChildrenNames,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetAllChildrenNames", &UsdPrim::GetAllChildrenNames,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetFilteredChildrenNames", &UsdPrim::GetFilteredChildrenNames,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetChildrenNames", &UsdPrim::GetChildrenNames)
+        .def("GetAllChildrenNames", &UsdPrim::GetAllChildrenNames)
+        .def("GetFilteredChildrenNames", &UsdPrim::GetFilteredChildrenNames)
 
-        .def("GetChildrenReorder", &UsdPrim::GetChildrenReorder,
-             return_value_policy<TfPySequenceToList>())
-        .def("SetChildrenReorder", &UsdPrim::SetChildrenReorder, arg("order"))
+        .def("GetChildrenReorder", &UsdPrim::GetChildrenReorder)
+        .def("SetChildrenReorder", &UsdPrim::SetChildrenReorder, nb::arg("order"))
         .def("ClearChildrenReorder", &UsdPrim::ClearChildrenReorder)
 
         .def("GetParent", &UsdPrim::GetParent)
@@ -565,7 +570,7 @@ void wrapUsdPrim()
         .def("GetVariantSet", &UsdPrim::GetVariantSet)
 
         .def("GetPrimIndex", &UsdPrim::GetPrimIndex,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("ComputeExpandedPrimIndex", &UsdPrim::ComputeExpandedPrimIndex)
 
         .def("CreateAttribute",
@@ -573,76 +578,71 @@ void wrapUsdPrim()
                  const TfToken &, const SdfValueTypeName &,
                  bool, SdfVariability) const)
              &UsdPrim::CreateAttribute,
-             (arg("name"), arg("typeName"), arg("custom")=true,
-              arg("variability")=SdfVariabilityVarying))
+             nb::arg("name"), nb::arg("typeName"), nb::arg("custom")=true,
+             nb::arg("variability")=SdfVariabilityVarying)
 
         .def("CreateAttribute",
              (UsdAttribute (UsdPrim::*)(
                  const vector<string> &, const SdfValueTypeName &,
                  bool, SdfVariability) const)
              &UsdPrim::CreateAttribute,
-             (arg("nameElts"), arg("typeName"), arg("custom")=true,
-              arg("variability")=SdfVariabilityVarying))
+             nb::arg("nameElts"), nb::arg("typeName"), nb::arg("custom")=true,
+             nb::arg("variability")=SdfVariabilityVarying)
 
+        .def("GetAttributes", &UsdPrim::GetAttributes)
+        .def("GetAuthoredAttributes", &UsdPrim::GetAuthoredAttributes)
 
-        .def("GetAttributes", &UsdPrim::GetAttributes,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredAttributes", &UsdPrim::GetAuthoredAttributes,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetAttribute", &UsdPrim::GetAttribute, nb::arg("attrName"))
+        .def("HasAttribute", &UsdPrim::HasAttribute, nb::arg("attrName"))
 
-        .def("GetAttribute", &UsdPrim::GetAttribute, arg("attrName"))
-        .def("HasAttribute", &UsdPrim::HasAttribute, arg("attrName"))
+        .def("FindAllAttributeConnectionPaths",
+             &_FindAllAttributeConnectionPaths,
+             nb::arg("traversalPredicate"),
+             nb::arg("predicate").none()=nb::none(), nb::arg("recurseOnSources")=false)
 
         .def("FindAllAttributeConnectionPaths",
              &_FindAllAttributeConnectionPathsDefault,
-             (arg("predicate")=object(), arg("recurseOnSources")=false))
-        
-        .def("FindAllAttributeConnectionPaths",
-             &_FindAllAttributeConnectionPaths,
-             (arg("traversalPredicate"),
-              arg("predicate")=object(), arg("recurseOnSources")=false))
+             nb::arg("predicate").none()=nb::none(), nb::arg("recurseOnSources")=false)
 
         .def("CreateRelationship",
              (UsdRelationship (UsdPrim::*)(const TfToken &, bool) const)
-             &UsdPrim::CreateRelationship, (arg("name"), arg("custom")=true))
+             &UsdPrim::CreateRelationship, nb::arg("name"), nb::arg("custom")=true)
 
         .def("CreateRelationship",
              (UsdRelationship (UsdPrim::*)(const vector<string> &, bool) const)
-             &UsdPrim::CreateRelationship, (arg("nameElts"), arg("custom")=true))
+             &UsdPrim::CreateRelationship, nb::arg("nameElts"), nb::arg("custom")=true)
 
-        .def("GetRelationships", &UsdPrim::GetRelationships,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetAuthoredRelationships", &UsdPrim::GetAuthoredRelationships,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetRelationships", &UsdPrim::GetRelationships)
+        .def("GetAuthoredRelationships", &UsdPrim::GetAuthoredRelationships)
 
-        .def("GetRelationship", &UsdPrim::GetRelationship, arg("relName"))
-        .def("HasRelationship", &UsdPrim::HasRelationship, arg("relName"))
-
-        .def("FindAllRelationshipTargetPaths",
-             &_FindAllRelationshipTargetPathsDefault,
-             (arg("predicate")=object(), arg("recurseOnTargets")=false))
+        .def("GetRelationship", &UsdPrim::GetRelationship, nb::arg("relName"))
+        .def("HasRelationship", &UsdPrim::HasRelationship, nb::arg("relName"))
 
         .def("FindAllRelationshipTargetPaths",
              &_FindAllRelationshipTargetPaths,
-             (arg("traversalPredicate"),
-              arg("predicate")=object(), arg("recurseOnTargets")=false))
+             nb::arg("traversalPredicate"),
+             nb::arg("predicate").none()=nb::none(), nb::arg("recurseOnTargets")=false)
+
+        .def("FindAllRelationshipTargetPaths",
+             &_FindAllRelationshipTargetPathsDefault,
+             nb::arg("predicate").none()=nb::none(), nb::arg("recurseOnTargets")=false)
 
         .def("HasPayload", &UsdPrim::HasPayload)
         .def("SetPayload",
              (bool (UsdPrim::*)(const SdfPayload &) const)
-             &UsdPrim::SetPayload, (arg("payload")))
+             &UsdPrim::SetPayload, nb::arg("payload"))
         .def("SetPayload",
              (bool (UsdPrim::*)(const string &, const SdfPath &) const)
-             &UsdPrim::SetPayload, (arg("assetPath"), arg("primPath")))
+             &UsdPrim::SetPayload, nb::arg("assetPath"), nb::arg("primPath"))
         .def("SetPayload",
              (bool (UsdPrim::*)(const SdfLayerHandle &, const SdfPath &) const)
-             &UsdPrim::SetPayload, (arg("layer"), arg("primPath")))
+             &UsdPrim::SetPayload, nb::arg("layer"), nb::arg("primPath"))
         .def("ClearPayload", &UsdPrim::ClearPayload)
 
         .def("GetPayloads", &UsdPrim::GetPayloads)
         .def("HasAuthoredPayloads", &UsdPrim::HasAuthoredPayloads)
 
-        .def("Load", &UsdPrim::Load, (arg("policy")=UsdLoadWithDescendants))
+        .def("Load", &UsdPrim::Load, nb::arg("policy")=UsdLoadWithDescendants)
         .def("Unload", &UsdPrim::Unload)
 
         .def("GetReferences", &UsdPrim::GetReferences)
@@ -654,19 +654,17 @@ void wrapUsdPrim()
         .def("GetSpecializes", &UsdPrim::GetSpecializes)
         .def("HasAuthoredSpecializes", &UsdPrim::HasAuthoredSpecializes)
     
-        .def("RemoveProperty", &UsdPrim::RemoveProperty, arg("propName"))
-        .def("GetProperty", &UsdPrim::GetProperty, arg("propName"))
-        .def("HasProperty", &UsdPrim::HasProperty, arg("propName"))
+        .def("RemoveProperty", &UsdPrim::RemoveProperty, nb::arg("propName"))
+        .def("GetProperty", &UsdPrim::GetProperty, nb::arg("propName"))
+        .def("HasProperty", &UsdPrim::HasProperty, nb::arg("propName"))
 
         .def("IsInstanceable", &UsdPrim::IsInstanceable)
-        .def("SetInstanceable", &UsdPrim::SetInstanceable, arg("instanceable"))
+        .def("SetInstanceable", &UsdPrim::SetInstanceable, nb::arg("instanceable"))
         .def("ClearInstanceable", &UsdPrim::ClearInstanceable)
         .def("HasAuthoredInstanceable", &UsdPrim::HasAuthoredInstanceable)
 
-        .def("IsPrototypePath", &UsdPrim::IsPrototypePath, arg("path"))
-        .staticmethod("IsPrototypePath")
-        .def("IsPathInPrototype", &UsdPrim::IsPathInPrototype, arg("path"))
-        .staticmethod("IsPathInPrototype")
+        .def_static("IsPrototypePath", &UsdPrim::IsPrototypePath, nb::arg("path"))
+        .def_static("IsPathInPrototype", &UsdPrim::IsPathInPrototype, nb::arg("path"))
 
         .def("IsInstance", &UsdPrim::IsInstance)
         .def("IsPrototype", &UsdPrim::IsPrototype)
@@ -676,14 +674,13 @@ void wrapUsdPrim()
         .def("IsInstanceProxy", &UsdPrim::IsInstanceProxy)
         .def("GetPrimInPrototype", &UsdPrim::GetPrimInPrototype)
 
-        .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, arg("path"))
-        .def("GetObjectAtPath", &UsdPrim::GetObjectAtPath, arg("path"))
-        .def("GetPropertyAtPath", &UsdPrim::GetPropertyAtPath, arg("path"))
-        .def("GetAttributeAtPath", &UsdPrim::GetAttributeAtPath, arg("path"))
+        .def("GetPrimAtPath", &UsdPrim::GetPrimAtPath, nb::arg("path"))
+        .def("GetObjectAtPath", &UsdPrim::GetObjectAtPath, nb::arg("path"))
+        .def("GetPropertyAtPath", &UsdPrim::GetPropertyAtPath, nb::arg("path"))
+        .def("GetAttributeAtPath", &UsdPrim::GetAttributeAtPath, nb::arg("path"))
         .def("GetRelationshipAtPath",
-            &UsdPrim::GetRelationshipAtPath, arg("path"))
-        .def("GetInstances", &UsdPrim::GetInstances,
-                return_value_policy<TfPySequenceToList>())
+            &UsdPrim::GetRelationshipAtPath, nb::arg("path"))
+        .def("GetInstances", &UsdPrim::GetInstances)
 
         .def("MakeResolveTargetUpToEditTarget", 
             &UsdPrim::MakeResolveTargetUpToEditTarget)
@@ -692,11 +689,9 @@ void wrapUsdPrim()
         
         // Exposed only for testing and debugging.
         .def("_GetSourcePrimIndex", &Usd_PrimGetSourcePrimIndex,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         ;
     
-    to_python_converter<std::vector<UsdPrim>, 
-                        TfPySequenceToPython<std::vector<UsdPrim>>>();
 
     TfPyRegisterStlSequencesFromPython<UsdPrim>();
     TfPyContainerConversions::tuple_mapping_pair<
@@ -705,7 +700,6 @@ void wrapUsdPrim()
     // This is wrapped in order to let python call an API that will get through
     // our usual Python API guards to access an invalid prim and throw an
     // exception.
-    pxr_boost::python::def(
-        "_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
+    m.def("_UnsafeGetStageForTesting", &_UnsafeGetStageForTesting);
     
 }

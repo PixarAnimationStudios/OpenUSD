@@ -17,11 +17,13 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyCall.h"
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,7 +32,7 @@ public:
     template <class T, class V>
     class ApplyHelper {
     public:
-        ApplyHelper(const T& owner, const pxr_boost::python::object& callback) :
+        ApplyHelper(const T& owner, const nanobind::object& callback) :
             _owner(owner),
             _callback(callback)
         {
@@ -39,14 +41,12 @@ public:
 
         std::optional<V> operator()(SdfListOpType op, const V& value)
         {
-            using namespace pxr_boost::python;
-
             TfPyLock pyLock;
-            object result = _callback(_owner, value, op);
+            nanobind::object result = _callback(_owner, value, op);
             if (! TfPyIsNone(result)) {
-                extract<V> e(result);
-                if (e.check()) {
-                    return std::optional<V>(e());
+                V extracted;
+                if (nanobind::try_cast<V>(result, extracted)) {
+                    return std::optional<V>(extracted);
                 }
                 else {
                     TF_CODING_ERROR("ApplyEditsToList callback has "
@@ -58,13 +58,13 @@ public:
 
     private:
         const T& _owner;
-        TfPyCall<pxr_boost::python::object> _callback;
+        TfPyCall<nanobind::object> _callback;
     };
 
     template <class V>
     class ModifyHelper {
     public:
-        ModifyHelper(const pxr_boost::python::object& callback) :
+        ModifyHelper(const nanobind::object& callback) :
             _callback(callback)
         {
             // Do nothing
@@ -72,14 +72,12 @@ public:
 
         std::optional<V> operator()(const V& value)
         {
-            using namespace pxr_boost::python;
-
             TfPyLock pyLock;
-            object result = _callback(value);
+            nanobind::object result = _callback(value);
             if (! TfPyIsNone(result)) {
-                extract<V> e(result);
-                if (e.check()) {
-                    return std::optional<V>(e());
+                V extracted;
+                if (nanobind::try_cast<V>(result, extracted)) {
+                    return std::optional<V>(extracted);
                 }
                 else {
                     TF_CODING_ERROR("ModifyItemEdits callback has "
@@ -90,7 +88,7 @@ public:
         }
 
     private:
-        TfPyCall<pxr_boost::python::object> _callback;
+        TfPyCall<nanobind::object> _callback;
     };
 };
 
@@ -115,47 +113,50 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace pxr_boost::python;
+        namespace nb = nanobind;
 
-        class_<Type>(_GetName().c_str(), no_init)
+        nb::handle scope = TfPyGetCurrentNanobindModule();
+        if (!scope.is_valid()) {
+            scope = nb::borrow(PyImport_AddModule("pxr.Sdf"));
+        }
+
+        nb::class_<Type>(scope, _GetName().c_str())
             .def("__str__", &This::_GetStr)
-            .add_property("isExpired", &Type::IsExpired)
-            .add_property("explicitItems",
+            .def_prop_ro("isExpired", &Type::IsExpired)
+            .def_prop_rw("explicitItems",
                 &Type::GetExplicitItems,
                 &This::_SetExplicitProxy)
-            .add_property("addedItems",
+            .def_prop_rw("addedItems",
                 &Type::GetAddedItems,
                 &This::_SetAddedProxy)
-            .add_property("prependedItems",
+            .def_prop_rw("prependedItems",
                 &Type::GetPrependedItems,
                 &This::_SetPrependedProxy)
-            .add_property("appendedItems",
+            .def_prop_rw("appendedItems",
                 &Type::GetAppendedItems,
                 &This::_SetAppendedProxy)
-            .add_property("deletedItems",
+            .def_prop_rw("deletedItems",
                 &Type::GetDeletedItems,
                 &This::_SetDeletedProxy)
-            .add_property("orderedItems",
+            .def_prop_rw("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .def("GetAddedOrExplicitItems", &Type::GetAppliedItems,
-                return_value_policy<TfPySequenceToTuple>()) // deprecated
-            .def("GetAppliedItems", &Type::GetAppliedItems,
-                return_value_policy<TfPySequenceToTuple>())
-            .add_property("isExplicit", &Type::IsExplicit)
-            .add_property("isOrderedOnly", &Type::IsOrderedOnly)
-            .def("ApplyEditsToList",
-                &This::_ApplyEditsToList,
-                return_value_policy<TfPySequenceToList>())
-            .def("ApplyEditsToList",
-                &This::_ApplyEditsToList2,
-                return_value_policy<TfPySequenceToList>())
+            .def("GetAddedOrExplicitItems", [](const Type& x) {
+                return TfNbSequenceToTuple(x.GetAppliedItems());
+            }) // deprecated
+            .def("GetAppliedItems", [](const Type& x) {
+                return TfNbSequenceToTuple(x.GetAppliedItems());
+            })
+            .def_prop_ro("isExplicit", &Type::IsExplicit)
+            .def_prop_ro("isOrderedOnly", &Type::IsOrderedOnly)
+            .def("ApplyEditsToList", &This::_ApplyEditsToList)
+            .def("ApplyEditsToList", &This::_ApplyEditsToList2)
 
             .def("CopyItems", &Type::CopyItems)
             .def("ClearEdits", &Type::ClearEdits)
             .def("ClearEditsAndMakeExplicit", &Type::ClearEditsAndMakeExplicit)
             .def("ContainsItemEdit", &Type::ContainsItemEdit,
-                 (arg("item"), arg("onlyAddOrExplicit")=false))
+                 nb::arg("item"), nb::arg("onlyAddOrExplicit") = false)
             .def("RemoveItemEdits", &Type::RemoveItemEdits)
             .def("ReplaceItemEdits", &Type::ReplaceItemEdits)
             .def("ModifyItemEdits", &This::_ModifyEdits)
@@ -167,6 +168,7 @@ private:
             .def("Remove", &Type::Remove)
             .def("Erase", &Type::Erase)
             ;
+
     }
 
     static std::string _GetName()
@@ -226,7 +228,7 @@ private:
 
     static value_vector_type _ApplyEditsToList2(const Type& x,
                                                 const value_vector_type& v,
-                                                const pxr_boost::python::object& cb)
+                                                const nanobind::object& cb)
     {
         value_vector_type tmp = v;
         x.ApplyEditsToList(&tmp,
@@ -234,7 +236,7 @@ private:
         return tmp;
     }
 
-    static void _ModifyEdits(Type& x, const pxr_boost::python::object& cb)
+    static void _ModifyEdits(Type& x, const nanobind::object& cb)
     {
         x.ModifyItemEdits(Sdf_PyListEditorUtils::ModifyHelper<value_type>(cb));
     }

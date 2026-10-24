@@ -10,17 +10,17 @@
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 // We override __getattribute__ for UsdSchemaBase to check object validity
 // and raise an exception instead of crashing from Python.
@@ -32,15 +32,15 @@ using namespace pxr_boost::python;
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdSchemaBase.
-static object
-__getattribute__(object selfObj, const char *name) {
+static nanobind::object
+__getattribute__(nanobind::object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or
     // if the object's prim is valid. Also add explicit exceptions for every
     // method on this base class. The real purpose here is to protect against
     // invalid calls in subclasses which will try to actually manipulate the
     // underlying (invalid) prim and likely crash.
     if ((name[0] == '_' && name[1] == '_') ||
-        extract<UsdSchemaBase &>(selfObj)().GetPrim().IsValid() ||
+        nanobind::cast<UsdSchemaBase &>(selfObj).GetPrim().IsValid() ||
         strcmp(name, "GetPrim") == 0 ||
         strcmp(name, "GetPath") == 0 ||
         strcmp(name, "GetSchemaClassPrimDefinition") == 0 ||
@@ -52,34 +52,35 @@ __getattribute__(object selfObj, const char *name) {
         strcmp(name, "IsAppliedAPISchema") == 0 ||
         strcmp(name, "IsMultipleApplyAPISchema") == 0) {
         // Dispatch to object's __getattribute__.
-        return (*_object__getattribute__)(selfObj, name);
+        return nanobind::borrow<nanobind::object>(
+            _object__getattribute__->ptr())(selfObj, name);
     } else {
         // Otherwise raise a runtime error.
         TfPyThrowRuntimeError(
             TfStringPrintf("Accessed schema on invalid prim"));
     }
     // Unreachable.
-    return object();
+    return nanobind::none();
 }
 
-void wrapUsdSchemaBase()
+void wrapUsdSchemaBase(nanobind::module_ &m)
 {
-    class_<UsdSchemaBase> cls("SchemaBase");
+    namespace nb = nanobind;
+    nb::class_<UsdSchemaBase> cls(m, "SchemaBase");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("otherSchema")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim") = UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("otherSchema"))
         .def(TfTypePythonClass())
 
         .def("GetPrim", &UsdSchemaBase::GetPrim)
         .def("GetPath", &UsdSchemaBase::GetPath)
         .def("GetSchemaClassPrimDefinition",
              &UsdSchemaBase::GetSchemaClassPrimDefinition,
-             return_internal_reference<>())
-        .def("GetSchemaAttributeNames", &UsdSchemaBase::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::rv_policy::reference_internal)
+        .def_static("GetSchemaAttributeNames",
+             &UsdSchemaBase::GetSchemaAttributeNames,
+             nb::arg("includeInherited") = true)
 
         .def("IsAPISchema", &UsdSchemaBase::IsAPISchema)
         .def("IsConcrete", &UsdSchemaBase::IsConcrete) 
@@ -89,11 +90,12 @@ void wrapUsdSchemaBase()
 
         .def("GetSchemaKind", &UsdSchemaBase::GetSchemaKind)
 
-        .def(!self)
+        .def("__bool__", [](const UsdSchemaBase &self) { return bool(self); })
 
         ;
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(cls.attr("__getattribute__"));
+    *_object__getattribute__ = TfPyObjWrapper(cls.attr("__getattribute__"));
     cls.def("__getattribute__", __getattribute__);
+
 }

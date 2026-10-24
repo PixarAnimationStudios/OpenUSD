@@ -8,15 +8,20 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/variantSpec.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/pyChildrenProxy.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -31,26 +36,23 @@ _WrapGetVariantSetsProxy(const SdfVariantSpec& owner)
 
 } // anonymous namespace 
 
-void wrapVariantSpec()
+void wrapVariantSpec(nanobind::module_& m)
 {
-    def("CreateVariantInLayer", SdfCreateVariantInLayer);
+    m.def("CreateVariantInLayer", SdfCreateVariantInLayer);
 
     typedef SdfVariantSpec This;
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
-        ("VariantSpec", no_init)
+    nb::class_<This, SdfSpec>(m, "VariantSpec")
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&This::New))
 
-        .add_property("primSpec", &This::GetPrimSpec,
+        .def_prop_ro("primSpec", &This::GetPrimSpec,
             "The root prim of this variant.")
-        .add_property("owner", &This::GetOwner,
+        .def_prop_ro("owner", &This::GetOwner,
             "The variant set that this variant belongs to.")
-        .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+        .def_prop_ro("name", &This::GetName,
             "The variant's name.")
-        .add_property("variantSets",
+        .def_prop_ro("variantSets",
             &_WrapGetVariantSetsProxy)
         .def("GetVariantNames", &This::GetVariantNames)
         ;

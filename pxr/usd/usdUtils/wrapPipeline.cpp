@@ -5,22 +5,24 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/set.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
 #include "pxr/usd/sdf/booleanExpression.h"
 #include "pxr/usd/usd/prim.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/external/boost/python/return_by_value.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 // XXX: Temporary workaround for use by UpdateSchemaWithSdrNode(). Once
 // SdfBooleanExpression is wrapped to Python we can do away with this.
@@ -43,30 +45,29 @@ _BooleanExpressionRenameVariables(
     return expression.RenameVariables(transform).GetText();
 }
 
-void wrapPipeline()
+void wrapPipeline(nanobind::module_ &m)
 {
-    def("GetAlphaAttributeNameForColor", UsdUtilsGetAlphaAttributeNameForColor, arg("colorAttrName"));
-    def("GetModelNameFromRootLayer", UsdUtilsGetModelNameFromRootLayer);
-    def("GetRegisteredVariantSets", 
-            UsdUtilsGetRegisteredVariantSets, 
-            return_value_policy<TfPySequenceToList>());
-    def("GetPrimAtPathWithForwarding", UsdUtilsGetPrimAtPathWithForwarding, 
-        (arg("stage"), arg("path")));
-    def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
-        (arg("stage"), arg("path")));
-    def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName,
-        return_value_policy<return_by_value>());
-    def("GetPrefName", UsdUtilsGetPrefName,
-        return_value_policy<return_by_value>());
-    def(
+    m.def("GetAlphaAttributeNameForColor", UsdUtilsGetAlphaAttributeNameForColor, nb::arg("colorAttrName"));
+    m.def("GetModelNameFromRootLayer", UsdUtilsGetModelNameFromRootLayer);
+    m.def("GetRegisteredVariantSets", 
+            []() { return TfNbSequenceToList(UsdUtilsGetRegisteredVariantSets()); });
+    m.def("GetPrimAtPathWithForwarding", UsdUtilsGetPrimAtPathWithForwarding, 
+        nb::arg("stage"), nb::arg("path"));
+    m.def("UninstancePrimAtPath", UsdUtilsUninstancePrimAtPath, 
+        nb::arg("stage"), nb::arg("path"));
+    m.def("GetPrimaryUVSetName", UsdUtilsGetPrimaryUVSetName,
+        nb::rv_policy::copy);
+    m.def("GetPrefName", UsdUtilsGetPrefName,
+        nb::rv_policy::copy);
+    m.def(
         "GetMaterialsScopeName",
         UsdUtilsGetMaterialsScopeName,
-        arg("forceDefault")=false);
-    def(
+        nb::arg("forceDefault")=false);
+    m.def(
         "GetPrimaryCameraName",
         UsdUtilsGetPrimaryCameraName,
-        arg("forceDefault")=false);
+        nb::arg("forceDefault")=false);
 
-    def("_BooleanExpressionRenameVariables",
+    m.def("_BooleanExpressionRenameVariables",
         &_BooleanExpressionRenameVariables);
 }

@@ -13,15 +13,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -34,28 +33,28 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateExtentAttr(UsdLodScreenSizeHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExtentAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateProjectionMethodAttr(UsdLodScreenSizeHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateProjectionMethodAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateThresholdsAttr(UsdLodScreenSizeHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateThresholdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlendThresholdsAttr(UsdLodScreenSizeHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBlendThresholdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
@@ -71,64 +70,59 @@ _Repr(const UsdLodScreenSizeHeuristic &self)
 
 } // anonymous namespace
 
-void wrapUsdLodScreenSizeHeuristic()
+void wrapUsdLodScreenSizeHeuristic(nb::module_ &m)
 {
     typedef UsdLodScreenSizeHeuristic This;
 
-    class_<This, bases<UsdLodHeuristic> >
-        cls("ScreenSizeHeuristic");
+    nb::class_<This, UsdLodHeuristic> cls(m, "ScreenSizeHeuristic");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetExtentAttr",
              &This::GetExtentAttr)
         .def("CreateExtentAttr",
              &_CreateExtentAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetProjectionMethodAttr",
              &This::GetProjectionMethodAttr)
         .def("CreateProjectionMethodAttr",
              &_CreateProjectionMethodAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetThresholdsAttr",
              &This::GetThresholdsAttr)
         .def("CreateThresholdsAttr",
              &_CreateThresholdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetBlendThresholdsAttr",
              &This::GetBlendThresholdsAttr)
         .def("CreateBlendThresholdsAttr",
              &_CreateBlendThresholdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
         
         .def("GetBoundingVolumeRel",
@@ -209,7 +203,7 @@ _WrapComputeLOD2(
 }
 
 static
-pxr_boost::python::tuple
+nb::tuple
 _WrapComputeLOD3(const UsdLodScreenSizeHeuristic& heuristic,
                  const GfFrustum& frustum,
                  const GfMatrix4d& transform,
@@ -221,7 +215,7 @@ _WrapComputeLOD3(const UsdLodScreenSizeHeuristic& heuristic,
     double lod = heuristic.ComputeLOD(frustum, transform,
                                       prevSize, hysteresis,
                                       &screenSizeOut);
-    return pxr_boost::python::make_tuple(lod, screenSizeOut);
+    return nb::make_tuple(lod, screenSizeOut);
 }
 
 WRAP_CUSTOM {
@@ -230,32 +224,32 @@ WRAP_CUSTOM {
     _class
         .def("CreateScreenSizeHeuristicQuery",
              &This::CreateScreenSizeHeuristicQuery,
-             arg("time") = UsdTimeCode::Default())
+             nb::arg("time") = UsdTimeCode::Default())
 
         .def("ComputeScreenSize", _WrapComputeScreenSize1,
-             (arg("frustum"),
-              arg("transform"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeScreenSize", _WrapComputeScreenSize2,
-             (arg("frustum"),
-              arg("transform"),
-              arg("prevSize") = 0.0,
-              arg("hysteresis") = 0.0,
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("prevSize") = 0.0,
+             nb::arg("hysteresis") = 0.0,
+             nb::arg("time") = UsdTimeCode::Default())
 
         .def("ComputeLOD", &_WrapComputeLOD1,
-             (arg("screenSize"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("screenSize"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeLOD", &_WrapComputeLOD2,
-             (arg("frustum"),
-              arg("transform"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeLOD", &_WrapComputeLOD3,
-             (arg("frustum"),
-              arg("transform"),
-              arg("prevSize"),
-              arg("hysteresis"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("frustum"),
+             nb::arg("transform"),
+             nb::arg("prevSize"),
+             nb::arg("hysteresis"),
+             nb::arg("time") = UsdTimeCode::Default())
         ;
 }
 

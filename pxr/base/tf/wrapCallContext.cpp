@@ -7,13 +7,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
-
-#include "pxr/external/boost/python/class.hpp"
+#include <string>
 
 using std::string;
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,13 +31,16 @@ _GetPrettyFunctionString(TfCallContext const& cc) {
 
 } // anonymous namespace 
 
-void wrapCallContext() {
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+
+void wrapCallContext(nanobind::module_& m) {
     typedef TfCallContext This;
 
-    class_ <This> ("CallContext", no_init)
-        .add_property("file", &_GetFileString)
-        .add_property("function", &_GetFunctionString)
-        .add_property("line", &This::GetLine)
-        .add_property("prettyFunction", &_GetPrettyFunctionString)
+    nanobind::class_<This>(m, "CallContext")
+        .def_prop_ro("file", &_GetFileString)
+        .def_prop_ro("function", &_GetFunctionString)
+        .def_prop_ro("line", &This::GetLine)
+        .def_prop_ro("prettyFunction", &_GetPrettyFunctionString)
     ;
 }

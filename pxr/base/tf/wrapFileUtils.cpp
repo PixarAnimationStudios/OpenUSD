@@ -7,7 +7,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/external/boost/python/def.hpp"
 
 #include "pxr/base/tf/fileUtils.h"
 
@@ -17,9 +16,10 @@ using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
 
-void wrapFileUtils() {
-
-    def("TouchFile", &TfTouchFile, (arg("fileName"), arg("create")=bool(false)));
+void wrapFileUtils(nanobind::module_& m) {
+    namespace nb = nanobind;
+    m.def("TouchFile", &TfTouchFile, nb::arg("fileName"), nb::arg("create") = false);
 }

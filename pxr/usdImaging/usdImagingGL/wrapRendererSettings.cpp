@@ -4,24 +4,22 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+#include <nanobind/nanobind.h>
 
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 void 
-wrapRendererSettings()
+wrapRendererSettings(nb::module_ &m)
 {
     // Wrap the UsdImagingGLRendererSetting::Type enum. Accessible as
     // UsdImagingGL.RendererSettingType.
-    enum_<UsdImagingGLRendererSetting::Type>("RendererSettingType")
+    nb::enum_<UsdImagingGLRendererSetting::Type>(m, "RendererSettingType")
             .value("FLAG", UsdImagingGLRendererSetting::TYPE_FLAG)
             .value("INT", UsdImagingGLRendererSetting::TYPE_INT)
             .value("FLOAT", UsdImagingGLRendererSetting::TYPE_FLOAT)
@@ -31,13 +29,12 @@ wrapRendererSettings()
     // Wrap the UsdImagingGLRendererSetting struct.
     // Accessible as UsdImagingGL.RendererSetting
     typedef UsdImagingGLRendererSetting Setting;
-    class_<UsdImagingGLRendererSetting>("RendererSetting",
+    nb::class_<UsdImagingGLRendererSetting>(m, "RendererSetting",
             "Renderer Setting Metadata")
-        .add_property("key", make_getter(&Setting::key,
-                return_value_policy<return_by_value>()))
-        .def_readonly("name", &Setting::name)
-        .def_readonly("type", &Setting::type)
-        .add_property("defValue", make_getter(&Setting::defValue,
-                return_value_policy<return_by_value>()))
+        .def(nb::init<>())
+        .def_ro("key", &Setting::key)
+        .def_ro("name", &Setting::name)
+        .def_ro("type", &Setting::type)
+        .def_ro("defValue", &Setting::defValue)
         ;
 }

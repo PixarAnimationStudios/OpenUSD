@@ -10,29 +10,31 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
 
 #include <vector>
 
+namespace nb = nanobind;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
-static tuple
+static nb::tuple
 _GetDeclarationInfo(const UsdGeomPrimvar &self)
 {
     TfToken name, interpolation;
     SdfValueTypeName typeName;
     int elementSize;
     self.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-    return make_tuple(name, object(typeName), interpolation, elementSize);
+    return nb::make_tuple(name, nb::cast(typeName), interpolation, elementSize);
 }
 
 static bool
@@ -94,19 +96,20 @@ static size_t __hash__(const UsdGeomPrimvar &self) { return TfHash{}(self); }
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdGeomPrimvar.
-static object
-__getattribute__(object selfObj, const char *name) {
+static nb::object
+__getattribute__(nb::object selfObj, const char *name) {
 
     // Allow attribute lookups if the attribute name starts with '__', or
     // if the object's prim and attribute are both valid, or allow a few
     // methods if just the prim is valid, or an even smaller subset if neither
     // are valid.
+    UsdGeomPrimvar &primvar = nb::cast<UsdGeomPrimvar &>(selfObj);
     if ((name[0] == '_' && name[1] == '_') ||
         // prim and attr are valid, let everything through.
-        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().IsValid() &&
-         extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid()) ||
+        (primvar.GetAttr().IsValid() &&
+         primvar.GetAttr().GetPrim().IsValid()) ||
         // prim is valid, but attr is invalid, let a few things through.
-        (extract<UsdGeomPrimvar &>(selfObj)().GetAttr().GetPrim().IsValid() &&
+        (primvar.GetAttr().GetPrim().IsValid() &&
          (strcmp(name, "HasValue") == 0 ||
           strcmp(name, "HasAuthoredValue") == 0 ||
           strcmp(name, "GetName") == 0 ||
@@ -119,104 +122,97 @@ __getattribute__(object selfObj, const char *name) {
         strcmp(name, "IsDefined") == 0 ||
         strcmp(name, "GetAttr") == 0) {
         // Dispatch to object's __getattribute__.
-        return (*_object__getattribute__)(selfObj, name);
+        return (*_object__getattribute__).Get()(selfObj, name);
     } else {
         // Otherwise raise a runtime error.
         TfPyThrowRuntimeError(
             TfStringPrintf("Accessed invalid attribute as a primvar"));
     }
     // Unreachable.
-    return object();
+    return nb::none();
 }
 
 } // anonymous namespace 
 
-void wrapUsdGeomPrimvar()
+void wrapUsdGeomPrimvar(nanobind::module_ &m)
 {
     typedef UsdGeomPrimvar Primvar;
 
-    class_<Primvar> clsObj("Primvar");
+    nb::class_<Primvar> clsObj(m, "Primvar");
     clsObj
-        .def(init<UsdAttribute>(arg("attr")))
+        .def(nb::init<>())
+        .def(nb::init<const UsdAttribute &>(), nb::arg("attr"))
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__bool__", [](const Primvar &self) { return bool(self); })
         .def("__hash__", __hash__)
 
         .def("GetInterpolation", &Primvar::GetInterpolation)
         .def("SetInterpolation", &Primvar::SetInterpolation,
-             arg("interpolation"))
+             nb::arg("interpolation"))
         .def("HasAuthoredInterpolation", &Primvar::HasAuthoredInterpolation)
 
         .def("GetElementSize", &Primvar::GetElementSize)
-        .def("SetElementSize", &Primvar::SetElementSize, arg("eltSize"))
+        .def("SetElementSize", &Primvar::SetElementSize, nb::arg("eltSize"))
         .def("HasAuthoredElementSize", &Primvar::HasAuthoredElementSize)
 
-        .def("IsPrimvar", Primvar::IsPrimvar, arg("attr"))
-        .staticmethod("IsPrimvar")
+        .def_static("IsPrimvar", &Primvar::IsPrimvar, nb::arg("attr"))
 
-        .def("IsValidPrimvarName", Primvar::IsValidPrimvarName, 
-                arg("name"))
-        .staticmethod("IsValidPrimvarName")
+        .def_static("IsValidPrimvarName", &Primvar::IsValidPrimvarName, 
+                    nb::arg("name"))
         
-        .def("StripPrimvarsName", Primvar::StripPrimvarsName, arg("name"))
-        .staticmethod("StripPrimvarsName")
+        .def_static("StripPrimvarsName", &Primvar::StripPrimvarsName, nb::arg("name"))
 
-        .def("IsValidInterpolation", Primvar::IsValidInterpolation,
-             arg("interpolation"))
-        .staticmethod("IsValidInterpolation")
+        .def_static("IsValidInterpolation", &Primvar::IsValidInterpolation,
+                    nb::arg("interpolation"))
 
         .def("GetDeclarationInfo", _GetDeclarationInfo)
         .def("GetAttr", &Primvar::GetAttr,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("IsDefined", &Primvar::IsDefined)
         .def("HasValue", &Primvar::HasValue)
         .def("HasAuthoredValue", &Primvar::HasAuthoredValue)
         .def("GetName", &Primvar::GetName,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetPrimvarName", &Primvar::GetPrimvarName)
         .def("NameContainsNamespaces", &Primvar::NameContainsNamespaces)
         .def("GetBaseName", &Primvar::GetBaseName)
         .def("GetNamespace", &Primvar::GetNamespace)
-        .def("SplitName", &Primvar::SplitName,
-             return_value_policy<TfPySequenceToList>())
+        .def("SplitName", &Primvar::SplitName)
         .def("GetTypeName", &Primvar::GetTypeName)
-        .def("Get", _Get, (arg("time")=UsdTimeCode::Default()))
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Get", _Get, nb::arg("time") = UsdTimeCode::Default())
+        .def("Set", _Set, nb::arg("value").none(), nb::arg("time") = UsdTimeCode::Default())
 
         .def("GetTimeSamples", _GetTimeSamples)
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval)
         .def("ValueMightBeTimeVarying", &Primvar::ValueMightBeTimeVarying)
 
         .def("SetIndices", &Primvar::SetIndices, 
-            (arg("indices"),
-             arg("time")=UsdTimeCode::Default()))
+             nb::arg("indices"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("BlockIndices", &Primvar::BlockIndices)
         .def("GetIndices", _GetIndices, 
-            (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time") = UsdTimeCode::Default())
         .def("GetIndicesAttr", &Primvar::GetIndicesAttr)
         .def("CreateIndicesAttr", &Primvar::CreateIndicesAttr)
         .def("IsIndexed", &Primvar::IsIndexed)
 
         .def("GetUnauthoredValuesIndex", &Primvar::GetUnauthoredValuesIndex)
         .def("SetUnauthoredValuesIndex", &Primvar::SetUnauthoredValuesIndex,
-            arg("unauthoredValuesIndex"))
+             nb::arg("unauthoredValuesIndex"))
 
         .def("ComputeFlattened", _ComputeFlattened,
-            (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time") = UsdTimeCode::Default())
     
         .def("IsIdTarget", &Primvar::IsIdTarget)
         .def("SetIdTarget", &Primvar::SetIdTarget)
         ;
 
-    TfPyRegisterStlSequencesFromPython<UsdGeomPrimvar>();
-    to_python_converter<std::vector<UsdGeomPrimvar>,
-                        TfPySequenceToPython<std::vector<UsdGeomPrimvar>>>();
-    implicitly_convertible<Primvar, UsdAttribute>();
+    nb::implicitly_convertible<Primvar, UsdAttribute>();
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+    *_object__getattribute__ = TfPyObjWrapper(clsObj.attr("__getattribute__"));
     clsObj.def("__getattribute__", __getattribute__);
 }
 

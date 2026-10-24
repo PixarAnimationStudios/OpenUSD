@@ -10,7 +10,9 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapArray()
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+void wrapArray(nanobind::module_&)
 {
     // The actual wrapping of particular template instantiations is done in the
     // specific wrapArrayXXX.cpp files to avoid quadratic compiler behavior.

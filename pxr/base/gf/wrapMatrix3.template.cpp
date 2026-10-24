@@ -16,8 +16,8 @@
 {% endblock customIncludes %}
 
 {% block customInit %}
-        .def(init< const GfRotation& >())
-        .def(init< const GfQuat{{ SCL[0] }}& >())
+        .def(nanobind::init<const GfRotation &>())
+        .def(nanobind::init<const GfQuat{{ SCL[0] }} &>())
 {% endblock customInit %}
 
 {% block customDefs %}
@@ -26,20 +26,20 @@
         .def("IsRightHanded", &This::IsRightHanded)
 
         .def("Orthonormalize", &This::Orthonormalize,
-             (arg("issueWarning") = true))
+             nanobind::arg("issueWarning") = true)
         .def("GetOrthonormalized", &This::GetOrthonormalized,
-             (arg("issueWarning") = true))
+             nanobind::arg("issueWarning") = true)
 {% endblock customDefs %}
 
 {% block customXformDefs %}
-        .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( const GfVec3{{ SCL[0] }} & ))&This::SetScale, nanobind::rv_policy::reference)
         .def("SetRotate",
              (This & (This::*)( const GfQuat{{ SCL[0] }} & )) &This::SetRotate,
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("SetRotate",
              (This & (This::*)( const GfRotation & )) &This::SetRotate,
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("ExtractRotation", &This::ExtractRotation)
-        .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( {{ SCL }} ))&This::SetScale, nanobind::rv_policy::reference)
 
 {% endblock customXformDefs %}

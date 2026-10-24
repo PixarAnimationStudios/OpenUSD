@@ -8,14 +8,16 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
-#include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/usdShade/shaderDefParser.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 // Expose the unique_ptr returned from `ParseShaderNode()` as a raw ptr. The Python side
 // will be responsible for managing this object.
@@ -29,16 +31,16 @@ _ParseShaderNode(UsdShadeShaderDefParserPlugin& self,
 
 // Note that this parser is only wrapped for testing purposes. In real-world
 // scenarios, it should not be used directly.
-void wrapUsdShadeShaderDefParser()
+void wrapUsdShadeShaderDefParser(nanobind::module_ &m)
 {
     typedef UsdShadeShaderDefParserPlugin This;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-
-    class_<This, noncopyable>("ShaderDefParserPlugin")
+    nb::class_<This>(m, "ShaderDefParserPlugin")
+        .def(nb::init<>())
         .def("ParseShaderNode", &_ParseShaderNode,
-             return_value_policy<manage_new_object>())
-        .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
-        .def("GetShadingSystem", &This::GetShadingSystem, copyRefPolicy)
+             nb::rv_policy::take_ownership)
+        .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, nb::rv_policy::copy)
+        .def("GetShadingSystem", &This::GetShadingSystem, nb::rv_policy::copy)
         ;
+
 }

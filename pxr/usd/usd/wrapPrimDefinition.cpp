@@ -11,11 +11,17 @@
 
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static TfPyObjWrapper
 _WrapGetAttributeFallbackValue(const UsdPrimDefinition &self, 
@@ -102,127 +108,131 @@ _WrapAttributeGetFallbackValue(const UsdPrimDefinition::Attribute &self)
 // which is unsafe if Python has been finalized.
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
-static object
-__getattribute__(object selfObj, const char *name) {
+static nb::object
+__getattribute__(nb::object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', if the
     // object's Property is valid, or if the attribute is one of a specific
     // inclusion list.
     if ((name[0] == '_' && name[1] == '_') ||
-        extract<UsdPrimDefinition::Property &>(selfObj)() ||
+        bool(nb::cast<UsdPrimDefinition::Property &>(selfObj)) ||
         strcmp(name, "GetName") == 0 ||
         strcmp(name, "IsAttribute") == 0 ||
         strcmp(name, "IsRelationship") == 0) {
         // Dispatch to object's __getattribute__.
-        return (*_object__getattribute__)(selfObj, name);
+        return nb::borrow<nb::object>(_object__getattribute__->ptr())(selfObj, name);
     } else {
         // Otherwise raise a runtime error.
         TfPyThrowRuntimeError(
             TfStringPrintf("Accessed invalid UsdPrimDefinition.Property"));
     }
     // Unreachable.
-    return object();
+    return nb::object();
 }
 
-void wrapUsdPrimDefinition()
+void wrapUsdPrimDefinition(nb::module_ &m)
 {
     typedef UsdPrimDefinition This;
-    scope s = class_<This, noncopyable>("PrimDefinition", no_init)
+    nb::class_<This> s(m, "PrimDefinition");
+    s
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("GetPropertyNames", &This::GetPropertyNames,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetLocallyDefinedPropertyNames", 
              &This::GetLocallyDefinedPropertyNames,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetSpecType", &This::GetSpecType,
-             (arg("propName")))
+             nb::arg("propName"))
 
         .def("GetPropertyDefinition", &This::GetPropertyDefinition,
-             (arg("propName")))
+             nb::arg("propName"))
         .def("GetAttributeDefinition", &This::GetAttributeDefinition,
-             (arg("attrName")))
+             nb::arg("attrName"))
         .def("GetRelationshipDefinition", &This::GetRelationshipDefinition,
-             (arg("relName")))
+             nb::arg("relName"))
 
         .def("GetSchemaPropertySpec", &This::GetSchemaPropertySpec,
-             (arg("propName")))
+             nb::arg("propName"))
         .def("GetSchemaAttributeSpec", &This::GetSchemaAttributeSpec,
-             (arg("attrName")))
+             nb::arg("attrName"))
         .def("GetSchemaRelationshipSpec", &This::GetSchemaRelationshipSpec,
-             (arg("relName")))
+             nb::arg("relName"))
         .def("GetAttributeFallbackValue", &_WrapGetAttributeFallbackValue,
-             (arg("attrName")))
+             nb::arg("attrName"))
 
-        .def("ListMetadataFields", &This::ListMetadataFields,
-             return_value_policy<TfPySequenceToList>())
+        .def("ListMetadataFields", &This::ListMetadataFields)
         .def("GetMetadata", &_WrapGetMetadata,
-             (arg("key")))
+             nb::arg("key"))
         .def("GetMetadataByDictKey", &_WrapGetMetadataByDictKey,
-             (arg("key"), arg("keyPath")))
+             nb::arg("key"), nb::arg("keyPath"))
         .def("GetDocumentation", &This::GetDocumentation)
 
-        .def("ListPropertyMetadataFields", &This::ListPropertyMetadataFields,
-             return_value_policy<TfPySequenceToList>())
+        .def("ListPropertyMetadataFields", &This::ListPropertyMetadataFields)
         .def("GetPropertyMetadata", &_WrapGetPropertyMetadata,
-             (arg("propName"), arg("key")))
+             nb::arg("propName"), nb::arg("key"))
         .def("GetPropertyMetadataByDictKey", &_WrapGetPropertyMetadataByDictKey,
-             (arg("propName"), arg("key"), arg("keyPath")))
+             nb::arg("propName"), nb::arg("key"), nb::arg("keyPath"))
         .def("GetPropertyDocumentation", &This::GetPropertyDocumentation,
-             (arg("propName")))
+             nb::arg("propName"))
         .def("FlattenTo", 
              (UsdPrim (This::*)(const UsdPrim&, 
                                 SdfSpecifier) const) &This::FlattenTo,
-              (arg("prim"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+             nb::arg("prim"), 
+             nb::arg("newSpecSpecifier")=SdfSpecifierOver)
         .def("FlattenTo", 
              (UsdPrim (This::*)(const UsdPrim&, const TfToken&,
                                 SdfSpecifier) const) &This::FlattenTo,
-              (arg("parent"), 
-               arg("name"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+             nb::arg("parent"), 
+             nb::arg("name"), 
+             nb::arg("newSpecSpecifier")=SdfSpecifierOver)
         .def("FlattenTo", 
              (bool (This::*)(const SdfLayerHandle&, const SdfPath&,
                              SdfSpecifier) const) &This::FlattenTo,
-              (arg("layer"), 
-               arg("path"), 
-               arg("newSpecSpecifier")=SdfSpecifierOver))
+             nb::arg("layer"), 
+             nb::arg("path"), 
+             nb::arg("newSpecSpecifier")=SdfSpecifierOver)
         ;
 
     {
-        class_<This::Property> clsObj("Property");
+        nb::class_<This::Property> clsObj(s, "Property");
         clsObj
-            .def(!self)
+            .def(nb::init<>())
+            .def(!nb::self)
             .def("GetName", &This::Property::GetName,
-                return_value_policy<return_by_value>())
+                nb::rv_policy::copy)
             .def("IsAttribute", &This::Property::IsAttribute)
             .def("IsRelationship", &This::Property::IsRelationship)
             .def("GetSpecType", &This::Property::GetSpecType)
-            .def("ListMetadataFields", &This::Property::ListMetadataFields,
-                return_value_policy<TfPySequenceToList>())
+            .def("ListMetadataFields", &This::Property::ListMetadataFields)
             .def("GetMetadata", &_WrapPropertyGetMetadata,
-                (arg("key")))
+                nb::arg("key"))
             .def("GetMetadataByDictKey", &_WrapPropertyGetMetadataByDictKey,
-                (arg("key"), arg("keyPath")))
+                nb::arg("key"), nb::arg("keyPath"))
             .def("GetVariability", &This::Property::GetVariability)
             .def("GetDocumentation", &This::Property::GetDocumentation)
             ;
 
         // Save existing __getattribute__ and replace.
-        *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+        *_object__getattribute__ =
+            nb::cast<TfPyObjWrapper>(clsObj.attr("__getattribute__"));
         clsObj.def("__getattribute__", __getattribute__);
     }
 
-    class_<This::Attribute, bases<This::Property>>("Attribute")
-        .def(init<const This::Property &>(arg("property")))
-        .def(!self)
+    nb::class_<This::Attribute, This::Property>(s, "Attribute")
+        .def(nb::init<>())
+        .def(nb::init<const This::Property &>(), nb::arg("property"))
+        .def(!nb::self)
         .def("GetTypeName", &This::Attribute::GetTypeName)
         .def("GetTypeNameToken", &This::Attribute::GetTypeNameToken)
         .def("GetFallbackValue", &_WrapAttributeGetFallbackValue)
         ;
 
-    class_<This::Relationship, bases<This::Property>>("Relationship")
-        .def(init<const This::Property &>(arg("property")))
-        .def(!self)
+    nb::class_<This::Relationship, This::Property>(s, "Relationship")
+        .def(nb::init<>())
+        .def(nb::init<const This::Property &>(), nb::arg("property"))
+        .def(!nb::self)
         ;
-
 }

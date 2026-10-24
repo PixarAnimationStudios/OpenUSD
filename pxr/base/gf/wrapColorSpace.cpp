@@ -11,15 +11,15 @@
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/pair.h>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -29,9 +29,11 @@ static std::string __repr__(GfColorSpace const &self)
         TfStringPrintf("ColorSpace(%s)", TfPyRepr(self.GetName()).c_str());
 }
 
-pxr_boost::python::tuple ConvertPrimariesAndWhitePoint(const GfColorSpace& self) {
+} // anon
+
+nanobind::tuple ConvertPrimariesAndWhitePoint_nb(const GfColorSpace& self) {
     auto result = self.GetPrimariesAndWhitePoint();
-    return pxr_boost::python::make_tuple(
+    return nanobind::make_tuple(
         std::get<0>(result),
         std::get<1>(result),
         std::get<2>(result),
@@ -39,18 +41,20 @@ pxr_boost::python::tuple ConvertPrimariesAndWhitePoint(const GfColorSpace& self)
     );
 }
 
-} // anon
-
-void wrapColorSpace()
+void wrapColorSpace(nanobind::module_ &m)
 {
-    class_<GfColorSpace>("ColorSpace", init<const TfToken&>())
-        .def(init<const TfToken&, const GfVec2f&, const GfVec2f&, 
-		  const GfVec2f&, const GfVec2f&, float, float>(
-	     (arg("name"), arg("redChroma"), arg("greenChroma"), 
-              arg("blueChroma"), arg("whitePoint"), arg("gamma"), 
-              arg("linearBias"))))
-        .def(init<const TfToken&, const GfMatrix3f&, float, float>(
-	     (arg("name"), arg("rgbToXYZ"), arg("gamma"), arg("linearBias"))))
+
+    nanobind::class_<GfColorSpace>(m, "ColorSpace")
+        .def(nanobind::init<const TfToken&>())
+        .def(nanobind::init<const TfToken&, const GfVec2f&, const GfVec2f&, 
+                  const GfVec2f&, const GfVec2f&, float, float>(),
+             nanobind::arg("name"), nanobind::arg("redChroma"),
+             nanobind::arg("greenChroma"), nanobind::arg("blueChroma"),
+             nanobind::arg("whitePoint"), nanobind::arg("gamma"), 
+             nanobind::arg("linearBias"))
+        .def(nanobind::init<const TfToken&, const GfMatrix3f&, float, float>(),
+             nanobind::arg("name"), nanobind::arg("rgbToXYZ"),
+             nanobind::arg("gamma"), nanobind::arg("linearBias"))
         .def("__repr__", &__repr__)
         .def("GetName", &GfColorSpace::GetName)
         .def("ConvertRGBSpan", &GfColorSpace::ConvertRGBSpan)
@@ -61,11 +65,11 @@ void wrapColorSpace()
         .def("GetGamma", &GfColorSpace::GetGamma)
         .def("GetLinearBias", &GfColorSpace::GetLinearBias)
         .def("GetTransferFunctionParams", &GfColorSpace::GetTransferFunctionParams)
-        .def("GetPrimariesAndWhitePoint", &ConvertPrimariesAndWhitePoint)
-        .def("IsValid", &GfColorSpace::IsValid)
-        .def(self == self)
-        .def(self != self);
+        .def("GetPrimariesAndWhitePoint", &ConvertPrimariesAndWhitePoint_nb)
+        .def_static("IsValid", &GfColorSpace::IsValid)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self);
 
-    TF_PY_WRAP_PUBLIC_TOKENS("ColorSpaceNames", GfColorSpaceNames, 
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "ColorSpaceNames", GfColorSpaceNames, 
                              GF_COLORSPACE_NAME_TOKENS);
 }

@@ -10,65 +10,27 @@
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/tf/pyEnum.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
+#define MEMBER(cls, name) def_ro(#name, &cls::name)
 
-static TsRegressionPreventer* _WrapConstructor1(
-    TsSpline *spline,
-    TsTime activeKnotTime,
-    bool limit)
+void wrapRegressionPreventer(nanobind::module_& m)
 {
-    return new TsRegressionPreventer(spline, activeKnotTime, limit);
-}
-
-static TsRegressionPreventer* _WrapConstructor2(
-    TsSpline *spline,
-    TsTime activeKnotTime,
-    TsRegressionPreventer::InteractiveMode mode,
-    bool limit)
-{
-    return new TsRegressionPreventer(spline, activeKnotTime, mode, limit);
-}
-
-static object _WrapSet(
-    TsRegressionPreventer &self,
-    const TsKnot &proposedActiveKnot)
-{
-    TsRegressionPreventer::SetResult result;
-    const bool ok = self.Set(proposedActiveKnot, &result);
-
-    if (ok)
-    {
-        return object(result);
-    }
-    else
-    {
-        return object();
-    }
-}
-
-
-#define MEMBER(cls, name) def_readonly(#name, &cls::name)
-
-void wrapRegressionPreventer()
-{
+    namespace nb = nanobind;
     using This = TsRegressionPreventer;
     using SetResult = This::SetResult;
 
     // First the class object, so we can create a scope for it...
-    class_<This> classObj("RegressionPreventer", no_init);
-    scope classScope(classObj);
+    nb::class_<This> classObj(m, "RegressionPreventer");
 
     // ...then the nested type wrappings, which require the scope...
 
-    TfPyWrapEnum<This::InteractiveMode>();
+    TfPyWrapEnum<This::InteractiveMode>{classObj};
 
-    class_<SetResult>("SetResult", no_init)
+    nb::class_<SetResult>(classObj, "SetResult")
         .MEMBER(SetResult, adjusted)
         .MEMBER(SetResult, havePreSegment)
         .MEMBER(SetResult, preActiveAdjusted)
@@ -82,29 +44,35 @@ void wrapRegressionPreventer()
         .MEMBER(SetResult, postOppositeAdjustedWidth)
         .def("GetDebugDescription",
             &SetResult::GetDebugDescription,
-            (arg("precision") = 6))
+            nb::arg("precision") = 6)
         ;
 
     // ...then the defs, which must occur after the nested type wrappings.
     classObj
 
-        .def("__init__", make_constructor(
-                &_WrapConstructor1,
-                default_call_policies(),
-                (arg("spline"),
-                    arg("activeKnotTime"),
-                    arg("limit") = true)))
+        .def("__init__", [](This* self, TsSpline* spline,
+                            TsTime activeKnotTime, bool limit) {
+            new (self) This(spline, activeKnotTime, limit);
+        }, nb::arg("spline"),
+           nb::arg("activeKnotTime"),
+           nb::arg("limit") = true)
 
-        .def("__init__", make_constructor(
-                &_WrapConstructor2,
-                default_call_policies(),
-                (arg("spline"),
-                    arg("activeKnotTime"),
-                    arg("mode"),
-                    arg("limit") = true)))
+        .def("__init__", [](This* self, TsSpline* spline,
+                            TsTime activeKnotTime,
+                            This::InteractiveMode mode, bool limit) {
+            new (self) This(spline, activeKnotTime, mode, limit);
+        }, nb::arg("spline"),
+           nb::arg("activeKnotTime"),
+           nb::arg("mode"),
+           nb::arg("limit") = true)
 
-        .def("Set", &_WrapSet,
-            (arg("proposedActiveKnot")))
+        .def("Set", [](This& self, const TsKnot& proposedActiveKnot) -> nb::object {
+            SetResult result;
+            if (self.Set(proposedActiveKnot, &result)) {
+                return nb::cast(result);
+            }
+            return nb::none();
+        }, nb::arg("proposedActiveKnot"))
 
         ;
 }

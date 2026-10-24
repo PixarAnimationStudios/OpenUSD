@@ -11,6 +11,7 @@
 
 #include "pxr/base/tf/anyUniquePtr.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/tf.h"
 
 #include "pxr/base/vt/api.h"
@@ -82,7 +83,7 @@ struct Vt_ValueStoredType<char [N]> {
 };
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-VT_VALUE_SET_STORED_TYPE(pxr_boost::python::object, TfPyObjWrapper);
+VT_VALUE_SET_STORED_TYPE(nanobind::object, TfPyObjWrapper);
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #undef VT_VALUE_SET_STORED_TYPE

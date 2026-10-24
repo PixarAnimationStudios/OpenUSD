@@ -8,24 +8,25 @@
 /// \file usdUtils/wrapDependencies.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/base/tf/makePyConstructor.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/base/tf/pyFunction.h"
-#include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace bp = pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
-static bp::tuple
+static nb::tuple
 _ExtractExternalReferences(
     const std::string& filePath,
     const UsdUtilsExtractExternalReferencesParams& params = {})
@@ -33,19 +34,10 @@ _ExtractExternalReferences(
     std::vector<std::string> subLayers, references, payloads;
     UsdUtilsExtractExternalReferences(filePath,
         &subLayers, &references, &payloads, params);
-    return bp::make_tuple(subLayers, references, payloads);
+    return nb::make_tuple(subLayers, references, payloads);
 }
 
-// Helper for creating a python object holding a layer ref ptr.
-bp::object
-_LayerRefToObj(const SdfLayerRefPtr& layer)
-{
-    using RefPtrFactory = Tf_MakePyConstructor::RefPtrFactory<>::
-            apply<SdfLayerRefPtr>::type;
-    return bp::object(bp::handle<>(RefPtrFactory()(layer)));
-}
-
-static bp::tuple
+static nb::tuple
 _ComputeAllDependencies(
     const SdfAssetPath &assetPath,
     std::function<UsdUtilsProcessingFunc> processingFunc) 
@@ -55,48 +47,45 @@ _ComputeAllDependencies(
     
     UsdUtilsComputeAllDependencies(assetPath, &layers, &assets, 
                                    &unresolvedPaths, processingFunc);
-    bp::list layersList;
-    for (auto &l: layers) { 
-        layersList.append(_LayerRefToObj(l)); 
-    }
-    return bp::make_tuple(layersList, assets, unresolvedPaths);
+    return nb::make_tuple(TfNbSequenceToList(layers), assets, unresolvedPaths);
 }
 
 } // anonymous namespace 
 
-void wrapDependencies()
+void wrapDependencies(nanobind::module_ &m)
 {
     typedef UsdUtilsExtractExternalReferencesParams ExtractRefParams;
-    bp::class_<ExtractRefParams>("ExtractExternalReferencesParams")
+    nb::class_<ExtractRefParams>(m, "ExtractExternalReferencesParams")
+        .def(nb::init<>())
         .def("SetResolveUdimPaths", &ExtractRefParams::SetResolveUdimPaths)
         .def("GetResolveUdimPaths", &ExtractRefParams::GetResolveUdimPaths)
         ;
 
-    bp::def("ExtractExternalReferences", _ExtractExternalReferences,
-            (bp::arg("filePath"),
-             bp::arg("parameters") = ExtractRefParams()));
+    m.def("ExtractExternalReferences", _ExtractExternalReferences,
+            nb::arg("filePath"),
+            nb::arg("parameters") = ExtractRefParams());
 
-    bp::def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
-            (bp::arg("assetPath"),
-             bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string(),
-             bp::arg("editLayersInPlace") = false));
+    m.def("CreateNewUsdzPackage", UsdUtilsCreateNewUsdzPackage,
+            nb::arg("assetPath"),
+            nb::arg("usdzFilePath"),
+            nb::arg("firstLayerName") = std::string(),
+            nb::arg("editLayersInPlace") = false);
 
-    bp::def("CreateNewARKitUsdzPackage", UsdUtilsCreateNewARKitUsdzPackage,
-            (bp::arg("assetPath"),
-             bp::arg("usdzFilePath"),
-             bp::arg("firstLayerName") = std::string(),
-             bp::arg("editLayersInPlace") = false));
+    m.def("CreateNewARKitUsdzPackage", UsdUtilsCreateNewARKitUsdzPackage,
+            nb::arg("assetPath"),
+            nb::arg("usdzFilePath"),
+            nb::arg("firstLayerName") = std::string(),
+            nb::arg("editLayersInPlace") = false);
 
-    bp::def("ComputeAllDependencies", _ComputeAllDependencies,
-            (bp::arg("assetPath"),
-             bp::arg("processingFunc") = bp::object()));
+    m.def("ComputeAllDependencies", _ComputeAllDependencies,
+            nb::arg("assetPath"),
+            nb::arg("processingFunc").none() = nb::none());
 
     using Py_UsdUtilsModifyAssetPathFn = std::string(const std::string&);
     TfPyFunctionFromPython<Py_UsdUtilsModifyAssetPathFn>();
-    bp::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
-            (bp::arg("layer"), 
-             bp::arg("modifyFn"), 
-             bp::arg("keepEmptyPathsInArrays") = false));
+    m.def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
+            nb::arg("layer"), 
+            nb::arg("modifyFn"), 
+            nb::arg("keepEmptyPathsInArrays") = false);
 
 }

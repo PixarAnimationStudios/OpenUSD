@@ -5,16 +5,16 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pySignatureExt.h" // wrap lvalue-ref-qualified mem fns.
 #include "pxr/usd/usdSemantics/labelsQuery.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/noncopyable.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {    
 
@@ -32,22 +32,20 @@ std::string _Repr(const UsdSemanticsLabelsQuery& query) {
 
 }
 
-void wrapUsdSemanticsLabelsQuery()
+void wrapUsdSemanticsLabelsQuery(nanobind::module_ &m)
 {
     using This = UsdSemanticsLabelsQuery;
-    class_<This, noncopyable>("LabelsQuery", no_init)
-        .def(init<const TfToken&, UsdTimeCode>(
-             (arg("taxonomy"), arg("timeCode"))))
-        .def(init<const TfToken&, const GfInterval&>(
-             (arg("taxonomy"), arg("timeInterval"))))
+    nb::class_<This>(m, "LabelsQuery")
+        .def(nb::init<const TfToken&, UsdTimeCode>(),
+             nb::arg("taxonomy"), nb::arg("timeCode"))
+        .def(nb::init<const TfToken&, const GfInterval&>(),
+             nb::arg("taxonomy"), nb::arg("timeInterval"))
         .def("__repr__", &::_Repr)
         .def("ComputeUniqueDirectLabels", &This::ComputeUniqueDirectLabels)
         .def("ComputeUniqueInheritedLabels",
              &This::ComputeUniqueInheritedLabels)
         .def("HasDirectLabel", &This::HasDirectLabel)
         .def("HasInheritedLabel", &This::HasInheritedLabel)
-        .def("GetTaxonomy", 
-               static_cast<const TfToken&(UsdSemanticsLabelsQuery::*)() const &>
-                    (&UsdSemanticsLabelsQuery::GetTaxonomy),
-                         return_value_policy<return_by_value>());
+        .def("GetTaxonomy", [](const This& self) { return self.GetTaxonomy(); });
+
 }

@@ -13,15 +13,18 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,77 +37,77 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateMyVaryingTokenAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyVaryingTokenAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyVaryingTokenArrayAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyVaryingTokenArrayAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyDoubleAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyDoubleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyFloatAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyFloatAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyColorFloatAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyColorFloatAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyNormalsAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyNormalsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Normal3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyPointsAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyPointsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMyVelocitiesAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMyVelocitiesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateUnsignedIntAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateUnsignedIntAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UInt), writeSparsely);
 }
         
 static UsdAttribute
 _CreateUnsignedCharAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateUnsignedCharAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UChar), writeSparsely);
 }
         
 static UsdAttribute
 _CreateUnsignedInt64ArrayAttr(UsdContrivedBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateUnsignedInt64ArrayAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->UInt64Array), writeSparsely);
 }
@@ -120,110 +123,107 @@ _Repr(const UsdContrivedBase &self)
 
 } // anonymous namespace
 
-void wrapUsdContrivedBase()
+void wrapUsdContrivedBase(nb::module_ &m)
 {
     typedef UsdContrivedBase This;
 
-    class_<This, bases<UsdTyped> >
-        cls("Base");
+    nb::class_<This, UsdTyped>
+        cls(m, "Base");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetMyVaryingTokenAttr",
              &This::GetMyVaryingTokenAttr)
         .def("CreateMyVaryingTokenAttr",
              &_CreateMyVaryingTokenAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyVaryingTokenArrayAttr",
              &This::GetMyVaryingTokenArrayAttr)
         .def("CreateMyVaryingTokenArrayAttr",
              &_CreateMyVaryingTokenArrayAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyDoubleAttr",
              &This::GetMyDoubleAttr)
         .def("CreateMyDoubleAttr",
              &_CreateMyDoubleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyFloatAttr",
              &This::GetMyFloatAttr)
         .def("CreateMyFloatAttr",
              &_CreateMyFloatAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyColorFloatAttr",
              &This::GetMyColorFloatAttr)
         .def("CreateMyColorFloatAttr",
              &_CreateMyColorFloatAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyNormalsAttr",
              &This::GetMyNormalsAttr)
         .def("CreateMyNormalsAttr",
              &_CreateMyNormalsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyPointsAttr",
              &This::GetMyPointsAttr)
         .def("CreateMyPointsAttr",
              &_CreateMyPointsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMyVelocitiesAttr",
              &This::GetMyVelocitiesAttr)
         .def("CreateMyVelocitiesAttr",
              &_CreateMyVelocitiesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetUnsignedIntAttr",
              &This::GetUnsignedIntAttr)
         .def("CreateUnsignedIntAttr",
              &_CreateUnsignedIntAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetUnsignedCharAttr",
              &This::GetUnsignedCharAttr)
         .def("CreateUnsignedCharAttr",
              &_CreateUnsignedCharAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetUnsignedInt64ArrayAttr",
              &This::GetUnsignedInt64ArrayAttr)
         .def("CreateUnsignedInt64ArrayAttr",
              &_CreateUnsignedInt64ArrayAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

@@ -8,18 +8,15 @@
 /// \file Sdf/wrapFileFormat.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/usd/sdf/fileFormat.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -29,7 +26,7 @@ class Sdf_PyFileFormatFactory : public Sdf_FileFormatFactoryBase {
 public:
     typedef std::unique_ptr<Sdf_PyFileFormatFactory> Ptr;
 
-    static Ptr New(const object& classObject)
+    static Ptr New(const nanobind::object& classObject)
     {
         return Ptr(new Sdf_PyFileFormatFactory(classObject));
     }
@@ -40,7 +37,7 @@ public:
     }
 
 private:
-    Sdf_PyFileFormatFactory(const object& classObject) :
+    Sdf_PyFileFormatFactory(const nanobind::object& classObject) :
         _factory(classObject)
     {
         // Do nothing
@@ -51,94 +48,88 @@ private:
     mutable TfPyCall<SdfFileFormatRefPtr> _factory;
 };
 
-
 } // anonymous namespace 
 
-void wrapFileFormat()
+void wrapFileFormat(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef SdfFileFormat This;
     typedef SdfFileFormatPtr ThisPtr;
 
-    scope s = 
-        class_<This, ThisPtr, noncopyable>("FileFormat", no_init)
+    nb::class_<This> s(m, "FileFormat",
+                       nb::is_weak_referenceable(), nb::dynamic_attr());
+    s
+        .def(TfNbRefAndWeakPtr())
 
-        .def(TfPyRefAndWeakPtr())
-
-        .add_property("formatId",
-            make_function(&This::GetFormatId,
-                return_value_policy<return_by_value>()))
-        .add_property("target",
-            make_function(&This::GetTarget,
-                return_value_policy<return_by_value>()))
-        .add_property("fileCookie",
-            make_function(&This::GetFileCookie,
-                return_value_policy<return_by_value>()))
-        .add_property("primaryFileExtension",
-            make_function(&This::GetPrimaryFileExtension,
-                return_value_policy<return_by_value>()))
+        .def_prop_ro("formatId", &This::GetFormatId, nb::rv_policy::copy)
+        .def_prop_ro("target", &This::GetTarget, nb::rv_policy::copy)
+        .def_prop_ro("fileCookie", &This::GetFileCookie, nb::rv_policy::copy)
+        .def_prop_ro("primaryFileExtension",
+            &This::GetPrimaryFileExtension, nb::rv_policy::copy)
 
         .def("GetFileExtensions", &This::GetFileExtensions,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
 
         .def("IsSupportedExtension", &This::IsSupportedExtension)
 
         .def("IsPackage", &This::IsPackage)
 
         .def("CanRead", &This::CanRead)
+        .def("CanRead", [](const This& self, const ArResolvedPath& file) {
+            return self.CanRead(file);
+        })
 
-        .def("GetFileExtension", &This::GetFileExtension)
-        .staticmethod("GetFileExtension")
+        .def_static("GetFileExtension", &This::GetFileExtension)
+        .def_static("GetFileExtension", [](const ArResolvedPath& s) {
+            return This::GetFileExtension(s);
+        })
 
-        .def("FindAllFileFormatExtensions", &This::FindAllFileFormatExtensions,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("FindAllFileFormatExtensions")
+        .def_static("FindAllFileFormatExtensions", []() {
+            return TfNbSequenceToList(This::FindAllFileFormatExtensions());
+        })
 
-        .def("FindAllDerivedFileFormatExtensions",
-             &This::FindAllDerivedFileFormatExtensions,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("FindAllDerivedFileFormatExtensions")
+        .def_static("FindAllDerivedFileFormatExtensions",
+             [](const TfType& baseType) {
+                 return TfNbSequenceToList(
+                     This::FindAllDerivedFileFormatExtensions(baseType));
+             })
 
-        .def("FindById", &This::FindById)
-        .staticmethod("FindById")
+        .def_static("FindById", &This::FindById)
 
         .def("SupportsReading", &SdfFileFormat::SupportsReading)
         .def("SupportsWriting", &SdfFileFormat::SupportsWriting)
         .def("SupportsEditing", &SdfFileFormat::SupportsEditing)
 
-        .def("FormatSupportsReading", 
-                SdfFileFormat::FormatSupportsReading,
-                ( arg("extension"),
-                  arg("target") = std::string() ))
-        .staticmethod("FormatSupportsReading")
+        .def_static("FormatSupportsReading", 
+                &SdfFileFormat::FormatSupportsReading,
+                nb::arg("extension"),
+                nb::arg("target") = std::string())
 
-        .def("FormatSupportsWriting", 
-                SdfFileFormat::FormatSupportsWriting,
-                ( arg("extension"),
-                  arg("target") = std::string() ))
-        .staticmethod("FormatSupportsWriting")
+        .def_static("FormatSupportsWriting", 
+                &SdfFileFormat::FormatSupportsWriting,
+                nb::arg("extension"),
+                nb::arg("target") = std::string())
 
-        .def("FormatSupportsEditing", 
-                SdfFileFormat::FormatSupportsEditing,
-                ( arg("extension"),
-                  arg("target") = std::string() ))
-        .staticmethod("FormatSupportsEditing")
+        .def_static("FormatSupportsEditing", 
+                &SdfFileFormat::FormatSupportsEditing,
+                nb::arg("extension"),
+                nb::arg("target") = std::string())
 
-        .def("FindByExtension",
+        .def_static("FindByExtension",
              (SdfFileFormatConstPtr(*)(const std::string&, const std::string&))
                 &This::FindByExtension,
-             ( arg("extension"),
-               arg("target") = std::string() ))
-        .def("FindByExtension",
+             nb::arg("extension"),
+             nb::arg("target") = std::string())
+        .def_static("FindByExtension",
              (SdfFileFormatConstPtr(*)
                 (const std::string&, const SdfFileFormat::FileFormatArguments&))
                 &This::FindByExtension,
-             ( arg("extension"),
-               arg("args") ))
-        .staticmethod("FindByExtension")
+             nb::arg("extension"),
+             nb::arg("args"))
 
         ;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        s, "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
 
 }

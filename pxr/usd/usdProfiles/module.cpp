@@ -12,8 +12,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     // Include non-schema classes here in the format TF_WRAP(CPP_class_name);
-    TF_WRAP(UsdProfileRegistry);
-    TF_WRAP(UsdProfilesDocUtils);
+    TF_WRAP_NB(UsdProfileRegistry);
+    TF_WRAP_NB(UsdProfilesDocUtils);
 
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

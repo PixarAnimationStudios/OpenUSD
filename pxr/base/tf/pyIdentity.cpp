@@ -7,6 +7,7 @@
 #include "pxr/base/tf/pySafePython.h"
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyIdentity.h"
@@ -14,7 +15,11 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stackTrace.h"
 
+#include <nanobind/nanobind.h>
+
 #include <mutex>
+#include <typeindex>
+#include <unordered_map>
 #include <vector>
 
 // Compile-time option to help debug identity issues.
@@ -182,15 +187,13 @@ static void _WeakBaseDied(void const *key) {
 };
 
 static std::string _GetTypeName(PyObject *obj) {
-    using namespace pxr_boost::python;
     TfPyLock lock;
-    handle<> typeHandle( borrowed<>( PyObject_Type(obj) ) );
-    if (typeHandle) {
-        object classObj(typeHandle);
-        object nameObj(classObj.attr("__name__"));
-        extract<string> name(nameObj);
-        if (name.check())
-            return name();
+    nanobind::object typeObj = nanobind::steal<nanobind::object>(PyObject_Type(obj));
+    if (typeObj) {
+        nanobind::object nameObj = nanobind::getattr(typeObj, "__name__", nanobind::none());
+        if (nanobind::isinstance<nanobind::str>(nameObj)) {
+            return nanobind::cast<string>(nameObj);
+        }
     }
     return "unknown";
 }
@@ -271,14 +274,13 @@ void Tf_PyIdentityHelper::Set(void const *key, PyObject *obj) {
         // CODE_COVERAGE_OFF Can only get here if there's a bug.
         // Hold a reference to the existing object while we report on it, since
         // _GetTypeName calls back into Python.
-        pxr_boost::python::handle<> existing {
-            pxr_boost::python::allow_null(i->second.GetRef()) };
+        nanobind::object existing = nanobind::steal<nanobind::object>(i->second.GetRef());
         TF_CODING_ERROR("Multiple Python objects for C++ object %p: "
                         "(Existing python object id %p with type %s, "
                         "new python object id %p with type %s)",
-                        key, existing.get(),
-                        existing ? _GetTypeName(existing.get()).c_str()
-                                 : "expired",
+                        key, existing.ptr(),
+                        existing.ptr() ? _GetTypeName(existing.ptr()).c_str()
+                                       : "expired",
                         obj, _GetTypeName(obj).c_str());
         _IssueMultipleIdentityErrorStacks(key);
         i->second = Tf_PyIdHandle(obj);
@@ -305,12 +307,68 @@ PyObject *Tf_PyIdentityHelper::Get(void const *key) {
 }
 
 
+static Tf_PyIdentityHelper::EraseCallback _eraseCallback = nullptr;
+
+void
+Tf_PyIdentityHelper::SetEraseCallback(EraseCallback cb) {
+    _eraseCallback = cb;
+}
+
+namespace {
+std::unordered_map<std::type_index, Tf_PyExtractAnyWeakPtrFn> &
+_GetAnyWeakPtrExtractors() {
+    static auto *map =
+        new std::unordered_map<std::type_index, Tf_PyExtractAnyWeakPtrFn>();
+    return *map;
+}
+} // namespace
+
+void
+Tf_PyRegisterAnyWeakPtrExtractor(std::type_info const &ti,
+                                 Tf_PyExtractAnyWeakPtrFn fn) {
+    _GetAnyWeakPtrExtractors()[std::type_index(ti)] = fn;
+}
+
+bool
+Tf_PyExtractAnyWeakPtr(PyObject *obj, TfAnyWeakPtr *out) {
+    if (!obj) {
+        return false;
+    }
+    if (obj == Py_None) {
+        *out = TfAnyWeakPtr();
+        return true;
+    }
+    if (nanobind::inst_check(obj)) {
+        auto &map = _GetAnyWeakPtrExtractors();
+        PyTypeObject *tp = Py_TYPE(obj);
+        while (tp && nanobind::type_check(reinterpret_cast<PyObject *>(tp))) {
+            auto it = map.find(std::type_index(
+                nanobind::type_info(reinterpret_cast<PyObject *>(tp))));
+            if (it != map.end()) {
+                *out = it->second(obj);
+                return true;
+            }
+            tp = tp->tp_base;
+        }
+    }
+    return false;
+}
+
 void
 Tf_PyIdentityHelper::Erase(void const *key) {
     if (!key)
         return;
     TfPyLock lock;
-    _GetIdentityMap().erase(key);
+    _IdentityMap& identityMap = _GetIdentityMap();
+    _IdentityMap::iterator i = identityMap.find(key);
+    if (i != identityMap.end()) {
+        if (_eraseCallback) {
+            if (PyObject *obj = i->second.PeekPtr()) {
+                _eraseCallback(obj);
+            }
+        }
+        identityMap.erase(i);
+    }
     _EraseEstablishedIdentityStack(key);
 }
 

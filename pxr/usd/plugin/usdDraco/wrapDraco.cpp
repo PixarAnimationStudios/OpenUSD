@@ -9,24 +9,26 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdDraco()
+void wrapUsdDraco(nb::module_ &m)
 {
-    def("_WriteDraco", UsdDraco_WriteDraco,
-        (arg("mesh"),
-         arg("fileName"),
-         arg("qp"),
-         arg("qt"),
-         arg("qn"),
-         arg("cl"),
-         arg("preservePolygons"),
-         arg("preservePositionOrder"),
-         arg("preserveHoles")));
-    def("_PrimvarSupported", UsdDraco_PrimvarSupported,
-        (arg("primvar")));
+    m.def("_WriteDraco", UsdDraco_WriteDraco,
+          nb::arg("mesh"),
+          nb::arg("fileName"),
+          nb::arg("qp"),
+          nb::arg("qt"),
+          nb::arg("qn"),
+          nb::arg("cl"),
+          nb::arg("preservePolygons"),
+          nb::arg("preservePositionOrder"),
+          nb::arg("preserveHoles"));
+    m.def("_PrimvarSupported", UsdDraco_PrimvarSupported,
+          nb::arg("primvar"));
 }

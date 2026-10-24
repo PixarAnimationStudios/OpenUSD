@@ -13,11 +13,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyErrorInternal.h"
-
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include <vector>
 
@@ -26,13 +22,11 @@ using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
 bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
     // If there is a python exception somewhere in here, restore that, otherwise
     // raise a normal error exception.
     if (!m.IsClean()) {
-        list args;
+        nanobind::list args;
         for (TfErrorMark::Iterator e = m.GetBegin(); e != m.GetEnd(); ++e) {
             if (e->GetErrorCode() == TF_PYTHON_EXCEPTION) {
                 if (const TfPyExceptionState* info =
@@ -62,12 +56,13 @@ bool TfPyConvertTfErrorsToPythonException(TfErrorMark const &m) {
                     // instead? throw a python error...
                 }
             } else
-                args.append(*e);
+                args.append(nanobind::cast(*e));
         }
         // make and set a python exception
-        handle<> excObj(PyObject_CallObject(Tf_PyGetErrorExceptionClass().get(),
-                                            tuple(args).ptr()));
-        PyErr_SetObject(Tf_PyGetErrorExceptionClass().get(), excObj.get());
+        nanobind::handle excClass = Tf_PyGetErrorExceptionClass();
+        nanobind::object excObj = nanobind::steal<nanobind::object>(
+            PyObject_CallObject(excClass.ptr(), nanobind::tuple(args).ptr()));
+        PyErr_SetObject(excClass.ptr(), excObj.ptr());
         m.Clear();
         return true;
     }
@@ -82,15 +77,14 @@ TfPyConvertPythonExceptionToTfErrors()
     TfPyExceptionState exc = TfPyExceptionState::Fetch();
  
     // Replace the errors in m with errors parsed out of the exception.
-    if (exc.GetType()) {
-        if (exc.GetType().get() == Tf_PyGetErrorExceptionClass().get() &&
-            exc.GetValue()) {
+    if (exc.GetType().is_valid()) {
+        if (exc.GetType().ptr() == Tf_PyGetErrorExceptionClass().ptr() &&
+            exc.GetValue().is_valid()) {
             // Replace the errors in m with errors pulled out of exc.
-            object exception = object(exc.GetValue());
-            object args = exception.attr("args");
-            extract<vector<TfError> > extractor(args);
-            if (extractor.check()) {
-                vector<TfError> errs = extractor();
+            nanobind::object exception = exc.GetValue();
+            nanobind::object args = exception.attr("args");
+            vector<TfError> errs;
+            if (nanobind::try_cast<vector<TfError>>(args, errs)) {
                 TF_FOR_ALL(e, errs)
                     TfDiagnosticMgr::GetInstance().AppendError(*e);
             }
@@ -98,14 +92,14 @@ TfPyConvertPythonExceptionToTfErrors()
             TF_ERROR(exc, TF_PYTHON_EXCEPTION, "Tf Python Exception");
         }
     }
-    else if (exc.GetValue()) {
-        object exception(exc.GetValue());
+    else if (exc.GetValue().is_valid()) {
+        nanobind::object exception = exc.GetValue();
         if (PyObject_HasAttrString(exception.ptr(), "_pxr_SavedTfException")) {
-            extract<uintptr_t>
-                extractor(exception.attr("_pxr_SavedTfException"));
-            std::exception_ptr *excPtrPtr;
-            if (extractor.check()) {
-                uintptr_t addr = extractor();
+            uintptr_t addr = 0;
+            if (nanobind::try_cast<uintptr_t>(
+                    nanobind::object(exception.attr("_pxr_SavedTfException")),
+                    addr)) {
+                std::exception_ptr *excPtrPtr;
                 memcpy(&excPtrPtr, &addr, sizeof(addr));
                 std::exception_ptr eptr = *excPtrPtr;
                 delete excPtrPtr;

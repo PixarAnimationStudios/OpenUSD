@@ -6,41 +6,40 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdShade/udimUtils.h"
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdShadeUdimUtils()
+void wrapUsdShadeUdimUtils(nanobind::module_ &m)
 {
-    class_<UsdShadeUdimUtils>("UdimUtils", no_init)
-        .def("IsUdimIdentifier", 
-            UsdShadeUdimUtils::IsUdimIdentifier,
-            (arg("identifier")))
-        .staticmethod("IsUdimIdentifier")
+    typedef UsdShadeUdimUtils This;
 
-        .def("ResolveUdimTilePaths", 
-            UsdShadeUdimUtils::ResolveUdimTilePaths,
-            (arg("udimPath"), arg("layer")))
-        .staticmethod("ResolveUdimTilePaths")
+    nb::class_<This>(m, "UdimUtils")
+        .def_static("IsUdimIdentifier", 
+            &UsdShadeUdimUtils::IsUdimIdentifier,
+            nb::arg("identifier"))
 
-        .def("ReplaceUdimPattern",
-            UsdShadeUdimUtils::ReplaceUdimPattern,
-            (arg("identifierWithPattern"), arg("replacement")))
-        .staticmethod("ReplaceUdimPattern")
+        .def_static("ResolveUdimTilePaths", 
+            &UsdShadeUdimUtils::ResolveUdimTilePaths,
+            nb::arg("udimPath"), nb::arg("layer"))
 
-        .def("ResolveUdimPath",
-            UsdShadeUdimUtils::ResolveUdimPath,
-            (arg("udimPath"), arg("layer")))
-        .staticmethod("ResolveUdimPath")
+        .def_static("ReplaceUdimPattern",
+            &UsdShadeUdimUtils::ReplaceUdimPattern,
+            nb::arg("identifierWithPattern"), nb::arg("replacement"))
+
+        .def_static("ResolveUdimPath",
+            &UsdShadeUdimUtils::ResolveUdimPath,
+            nb::arg("udimPath"), nb::arg("layer"))
         ;
 
 }

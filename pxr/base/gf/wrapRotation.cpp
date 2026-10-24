@@ -11,18 +11,16 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -36,100 +34,6 @@ void SetAngleHelper( GfRotation &rotation, double angle )
     rotation.SetAxisAngle( rotation.GetAxis(), angle );
 }
 
-static tuple
-_DecomposeRotation3(const GfMatrix4d &rot,
-                    const GfVec3d &TwAxis,
-                    const GfVec3d &FBAxis,
-                    const GfVec3d &LRAxis,
-                    double handedness,
-                    double thetaTwHint,
-                    double thetaFBHint,
-                    double thetaLRHint,
-                    bool useHint)
-{
-    double angle[3] = {thetaTwHint, thetaFBHint, thetaLRHint};
-
-    GfRotation::DecomposeRotation(rot, TwAxis, FBAxis, LRAxis, handedness,
-                                  &(angle[0]),
-                                  &(angle[1]),
-                                  &(angle[2]),
-                                  nullptr /* thetaSwHint */, 
-                                  useHint,
-                                  nullptr /* swShift */);
-
-    return make_tuple(angle[0], angle[1], angle[2]);
-}
-
-static tuple
-_DecomposeRotation(const GfMatrix4d &rot,
-                    const GfVec3d &TwAxis,
-                    const GfVec3d &FBAxis,
-                    const GfVec3d &LRAxis,
-                    double handedness,
-                    const object &thetaTwHint,
-                    const object &thetaFBHint,
-                    const object &thetaLRHint,
-                    const object &thetaSwHint,
-                    bool useHint,
-                    const object & swShiftIn)
-{
-    double angle[4] = {
-        thetaTwHint.ptr() != Py_None ? 
-            pxr_boost::python::extract<double>(thetaTwHint) : 0.0,
-        thetaFBHint.ptr() != Py_None ? 
-            pxr_boost::python::extract<double>(thetaFBHint) : 0.0,
-        thetaLRHint.ptr() != Py_None ? 
-            pxr_boost::python::extract<double>(thetaLRHint) : 0.0,
-        thetaSwHint.ptr() != Py_None ? 
-            pxr_boost::python::extract<double>(thetaSwHint) : 0.0
-        };
-    double swShift = swShiftIn.ptr() != Py_None ? 
-        pxr_boost::python::extract<double>(swShiftIn) : 0.0;
-
-    GfRotation::DecomposeRotation(
-        rot, TwAxis, FBAxis, LRAxis, handedness,
-        thetaTwHint.ptr() != Py_None ? &(angle[0]) : nullptr,
-        thetaFBHint.ptr() != Py_None ? &(angle[1]) : nullptr,
-        thetaLRHint.ptr() != Py_None ? &(angle[2]) : nullptr,
-        thetaSwHint.ptr() != Py_None ? &(angle[3]) : nullptr,
-        useHint,
-        swShiftIn.ptr() != Py_None ? &swShift : nullptr);
-
-    return make_tuple(angle[0], angle[1], angle[2], angle[3]);
-}
-
-static tuple
-_MatchClosestEulerRotation(
-    const double targetTw,
-    const double targetFB,
-    const double targetLR,
-    const double targetSw,
-    const object &thetaTw,
-    const object &thetaFB,
-    const object &thetaLR,
-    const object &thetaSw)
-{
-    double angle[4] = {
-        thetaTw.ptr() != Py_None ?
-            pxr_boost::python::extract<double>(thetaTw) : 0.0,
-        thetaFB.ptr() != Py_None ?
-            pxr_boost::python::extract<double>(thetaFB) : 0.0,
-        thetaLR.ptr() != Py_None ?
-            pxr_boost::python::extract<double>(thetaLR) : 0.0,
-        thetaSw.ptr() != Py_None ?
-            pxr_boost::python::extract<double>(thetaSw) : 0.0
-        };
-
-    GfRotation::MatchClosestEulerRotation(
-        targetTw, targetFB, targetLR, targetSw,
-        thetaTw.ptr() != Py_None ? &(angle[0]) : nullptr,
-        thetaFB.ptr() != Py_None ? &(angle[1]) : nullptr,
-        thetaLR.ptr() != Py_None ? &(angle[2]) : nullptr,
-        thetaSw.ptr() != Py_None ? &(angle[3]) : nullptr);
-
-    return make_tuple(angle[0], angle[1], angle[2], angle[3]);
-}
-
 static string _Repr(GfRotation const &self) {
     return TF_PY_REPR_PREFIX + "Rotation(" + TfPyRepr(self.GetAxis()) + ", " +
         TfPyRepr(self.GetAngle()) + ")";
@@ -141,34 +45,34 @@ static size_t __hash__(GfRotation const &self) {
     return TfHash()(self);
 }
 
-void wrapRotation()
+void wrapRotation(nanobind::module_ &m)
 {    
     typedef GfRotation This;
 
-    class_<This> ( "Rotation", "3-space rotation", init<>())
+    nanobind::class_<This>(m, "Rotation", "3-space rotation")
+        .def(nanobind::init<>())
+        .def(nanobind::init<const GfVec3d &, double>())
+        .def(nanobind::init<const GfQuaternion &>())
+        .def(nanobind::init<const GfQuatd &>())
+        .def(nanobind::init<const GfVec3d &, const GfVec3d &>())
+        .def(nanobind::init<const GfRotation &>())
 
-        .def(init<const GfVec3d &, double>())
-        .def(init<const GfQuaternion &>())
-        .def(init<const GfQuatd &>())
-        .def(init<const GfVec3d &, const GfVec3d &>())
-        .def(init<const GfRotation &>())
+        .def(TfTypePythonClass())
 
-        .def( TfTypePythonClass() )
+        .def("SetAxisAngle", &This::SetAxisAngle, nanobind::rv_policy::reference,
+             nanobind::arg("axis"), nanobind::arg("angle"))
+        .def("SetQuat", &This::SetQuat, nanobind::rv_policy::reference,
+             nanobind::arg("quat"))
+        .def("SetQuaternion", &This::SetQuaternion, nanobind::rv_policy::reference,
+             nanobind::arg("quaternion"))
+        .def("SetRotateInto", &This::SetRotateInto, nanobind::rv_policy::reference,
+             nanobind::arg("rotateFrom"), nanobind::arg("rotateTo"))
+        .def("SetIdentity", &This::SetIdentity, nanobind::rv_policy::reference)
 
-        .def("SetAxisAngle", &This::SetAxisAngle, return_self<>(),
-             (args("axis"), args("angle")))
-        .def("SetQuat", &This::SetQuat, return_self<>(), (args("quat")))
-        .def("SetQuaternion", &This::SetQuaternion, return_self<>(),
-             (args("quaternion")))
-        .def("SetRotateInto", &This::SetRotateInto, return_self<>(),
-             (args("rotateFrom"), args("rotateTo")))
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
+        .def_prop_rw("axis", &This::GetAxis, SetAxisHelper, nanobind::rv_policy::copy)
+        .def_prop_rw("angle", &This::GetAngle, SetAngleHelper)
 
-        .add_property("axis", make_function(&This::GetAxis, return_value_policy<copy_const_reference>()),
-                      SetAxisHelper )
-        .add_property("angle", &This::GetAngle, SetAngleHelper)
-
-        .def("GetAxis", &This::GetAxis, return_value_policy<copy_const_reference>())
+        .def("GetAxis", &This::GetAxis, nanobind::rv_policy::copy)
         .def("GetAngle", &This::GetAngle)
 
         .def("GetQuaternion", &This::GetQuaternion)
@@ -178,39 +82,87 @@ void wrapRotation()
 
         .def("Decompose", &This::Decompose)
 
-        .def("DecomposeRotation3", _DecomposeRotation3,
-             (arg("rot"),
-              arg("twAxis"),
-              arg("fbAxis"),
-              arg("lrAxis"),
-              arg("handedness"),
-              arg("thetaTwHint") = 0.0,
-              arg("thetaFBHint") = 0.0,
-              arg("thetaLRHint") = 0.0,
-              arg("useHint") = false)
-             )
-        .staticmethod("DecomposeRotation3")
+        .def_static("DecomposeRotation3", [](const GfMatrix4d &rot,
+                    const GfVec3d &TwAxis, const GfVec3d &FBAxis, const GfVec3d &LRAxis,
+                    double handedness, double thetaTwHint, double thetaFBHint,
+                    double thetaLRHint, bool useHint) {
+            double angle[3] = {thetaTwHint, thetaFBHint, thetaLRHint};
+            GfRotation::DecomposeRotation(rot, TwAxis, FBAxis, LRAxis, handedness,
+                                          &(angle[0]), &(angle[1]), &(angle[2]),
+                                          nullptr, useHint, nullptr);
+            return nanobind::make_tuple(angle[0], angle[1], angle[2]);
+        },
+             nanobind::arg("rot"),
+             nanobind::arg("twAxis"),
+             nanobind::arg("fbAxis"),
+             nanobind::arg("lrAxis"),
+             nanobind::arg("handedness"),
+             nanobind::arg("thetaTwHint") = 0.0,
+             nanobind::arg("thetaFBHint") = 0.0,
+             nanobind::arg("thetaLRHint") = 0.0,
+             nanobind::arg("useHint") = false)
 
-        .def("DecomposeRotation", _DecomposeRotation,
-             (arg("rot"),
-              arg("twAxis"),
-              arg("fbAxis"),
-              arg("lrAxis"),
-              arg("handedness"),
-              arg("thetaTwHint"),
-              arg("thetaFBHint"),
-              arg("thetaLRHint"),
-              arg("thetaSwHint") = object(),
-              arg("useHint") = false,
-              arg("swShift") = object())
-             )
-        .staticmethod("DecomposeRotation")
+        .def_static("DecomposeRotation", [](const GfMatrix4d &rot,
+                    const GfVec3d &TwAxis, const GfVec3d &FBAxis, const GfVec3d &LRAxis,
+                    double handedness, nanobind::object thetaTwHint, nanobind::object thetaFBHint,
+                    nanobind::object thetaLRHint, nanobind::object thetaSwHint,
+                    bool useHint, nanobind::object swShiftIn) {
+            double angle[4] = {
+                !thetaTwHint.is_none() ? nanobind::cast<double>(thetaTwHint) : 0.0,
+                !thetaFBHint.is_none() ? nanobind::cast<double>(thetaFBHint) : 0.0,
+                !thetaLRHint.is_none() ? nanobind::cast<double>(thetaLRHint) : 0.0,
+                !thetaSwHint.is_none() ? nanobind::cast<double>(thetaSwHint) : 0.0
+            };
+            double swShift = !swShiftIn.is_none() ? nanobind::cast<double>(swShiftIn) : 0.0;
+            GfRotation::DecomposeRotation(
+                rot, TwAxis, FBAxis, LRAxis, handedness,
+                !thetaTwHint.is_none() ? &(angle[0]) : nullptr,
+                !thetaFBHint.is_none() ? &(angle[1]) : nullptr,
+                !thetaLRHint.is_none() ? &(angle[2]) : nullptr,
+                !thetaSwHint.is_none() ? &(angle[3]) : nullptr,
+                useHint,
+                !swShiftIn.is_none() ? &swShift : nullptr);
+            return nanobind::make_tuple(angle[0], angle[1], angle[2], angle[3]);
+        },
+             nanobind::arg("rot"),
+             nanobind::arg("twAxis"),
+             nanobind::arg("fbAxis"),
+             nanobind::arg("lrAxis"),
+             nanobind::arg("handedness"),
+             nanobind::arg("thetaTwHint").none(),
+             nanobind::arg("thetaFBHint").none(),
+             nanobind::arg("thetaLRHint").none(),
+             nanobind::arg("thetaSwHint") = nanobind::none(),
+             nanobind::arg("useHint") = false,
+             nanobind::arg("swShift") = nanobind::none())
 
-        .def("MatchClosestEulerRotation", _MatchClosestEulerRotation)
-        .staticmethod("MatchClosestEulerRotation")
+        .def_static("MatchClosestEulerRotation", [](double targetTw, double targetFB,
+                    double targetLR, double targetSw, nanobind::handle thetaTw,
+                    nanobind::handle thetaFB, nanobind::handle thetaLR, nanobind::handle thetaSw) {
+            double angle[4] = {
+                !thetaTw.is_none() ? nanobind::cast<double>(thetaTw) : 0.0,
+                !thetaFB.is_none() ? nanobind::cast<double>(thetaFB) : 0.0,
+                !thetaLR.is_none() ? nanobind::cast<double>(thetaLR) : 0.0,
+                !thetaSw.is_none() ? nanobind::cast<double>(thetaSw) : 0.0
+            };
+            GfRotation::MatchClosestEulerRotation(
+                targetTw, targetFB, targetLR, targetSw,
+                !thetaTw.is_none() ? &(angle[0]) : nullptr,
+                !thetaFB.is_none() ? &(angle[1]) : nullptr,
+                !thetaLR.is_none() ? &(angle[2]) : nullptr,
+                !thetaSw.is_none() ? &(angle[3]) : nullptr);
+            return nanobind::make_tuple(angle[0], angle[1], angle[2], angle[3]);
+        },
+             nanobind::arg("targetTw"),
+             nanobind::arg("targetFB"),
+             nanobind::arg("targetLR"),
+             nanobind::arg("targetSw"),
+             nanobind::arg("thetaTw").none(),
+             nanobind::arg("thetaFB").none(),
+             nanobind::arg("thetaLR").none(),
+             nanobind::arg("thetaSw").none())
 
-        .def("RotateOntoProjected", &This::RotateOntoProjected)
-        .staticmethod("RotateOntoProjected")
+        .def_static("RotateOntoProjected", &This::RotateOntoProjected)
 
         .def("TransformDir", &This::TransformDir)
 
@@ -218,25 +170,22 @@ void wrapRotation()
         // don't allow implicit conversion from GfVec3f to GfVec3d (which we
         // do in C++).
         .def("TransformDir",
-	     +[](const This &self, const GfVec3f &p) -> GfVec3d {
+             +[](const This &self, const GfVec3f &p) -> GfVec3d {
                  return self.TransformDir(p);
              })
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self *= self )
-        .def( self *= double() )
-        .def( self /= double() )
-        .def( self * self )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self / double() )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self /= double())
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self * double())
+        .def(double() * nanobind::self)
+        .def(nanobind::self / double())
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
-
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
 }

@@ -8,13 +8,13 @@
 
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/vt/types.h"
-
-#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static VtVec3fArray
 _WrapGeneratePoints(
@@ -51,30 +51,18 @@ _WrapGenerateNormals()
     return normals;
 }
 
-void wrapCuboidMeshGenerator()
+void wrapCuboidMeshGenerator(nb::module_& m)
 {
     using This = GeomUtilCuboidMeshGenerator;
 
     // Note: These are only "classes" for name scoping, and are uninstantiable;
     // hence no need to bother declaring bases.
-    class_<This>("CuboidMeshGenerator", no_init)
-
-        .def("ComputeNumPoints", &This::ComputeNumPoints)
-        .staticmethod("ComputeNumPoints")
-
-        .def("ComputeNumNormals", &This::ComputeNumNormals)
-        .staticmethod("ComputeNumNormals")
-
-        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
-        .staticmethod("GetNormalsInterpolation")
-
-        .def("GenerateTopology", &This::GenerateTopology)
-        .staticmethod("GenerateTopology")
-
-        .def("GeneratePoints", &_WrapGeneratePoints)
-        .staticmethod("GeneratePoints")
-
-        .def("GenerateNormals", &_WrapGenerateNormals)
-        .staticmethod("GenerateNormals")
+    nb::class_<This>(m, "CuboidMeshGenerator")
+        .def_static("ComputeNumPoints", &This::ComputeNumPoints)
+        .def_static("ComputeNumNormals", &This::ComputeNumNormals)
+        .def_static("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .def_static("GenerateTopology", &This::GenerateTopology)
+        .def_static("GeneratePoints", &_WrapGeneratePoints)
+        .def_static("GenerateNormals", &_WrapGenerateNormals)
     ;
 }

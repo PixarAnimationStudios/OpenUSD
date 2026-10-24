@@ -267,8 +267,8 @@ function(pxr_library NAME)
         endif()
 
         if(libraryRequiresPython)
-            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} python)
-            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES})
+            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS} "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/pxr/external/nanobind/include>")
         endif()
     endif()
 
@@ -398,7 +398,7 @@ function(pxr_library NAME)
     if(PXR_ENABLE_PYTHON_SUPPORT AND
        (args_PYMODULE_CPPFILES OR args_PYMODULE_DIRS OR
         args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
-        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS})
+        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS} "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/pxr/external/nanobind/include>")
 
         _pxr_python_module(
             ${NAME}
@@ -1369,12 +1369,6 @@ function(pxr_toplevel_epilogue)
             string(TOUPPER ${lib} uppercaseName)
             list(APPEND exports "${uppercaseName}_EXPORTS=1")
         endforeach()
-
-        if (TARGET python)
-            # The boost python target uses a different export macro so
-            # add that as well.
-            list(APPEND exports "PXR_BOOST_PYTHON_SOURCE=1")
-        endif()
 
         foreach(lib ${PXR_OBJECT_LIBS})
             target_compile_definitions(${lib} PRIVATE ${exports})

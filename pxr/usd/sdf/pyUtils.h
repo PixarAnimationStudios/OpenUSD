@@ -10,8 +10,10 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/pySpec.h"
 
-#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -24,7 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// will return true.
 SDF_API bool
 SdfFileFormatArgumentsFromPython(
-    const pxr_boost::python::dict& dict,
+    const nanobind::dict& dict,
     SdfLayer::FileFormatArguments* args,
     std::string* errMsg = NULL);
 

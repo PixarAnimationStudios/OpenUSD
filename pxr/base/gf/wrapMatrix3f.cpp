@@ -23,15 +23,10 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"
-#include "pxr/external/boost/python/errors.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
@@ -40,8 +35,6 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -62,7 +55,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfMatrix3f &mat = extract<GfMatrix3f &>(self);
+    GfMatrix3f &mat = *nanobind::inst_ptr<GfMatrix3f>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(mat.GetArray());
@@ -96,11 +89,9 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return 0;
 }
 
-// This structure serves to instantiate a PyBufferProcs instance with pointers
-// to the right buffer protocol functions.
-static PyBufferProcs bufferProcs = {
-    (getbufferproc) getbuffer,
-    (releasebufferproc) 0,
+static const PyType_Slot bufferSlots[] = {
+    { Py_bf_getbuffer, (void *)getbuffer },
+    { 0, nullptr }
 };
 
 // End python buffer protocol support.
@@ -122,7 +113,7 @@ static void
 throwIndexErr( const char *msg )
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }    
 
 static int
@@ -135,11 +126,11 @@ static int __len__(GfMatrix3f const &self) {
     return 3;
 }
 
-static float __getitem__float(GfMatrix3f const &self, tuple index) {
+static float __getitem__float(GfMatrix3f const &self, nanobind::tuple index) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (nanobind::len(index) == 2) {
+        i1 = normalizeIndex(nanobind::cast<int>(index[0]));
+        i2 = normalizeIndex(nanobind::cast<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -150,11 +141,11 @@ static GfVec3f __getitem__vector(GfMatrix3f const &self, int index) {
     return GfVec3f(self[normalizeIndex(index)]);
 }
 
-static void __setitem__float(GfMatrix3f &self, tuple index, float value) {
+static void __setitem__float(GfMatrix3f &self, nanobind::tuple index, float value) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (nanobind::len(index) == 2) {
+        i1 = normalizeIndex(nanobind::cast<int>(index[0]));
+        i2 = normalizeIndex(nanobind::cast<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -184,100 +175,70 @@ static bool __contains__vector( const GfMatrix3f &self, GfVec3f value ) {
     return false;
 }
 
-static GfMatrix3f __truediv__(const GfMatrix3f &self, GfMatrix3f value)
-{
-    return self / value;
-}
-
-static GfMatrix3f *__init__() {
-    // Default constructor produces identity from python.
-    return new GfMatrix3f(1);
-}
-
-
-// This adds support for python's builtin pickling library
-// This is used by our Shake plugins which need to pickle entire classes
-// (including code), which we don't support in pxml.
-struct GfMatrix3f_Pickle_Suite : pxr_boost::python::pickle_suite
-{
-    static pxr_boost::python::tuple getinitargs(const GfMatrix3f &m)
-    {
-        return pxr_boost::python::make_tuple(
-            m[0][0], m[0][1], m[0][2], 
-            m[1][0], m[1][1], m[1][2], 
-            m[2][0], m[2][1], m[2][2]);
-    }
-};
 
 static size_t __hash__(GfMatrix3f const &m) { return TfHash{}(m); }
 
-static pxr_boost::python::tuple get_dimension()
-{
-    // At one time this was a constant static tuple we returned for
-    // dimension. With boost building for python 3 that results in
-    // a segfault at shutdown. Building for python 2 with a static
-    // tuple returned here seems to work fine.
-    //
-    // It seems likely that this has to do with the order of
-    // destruction of these objects when deinitializing, but we did
-    // not dig deeply into this difference.
-    return make_tuple(3, 3);
-}
-
 } // anonymous namespace 
 
-void wrapMatrix3f()
+void wrapMatrix3f(nanobind::module_ &m)
 {    
     typedef GfMatrix3f This;
 
-    def("IsClose", (bool (*)(const GfMatrix3f &m1, const GfMatrix3f &m2, double))
+    m.def("IsClose", (bool (*)(const GfMatrix3f &m1, const GfMatrix3f &m2, double))
         GfIsClose);
     
-    class_<This> cls( "Matrix3f", no_init);
+    nanobind::class_<This> cls(m, "Matrix3f", nanobind::type_slots(bufferSlots));
     cls
-        .def_pickle(GfMatrix3f_Pickle_Suite())
-	.def("__init__", make_constructor(__init__))
-        .def(init< const GfMatrix3d & >())
-        .def(init< const GfMatrix3f & >())
-        .def(init< int >())
-        .def(init< float >())
-        .def(init<
+        .def("__getinitargs__", [](const This &m) {
+            return nanobind::make_tuple(
+                m[0][0], m[0][1], m[0][2], 
+                m[1][0], m[1][1], m[1][2], 
+                m[2][0], m[2][1], m[2][2]);
+        })
+        .def("__init__", [](This *self) { new (self) This(1); })
+        .def(nanobind::init<const GfMatrix3d &>())
+        .def(nanobind::init<const GfMatrix3f &>())
+        .def(nanobind::init<int>())
+        .def(nanobind::init<float>())
+        .def(nanobind::init<
              float, float, float, 
              float, float, float, 
-             float, float, float 
+             float, float, float
              >())
-        .def(init< const GfVec3f & >())
-        .def(init< const vector< vector<float> >& >())
-        .def(init< const vector< vector<double> >& >())
-        .def(init< const GfRotation& >())
-        .def(init< const GfQuatf& >())
+        .def(nanobind::init<const GfVec3f &>())
+        .def(nanobind::init<const vector<vector<double>> &>())
+        .def(nanobind::init<const vector<vector<float>> &>())
+        .def(nanobind::init<const GfRotation &>())
+        .def(nanobind::init<const GfQuatf &>())
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .add_static_property("dimension", get_dimension)
-        .def( "__len__", __len__, "Return number of rows" )
+        .def_prop_ro_static("dimension", [](nanobind::handle) {
+            return nanobind::make_tuple(3, 3);
+        })
+        .def("__len__", __len__, "Return number of rows")
 
-        .def( "__getitem__", __getitem__float )
-        .def( "__getitem__", __getitem__vector )
-        .def( "__setitem__", __setitem__float )
-        .def( "__setitem__", __setitem__vector )
-        .def( "__contains__", __contains__float )
-        .def( "__contains__", __contains__vector, "Check rows against GfVec"  )
+        .def("__getitem__", __getitem__float)
+        .def("__getitem__", __getitem__vector)
+        .def("__setitem__", __setitem__float)
+        .def("__setitem__", __setitem__vector)
+        .def("__contains__", __contains__float)
+        .def("__contains__", __contains__vector, "Check rows against GfVec")
 
         .def("Set", (This &(This::*)(float, float, float, 
                                      float, float, float, 
                                      float, float, float))&This::Set,
-             return_self<>())
+             nanobind::rv_policy::reference)
         
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
-        .def("SetZero", &This::SetZero, return_self<>())
+        .def("SetIdentity", &This::SetIdentity, nanobind::rv_policy::reference)
+        .def("SetZero", &This::SetZero, nanobind::rv_policy::reference)
 
         .def("SetDiagonal", 
              (This & (This::*)(float))&This::SetDiagonal, 
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("SetDiagonal", 
              (This & (This::*)(const GfVec3f &))&This::SetDiagonal, 
-             return_self<>())
+             nanobind::rv_policy::reference)
 
         .def("SetRow", &This::SetRow)
         .def("SetColumn", &This::SetColumn)
@@ -293,56 +254,41 @@ void wrapMatrix3f()
         .def("IsRightHanded", &This::IsRightHanded)
 
         .def("Orthonormalize", &This::Orthonormalize,
-             (arg("issueWarning") = true))
+             nanobind::arg("issueWarning") = true)
         .def("GetOrthonormalized", &This::GetOrthonormalized,
-             (arg("issueWarning") = true))
+             nanobind::arg("issueWarning") = true)
         
-        .def( str(self) )
-        .def( self == self )
-        .def( self == GfMatrix3d() )
-        .def( self != self )
-        .def( self != GfMatrix3d() )
-        .def( self *= self )
-        .def( self * self )
-        .def( self *= double() )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self += self )
-        .def( self + self )
-        .def( self -= self )
-        .def( self - self )
-        .def( -self )
-        .def( self / self )
-        .def( self * GfVec3f() )
-        .def( GfVec3f() * self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self == GfMatrix3d())
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self != GfMatrix3d())
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self *= float())
+        .def(nanobind::self * float())
+        .def(float() * nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(-nanobind::self)
+        .def(nanobind::self / nanobind::self)
+        .def(nanobind::self * GfVec3f())
+        .def(GfVec3f() * nanobind::self)
 
-        .def("SetScale", (This & (This::*)( const GfVec3f & ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( const GfVec3f & ))&This::SetScale, nanobind::rv_policy::reference)
         .def("SetRotate",
              (This & (This::*)( const GfQuatf & )) &This::SetRotate,
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("SetRotate",
              (This & (This::*)( const GfRotation & )) &This::SetRotate,
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("ExtractRotation", &This::ExtractRotation)
-        .def("SetScale", (This & (This::*)( float ))&This::SetScale, return_self<>())
+        .def("SetScale", (This & (This::*)( float ))&This::SetScale, nanobind::rv_policy::reference)
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
-    
-    // Install buffer protocol: set the tp_as_buffer slot to point to a
-    // structure of function pointers that implement the buffer protocol for
-    // this type.
-    auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / self ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__ );
-    }
 }

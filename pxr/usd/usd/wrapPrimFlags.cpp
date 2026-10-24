@@ -6,22 +6,21 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/scope.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 #include <string>
 
+namespace nb = nanobind;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 // Python does not allow overloading logical operators ('and', 'or', etc).  Also
 // python's __nonzero__ (invoked by 'not') must return a python bool or int.
@@ -77,65 +76,87 @@ bool __call__Predicate(const Usd_PrimFlagsPredicate &p, const UsdPrim& prim){
 
 } // anonymous namespace 
 
-void wrapUsdPrimFlags()
+void wrapUsdPrimFlags(nb::module_ &m)
 {
-    class_<Usd_Term>("_Term", no_init)
-        .def(~self)
-        .def(self == self)
-        .def(self != self)
-        .def(self & self)
-        .def(self | self)
+    nb::class_<Usd_Term>(m, "_Term")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
+        .def(~nb::self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self & nb::self)
+        .def(nb::self | nb::self)
         .def("__hash__", __hash__Term)
         ;
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsPredicate>();
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsConjunction>();
-    implicitly_convertible<Usd_Term, Usd_PrimFlagsDisjunction>();
 
-    class_<Usd_PrimFlagsPredicate>("_PrimFlagsPredicate", no_init)
-        .def("Tautology", &Usd_PrimFlagsPredicate::Tautology)
-        .staticmethod("Tautology")
-        .def("Contradiction", &Usd_PrimFlagsPredicate::Contradiction)
-        .staticmethod("Contradiction")
-        .def(self == self)
-        .def(self != self)
+    nb::class_<Usd_PrimFlagsPredicate>(m, "_PrimFlagsPredicate")
+        .def(nb::init_implicit<Usd_Term>())
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
+        .def_static("Tautology", &Usd_PrimFlagsPredicate::Tautology)
+        .def_static("Contradiction", &Usd_PrimFlagsPredicate::Contradiction)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("__hash__", __hash__Predicate)
         .def("__call__", __call__Predicate)
         ;
 
-    class_<Usd_PrimFlagsConjunction, bases<Usd_PrimFlagsPredicate> >
-        ("_PrimFlagsConjunction", no_init)
-        .def(~self)
-        .def(self &= other<Usd_Term>())
-        .def(self & other<Usd_Term>())
-        .def(other<Usd_Term>() & self)
+    nb::class_<Usd_PrimFlagsConjunction, Usd_PrimFlagsPredicate>(
+        m, "_PrimFlagsConjunction")
+        .def(nb::init_implicit<Usd_Term>())
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
+        .def(~nb::self)
+        .def("__iand__", [](Usd_PrimFlagsConjunction &self, Usd_Term r) -> Usd_PrimFlagsConjunction & {
+            return self &= r;
+        }, nb::rv_policy::reference)
+        .def("__and__", [](const Usd_PrimFlagsConjunction &self, Usd_Term r) {
+            return self & r;
+        })
+        .def("__rand__", [](const Usd_PrimFlagsConjunction &self, Usd_Term l) {
+            return l & self;
+        })
         ;
 
-    class_<Usd_PrimFlagsDisjunction, bases<Usd_PrimFlagsPredicate> >
-        ("_PrimFlagsDisjunction", no_init)
-        .def(~self)
-        .def(self |= other<Usd_Term>())
-        .def(self | other<Usd_Term>())
-        .def(other<Usd_Term>() | self)
+    nb::class_<Usd_PrimFlagsDisjunction, Usd_PrimFlagsPredicate>(
+        m, "_PrimFlagsDisjunction")
+        .def(nb::init_implicit<Usd_Term>())
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
+        .def(~nb::self)
+        .def("__ior__", [](Usd_PrimFlagsDisjunction &self, Usd_Term r) -> Usd_PrimFlagsDisjunction & {
+            return self |= r;
+        }, nb::rv_policy::reference)
+        .def("__or__", [](const Usd_PrimFlagsDisjunction &self, Usd_Term r) {
+            return self | r;
+        })
+        .def("__ror__", [](const Usd_PrimFlagsDisjunction &self, Usd_Term l) {
+            return l | self;
+        })
         ;
 
-    scope().attr("PrimIsActive") = Usd_Term(UsdPrimIsActive);
-    scope().attr("PrimIsLoaded") = Usd_Term(UsdPrimIsLoaded);
-    scope().attr("PrimIsModel") = Usd_Term(UsdPrimIsModel);
-    scope().attr("PrimIsGroup") = Usd_Term(UsdPrimIsGroup);
-    scope().attr("PrimIsAbstract") = Usd_Term(UsdPrimIsAbstract);
-    scope().attr("PrimIsDefined") = Usd_Term(UsdPrimIsDefined);
-    scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
-    scope().attr("PrimHasClassSpecifier") = Usd_Term(UsdPrimHasClassSpecifier);
-    scope().attr("PrimHasDefiningSpecifier") 
+    m.attr("PrimIsActive") = Usd_Term(UsdPrimIsActive);
+    m.attr("PrimIsLoaded") = Usd_Term(UsdPrimIsLoaded);
+    m.attr("PrimIsModel") = Usd_Term(UsdPrimIsModel);
+    m.attr("PrimIsGroup") = Usd_Term(UsdPrimIsGroup);
+    m.attr("PrimIsAbstract") = Usd_Term(UsdPrimIsAbstract);
+    m.attr("PrimIsDefined") = Usd_Term(UsdPrimIsDefined);
+    m.attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
+    m.attr("PrimHasClassSpecifier") = Usd_Term(UsdPrimHasClassSpecifier);
+    m.attr("PrimHasDefiningSpecifier") 
         = Usd_Term(UsdPrimHasDefiningSpecifier);
 
-    scope().attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
-    scope().attr("PrimAllPrimsPredicate") = UsdPrimAllPrimsPredicate;
+    m.attr("PrimDefaultPredicate") = UsdPrimDefaultPredicate;
+    m.attr("PrimAllPrimsPredicate") = UsdPrimAllPrimsPredicate;
 
-    def("TraverseInstanceProxies", 
+    m.def("TraverseInstanceProxies", 
         (Usd_PrimFlagsPredicate(*)())&UsdTraverseInstanceProxies);
-    def("TraverseInstanceProxies", 
+    m.def("TraverseInstanceProxies", 
         (Usd_PrimFlagsPredicate(*)(Usd_PrimFlagsPredicate))
             &UsdTraverseInstanceProxies, 
-        arg("predicate"));
+        nb::arg("predicate"));
 }

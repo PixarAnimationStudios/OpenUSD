@@ -7,15 +7,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerRelocatesEditBuilder.h"
+#include "pxr/usd/pcp/layerStack.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -46,27 +43,25 @@ _RemoveRelocate(PcpLayerRelocatesEditBuilder &self,
 
 } // anonymous namespace 
 
-void wrapLayerRelocatesEditBuilder()
+void wrapLayerRelocatesEditBuilder(nanobind::module_ &m)
 {
-    Pcp_LayerRelocatesEditBuilderRelocateResult
-        ::Wrap<Pcp_LayerRelocatesEditBuilderRelocateResult>(
-            "_LayerRelocatesEditBuilderRelocateResult", "whyNot");
+    namespace nb = nanobind;
 
-    class_<PcpLayerRelocatesEditBuilder, noncopyable>(
-        "LayerRelocatesEditBuilder", no_init)
-        .def(init<const PcpLayerStackPtr &>())
-        .def(init<const PcpLayerStackPtr &, const SdfLayerHandle &>())
+    Pcp_LayerRelocatesEditBuilderRelocateResult
+        ::WrapNb<Pcp_LayerRelocatesEditBuilderRelocateResult>(
+            m, "_LayerRelocatesEditBuilderRelocateResult", "whyNot");
+
+    nb::class_<PcpLayerRelocatesEditBuilder>(m, "LayerRelocatesEditBuilder")
+        .def(nb::init<const PcpLayerStackPtr &>())
+        .def(nb::init<const PcpLayerStackPtr &, const SdfLayerHandle &>())
         .def("Relocate", &_Relocate)
         .def("RemoveRelocate", &_RemoveRelocate)
         .def("GetEditedRelocatesMap",
              &PcpLayerRelocatesEditBuilder::GetEditedRelocatesMap,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetEdits",
              &PcpLayerRelocatesEditBuilder::GetEdits,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         ;
 
-    to_python_converter<PcpLayerRelocatesEditBuilder::LayerRelocatesEdit, 
-        TfPyContainerConversions::to_tuple<
-            PcpLayerRelocatesEditBuilder::LayerRelocatesEdit>>();
 }
