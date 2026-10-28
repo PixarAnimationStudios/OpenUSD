@@ -317,11 +317,21 @@ _IsSchemaInstanceInAppliedSchemas(
         return false;
     }
 
-    // We're looking for exact match of "<schemaIdentifier>:<instanceName>"
-    const TfToken apiSchemaName(
-        SdfPath::JoinIdentifier(schemaInfo.identifier, instanceName));
-    return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-        apiSchemaName) != appliedSchemas.end();
+    // We're looking for exact match of "<schemaIdentifier>:<instanceName>".
+    // Compare the applied schema names in place rather than building that
+    // name, since interning it as a token would allocate and lock the token
+    // registry on every call.
+    static const char delim = UsdObject::GetNamespaceDelimiter();
+    const std::string &identifier = schemaInfo.identifier.GetString();
+    const std::string &instance = instanceName.GetString();
+    return std::any_of(appliedSchemas.begin(), appliedSchemas.end(),
+        [&](const TfToken &appliedSchema) {
+            const std::string &name = appliedSchema.GetString();
+            return name.size() == identifier.size() + 1 + instance.size() &&
+                name[identifier.size()] == delim &&
+                TfStringStartsWith(name, identifier) &&
+                TfStringEndsWith(name, instance);
+        });
 }
 
 bool 
