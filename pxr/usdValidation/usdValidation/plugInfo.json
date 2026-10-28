@@ -12,6 +12,14 @@
                     "AttributeTypeMismatch": {
                         "doc": "Validator that checks for attribute type mismatch with the schema definition."
                     },
+                    "AttributeHardLimits": {
+                        "doc": "Authored attribute values must lie within the hard limits of the attribute's 'limits' metadata, at the default time and at each time sample in the validation time range. Scalar numeric values are compared directly and vector values component-wise. NaN never lies within the hard limits. A value equal to the attribute's schema fallback is always valid, even if it is outside the hard limits. Soft limits are not validated, nor are spline values or values of other types, including arrays.",
+                        "isTimeDependent": true
+                    },
+                    "AttributeAllowedTokens": {
+                        "doc": "Authored token and string attribute values must be one of the attribute's 'allowedTokens' metadata, at the default time and at each time sample in the validation time range. Every element of a token[] or string[] value must be one of the allowed tokens. The empty token is only valid if it is one of the allowed tokens. A value equal to the attribute's schema fallback is always valid, even if it is not one of the allowed tokens. Attributes with no allowedTokens, or an empty allowedTokens array, are not validated.",
+                        "isTimeDependent": true
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]
