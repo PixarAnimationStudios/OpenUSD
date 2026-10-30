@@ -52,7 +52,7 @@ TfPyObjWrapper::TfPyObjWrapper(pxr_boost::python::object obj)
 PyObject *
 TfPyObjWrapper::ptr() const
 {
-    return _objectPtr->ptr();
+    return _objectPtr ? _objectPtr->ptr() : nullptr;
 }
 
 bool
@@ -61,6 +61,9 @@ TfPyObjWrapper::operator==(TfPyObjWrapper const &other) const
     // If they point to the exact same object instance, we know they're equal.
     if (_objectPtr == other._objectPtr)
         return true;
+    // If one object originated from a no-Python library, they are not equal.
+    if (!_objectPtr || !other._objectPtr)
+        return false;
 
     // Otherwise lock and let python determine equality.
     TfPyLock lock;
