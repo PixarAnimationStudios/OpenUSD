@@ -303,7 +303,7 @@ _ValidatorFixers() {
         [](const UsdValidationError &error, const UsdEditTarget &editTarget,
            const UsdTimeCode &/*timeCode*/) -> bool {
             
-            // ...fixer logic here...
+            // ...can apply fixer logic here...
 
             return true;
         };
@@ -312,7 +312,12 @@ _ValidatorFixers() {
         [](const UsdValidationError &error, const UsdEditTarget &editTarget,
            const UsdTimeCode &/*timeCode*/) -> bool {
 
-            // ...can apply fixer logic here...
+            // Author the fix to editTarget, which need not be the stage's
+            // current edit target.
+            const UsdPrim prim = error.GetSites()[0].GetPrim();
+            UsdEditContext editContext(prim.GetStage(), editTarget);
+
+            // ...fixer logic here...
 
             return true;
         };
