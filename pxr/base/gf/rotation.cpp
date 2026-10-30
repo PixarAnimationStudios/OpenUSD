@@ -33,7 +33,9 @@ GfRotation::SetQuat(const GfQuatd &quat)
         // Pass through the public API which normalizes axis.
         // Otherwise, it would be possible to create GfRotations using
         // SetQuaternion which cannot be re-created via SetAxisAngle().
-        double x = acos(GfClamp(quat.GetReal(), -1.0, 1.0));
+        // atan2 rather than acos of the real part: acos loses precision
+        // near angles of 0 and a full turn.
+        double x = atan2(len, quat.GetReal());
         SetAxisAngle(quat.GetImaginary() / len, 2.0 * GfRadiansToDegrees(x));
     }
     else
@@ -69,7 +71,8 @@ GfRotation::SetRotateInto(const GfVec3d &rotateFrom, const GfVec3d &rotateTo)
     // Generic case: compute the rotation to bring the vectors
     // together.
     GfVec3d axis = GfCross(rotateFrom, rotateTo).GetNormalized();
-    return SetAxisAngle(axis, GfRadiansToDegrees(acos(cos)));
+    double sin = GfCross(from, to).GetLength();
+    return SetAxisAngle(axis, GfRadiansToDegrees(atan2(sin, cos)));
 }
 
 GfQuatd
@@ -639,7 +642,7 @@ GfRotation::operator *=(const GfRotation &r)
     double len = q.GetImaginary().GetLength();
     if (len > GF_MIN_VECTOR_LENGTH) {
         _axis  = q.GetImaginary() / len;
-        _angle = 2.0 * GfRadiansToDegrees(acos(q.GetReal()));
+        _angle = 2.0 * GfRadiansToDegrees(atan2(len, q.GetReal()));
     }
     else {
         // Leave the axis as is; just set the angle to 0.
