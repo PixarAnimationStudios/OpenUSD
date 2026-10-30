@@ -108,20 +108,23 @@ HdCollectionExpressionEvaluator::PopulateMatches(
 
     HD_TRACE_FUNCTION();
 
-    // Serial traversal for now. Couple of ways to improve it:
-    // - Use a work queue to farm off subtree traversals.
-    // - Add support for incremental search in the evaluator to make evaluation
-    //   stateful over a subtree. However, this seems tricky if using the
-    //   HdSceneIndexPrim as the domain object for the evaluator since obtaining
-    //   its path isn't straightforward.
-    // 
+    // Serial traversal for now. This could be improved by using a work queue
+    // to farm off subtree traversals, using copies of the incremental searcher.
+    //
     const HdSceneIndexBaseRefPtr &si = GetSceneIndex();
+
+    // Note that si must be non-null due to the IsEmpty() check above.
+    auto searcher = _eval.MakeIncrementalSearcher(
+        [sceneIndex = get_pointer(si)](SdfPath const &path) {
+            return sceneIndex->GetPrim(path);
+        });
+
     HdSceneIndexPrimView view(si, rootPath);
 
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &primPath = *it;
 
-        const SdfPredicateFunctionResult r = Match(primPath);
+        const SdfPredicateFunctionResult r = searcher.Next(primPath);
 
         const bool matches = r.GetValue();
         const bool constantOverDescendants = r.IsConstant();

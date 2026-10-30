@@ -1,0 +1,108 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Model specializes /_class_Model, and
+    /Model/Looks/Mat specializes /_class_Mat.  Through the ancestral
+    specializes on /Model, /Model/Looks/Mat/Shader also specializes
+    /_class_Model/Looks/Mat/Shader, which in turn specializes
+    /_class_Shader:
+
+      /Model/Looks/Mat/Shader -> /_class_Mat/Shader
+      /Model/Looks/Mat/Shader -> /_class_Model/Looks/Mat/Shader
+                                   -> /_class_Shader
+
+    The specializes from /Model/Looks/Mat is deeper in namespace than the
+    one from /Model, so /_class_Mat/Shader is stronger than
+    /_class_Model/Looks/Mat/Shader.  /_class_Shader is reached through
+    /_class_Model/Looks/Mat/Shader, so it is weaker than that, and so
+    weaker than /_class_Mat/Shader as well.  We expect the order:
+
+      /_class_Mat/Shader, /_class_Model/Looks/Mat/Shader, /_class_Shader
+
+    Previously /_class_Shader was the strongest of these.  Its arc is
+    authored at a deeper namespace depth than /_class_Mat/Shader, and the
+    namespace depth comparison was only skipped between nodes that are
+    nested, so /_class_Shader was ordered by its own depth against
+    /_class_Mat/Shader, but after /_class_Model/Looks/Mat/Shader, which
+    it is nested under.  These three pairwise results form a cycle.
+
+    /Model2 is the same, except that the specializes to /_class_Mat comes
+    through a reference to /Ref/Mat/Shader instead of an ancestral
+    specializes.  This was ordered correctly.
+    """
+)
+
+def "Model" (
+    specializes = </_class_Model>
+)
+{
+    def "Looks"
+    {
+        def "Mat" (
+            specializes = </_class_Mat>
+        )
+        {
+            def "Shader"
+            {
+            }
+        }
+    }
+}
+
+def "Model2" (
+    specializes = </_class_Model>
+)
+{
+    def "Looks"
+    {
+        def "Mat"
+        {
+            def "Shader" (
+                references = </Ref/Mat/Shader>
+            )
+            {
+            }
+        }
+    }
+}
+
+def "Ref"
+{
+    def "Mat" (
+        specializes = </_class_Mat>
+    )
+    {
+        def "Shader"
+        {
+        }
+    }
+}
+
+class "_class_Model"
+{
+    def "Looks"
+    {
+        def "Mat"
+        {
+            def "Shader" (
+                specializes = </_class_Shader>
+            )
+            {
+                string source = "_class_Model"
+            }
+        }
+    }
+}
+
+class "_class_Mat"
+{
+    def "Shader"
+    {
+        string source = "_class_Mat"
+    }
+}
+
+class "_class_Shader"
+{
+    string source = "_class_Shader"
+}

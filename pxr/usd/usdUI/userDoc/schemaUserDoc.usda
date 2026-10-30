@@ -395,7 +395,7 @@ may describe what a character is doing at a given time.
         }
     )
 
-    uniform token priority (
+    token priority (
         customData = {
             string userDocBrief = """A hint to the accessibility runtime of how 
 to prioritize this instance's label and description, relative to others.
@@ -405,8 +405,6 @@ prioritize this instance's label and description, relative to others. Allowed
 tokens are "low", "standard", and "high".
 
 This attribute is optional and is considered a hint that runtimes may ignore.
-
-Priority may not be time varying.
 """
         }
     )

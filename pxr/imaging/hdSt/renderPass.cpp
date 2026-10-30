@@ -69,7 +69,7 @@ HdSt_RenderPass::HdSt_RenderPass(HdRenderIndex *index,
     : HdRenderPass(index, collection)
     , _lastSettingsVersion(0)
     , _useTinyPrimCulling(false)
-    , _collectionVersion(0)
+    , _rprimIndexVersion(0)
     , _rprimRenderTagVersion(0)
     , _taskRenderTagsVersion(0)
     , _materialTagsVersion(0)
@@ -175,7 +175,7 @@ HdSt_RenderPass::_MarkCollectionDirty()
 {
     // Force any cached data based on collection to be refreshed.
     _collectionChanged = true;
-    _collectionVersion = 0;
+    _rprimIndexVersion = 0;
 }
 
 static
@@ -213,8 +213,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
 
-    const int collectionVersion =
-        tracker.GetCollectionVersion(collection.GetName());
+    const int rprimIndexVersion = tracker.GetRprimIndexVersion();
 
     const int rprimRenderTagVersion = tracker.GetRenderTagVersion();
 
@@ -225,7 +224,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
         _GetGeomSubsetDrawItemsVersion(GetRenderIndex());
 
     const bool collectionChanged = _collectionChanged ||
-        (_collectionVersion != collectionVersion);
+        (_rprimIndexVersion != rprimIndexVersion);
 
     const bool rprimRenderTagChanged = _rprimRenderTagVersion != rprimRenderTagVersion;
 
@@ -257,8 +256,8 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
                     "CollectionChanged: %s (repr = %s, version = %d -> %d)\n",
                         collection.GetName().GetText(),
                         collection.GetReprSelector().GetText(),
-                        _collectionVersion,
-                        collectionVersion);
+                        _rprimIndexVersion,
+                        rprimIndexVersion);
             }
 
             if (rprimRenderTagChanged) {
@@ -295,7 +294,7 @@ HdSt_RenderPass::_UpdateDrawItems(TfTokenVector const& renderTags)
         _drawItemCount = _drawItems->size();
         _drawItemsChanged = true;
 
-        _collectionVersion = collectionVersion;
+        _rprimIndexVersion = rprimIndexVersion;
         _collectionChanged = false;
 
         _rprimRenderTagVersion = rprimRenderTagVersion;

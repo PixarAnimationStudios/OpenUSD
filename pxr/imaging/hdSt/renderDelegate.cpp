@@ -558,6 +558,18 @@ HdStRenderDelegate::DestroyBprim(HdBprim *bPrim)
     delete bPrim;
 }
 
+void
+HdStRenderDelegate::BeginExecute()
+{
+    GetHgi()->StartFrame();
+}
+
+void
+HdStRenderDelegate::EndExecute()
+{
+    GetHgi()->EndFrame();
+}
+
 HdSprim *
 HdStRenderDelegate::_CreateFallbackMaterialPrim()
 {

@@ -53,6 +53,21 @@ pxr_library(usdSkelImaging
 )
 
 # Build tests
+pxr_build_test(testUsdSkelImagingBlendShapes
+    LIBRARIES
+        usdSkelImaging
+        usdImaging
+        usdSkel
+        usd
+        sdf
+        hd
+        tf
+        vt
+        gf
+    CPPFILES
+        testenv/testUsdSkelImagingBlendShapes.cpp
+)
+
 pxr_build_test(testUsdSkelImagingChanges
     LIBRARIES
         usdImaging
@@ -96,6 +111,24 @@ pxr_build_test(testUsdSkelImagingNiAggregationNonDescendantPaths
 
 # Register tests only when they are supported.
 if (BUILD_SHARED_LIBS)
+    pxr_register_test(testUsdSkelImagingBlendShapes
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingBlendShapes"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testenv/testUsdSkelImagingBlendShapes
+        ENV
+            TF_FATAL_VERIFY=0
+            HD_ENABLE_DEFERRED_SKINNING=0
+    )
+
+    pxr_register_test(testUsdSkelImagingBlendShapes_Deferred
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingBlendShapes"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testenv/testUsdSkelImagingBlendShapes
+        ENV
+            TF_FATAL_VERIFY=0
+            HD_ENABLE_DEFERRED_SKINNING=1
+    )
+
     pxr_register_test(testUsdSkelImagingChanges
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingChanges"
         EXPECTED_RETURN_CODE 0

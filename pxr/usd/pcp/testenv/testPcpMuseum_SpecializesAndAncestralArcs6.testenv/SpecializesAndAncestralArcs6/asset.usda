@@ -1,0 +1,41 @@
+#usda 1.0
+
+class "_class_Asset"
+{
+    def "Looks"
+    {
+        def "Base"
+        {
+            def "Mat"
+            {
+            }
+        }
+    }
+}
+
+def "Asset" (
+    specializes = </_class_Asset>
+)
+{
+    def "Looks"
+    {
+        def "Derived" (
+            specializes = </Asset/Looks/Base>
+        )
+        {
+        }
+
+        def "Base"
+        {
+            def "Mat" (
+                specializes = </Asset/Looks/Base/MatBase>
+            )
+            {
+            }
+
+            def "MatBase"
+            {
+            }
+        }
+    }
+}

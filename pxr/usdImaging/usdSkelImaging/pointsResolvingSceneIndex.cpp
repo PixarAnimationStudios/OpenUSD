@@ -172,6 +172,8 @@ _ProcessPrimsNeedingRefreshAndSendNotices(
     HdSceneIndexObserver::RemovedPrimEntries * const removedEntries,
     HdSceneIndexObserver::DirtiedPrimEntries * const dirtiedEntries)
 {
+    TRACE_FUNCTION();
+    
     for (const auto &[primPath, hasAddedEntry] :
              primsNeedingRefreshToHasAddedEntry) {
         const TfTokenVector &oldComputationTokens =

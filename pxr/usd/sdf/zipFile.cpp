@@ -29,11 +29,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
+TF_DEFINE_ENV_SETTING(SDF_MAX_ZIP32_ENTRY_SIZE, -1,
+"When writing SdfZipFiles, if the length of a single entry is greater than or "
+"equal to this size the 64 bit zip extensions will be used in the archive. A "
+"negative value indicates that the maximum allowable size for 32bit zip files, "
+"which is UINT32_MAX, should be used. "
+"This setting is usually only modified for testing purposes. "
+"The default value is -1");
+
 TF_DEFINE_ENV_SETTING(SDF_MAX_ZIPFILE_ENTRY_SIZE, -1,
 "When writing SdfZipFiles, ensure that the length of a single entry does not "
 "exceed this size.  If a file to be added exceeds this size, an error will "
 "be generated. A negative value indicates that the maximum allowable size, "
-"which is UINT32_MAX, should be used. "
+"which is UINT64_MAX, should be used. "
 "This setting is usually only modified for testing purposes. "
 "The default value is -1");
 
@@ -41,18 +49,54 @@ TF_DEFINE_ENV_SETTING(SDF_MAX_ZIPFILE_SIZE, -1,
 "When writing SdfZipFiles, ensure that the length of the archive does not "
 "exceed this size.  If adding a file or saving the archive would push the size "
 "over this value an error will be generated. A negative value indicates that "
-"the maximum allowable size, which is UINT32_MAX, should be used. "
+"the maximum allowable size, which is INT64_MAX, should be used. "
 "This setting is usually only modified for testing purposes. "
 "The default value is -1");
 
-static inline size_t Sdf_GetMaxZipFileEntrySize() {
-    const int envVal = TfGetEnvSetting(SDF_MAX_ZIPFILE_ENTRY_SIZE);
+TF_DEFINE_ENV_SETTING(SDF_MAX_ZIP32_ZIPFILE_SIZE, -1,
+"When writing SdfZipFiles, if the length of the archive is greater than or "
+"equal to this size, the 64 bit zip extensions will be used. A negative value "
+"indicates that the maximum allowable size for 32bit zip files, which is "
+"UINT32_MAX, should be used. "
+"This setting is usually only modified for testing purposes. "
+"The default value is -1");
+
+TF_DEFINE_ENV_SETTING(SDF_MAX_ZIP32_ENTRY_COUNT, -1,
+"When writing SdfZipFiles, if the number of entries in the archive is greater "
+"than or equal to this count, the 64 bit zip extensions will be used in the "
+"archive. A negative value or a value greater than the maximum allowable "
+"count for 32bit zip files, which is UINT16_MAX, indicates that UINT16_MAX "
+"should be used. "
+"This setting is usually only modified for testing purposes. "
+"The default value is -1");
+
+static inline size_t Sdf_GetMaxZip32EntrySize() {
+    const int envVal = TfGetEnvSetting(SDF_MAX_ZIP32_ENTRY_SIZE);
     return envVal < 0 ? std::numeric_limits<uint32_t>::max() : envVal;
 }
 
+static inline uint64_t Sdf_GetMaxZip32ZipFileSize() {
+    const int envVal = TfGetEnvSetting(SDF_MAX_ZIP32_ZIPFILE_SIZE);
+    return envVal < 0 ? std::numeric_limits<uint32_t>::max() : envVal;
+}
+
+static inline uint64_t Sdf_GetMaxZip32EntryCount() {
+    const int envVal = TfGetEnvSetting(SDF_MAX_ZIP32_ENTRY_COUNT);
+    const uint64_t maxVal = std::numeric_limits<uint16_t>::max();
+    return (envVal < 0 || static_cast<uint64_t>(envVal) > maxVal) ?
+        maxVal : envVal;
+}
+
+static inline size_t Sdf_GetMaxZipFileEntrySize() {
+    const int envVal = TfGetEnvSetting(SDF_MAX_ZIPFILE_ENTRY_SIZE);
+    return envVal < 0 ? std::numeric_limits<uint64_t>::max() : envVal;
+}
+
+// This is signed to match the type returned by _OutputStream::Tell() (i.e.
+// ftello / _ftelli64)
 static inline int64_t Sdf_GetMaxZipFileSize() {
     const int envVal = TfGetEnvSetting(SDF_MAX_ZIPFILE_SIZE);
-    return envVal < 0 ? std::numeric_limits<uint32_t>::max() : envVal;
+    return envVal < 0 ? std::numeric_limits<int64_t>::max() : envVal;
 }
 
 // Metafunction that determines if a T instance can be read/written by simple
@@ -140,9 +184,13 @@ struct _OutputStream
         _CheckLimit();
     }
 
-    inline long Tell() const
+    inline int64_t Tell() const
     {
-        return ftell(_f);
+        #if defined(ARCH_OS_WINDOWS)
+            return _ftelli64(_f);
+        #else
+            return ftello(_f);
+        #endif
     }
 
 private:
@@ -187,8 +235,20 @@ struct _LocalFileHeader
         sizeof(uint32_t) * 4 + sizeof(uint16_t) * 7;
     static_assert(sizeof(Fixed) >= FixedSize, "");
 
+    static const uint32_t Zip64Sentinel = 0xFFFFFFFF;
+    static const uint16_t Zip64ExtraFieldHeaderId = 0x0001;
+    static const uint16_t Zip64ExtraFieldDataSize = sizeof(uint64_t) * 2;
+    static const size_t Zip64ExtraFieldSize =
+        sizeof(uint16_t) * 2 + Zip64ExtraFieldDataSize;
+
     // Fixed-length header
-    Fixed f; 
+    Fixed f;
+
+    // 64-bit sizes of the file data. These are always populated. If the
+    // 32-bit sizes in the fixed-length header is set to Zip64Sentinel, these
+    // values will be stored in the Zip64 extended information extra field.
+    uint64_t compressedSize64 = 0;
+    uint64_t uncompressedSize64 = 0;
 
     // NOTE: 
     // const char* values below do not point to null-terminated strings.
@@ -197,8 +257,12 @@ struct _LocalFileHeader
     // Filename in [filenameStart, filenameStart + f.filenameLength)
     const char* filenameStart = nullptr;
     // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
+    // When reading a header, extraFieldStart points at the beginning of the
+    // entire extra field
+    // When writing a header that HasZip64ExtraField(), extraFieldStart points 
+    // just past the Zip64 extra field.
     const char* extraFieldStart = nullptr;
-    // File data in [dataStart, dataStart + f.compressedSize)
+    // File data in [dataStart, dataStart + compressedSize64)
     const char* dataStart = nullptr;
 
     // Return true if the required signature is stored in this header.
@@ -206,7 +270,49 @@ struct _LocalFileHeader
     {
         return f.signature == Signature;
     }
+
+    // Return true if this header requires a Zip64 extended information
+    // extra field.
+    bool HasZip64ExtraField() const
+    {
+        return f.compressedSize == Zip64Sentinel ||
+            f.uncompressedSize == Zip64Sentinel;
+    }
 };
+
+// Finds and reads the 64-bit sizes for the given _LocalFileHeader from the
+// Zip64 extended information extra field.
+bool
+_ReadZip64ExtraField(_LocalFileHeader& h)
+{
+    _InputStream src(h.extraFieldStart, h.f.extraFieldLength);
+
+    while (src.RemainingSize() >= sizeof(uint16_t) * 2) {
+        uint16_t headerId = 0;
+        uint16_t dataSize = 0;
+        src.Read(&headerId);
+        src.Read(&dataSize);
+
+        if (src.RemainingSize() < dataSize) {
+            return false;
+        }
+
+        if (headerId != _LocalFileHeader::Zip64ExtraFieldHeaderId) {
+            src.Advance(dataSize);
+            continue;
+        }
+
+        if (dataSize < _LocalFileHeader::Zip64ExtraFieldDataSize) {
+            return false;
+        }
+
+        src.Read(&h.uncompressedSize64);
+        src.Read(&h.compressedSize64);
+        return true;
+    }
+
+    return false;
+}
 
 // Read _LocalFileHeader from input stream. Returns an invalid _LocalFileHeader
 // if an error occurs or the input stream is too small.
@@ -256,12 +362,21 @@ _ReadLocalFileHeader(_InputStream& src)
     h.extraFieldStart = src.TellMemoryAddress();
     src.Advance(h.f.extraFieldLength);
 
-    if (src.RemainingSize() < h.f.compressedSize) {
+    h.compressedSize64 = h.f.compressedSize;
+    h.uncompressedSize64 = h.f.uncompressedSize;
+    if (h.HasZip64ExtraField() && !_ReadZip64ExtraField(h)) {
+        TF_WARN("Missing or invalid Zip64 extended information extra field "
+                "in local file header for '%s'",
+                std::string(h.filenameStart, h.f.filenameLength).c_str());
+        return _LocalFileHeader();
+    }
+
+    if (src.RemainingSize() < h.compressedSize64) {
         return _LocalFileHeader();
     }
 
     h.dataStart = src.TellMemoryAddress();
-    src.Advance(h.f.compressedSize);
+    src.Advance(h.compressedSize64);
 
     return h;
 }
@@ -282,8 +397,26 @@ _WriteLocalFileHeader(_OutputStream& out, const _LocalFileHeader& h)
     out.Write(h.f.filenameLength);
     out.Write(h.f.extraFieldLength);
     out.Write(h.filenameStart, h.f.filenameLength);
-    out.Write(h.extraFieldStart, h.f.extraFieldLength);
-    out.Write(h.dataStart, h.f.compressedSize);
+
+    // f.extraFieldLength is the combined length of all extra field blocks
+    // but extraFieldStart only points at the alignment padding. The Zip64
+    // extra field is written here from the 64-bit sizes, so subtract its size
+    // to get the number of bytes remaining to be written.
+    uint16_t remainingExtraFieldLength = h.f.extraFieldLength;
+    if (h.HasZip64ExtraField()) {
+        TF_VERIFY(remainingExtraFieldLength >=
+            _LocalFileHeader::Zip64ExtraFieldSize);
+        const uint16_t headerId = _LocalFileHeader::Zip64ExtraFieldHeaderId;
+        const uint16_t dataSize = _LocalFileHeader::Zip64ExtraFieldDataSize;
+        out.Write(headerId);
+        out.Write(dataSize);
+        out.Write(h.uncompressedSize64);
+        out.Write(h.compressedSize64);
+        remainingExtraFieldLength -= _LocalFileHeader::Zip64ExtraFieldSize;
+    }
+
+    out.Write(h.extraFieldStart, remainingExtraFieldLength);
+    out.Write(h.dataStart, h.compressedSize64);
 }
 
 // ------------------------------------------------------------
@@ -323,13 +456,28 @@ struct _CentralDirectoryHeader
     // Fixed-length header
     Fixed f;
 
-    // NOTE: 
+    // 64-bit sizes of the file data and offset of the local file header.
+    uint64_t compressedSize64 = 0;
+    uint64_t uncompressedSize64 = 0;
+    uint64_t localHeaderOffset64 = 0;
+
+    // The Zip64 extended information extra field always stores all three
+    // 64-bit values above.
+    static const uint16_t Zip64ExtraFieldDataSize = sizeof(uint64_t) * 3;
+    static const size_t Zip64ExtraFieldSize =
+        sizeof(uint16_t) * 2 + Zip64ExtraFieldDataSize;
+
+    // NOTE:
     // const char* values below do not point to null-terminated strings.
     // Use indicated memory ranges.
 
     // Filename in [filenameStart, filenameStart + f.filenameLength)
     const char* filenameStart = nullptr;
     // Extra data in [extraFieldStart, extraFieldStart + f.extraFieldLength)
+    // When writing a header that HasZip64ExtraField(), the Zip64 extra field
+    // is written from the 64-bit values above, followed by the remaining
+    // (f.extraFieldLength - Zip64ExtraFieldSize) bytes in
+    // [extraFieldStart, ...).
     const char* extraFieldStart = nullptr;
     // Comment in [commentStart, commentStart + f.commentLength)
     const char* commentStart = nullptr;
@@ -338,6 +486,13 @@ struct _CentralDirectoryHeader
     bool IsValid() const
     {
         return f.signature == Signature;
+    }
+
+    bool HasZip64ExtraField() const
+    {
+        return f.compressedSize == _LocalFileHeader::Zip64Sentinel ||
+            f.uncompressedSize == _LocalFileHeader::Zip64Sentinel ||
+            f.localHeaderOffset == _LocalFileHeader::Zip64Sentinel;
     }
 };
 
@@ -364,7 +519,29 @@ _WriteCentralDirectoryHeader(
     out.Write(h.f.externalAttrs);
     out.Write(h.f.localHeaderOffset);
     out.Write(h.filenameStart, h.f.filenameLength);
-    out.Write(h.extraFieldStart, h.f.extraFieldLength);
+
+    // f.extraFieldLength is the combined length of all extra field blocks
+    // but extraFieldStart only points at the blocks that follow the Zip64 extra
+    // field (e.g. alignment padding). The Zip64 extra field is written here
+    // from the 64-bit values, so subtract its size to get the number of bytes
+    // remaining to be written from extraFieldStart.
+    uint16_t remainingExtraFieldLength = h.f.extraFieldLength;
+    if (h.HasZip64ExtraField()) {
+        TF_VERIFY(remainingExtraFieldLength >=
+            _CentralDirectoryHeader::Zip64ExtraFieldSize);
+        const uint16_t headerId = _LocalFileHeader::Zip64ExtraFieldHeaderId;
+        const uint16_t dataSize =
+            _CentralDirectoryHeader::Zip64ExtraFieldDataSize;
+        out.Write(headerId);
+        out.Write(dataSize);
+        out.Write(h.uncompressedSize64);
+        out.Write(h.compressedSize64);
+        out.Write(h.localHeaderOffset64);
+        remainingExtraFieldLength -=
+            _CentralDirectoryHeader::Zip64ExtraFieldSize;
+    }
+
+    out.Write(h.extraFieldStart, remainingExtraFieldLength);
     out.Write(h.commentStart, h.f.commentLength);
 }
 
@@ -387,14 +564,17 @@ struct _EndOfCentralDirectoryRecord
         uint16_t commentLength = 0;
     };
 
-    static const size_t FixedSize = 
+    static const size_t FixedSize =
         sizeof(uint32_t) * 3 + sizeof(uint16_t) * 5;
     static_assert(sizeof(Fixed) >= FixedSize, "");
+
+    static const uint16_t Zip64Sentinel16 = 0xFFFF;
+    static const uint32_t Zip64Sentinel32 = 0xFFFFFFFF;
 
     // Fixed-length header
     Fixed f;
 
-    // NOTE: 
+    // NOTE:
     // const char* values below do not point to null-terminated strings.
     // Use indicated memory ranges.
 
@@ -422,6 +602,84 @@ _WriteEndOfCentralDirectoryRecord(
     out.Write(r.f.centralDirOffset);
     out.Write(r.f.commentLength);
     out.Write(r.commentStart, r.f.commentLength);
+}
+
+// Informs the reader where it can find the Zip64 End of central directory
+// record (4.3.15)
+struct _Zip64EndOfCentralDirectoryLocator
+{
+    static const uint32_t Signature = 0x07064b50;
+
+    uint32_t signature = Signature;
+    uint32_t centralDirStartDisk = 0;
+    uint64_t endOfCentralDirRecordOffset = 0;
+    uint32_t numberOfDisks = 0;
+
+};
+
+void
+_WriteZip64EndOfCentralDirectoryLocator(
+    _OutputStream& out, const _Zip64EndOfCentralDirectoryLocator& l)
+{
+    out.Write(l.signature);
+    out.Write(l.centralDirStartDisk);
+    out.Write(l.endOfCentralDirRecordOffset);
+    out.Write(l.numberOfDisks);
+}
+
+// End of central directory record for zip 64 archives. This header is stored
+// before Zip64 end of central directory locator (4.3.14)
+struct _Zip64EndOfCentralDirectoryRecord
+{
+    static const uint32_t Signature = 0x06064b50;
+
+    struct Fixed {
+        uint32_t signature = Signature;
+        uint64_t recordSize = 0;
+
+        uint16_t versionMadeBy = 0;
+        uint16_t versionNeededToExtract = 0;
+        uint32_t diskNumber = 0;
+        uint32_t centralDirStartDisk = 0;
+        uint64_t currentDiskCentralDirectoryEntryCount = 0;
+        uint64_t centralDirectoryEntryCount = 0;
+        uint64_t centralDirectorySize = 0;
+        uint64_t centralDirectoryOffset = 0;
+    };
+
+    // Note that sizeof(Fixed) includes alignment padding between members,
+    // so the on-disk size of the fixed-length record is computed explicitly.
+    static const size_t FixedSize =
+        sizeof(uint32_t) * 3 + sizeof(uint16_t) * 2 + sizeof(uint64_t) * 5;
+    static_assert(sizeof(Fixed) >= FixedSize, "");
+
+    Fixed f;
+    const char* extensibleDataSector = nullptr;
+    size_t extensibleDataSectorSize = 0;
+
+    // Note: 4.3.14.1 states that the size field should not include the 12 bytes
+    // occupied by the signature and record size fields.
+    inline uint64_t CalculateRecordSize() const {
+        return FixedSize + extensibleDataSectorSize -
+            (sizeof(f.signature) + sizeof(f.recordSize));
+    }
+};
+
+void
+_WriteZip64EndOfCentralDirectoryRecord(
+    _OutputStream& out, const _Zip64EndOfCentralDirectoryRecord& r)
+{
+    out.Write(r.f.signature);
+    out.Write(r.f.recordSize);
+    out.Write(r.f.versionMadeBy);
+    out.Write(r.f.versionNeededToExtract);
+    out.Write(r.f.diskNumber);
+    out.Write(r.f.centralDirStartDisk);
+    out.Write(r.f.currentDiskCentralDirectoryEntryCount);
+    out.Write(r.f.centralDirectoryEntryCount);
+    out.Write(r.f.centralDirectorySize);
+    out.Write(r.f.centralDirectoryOffset);
+    out.Write(r.extensibleDataSector, r.extensibleDataSectorSize);
 }
 
 // ------------------------------------------------------------
@@ -785,11 +1043,12 @@ SdfZipFile::Iterator::GetFileInfo() const
     if (_data) {
         const _LocalFileHeader& h = _data->fileHeader;
         f.dataOffset = h.dataStart - _data->impl->buffer;
-        f.size = h.f.compressedSize;
-        f.uncompressedSize = h.f.uncompressedSize;
+        f.size = h.compressedSize64;
+        f.uncompressedSize = h.uncompressedSize64;
         f.crc = h.f.crc32;
         f.compressionMethod = h.f.compressionMethod;
         f.encrypted = h.f.bits & 0x1; // Per 4.4.4, bit 0 is set if encrypted
+        f.versionNeededToExtract = h.f.versionForExtract;
     }
     return f;
 }
@@ -917,12 +1176,25 @@ public:
 
     TfSafeOutputFile outputFile;
 
-    // Record for each file added to the zip file:
-    //  - File path in zip file
-    //  - Fixed portion of local file header
-    //  - Offset from beginning of zip file to start of local file header
-    using _Record = 
-        std::tuple<std::string, _LocalFileHeader::Fixed, uint32_t>;
+    // this will be true if the Zip64 Extensions are used in this archive,
+    // either due to size, or file count.
+    bool isZip64 = false;
+
+    // Record for each file added to the zip file.
+    struct _Record {
+        // File path in zip file
+        std::string path;
+        // Fixed portion of local file header
+        _LocalFileHeader::Fixed localHeader;
+        // 64-bit sizes of the file data
+        uint64_t compressedSize64 = 0;
+        uint64_t uncompressedSize64 = 0;
+        // Offset from beginning of zip file to start of local file header
+        uint64_t localHeaderOffset = 0;
+        // Size of the alignment padding in the local file header's extra
+        // field, mirrored in the central directory header's extra field
+        uint16_t paddingSize = 0;
+    };
     std::vector<_Record> addedFiles;
 };
 
@@ -977,7 +1249,7 @@ Sdf_CheckZipFileWriteOperation(const TfErrorMark& mark) {
     if (!mark.IsClean()) {
         mark.Clear();
         TF_RUNTIME_ERROR(
-            "Zipfile is larger than maximum size allowed by Zip32 (%ld)", 
+            "Zipfile is larger than maximum allowed size (%" PRId64 ")",
                 Sdf_GetMaxZipFileSize()
         );
 
@@ -1009,7 +1281,7 @@ SdfZipFileWriter::AddFile(
     if (std::find_if(
             _impl->addedFiles.begin(), _impl->addedFiles.end(),
             [&zipFilePath](const _Impl::_Record& r) { 
-                return std::get<0>(r) == zipFilePath; 
+                return r.path == zipFilePath;
             }) != _impl->addedFiles.end()) {
         return zipFilePath;
     }
@@ -1024,10 +1296,8 @@ SdfZipFileWriter::AddFile(
         return std::string();
     }
 
-    // Trigger an error early if the file size is larger then the max
-    // entry size. This avoids overflow when writing the size into the
-    // entry's LocalFileHeader which can result in expected values that
-    // trip up _OutputStream's archive size validation. 
+    // Trigger an error early if the file size is larger than the configured max
+    // entry size (see SDF_MAX_ZIPFILE_ENTRY_SIZE).
     if (ArchGetFileMappingLength(mapping) > Sdf_GetMaxZipFileEntrySize()) {
         TF_RUNTIME_ERROR(
             "'%s' exceeds maximum allowable single file size (%zu > %zu)", 
@@ -1039,25 +1309,51 @@ SdfZipFileWriter::AddFile(
     // Set up local file header
     _LocalFileHeader h;
     h.f.signature = _LocalFileHeader::Signature;
-    h.f.versionForExtract = 10; // Default value
+    h.compressedSize64 = ArchGetFileMappingLength(mapping);
+    h.uncompressedSize64 = ArchGetFileMappingLength(mapping);
+
+    const uint64_t offset = static_cast<uint64_t>(outStream.Tell());
+
+    if ((ArchGetFileMappingLength(mapping) >= Sdf_GetMaxZip32EntrySize())) {
+        _impl->isZip64 = true;
+        h.f.versionForExtract = 45; // Zip64 extension support required
+        h.f.compressedSize = _LocalFileHeader::Zip64Sentinel;
+        h.f.uncompressedSize = _LocalFileHeader::Zip64Sentinel;
+    } else {
+        h.f.versionForExtract = 10; // Default value
+        h.f.compressedSize = h.compressedSize64;
+        h.f.uncompressedSize = h.uncompressedSize64;
+    }
+
+    if (offset >= Sdf_GetMaxZip32ZipFileSize()) {
+        _impl->isZip64 = true;
+        h.f.versionForExtract = 45;
+    }
+
     h.f.bits = 0;
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
     h.f.crc32 = _Crc32(mapping);
-    h.f.compressedSize = ArchGetFileMappingLength(mapping);
-    h.f.uncompressedSize = ArchGetFileMappingLength(mapping);
+
     h.f.filenameLength = zipFilePath.length();
     
-    const uint32_t offset = outStream.Tell();
-    const size_t dataOffset = 
-        offset + _LocalFileHeader::FixedSize + h.f.filenameLength;
-    h.f.extraFieldLength = _ComputeExtraFieldPaddingSize(dataOffset);
+    // The Zip64 extra field, if present, is written before the padding so
+    // it must be accounted for when computing the padding needed to align
+    // the file data.
+    const size_t zip64ExtraFieldSize = h.HasZip64ExtraField() ?
+        _LocalFileHeader::Zip64ExtraFieldSize : 0;
+
+    const size_t dataOffset =
+        offset + _LocalFileHeader::FixedSize + h.f.filenameLength +
+        zip64ExtraFieldSize;
+    const uint16_t paddingSize = _ComputeExtraFieldPaddingSize(dataOffset);
+    h.f.extraFieldLength = zip64ExtraFieldSize + paddingSize;
 
     h.filenameStart = zipFilePath.data();
 
     char extraFieldBuffer[_PaddingBufferSize] = { 0 };
     h.extraFieldStart = _PrepareExtraFieldPadding(
-        extraFieldBuffer, h.f.extraFieldLength);
+        extraFieldBuffer, paddingSize);
 
     h.dataStart = mapping.get();
 
@@ -1067,7 +1363,14 @@ SdfZipFileWriter::AddFile(
         return {};
     }
 
-    _impl->addedFiles.emplace_back(zipFilePath, h.f, offset);
+    _Impl::_Record record;
+    record.path = zipFilePath;
+    record.localHeader = h.f;
+    record.compressedSize64 = h.compressedSize64;
+    record.uncompressedSize64 = h.uncompressedSize64;
+    record.localHeaderOffset = offset;
+    record.paddingSize = paddingSize;
+    _impl->addedFiles.push_back(std::move(record));
 
     return zipFilePath;
 }
@@ -1084,12 +1387,10 @@ SdfZipFileWriter::Save()
     _OutputStream outStream(_impl->outputFile.Get());
 
     // Write central directory headers for each file added to the zip archive.
-    const long centralDirectoryStart = outStream.Tell();
+    const int64_t centralDirectoryStart = outStream.Tell();
 
     for (const _Impl::_Record& record : _impl->addedFiles) {
-        const std::string& fileToZip = std::get<0>(record);
-        const _LocalFileHeader::Fixed& localHeader = std::get<1>(record);
-        uint32_t offset = std::get<2>(record);
+        const _LocalFileHeader::Fixed& localHeader = record.localHeader;
 
         _CentralDirectoryHeader h;
         h.f.signature = _CentralDirectoryHeader::Signature;
@@ -1100,20 +1401,48 @@ SdfZipFileWriter::Save()
         h.f.lastModTime = localHeader.lastModTime;
         h.f.lastModDate = localHeader.lastModDate;
         h.f.crc32 = localHeader.crc32;
-        h.f.compressedSize = localHeader.compressedSize;
-        h.f.uncompressedSize = localHeader.uncompressedSize;
         h.f.filenameLength = localHeader.filenameLength;
-        h.f.extraFieldLength = localHeader.extraFieldLength;
         h.f.commentLength = 0;
         h.f.diskNumberStart = 0;
         h.f.internalAttrs = 0;
         h.f.externalAttrs = 0;
-        h.f.localHeaderOffset = offset;
-        h.filenameStart = fileToZip.data();
+        h.compressedSize64 = record.compressedSize64;
+        h.uncompressedSize64 = record.uncompressedSize64;
+        h.localHeaderOffset64 = record.localHeaderOffset;
+
+        // A Zip64 extra field is needed if the file is too large for the
+        // 32-bit size fields or its local file header starts beyond the
+        // range of the 32-bit offset field. The extra field always stores
+        // all three 64-bit values, so all three 32-bit fields are set to
+        // Zip64Sentinel. Note that versionForExtract and isZip64 were
+        // already set in AddFile().
+        const bool needsZip64ExtraField =
+            localHeader.compressedSize == _LocalFileHeader::Zip64Sentinel ||
+            record.localHeaderOffset >= Sdf_GetMaxZip32ZipFileSize();
+        if (needsZip64ExtraField) {
+            h.f.compressedSize = _LocalFileHeader::Zip64Sentinel;
+            h.f.uncompressedSize = _LocalFileHeader::Zip64Sentinel;
+            h.f.localHeaderOffset = _LocalFileHeader::Zip64Sentinel;
+        } else {
+            h.f.compressedSize = localHeader.compressedSize;
+            h.f.uncompressedSize = localHeader.uncompressedSize;
+            h.f.localHeaderOffset = record.localHeaderOffset;
+        }
+
+        h.filenameStart = record.path.data();
+
+        // The Zip64 extra field (if needed) is followed by padding of the
+        // same size as in the local file header. This padding is not needed
+        // for alignment, but mirroring it keeps the central directory
+        // consistent with the local file header.
+        h.f.extraFieldLength =
+            (h.HasZip64ExtraField() ?
+                _CentralDirectoryHeader::Zip64ExtraFieldSize : 0) +
+            record.paddingSize;
 
         char extraFieldBuffer[_PaddingBufferSize] = { 0 };
         h.extraFieldStart = _PrepareExtraFieldPadding(
-            extraFieldBuffer, h.f.extraFieldLength);
+            extraFieldBuffer, record.paddingSize);
 
         h.commentStart = nullptr;
 
@@ -1126,7 +1455,50 @@ SdfZipFileWriter::Save()
         }
     }
 
-    const long centralDirectoryEnd = outStream.Tell();
+    const int64_t centralDirectoryEnd = outStream.Tell();
+
+    const uint64_t numEntries = _impl->addedFiles.size();
+    const uint64_t centralDirectoryLength =
+        static_cast<uint64_t>(centralDirectoryEnd - centralDirectoryStart);
+    const uint64_t centralDirectoryOffset =
+        static_cast<uint64_t>(centralDirectoryStart);
+
+    const bool entriesOverflow = numEntries >= Sdf_GetMaxZip32EntryCount();
+    const bool lengthOverflow =
+        centralDirectoryLength >= Sdf_GetMaxZip32ZipFileSize();
+    const bool offsetOverflow =
+        centralDirectoryOffset >= Sdf_GetMaxZip32ZipFileSize();
+
+    if (entriesOverflow || lengthOverflow || offsetOverflow) {
+        _impl->isZip64 = true;
+    }
+
+    if (_impl->isZip64) {
+        const uint64_t zip64RecordOffset =
+            static_cast<uint64_t>(centralDirectoryEnd);
+
+        _Zip64EndOfCentralDirectoryRecord zip64Record;
+        zip64Record.f.signature = _Zip64EndOfCentralDirectoryRecord::Signature;
+        zip64Record.f.recordSize = zip64Record.CalculateRecordSize();
+        zip64Record.f.versionMadeBy = 0;
+        zip64Record.f.versionNeededToExtract = 45;
+        zip64Record.f.diskNumber = 0;
+        zip64Record.f.centralDirStartDisk = 0;
+        zip64Record.f.currentDiskCentralDirectoryEntryCount = numEntries;
+        zip64Record.f.centralDirectoryEntryCount = numEntries;
+        zip64Record.f.centralDirectorySize = centralDirectoryLength;
+        zip64Record.f.centralDirectoryOffset = centralDirectoryOffset;
+
+        _WriteZip64EndOfCentralDirectoryRecord(outStream, zip64Record);
+
+        _Zip64EndOfCentralDirectoryLocator zip64Locator;
+        zip64Locator.signature = _Zip64EndOfCentralDirectoryLocator::Signature;
+        zip64Locator.centralDirStartDisk = 0;
+        zip64Locator.endOfCentralDirRecordOffset = zip64RecordOffset;
+        zip64Locator.numberOfDisks = 1;
+
+        _WriteZip64EndOfCentralDirectoryLocator(outStream, zip64Locator);
+    }
 
     // Write the end of central directory record.
     {
@@ -1134,10 +1506,16 @@ SdfZipFileWriter::Save()
         r.f.signature = _EndOfCentralDirectoryRecord::Signature;
         r.f.diskNumber = 0;
         r.f.diskNumberForCentralDir = 0;
-        r.f.numCentralDirEntriesOnDisk = _impl->addedFiles.size();
-        r.f.numCentralDirEntries = _impl->addedFiles.size();
-        r.f.centralDirLength = (centralDirectoryEnd - centralDirectoryStart);
-        r.f.centralDirOffset = centralDirectoryStart;
+        r.f.numCentralDirEntriesOnDisk = entriesOverflow ?
+            _EndOfCentralDirectoryRecord::Zip64Sentinel16 : numEntries;
+        r.f.numCentralDirEntries = entriesOverflow ?
+            _EndOfCentralDirectoryRecord::Zip64Sentinel16 : numEntries;
+        r.f.centralDirLength = lengthOverflow ?
+            _EndOfCentralDirectoryRecord::Zip64Sentinel32 :
+            centralDirectoryLength;
+        r.f.centralDirOffset = offsetOverflow ?
+            _EndOfCentralDirectoryRecord::Zip64Sentinel32 :
+            centralDirectoryOffset;
         r.f.commentLength = 0;
         r.commentStart = nullptr;
 

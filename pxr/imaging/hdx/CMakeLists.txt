@@ -106,7 +106,7 @@ pxr_library(hdx
         overview.dox
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx
@@ -255,11 +255,6 @@ endif()
 
 if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
-    return()
-endif()
-
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
 endif()
 
@@ -446,6 +441,30 @@ pxr_register_test(testHdxPickAndHighlight
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
+)
+
+# testHdxPickTransparentOccluder needs SdrGlslfxParserPlugin
+pxr_build_test(testHdxPickTransparentOccluder
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        hio
+        sdr
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestUtils.cpp
+        testenv/testHdxPickTransparentOccluder.cpp
+)
+pxr_register_test(testHdxPickTransparentOccluder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickTransparentOccluder --offscreen"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        TF_DEBUG="HDX_SELECTION_SETUP HD_SELECTION_UPDATE"
 )
 
 endif() # TARGET shared_libs

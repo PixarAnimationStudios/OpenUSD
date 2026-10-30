@@ -4953,7 +4953,7 @@ class AppController(QtCore.QObject):
             for item in self.getSelectedItems():
                 if item.prim.IsPseudoRoot():
                     print("WARNING: Cannot change activation of pseudoroot.")
-                elif item.isInPrototype:
+                elif item.prim.IsInPrototype():
                     print("WARNING: The prim <" + str(item.prim.GetPrimPath()) +
                         "> is in a prototype. Cannot change activation.")
                 else:

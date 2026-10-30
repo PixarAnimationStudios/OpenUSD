@@ -233,6 +233,11 @@ public:
     PCP_API
     PcpLayerStackSite GetSite() const;
 
+    /// Equivalent to comparing `this->GetSite() == node.GetSite()` but without
+    /// constructing a PcpLayerStackSite.
+    PCP_API
+    bool HasSameSiteAs(const PcpNodeRef &node) const;
+
     /// Returns the path for the site this node represents.
     PCP_API
     const SdfPath& GetPath() const;
@@ -362,6 +367,8 @@ private:
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
     friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
+    friend bool Pcp_IsElided(const PcpNodeRef& node);
+    friend void Pcp_SetElided(const PcpNodeRef& node);
 
     // Private constructor for internal use.
     PcpNodeRef(PcpPrimIndex_Graph* graph, size_t idx)

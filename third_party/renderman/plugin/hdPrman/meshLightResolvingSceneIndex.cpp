@@ -10,8 +10,7 @@
 #include "hdPrman/meshLightResolvingSceneIndexPlugin.h"
 #include "hdPrman/tokens.h"
 
-#include "pxr/imaging/hd/categoriesSchema.h"
-#include "pxr/imaging/hd/containerDataSourceEditor.h"
+#include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
@@ -31,7 +30,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -42,6 +41,7 @@
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #endif
 
+#include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usdLux/tokens.h"
 
 #include "pxr/base/gf/vec3f.h"
@@ -54,6 +54,7 @@
 
 #include "pxr/pxr.h"
 
+#include <iterator>
 #include <mutex>
 #include <vector>
 
@@ -1380,10 +1381,11 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
 
     static const auto& lightLoc = HdLightSchema::GetDefaultLocator();
     static const auto& matLoc   = HdMaterialSchema::GetDefaultLocator();
-    static const HdDataSourceLocatorSet lightAndMatLocs{lightLoc, matLoc};
+    static const HdDataSourceLocatorSet lightAndMatLocs { lightLoc, matLoc };
 
-    HdSceneIndexObserver::AddedPrimEntries added;
     HdSceneIndexObserver::RemovedPrimEntries removed;
+    HdSceneIndexObserver::AddedPrimEntries added;
+    HdSceneIndexObserver::DirtiedPrimEntries dirtied;
 
     for (const auto& entry : entries) {
         const auto& dirtyLocs = entry.dirtyLocators;
@@ -1395,11 +1397,31 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
             // Check for revocation of mesh-lightiness (no longer a mesh light).
             if ((dirtyLocs.Intersects(lightLoc) && !_IsMeshLight(prim)) ||
                 (dirtyLocs.Intersects(matLoc) && !_HasValidMaterialNetwork(prim))) {
+                // Remove the synthesized child prims
                 _RemoveMeshLight(entry.primPath, &removed);
-                // The original mesh must be re-added because its prim type
-                // will change as a result of this. See GetPrim().
+                // The original mesh must be re-synced because its prim type
+                // will change as a result of this. See GetPrim(). No removed
+                // necessary; re-syncs only require an added notice.
                 added.emplace_back(entry.primPath, prim.primType);
                 continue;
+            }
+
+            // XXX: Quick fix for HYD-3774. If an upstream scene index generates
+            // a UniversalSet dirty notice for the origin prim, we need to
+            // make sure our synthesized prims get cache-busted. Existing caches
+            // are limited to prim-level containers so this is sufficient for
+            // now.
+            if (entry.dirtyLocators == HdDataSourceLocatorSet::UniversalSet()) {
+                dirtied.emplace_back(
+                    entry.primPath.AppendChild(_tokens->meshLightSourceName),
+                    HdDataSourceLocatorSet {
+                        HdDataSourceLocator(
+                            HdDataSourceLocatorSentinelTokens->container) });
+                dirtied.emplace_back(
+                    entry.primPath.AppendChild(_tokens->meshLightLightName),
+                    HdDataSourceLocatorSet {
+                        HdDataSourceLocator(
+                            HdDataSourceLocatorSentinelTokens->container) });
             }
 
             const bool visible = _GetMaterialSyncMode(prim.dataSource)
@@ -1408,23 +1430,27 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
 #else
                 != UsdLuxTokens->noMaterialResponse;
 #endif
-            bool prev_visible = _meshLights[entry.primPath];
-            if(prev_visible == visible) {
-                continue;
-            }
-            if (visible && (!_meshLights.at(entry.primPath))) {
+            bool previouslyVisible = _meshLights[entry.primPath];
+            if (visible && (!previouslyVisible)) {
                 // materialSyncMode is no longer noMaterialResponse; insert
                 _meshLights[entry.primPath] = visible;
-                _SendPrimsAdded({{
+                added.emplace_back(
                     entry.primPath.AppendChild(_tokens->meshLightMeshName),
-                    prim.primType
-                }});
-            } else if ((!visible) && _meshLights.at(entry.primPath)) {
+                    prim.primType);
+            } else if ((!visible) && previouslyVisible) {
                 // materialSyncMode changed to noMaterialResponse; remove
                 _meshLights[entry.primPath] = visible;
-                _SendPrimsRemoved({{
-                    entry.primPath.AppendChild(_tokens->meshLightMeshName)
-                }});
+                removed.emplace_back(
+                    entry.primPath.AppendChild(_tokens->meshLightMeshName));
+            } else if (visible) {
+                // XXX: Quick fix for HYD-3774; see comment above
+                if (entry.dirtyLocators == HdDataSourceLocatorSet::UniversalSet()) {
+                    dirtied.emplace_back(
+                        entry.primPath.AppendChild(_tokens->meshLightMeshName),
+                        HdDataSourceLocatorSet {
+                            HdDataSourceLocator(
+                                HdDataSourceLocatorSentinelTokens->container) });
+                }
             }
         }
 
@@ -1472,9 +1498,21 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
     }
 #endif
 
-    _SendPrimsAdded(added);
-    _SendPrimsRemoved(removed);
-    _SendPrimsDirtied(entries);
+    if (!removed.empty()) {
+        _SendPrimsRemoved(removed);
+    }
+    if (!added.empty()) {
+        _SendPrimsAdded(added);
+    }
+    if (!dirtied.empty()) {
+        dirtied.insert(
+            dirtied.begin(),
+            std::make_move_iterator(entries.begin()),
+            std::make_move_iterator(entries.end()));
+        _SendPrimsDirtied(dirtied);
+    } else {
+        _SendPrimsDirtied(entries);
+    }
 }
 
 void

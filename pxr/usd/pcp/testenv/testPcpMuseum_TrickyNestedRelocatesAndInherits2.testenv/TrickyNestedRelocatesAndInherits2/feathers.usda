@@ -1,0 +1,57 @@
+#usda 1.0
+
+def "FeathersRig"
+{
+    class "SymWing"
+    {
+        def "Control"
+        {
+            def "Flight01"
+            {
+                def "Base"
+                {
+                    string probe = "SymWing/Control"
+                }
+            }
+        }
+
+        def "Deform"
+        {
+            def "Flight01Rig"
+            {
+                def "Control"
+                {
+                    class "Base"
+                    {
+                        string probe = "SymWing/Deform"
+                    }
+
+                    def "X" (
+                        inherits = </FeathersRig/SymWing/Deform/Flight01Rig/Control/Base>
+                    )
+                    {
+                    }
+                }
+            }
+        }
+    }
+
+    def "RWing" (
+        inherits = </FeathersRig/SymWing>
+    )
+    {
+        over "Deform"
+        {
+            over "Flight01Rig"
+            {
+                over "Control"
+                {
+                    over "Base"
+                    {
+                        string probe = "RWing/Deform"
+                    }
+                }
+            }
+        }
+    }
+}

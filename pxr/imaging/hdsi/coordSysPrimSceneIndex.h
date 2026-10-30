@@ -18,13 +18,16 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 ///
 /// \class HdsiCoordSysPrimSceneIndex
 ///
+/// This is a utility scene index to aid emulation of Hydra 1 style
+/// coordinate systems, given Hydra 2 coordinate system bindings.
+///
 /// If prim P has a coord sys binding FOO to another prim Q, the scene
-/// index will add a coord sys prim Q.__coordSys:FOO under Q.
+/// index will add a coord sys prim Q/__coordSys_FOO under Q.
 /// It will rewrite the coord sys binding on P to point to
-/// Q.__coordSys:FOO and use Q's xform data source for Q.__coordSys:FOO.
+/// __coordSys_FOO and use Q's xform data source for __coordSys_FOO.
 ///
 /// Motivation: USD allows for a coord sys binding to target any xformable
-/// prim. Some render delegates, however, only allow a coord sys binding
+/// prim. Some Hydra 1 render delegates, however, only allow a coord sys binding
 /// to point to a prim of type coord sys. This scene index is creating prim's
 /// of that type for such render delegates.
 ///
@@ -49,7 +52,7 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 /// /MyXform
 ///     dataSource:
 ///         xform: [ some xform ]
-/// /MyXform.__coordSys:FOO
+/// /MyXform/__coordSys:FOO
 ///     dataSource:
 ///         coordSys:
 ///             name: FOO
@@ -57,7 +60,7 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 /// /MyPrim
 ///     dataSource:
 ///         coordSysBinding:
-///             FOO: /MyXform.__coordSys:FOO
+///             FOO: /MyXform/__coordSys_FOO
 ///
 class HdsiCoordSysPrimSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
@@ -111,6 +114,14 @@ protected:
     // to add.
     void _AddBindingsForPrim(const SdfPath &primPath,
                              SdfPathSet * addedCoordSysPrims = nullptr);
+    // Compute the coordSys bindings of the prim at primPath from the input
+    // scene. Does not modify any data structures and is thread-safe.
+    _Bindings _ComputeBindingsForPrim(const SdfPath &primPath) const;
+    // Record the given bindings for the prim at primPath. Same as
+    // _AddBindingsForPrim but with the bindings already computed.
+    void _AddBindings(const SdfPath &primPath,
+                      _Bindings &&bindings,
+                      SdfPathSet * addedCoordSysPrims);
     // Remove coordSys bindings. That is, decrease ref-counts and remove entries
     // from below data structures if needed.
     // Optionally, return prims of type coord system that this scene index needs

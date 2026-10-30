@@ -20,13 +20,13 @@ programs in the :doc:`toolset` rely on one another.  So please set the following
 environment variables to successfully complete the tutorials. Make sure to use 
 the Python interpreter corresponding to the version used to build USD (for 
 supported Python versions see `3rd Party Library and Application Versions 
-<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/VERSIONS.md>`_).
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/VERSIONS.md>`_).
 These tutorials assume the interpreter is named "python". 
 
 +---------------------+------------+------------------------------------------------------------------------------------------------+
 |Variable             |Meaning     |Value                                                                                           |
 +=====================+============+================================================================================================+
-|:envvar:`PYTHONPATH` |Python      |See `docs <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md#python>`__ |
+|:envvar:`PYTHONPATH` |Python      |See `docs <https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/BUILDING.md#python>`__  |
 |                     |module      |                                                                                                |
 |                     |search path |                                                                                                |
 +---------------------+------------+------------------------------------------------------------------------------------------------+
@@ -37,7 +37,7 @@ These tutorials assume the interpreter is named "python".
 +---------------------+------------+------------------------------------------------------------------------------------------------+
 
 For more information see `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_.
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/BUILDING.md>`__.
 
 .. toctree::
    :titlesonly:

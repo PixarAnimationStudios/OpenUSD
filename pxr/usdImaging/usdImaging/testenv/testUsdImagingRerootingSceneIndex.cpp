@@ -1,21 +1,26 @@
 //
-// Copyright 2024 Pixar
+// Copyright 2026 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/directMaterialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/materialBindingSchema.h"
+#include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
-#include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/usd/usd/stage.h"
+
+#include "pxr/imaging/hd/collectionSchema.h"
+#include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/base/vt/array.h"
+#include "pxr/usd/sdf/pathExpression.h"
 
-#include <algorithm>
 #include <iostream>
-#include <unordered_set>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -29,70 +34,6 @@ operator<<(std::ostream& out, const SdfPathVector& v)
     out << "}" << std::endl;
 
     return out;
-}
-
-template <typename T>
-std::vector<T>
-_Sorted(std::vector<T> v)
-{
-    std::sort(v.begin(), v.end());
-    return v;
-}
-
-void
-_PrintContainer(
-    HdContainerDataSourceHandle container,
-    const std::string& prefix = std::string())
-{
-    if (!container) {
-        return;
-    }
-
-    for (const TfToken& name : container->GetNames()) {
-
-        HdDataSourceBaseHandle childSource = container->Get(name);
-        if (!childSource) {
-            std::cout << prefix << "(@" << name << ")" << std::endl;
-            continue;
-        }
-
-        std::cout << prefix << "@" << name << ": ";
-
-        if (HdContainerDataSourceHandle childContainer
-            = HdContainerDataSource::Cast(childSource)) {
-            std::cout << std::endl;
-            _PrintContainer(childContainer, prefix + "  ");
-        }
-        else if (
-            HdSampledDataSourceHandle sampledChild
-            = HdSampledDataSource::Cast(childSource)) {
-            std::cout << sampledChild->GetValue(0.0f) << std::endl;
-        }
-        else {
-            std::cout << "(unknown)" << std::endl;
-        }
-    }
-}
-
-void
-_PrintSceneIndexPrim(
-    HdSceneIndexBase& sceneIndex,
-    const SdfPath& primPath,
-    bool includeChildren,
-    const std::string& prefix = std::string())
-{
-    HdSceneIndexPrim prim = sceneIndex.GetPrim(primPath);
-    std::cout << prefix << primPath << " (" << prim.primType << ")"
-              << std::endl;
-    _PrintContainer(prim.dataSource, prefix + "  ");
-
-    if (!includeChildren) {
-        return;
-    }
-
-    for (const SdfPath& childPath : sceneIndex.GetChildPrimPaths(primPath)) {
-        _PrintSceneIndexPrim(sceneIndex, childPath, true, prefix);
-    }
 }
 
 template <typename T>
@@ -111,164 +52,68 @@ _CompareValue(const char* msg, const T& v1, const T& v2)
 }
 
 //-----------------------------------------------------------------------------
-HdDataSourceBaseHandle
-_GetDataSourceFromScene(
-    HdSceneIndexBase& sceneIndex,
-    const SdfPath& primPath,
-    const HdDataSourceLocator& locator)
-{
-    HdSceneIndexPrim prim = sceneIndex.GetPrim(primPath);
-    return HdContainerDataSource::Get(prim.dataSource, locator);
-}
-
-template <typename T>
-T
-_GetTypedValueFromScene(
-    HdSceneIndexBase& sceneIndex,
-    const SdfPath& primPath,
-    const HdDataSourceLocator& locator)
-{
-    auto dataSource = HdTypedSampledDataSource<T>::Cast(
-        _GetDataSourceFromScene(sceneIndex, primPath, locator));
-
-    if (!dataSource) {
-        return T();
-    }
-
-    return dataSource->GetTypedValue(0.0f);
-}
-
-//-----------------------------------------------------------------------------
-// UsdImagingRerootingSceneIndex
+// Stage-backed tests, analogous to the ones in testHdPrefixingSceneIndex.
 
 static bool
-TestRerootingSceneIndex()
+TestPrimPaths()
 {
-    // /A/foo
-    // /path/B/bar
-    // /path/B/X/baz
-    HdRetainedSceneIndexRefPtr sceneIndex_ = HdRetainedSceneIndex::New();
-    HdRetainedSceneIndex& sceneIndex = *sceneIndex_;
-    sceneIndex.AddPrims({ { SdfPath("/A"), TfToken("huh"), nullptr } });
-    sceneIndex.AddPrims({ { SdfPath("/path"), TfToken("huh"), nullptr } });
-    sceneIndex.AddPrims({ { SdfPath("/path/B"), TfToken("huh"), nullptr } });
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->GetRootLayer()->ImportFromString(R"usda(
+#usda 1.0
 
-    sceneIndex.AddPrims({
-        { SdfPath("/A/foo"), TfToken("huh"),
-          HdRetainedContainerDataSource::New(
-              TfToken("pathToA"),
-              HdRetainedTypedSampledDataSource<SdfPath>::New(SdfPath("/A")),
-              TfToken("pathToB"),
-              HdRetainedTypedSampledDataSource<SdfPath>::New(
-                  SdfPath("/path/B")),
-              TfToken("pathArray"),
-              HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                  { SdfPath("/A"), SdfPath("/path/B") }),
-              TfToken("relPathToB"),
-              HdRetainedTypedSampledDataSource<SdfPath>::New(
-                  SdfPath("../../path/B"))) },
-    });
-
-    std::cout << "\n-- SCENE -----------------------" << std::endl;
-    _PrintSceneIndexPrim(sceneIndex, SdfPath("/"), true);
-
-    std::cout << "\n-- REROOTED /A -> /path/B SCENE --------------"
-              << std::endl;
-    UsdImagingRerootingSceneIndexRefPtr rerootAToB_
-        = UsdImagingRerootingSceneIndex::New(
-            sceneIndex_, SdfPath("/A"), SdfPath("/path/B"));
-    UsdImagingRerootingSceneIndex& rerootAToB = *rerootAToB_;
-    _PrintSceneIndexPrim(rerootAToB, SdfPath("/"), true);
-
-    std::cout << "\n-- REROOTED /A -> / SCENE --------------" << std::endl;
-    UsdImagingRerootingSceneIndexRefPtr rerootAToRoot_
-        = UsdImagingRerootingSceneIndex::New(
-            sceneIndex_, SdfPath("/A"), SdfPath("/"));
-    UsdImagingRerootingSceneIndex& rerootAToRoot = *rerootAToRoot_;
-    _PrintSceneIndexPrim(rerootAToRoot, SdfPath("/"), true);
-
-    std::cout << "\n-- REROOTED / -> /Some/Prefix SCENE --------------"
-              << std::endl;
-    UsdImagingRerootingSceneIndexRefPtr prefixViaReroot_
-        = UsdImagingRerootingSceneIndex::New(
-            sceneIndex_, SdfPath("/"), SdfPath("/Some/Prefix"));
-    UsdImagingRerootingSceneIndex& prefixViaReroot = *prefixViaReroot_;
-    _PrintSceneIndexPrim(prefixViaReroot, SdfPath("/"), true);
-
-    // Make sure that we replace everything at toPath.  This means /B/bar will
-    // be gone.  Also, the fromPath (/A) is removed.
-    if (!_CompareValue(
-            "TESTING TO_PATH REPLACED",
-            _Sorted(rerootAToB.GetChildPrimPaths(SdfPath("/path/B"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/path/B/foo"),
-            })))) {
-        return false;
+def Scope "World" {
+    def Scope "Geo" {
+        def Mesh "Cube" {}
     }
-    if (!_CompareValue(
-            "TESTING ALL OTHER PATHS REMOVED",
-            _Sorted(rerootAToB.GetChildPrimPaths(SdfPath("/"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/path"),
-            })))) {
+}
+)usda");
+
+    UsdImagingStageSceneIndexRefPtr stageSi = UsdImagingStageSceneIndex::New();
+    stageSi->SetStage(stage);
+
+    UsdImagingRerootingSceneIndexRefPtr rerootingSi =
+        UsdImagingRerootingSceneIndex::New(stageSi, SdfPath("/"), SdfPath("/Prefix"));
+
+    // Prims should be visible under the prefixed paths.
+    if (!TF_VERIFY(rerootingSi->GetPrim(SdfPath("/Prefix/World")).IsDefined(),
+            "Expected /Prefix/World to be defined")) {
         return false;
     }
 
-    // The instancing code is relying on this behavior for material
-    // bindings (which target prims outside of the "src").
-    if (!_CompareValue(
-            "COMPARING PATH TO NON REROOTED",
-            _GetTypedValueFromScene<SdfPath>(
-                rerootAToB, 
-                SdfPath("/path/B/foo"),
-                HdDataSourceLocator(TfToken("pathToB"))),
-            SdfPath("/path/B"))) {
-        return false;
-    }
-    if (!_CompareValue(
-            "COMPARING PATH ARRAY",
-            _GetTypedValueFromScene<VtArray<SdfPath>>(
-                rerootAToB, 
-                SdfPath("/path/B/foo"),
-                HdDataSourceLocator(TfToken("pathArray"))),
-            VtArray<SdfPath> { SdfPath("/path/B"), SdfPath("/path/B") })) {
+    if (!_CompareValue("GetPrim /Prefix/World/Geo/Cube type",
+            rerootingSi->GetPrim(SdfPath("/Prefix/World/Geo/Cube")).primType,
+            HdPrimTypeTokens->mesh)) {
         return false;
     }
 
-    // Make sure that if we move to /, it replaces everything
-    if (!_CompareValue(
-            "TESTING MOVING TO /",
-            _Sorted(rerootAToRoot.GetChildPrimPaths(SdfPath("/"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/foo"),
-            })))) {
+    // The un-prefixed paths should return empty prims.
+    if (!TF_VERIFY(!rerootingSi->GetPrim(SdfPath("/World")).IsDefined(),
+            "Expected /World to be undefined after rerooting")) {
         return false;
     }
 
-    // Make sure that this can work as a prefixer
-    if (!_CompareValue(
-            "TESTING USING AS PREFIX (children of /)",
-            _Sorted(prefixViaReroot.GetChildPrimPaths(SdfPath("/"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/Some"),
-            })))) {
+    // GetChildPrimPaths from root should yield the prefix root.
+    if (!_CompareValue("GetChildPrimPaths('/')",
+            rerootingSi->GetChildPrimPaths(SdfPath("/")),
+            SdfPathVector({SdfPath("/Prefix")}))) {
         return false;
     }
-    if (!_CompareValue(
-            "TESTING USING AS PREFIX (children of /Some)",
-            _Sorted(prefixViaReroot.GetChildPrimPaths(SdfPath("/"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/Some"),
-            })))) {
+
+    if (!_CompareValue("GetChildPrimPaths('/Prefix')",
+            rerootingSi->GetChildPrimPaths(SdfPath("/Prefix")),
+            SdfPathVector({SdfPath("/Prefix/World")}))) {
         return false;
     }
-    if (!_CompareValue(
-            "TESTING USING AS PREFIX (children of /Some/Prefix)",
-            _Sorted(prefixViaReroot.GetChildPrimPaths(SdfPath("/Some/Prefix"))),
-            _Sorted(SdfPathVector({
-                SdfPath("/Some/Prefix/A"),
-                SdfPath("/Some/Prefix/path"),
-            })))) {
+
+    if (!_CompareValue("GetChildPrimPaths('/Prefix/World')",
+            rerootingSi->GetChildPrimPaths(SdfPath("/Prefix/World")),
+            SdfPathVector({SdfPath("/Prefix/World/Geo")}))) {
+        return false;
+    }
+
+    if (!_CompareValue("GetChildPrimPaths('/Prefix/World/Geo')",
+            rerootingSi->GetChildPrimPaths(SdfPath("/Prefix/World/Geo")),
+            SdfPathVector({SdfPath("/Prefix/World/Geo/Cube")}))) {
         return false;
     }
 
@@ -277,7 +122,134 @@ TestRerootingSceneIndex()
 
 //-----------------------------------------------------------------------------
 
-#define xstr(s) str(s)
+static bool
+TestPathDataSources()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->GetRootLayer()->ImportFromString(R"usda(
+#usda 1.0
+
+def Mesh "A" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+) {
+    rel material:binding = </A/B>
+
+    def Material "B" {}
+}
+)usda");
+
+    UsdImagingStageSceneIndexRefPtr stageSi = UsdImagingStageSceneIndex::New();
+    stageSi->SetStage(stage);
+
+    UsdImagingRerootingSceneIndexRefPtr rerootingSi =
+        UsdImagingRerootingSceneIndex::New(
+            stageSi, SdfPath("/"), SdfPath("/My/Prefix"));
+
+    // The material binding path should be remapped.
+    HdSceneIndexPrim prim = rerootingSi->GetPrim(SdfPath("/My/Prefix/A"));
+    UsdImagingMaterialBindingsSchema bindingsSchema =
+        UsdImagingMaterialBindingsSchema::GetFromParent(prim.dataSource);
+    if (!TF_VERIFY(bindingsSchema.IsDefined(),
+            "Expected material bindings on /My/Prefix/A")) {
+        return false;
+    }
+
+    UsdImagingMaterialBindingVectorSchema bindingVec =
+        bindingsSchema.GetMaterialBindings();
+    if (!TF_VERIFY(bindingVec.IsDefined() && bindingVec.GetNumElements() == 1,
+            "Expected one material binding entry")) {
+        return false;
+    }
+
+    HdPathDataSourceHandle matPathDs =
+        bindingVec.GetElement(0).GetDirectMaterialBinding().GetMaterialPath();
+    if (!TF_VERIFY(matPathDs, "Expected material path data source")) {
+        return false;
+    }
+
+    // Absolute path should be remapped.
+    if (!_CompareValue("material binding path",
+            matPathDs->GetTypedValue(0.0f),
+            SdfPath("/My/Prefix/A/B"))) {
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+static bool
+TestPathExpressionDataSources()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->GetRootLayer()->ImportFromString(R"usda(
+#usda 1.0
+
+def Scope "Chars" (
+    prepend apiSchemas = [
+        "CollectionAPI:trivialExpr", "CollectionAPI:simpleExpr",
+        "CollectionAPI:complexExpr1", "CollectionAPI:complexExpr2"]
+) {
+    pathExpression collection:trivialExpr:membershipExpression = "~//*.*"
+    pathExpression collection:simpleExpr:membershipExpression = "/Chars/Hero"
+    pathExpression collection:complexExpr1:membershipExpression = "/Chars//"
+    pathExpression collection:complexExpr2:membershipExpression = "//Foo/Bar"
+}
+)usda");
+
+    UsdImagingStageSceneIndexRefPtr stageSi = UsdImagingStageSceneIndex::New();
+    stageSi->SetStage(stage);
+
+    UsdImagingRerootingSceneIndexRefPtr rerootingSi =
+        UsdImagingRerootingSceneIndex::New(
+            stageSi, SdfPath("/"), SdfPath("/My/Prefix"));
+
+    HdSceneIndexPrim prim =
+        rerootingSi->GetPrim(SdfPath("/My/Prefix/Chars"));
+    HdCollectionsSchema collectionsSchema =
+        HdCollectionsSchema::GetFromParent(prim.dataSource);
+    if (!TF_VERIFY(collectionsSchema.IsDefined(),
+            "Expected collections on /My/Prefix/Chars")) {
+        return false;
+    }
+
+    // Trivial expression should be left as-is.
+    if (!_CompareValue("trivial expression ~//*.*",
+            collectionsSchema.GetCollection(TfToken("trivialExpr"))
+                .GetMembershipExpression()->GetTypedValue(0.0f),
+            SdfPathExpression("~//*.*"))) {
+        return false;
+    }
+
+    // A simple path expression should be prefixed.
+    if (!_CompareValue("simple path expression /Chars/Hero",
+            collectionsSchema.GetCollection(TfToken("simpleExpr"))
+                .GetMembershipExpression()->GetTypedValue(0.0f),
+            SdfPathExpression("/My/Prefix/Chars/Hero"))) {
+        return false;
+    }
+
+    // Complex path expressions should also be prefixed.
+    if (!_CompareValue("complex path expression /Chars//",
+            collectionsSchema.GetCollection(TfToken("complexExpr1"))
+                .GetMembershipExpression()->GetTypedValue(0.0f),
+            SdfPathExpression("/My/Prefix/Chars//"))) {
+        return false;
+    }
+
+    if (!_CompareValue("complex path expression //Foo/Bar",
+            collectionsSchema.GetCollection(TfToken("complexExpr2"))
+                .GetMembershipExpression()->GetTypedValue(0.0f),
+            SdfPathExpression("/My/Prefix//Foo/Bar"))) {
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
 #define str(s) #s
 #define TEST(X)                                                                \
     std::cout << (++i) << ") " << str(X) << "..." << std::endl;                \
@@ -292,12 +264,16 @@ int
 main(int argc, char** argv)
 {
     //-------------------------------------------------------------------------
-    std::cout << "STARTING testUsdUnderlayRerootingSceneIndex" << std::endl;
+    std::cout << "STARTING testUsdImagingRerootingSceneIndex" << std::endl;
 
     int i = 0;
-    TEST(TestRerootingSceneIndex);
+    // XXX Add a test case where the UsdImagingRerootingSceneIndex is not
+    // used purely as a prefixing scene index.
+    TEST(TestPrimPaths);
+    TEST(TestPathDataSources);
+    TEST(TestPathExpressionDataSources);
 
     //--------------------------------------------------------------------------
-    std::cout << "DONE testUsdUnderlayRerootingSceneIndex" << std::endl;
+    std::cout << "DONE testUsdImagingRerootingSceneIndex" << std::endl;
     return 0;
 }

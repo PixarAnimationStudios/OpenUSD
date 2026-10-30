@@ -1,0 +1,34 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Root references lib.usda</Asset>, which
+    specializes /_class_Lib.  /_class_Lib/Model/InheritsMat inherits
+    /_class_Lib/_class_Mat, so /Root/Model/InheritsMat has an implied
+    inherit to lib.usda</Asset/_class_Mat>, which provides the attribute
+    fromAssetClass and the child prim Kid.  /Root/Model/SpecializesMat is
+    the same with a specializes instead of an inherit.
+
+    Asset/Model has no specs, so in the prim index for /Root/Model the
+    only node under the reference to lib.usda</Asset/Model> is the inert
+    placeholder for the specializes to /_class_Lib/Model, whose opinions
+    are provided by the propagated node under the root.  The implied
+    classes for InheritsMat and SpecializesMat are evaluated through that
+    placeholder and implied under the reference node, at
+    lib.usda</Asset/_class_Mat>.
+
+    Previously the placeholder, and then the reference node, were culled
+    in /Root/Model.  The implied inherit to lib.usda</Asset/_class_Mat>
+    was then added beneath the culled reference node, and child name
+    composition skipped it, so Kid was missing from
+    /Root/Model/InheritsMat.  For SpecializesMat the implied node is a
+    placeholder whose opinions are provided under the root, so the results
+    were right, but the index still had a node beneath a culled parent
+    that was not culled itself.  We expect Kid under both.
+    """
+)
+
+def "Root" (
+    references = @./lib.usda@</Asset>
+)
+{
+}

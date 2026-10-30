@@ -14,11 +14,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static const int SCHEMA_BASE_INIT = 1971;
-static const int TEST_BASE_INIT = 44;
-static const int TEST_DERIVED_INIT = 42;
-static const int MUTATED_VAL = 22;
-
 // These test cases are not meant to be full coverage of the UsdPrimDefinition 
 // API for prim and property data access. Instead they focus on the C++ specific
 // functionality like the templated accessors. The python testUsdSchemaRegistry

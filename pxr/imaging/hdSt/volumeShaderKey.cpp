@@ -28,7 +28,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // utils       
     ((transformUtils,     "CoordUtils.Transform"))
     ((projectionUtils,    "CoordUtils.Projection"))
-    ((depthUtils,         "CoordUtils.Depth"))
+    ((depthUtilsCommon,   "CoordUtils.Depth.Common"))
+    ((depthUtilsFragment, "CoordUtils.Depth.Fragment"))
 );
 
 HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
@@ -37,7 +38,8 @@ HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
       FS{ _tokens->pointIdFS,
           _tokens->transformUtils,
           _tokens->projectionUtils,
-          _tokens->depthUtils,
+          _tokens->depthUtilsCommon,
+          _tokens->depthUtilsFragment,
           _tokens->instancing,
           _tokens->mainFS, TfToken() }
 {

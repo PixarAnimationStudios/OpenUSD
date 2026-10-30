@@ -253,6 +253,8 @@ HdxTaskController::_CreateRenderGraph()
         _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->translucent));
         _renderTaskIds.push_back(_CreateRenderTask(
+            HdStMaterialTagTokens->translucentWithCustomDepth));
+        _renderTaskIds.push_back(_CreateRenderTask(
             HdStMaterialTagTokens->volume));
 
         if (_AovsSupported()) {
@@ -328,7 +330,9 @@ HdxTaskController::_CreateRenderTask(TfToken const& materialTag)
         materialTag == HdStMaterialTagTokens->masked ||
         materialTag.IsEmpty()) {
         GetRenderIndex()->InsertTask<HdxRenderTask>(&_delegate, taskId);
-    } else if (materialTag == HdStMaterialTagTokens->translucent) {
+    } else if (materialTag == HdStMaterialTagTokens->translucent ||
+               materialTag ==
+                   HdStMaterialTagTokens->translucentWithCustomDepth) {
         GetRenderIndex()->InsertTask<HdxOitRenderTask>(&_delegate, taskId);
         // OIT is using its own buffers which are only per pixel and not per
         // sample. Thus, we resolve the AOVs before starting to render any
@@ -720,14 +724,21 @@ HdxTaskController::GetRenderingTaskPaths() const
     if (!_renderTaskIds.empty()) {
         const SdfPath volumeId =
             _GetRenderTaskPath(HdStMaterialTagTokens->volume);
+        const SdfPath translucentWithCustomDepthId =
+            _GetRenderTaskPath(HdStMaterialTagTokens->translucentWithCustomDepth);
 
         bool hasVolume = false;
+        bool hasTranslucentWithCustomDepth = false;
 
         // Render opaque prims, additive and translucent blended prims.
-        // Skip volume prims, because volume rendering reads from the depth
-        // buffer so we must resolve depth first first.
+        // Skip volume prims and translucent prims that have custom depth,
+        // because their rendering reads from the depth buffer so we must
+        // resolve depth first.
         for (const SdfPath &id : _renderTaskIds) {
-            if (id == volumeId) {
+            if (id == translucentWithCustomDepthId) {
+                hasTranslucentWithCustomDepth = true;
+                continue;
+            } else if (id == volumeId) {
                 hasVolume = true;
                 continue;
             }
@@ -739,6 +750,11 @@ HdxTaskController::GetRenderingTaskPaths() const
         _AddIfNonEmpty(_aovInputTaskId, &paths);
 
         _AddIfNonEmpty(_boundingBoxTaskId, &paths);
+
+        // Render translucent prims that write custom depth
+        if (hasTranslucentWithCustomDepth) {
+            paths.push_back(translucentWithCustomDepthId);
+        }
 
         // Render volume prims
         if (hasVolume) {
@@ -1152,6 +1168,8 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     const SdfPath volumeId = _GetRenderTaskPath(HdStMaterialTagTokens->volume);
     const SdfPath translucentId = _GetRenderTaskPath(
         HdStMaterialTagTokens->translucent);
+    const SdfPath translucentWithCustomDepthId = _GetRenderTaskPath(
+        HdStMaterialTagTokens->translucentWithCustomDepth);
 
     // Set AOV bindings on render tasks
     for (SdfPath const& renderTaskId : _renderTaskIds) {
@@ -1167,7 +1185,9 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
                 HdTokens->params);
 
         rParams.aovBindings = aovBindings;
-        if (renderTaskId == volumeId || renderTaskId == translucentId) {
+        if (renderTaskId == volumeId ||
+            renderTaskId == translucentId ||
+            renderTaskId == translucentWithCustomDepthId) {
             rParams.aovInputBindings = aovInputBindings;
         }
 

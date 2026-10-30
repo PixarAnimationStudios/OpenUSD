@@ -68,7 +68,8 @@ protected:
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdRenderParam *renderParam,
                          HdStDrawItem *drawItem,
-                         HdDirtyBits *dirtyBits);
+                         HdDirtyBits *dirtyBits,
+                         HdImplicitSurfaceReprDesc const &desc);
 
     void _UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                         HdRenderParam *renderParam,
@@ -85,7 +86,8 @@ protected:
 
     void _PopulateIndexBuffer(HdSceneDelegate *sceneDelegate,
                               HdRenderParam *renderParam,
-                              HdStDrawItem *drawItem);
+                              HdStDrawItem *drawItem,
+                              HdImplicitSurfaceReprDesc const &desc);
 
     // Needs to be implemented by each prim-type-specific child class
     virtual void _PopulateCustomConstantPrimvars(
@@ -103,15 +105,12 @@ protected:
 private:
     HdCullStyle _cullStyle{HdCullStyleDontCare};
 
-    // In the future, we might want to create a map for the vertex counts
-    // required for different reprs (such as points)
-    const uint32_t _vertexCount{4};
-
     bool _doubleSided : 1;
     bool _displayOpacityFromInstancer : 1;
     bool _displayOpacityFromPrimvars : 1;
     bool _displayInOverlay : 1;
     bool _occludedSelectionShowsThrough : 1;
+    bool _pointsShadingEnabled : 1;
 
     enum DrawingCoord {
         InstancePrimvar = HdDrawingCoord::CustomSlotsBegin

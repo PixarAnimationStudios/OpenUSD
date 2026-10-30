@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    doc = """Test scene for purpose filtering.
+    Contains four unit cubes arranged in a 2x2 grid on the XY plane,
+    each with a unique purpose attribute (default, proxy, guide, render),
+    and a dome light with a large texture that uses the "render" purpose.
+    The dome light texture should only be visible when the "render" purpose is shown (note that it is possible to hide this texture in usdview, but not
+    with the usdImagingGL test harness).
+    """
+    upAxis = "Y"
+    metersPerUnit = 0.01
+)
+
+def Xform "World" {
+    def Cube "Default" {
+        double size = 2
+        double3 xformOp:translate = (-2, 2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        # Omitting purpose attribute uses the fallback value "default",
+        # which maps to the "geometry" render tag.
+    }
+
+    def Cube "Proxy" {
+        double size = 2
+        double3 xformOp:translate = (2, 2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(0, 1, 0)]
+        uniform token purpose = "proxy"
+    }
+
+    def Cube "Guide" {
+        double size = 2
+        double3 xformOp:translate = (-2, -2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        uniform token purpose = "guide"
+    }
+
+    def Cube "Render" {
+        double size = 2
+        double3 xformOp:translate = (2, -2, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        color3f[] primvars:displayColor = [(1, 1, 1)]
+        uniform token purpose = "render"
+    }
+
+    def DomeLight "Dome_Environment" {
+        # Asset is generated at test runtime via oiiotool.
+        asset inputs:texture:file = @large_dome_checker.exr@
+        uniform token purpose = "render"
+    }
+}

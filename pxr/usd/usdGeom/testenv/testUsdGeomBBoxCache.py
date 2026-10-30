@@ -526,7 +526,40 @@ def TestMeshBounds():
                 Gf.Vec3f(floatMin, floatMin, floatMin)))
     assert noExtentEmptyPoints.ComputeExtent(Usd.TimeCode.Default()) == \
             expectedExtent
-    
+
+def TestBugPres95351():
+    """
+    This demonstrated an observed race condition in UsdGeomBBoxCache
+    in the presence of nested instancing.
+    """
+    defaultBBox = Gf.BBox3d(
+        Gf.Range3d(Gf.Vec3d(-1.5, -1.5, -1.5), Gf.Vec3d(1.5, 1.5, 10.5)))
+    renderBBox = Gf.BBox3d(
+        Gf.Range3d(Gf.Vec3d(-11.0, -1.5, -16.5), Gf.Vec3d(1.5, 1.5, 10.5)))
+    # Experimentally, 10k iterations reliably demonstrated the race,
+    # while 1k was insufficient.  As a tradeoff between usefully observable
+    # reproducibility and undue testing cost, use a wall clock timer.
+    import time
+    now = time.time()
+    endTime = now + 5.0 # run for 5 seconds wall clock time
+    while now < endTime:
+        for i in range(2000):
+            defaultCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(),
+                ['default'])
+            renderCache = UsdGeom.BBoxCache(Usd.TimeCode.Default(),
+                ['default', 'render'])
+            stage = Usd.Stage.Open("nestedInstanceTest.usda")
+            assert len(stage.GetPrototypes()) == 2
+            root = stage.GetPrimAtPath("/Root")
+            if renderCache.ComputeWorldBound(root) != renderBBox:
+                # Race condition observed
+                print('iteration:         ', i)
+                print('renderCache result:',
+                    renderCache.ComputeWorldBound(root))
+                print('expected:          ', renderBBox)
+            assert defaultCache.ComputeWorldBound(root) == defaultBBox
+            assert renderCache.ComputeWorldBound(root) == renderBBox
+        now = time.time()
 
 if __name__ == "__main__":
     Main()
@@ -544,4 +577,7 @@ if __name__ == "__main__":
     TestBug127801()
     TestUsd4957()
     TestMeshBounds()
+
+    # Demonstrates a past race condition.
+    TestBugPres95351()
 

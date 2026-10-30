@@ -50,12 +50,15 @@ kind = "component"
         }
     }
 
-    def Xform "Lights" 
+    def Camera "Camera"
     {
-        # Set the purpose for lights to "render" so that they're not included
-        # in the test's frameAll calculation.
-        uniform token purpose = "render"
-        
+        float focalLength = 18.147
+        double3 xformOp:translate = (1.25, -1.25, 7.53)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Lights"
+    {
         def SphereLight "LeftRed" (
             active=true
         )

@@ -18,6 +18,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class GfDuration
+/// \nosubgrouping
 ///
 /// Value type that represents a duration measured in time codes. It
 /// is equivalent to a double type value but is used to indicate that
@@ -37,67 +38,86 @@ public:
 
     /// @}
 
-    ///\name Operators
+    /// \name Comparison operators
     /// @{
 
-    /// Comparison operators
+    /// Compare durations.
     friend constexpr bool operator==(const GfDuration &lhs,
                                      const GfDuration &rhs) noexcept
         { return lhs._duration == rhs._duration; }
+    /// \sa GfDuration::operator==
     friend constexpr bool operator!=(const GfDuration &lhs,
                                      const GfDuration &rhs) noexcept
         { return lhs._duration != rhs._duration; }
+    /// \sa GfDuration::operator==
     friend constexpr bool operator<(const GfDuration &lhs,
                                     const GfDuration &rhs) noexcept
         { return lhs._duration < rhs._duration; }
+    /// \sa GfDuration::operator==
     friend constexpr bool operator>(const GfDuration &lhs,
                                     const GfDuration &rhs) noexcept
         { return lhs._duration > rhs._duration; }
+    /// \sa GfDuration::operator==
     friend constexpr bool operator<=(const GfDuration &lhs,
                                      const GfDuration &rhs) noexcept
         { return lhs._duration <= rhs._duration; }
+    /// \sa GfDuration::operator==
     friend constexpr bool operator>=(const GfDuration &lhs,
                                      const GfDuration &rhs) noexcept
         { return lhs._duration >= rhs._duration; }
 
-    /// Scale duration values by doubles
+    /// @}
+
+    /// \name Scaling operators
     /// @{
+
+    /// Scale duration values by doubles, returning a new, scaled GfDuration.
     friend constexpr
     GfDuration operator*(const GfDuration& d,
                          const double amount) noexcept
         { return GfDuration(d._duration * amount); }
+    /// \sa GfDuration::operator*
     friend constexpr
     GfDuration operator*(const double amount,
                          const GfDuration& d) noexcept
         { return GfDuration(amount * d._duration); }
+    /// \sa GfDuration::operator*
     friend constexpr
     GfDuration operator/(const GfDuration& d,
                          const double amount) noexcept
         { return GfDuration(d._duration / amount); }
+
     /// @}
 
-    /// Ratio of two durations is a unitless double scale factor
+    /// \name Arithmetic operators
+    /// @{
+
+    /// Ratio of two durations is a unitless double scale factor.
     constexpr double operator/(const GfDuration &rhs) const noexcept
         { return (_duration / rhs._duration); }
 
     /// Sum, difference, and negation of durations are durations.
-    /// @{
     friend constexpr
     GfDuration operator+(const GfDuration& lhs,
                          const GfDuration& rhs) noexcept
         { return GfDuration(lhs._duration + rhs._duration); }
+
+    /// \sa GfDuration::operator+
     friend constexpr
     GfDuration operator-(const GfDuration& lhs,
                          const GfDuration& rhs) noexcept
         { return GfDuration(lhs._duration - rhs._duration); }
+
+    /// \sa GfDuration::operator+
     constexpr GfDuration operator-() const noexcept
         { return GfDuration(-_duration); }
+
     /// @}
 
-    /// Explicit conversion to double
+    /// Explicit conversion to double.
     explicit constexpr operator double() const noexcept {return _duration;}
 
-    /// Hash operations
+    /// \name Hash operations
     /// @{
     size_t GetHash() const {
         return std::hash<double>()(_duration);
@@ -113,7 +133,7 @@ public:
 
     friend size_t hash_value(const GfDuration& ap) { return ap.GetHash(); }
 
-    /// Enable TfHash for GfDuration
+    /// Enable TfHash for GfDuration.
     template <class HashState>
     friend void TfHashAppend(HashState &h, const GfDuration& d)
     {
@@ -121,7 +141,6 @@ public:
         TfHashAppend(h, d._duration);
     }
 
-    /// @}
     /// @}
 
     /// \name Accessors

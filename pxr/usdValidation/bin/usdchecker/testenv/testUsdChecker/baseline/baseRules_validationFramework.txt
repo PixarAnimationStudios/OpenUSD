@@ -110,8 +110,12 @@
 	Doc: Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
+[usdValidation:AttributeSpecValueTypeMismatch]:
+	Doc: Checks that the authored default, time sample, and spline values of each attribute spec hold the value type declared by that spec's typeName.
+	Keywords: UsdCoreValidators
+	isSuite: False
 [usdValidation:AttributeTypeMismatch]:
-	Doc: Validator that checks for attribute type mismatch with the schema definition.
+	Doc: Checks that every property spec contributing to a composed attribute is an attribute spec declaring the attribute's composed type, and that each spec's authored values hold the spec's declared type.
 	Keywords: UsdCoreValidators
 	isSuite: False
 [usdValidation:CompositionErrorTest]:

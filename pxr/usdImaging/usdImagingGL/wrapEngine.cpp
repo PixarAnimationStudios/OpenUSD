@@ -11,9 +11,6 @@
 #include "pxr/external/boost/python/converter/from_python.hpp"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
-
-#include "pxr/usdImaging/usdImaging/delegate.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
@@ -236,12 +233,7 @@ void wrapEngine()
         ;
     }
 
-    // Wrap the constants.
-    scope().attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
-
     TfPyContainerConversions::from_python_sequence<
         std::vector<GlfSimpleLight>,
         TfPyContainerConversions::variable_capacity_policy>();
-
-    
 }

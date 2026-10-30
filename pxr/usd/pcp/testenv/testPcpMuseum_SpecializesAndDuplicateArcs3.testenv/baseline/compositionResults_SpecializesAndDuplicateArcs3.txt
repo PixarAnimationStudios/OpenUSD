@@ -1,0 +1,139 @@
+Loading @SpecializesAndDuplicateArcs3/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Set>
+
+Prim Stack:
+    root.usda            /Set
+    asset.usda           /Asset
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks>
+
+Prim Stack:
+    asset.usda           /Asset/Looks
+
+Child names:
+     ['Base', 'Derived']
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Base>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks/Mat
+    asset.usda           /Asset/Looks/Base
+    shaders.usda         /Shaders_dsv/Looks/Mat
+    lib.usda             /Lib/Looks/Mat
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Base.probe:
+    root.usda            /_class_Lib/Looks/Mat.probe
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Base/Child>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks/Mat/Child
+    lib.usda             /Lib/Looks/Mat/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Base/Child.probe:
+    root.usda            /_class_Lib/Looks/Mat/Child.probe
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Derived>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Derived
+    root.usda            /_class_Lib/Looks/Mat
+    asset.usda           /Asset/Looks/Base
+    shaders.usda         /Shaders_dsv/Looks/Mat
+    lib.usda             /Lib/Looks/Mat
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Derived.probe:
+    root.usda            /_class_Lib/Looks/Mat.probe
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Derived/Child>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks/Mat/Child
+    lib.usda             /Lib/Looks/Mat/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Derived/Child.probe:
+    root.usda            /_class_Lib/Looks/Mat/Child.probe
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib>
+
+Prim Stack:
+    root.usda            /_class_Lib
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/Looks>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/Looks/Mat>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks/Mat
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/_class_Lib/Looks/Mat.probe:
+    root.usda            /_class_Lib/Looks/Mat.probe
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/Looks/Mat/Child>
+
+Prim Stack:
+    root.usda            /_class_Lib/Looks/Mat/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/_class_Lib/Looks/Mat/Child.probe:
+    root.usda            /_class_Lib/Looks/Mat/Child.probe
+

@@ -113,6 +113,7 @@ private:
     HdBufferArrayRangeSharedPtr _dataBar;
     HdBufferArrayRangeSharedPtr _jointBar;
     HdBufferArrayRangeSharedPtr _uniformBar;
+    bool _oitShouldDraw;
 };
 
 HDX_API

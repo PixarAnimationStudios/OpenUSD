@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Asset specializes /_class_Lib, and
+    /_class_Lib/Model/Mat inherits /_class_Lib/_class_Mat.  Through the
+    ancestral specializes, /Asset/Model/Mat specializes
+    /_class_Lib/Model/Mat, so it has an implied inherit to
+    /Asset/_class_Mat, which provides the attribute fromAssetClass and
+    the child prim Kid.
+
+    /Inst inherits /Asset/Model/Mat.  The subtree for /Asset/Model/Mat is
+    built in a recursive prim indexing call, which leaves the specializes
+    to /_class_Lib/Model/Mat as an inert placeholder for propagation to
+    the root.  The propagated node is built in its own recursive call
+    where it is the root, so its inherit to /_class_Lib/_class_Mat cannot
+    be implied there, and it must be implied through the placeholder
+    once the propagated node is added to the prim index for /Inst.
+
+    Previously that never happened.  Implied classes were only evaluated
+    for the class hierarchy containing the propagated node itself, which
+    starts at or above the placeholder and does not include the
+    propagated node's children.  /Inst was missing the implied inherit to
+    /Asset/_class_Mat, and so missing fromAssetClass and Kid.  Prim
+    indexes that copy the specializes placeholder from an ancestor, like
+    the one for /Asset/Model/Mat itself, were not affected.
+
+    /Relocated references /Asset and relocates /Relocated/Model/Mat to
+    /Relocated/Model/Moved.  The relocation source subtree is built in a
+    recursive call in the same way, so /Relocated/Model/Moved was missing
+    fromAssetClass and Kid too.  We expect both under /Inst and
+    /Relocated/Model/Moved.
+
+    /Inst and /Relocated each also have a _class_Mat with an attribute.
+    The reference to /Asset maps /Asset/_class_Mat to
+    /Relocated/_class_Mat, so we expect fromRelocatedClass on
+    /Relocated/Model/Moved.  The inherit of /Asset/Model/Mat maps only
+    that prim's namespace, so /Asset/_class_Mat is implied across it
+    unchanged and /Inst/_class_Mat is not inherited.  We do not expect
+    fromInstClass on /Inst.  This is the same as if /Asset inherited
+    /_class_Lib instead of specializing it.
+    """
+    relocates = {
+        </Relocated/Model/Mat>: </Relocated/Model/Moved>
+    }
+)
+
+def "Asset" (
+    specializes = </_class_Lib>
+)
+{
+    class "_class_Mat"
+    {
+        int fromAssetClass = 1
+
+        def "Kid"
+        {
+        }
+    }
+}
+
+class "_class_Lib"
+{
+    def "Model"
+    {
+        def "Mat" (
+            inherits = </_class_Lib/_class_Mat>
+        )
+        {
+        }
+    }
+
+    class "_class_Mat"
+    {
+    }
+}
+
+def "Inst" (
+    inherits = </Asset/Model/Mat>
+)
+{
+    class "_class_Mat"
+    {
+        int fromInstClass = 1
+    }
+}
+
+def "Relocated" (
+    references = </Asset>
+)
+{
+    class "_class_Mat"
+    {
+        int fromRelocatedClass = 1
+    }
+}

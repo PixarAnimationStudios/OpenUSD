@@ -238,6 +238,8 @@ private:
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
     friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
+    friend bool Pcp_IsElided(const PcpNodeRef& node);
+    friend void Pcp_SetElided(const PcpNodeRef& node);
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.
@@ -403,7 +405,10 @@ private:
     // graph instances to be created.
     struct _UnsharedData {
         _UnsharedData()
-            : hasSpecs(false), culled(false), isDueToAncestor(false) {}
+            : hasSpecs(false)
+            , culled(false)
+            , isDueToAncestor(false)
+            , elided(false) {}
         explicit _UnsharedData(SdfPath const &p)
             : _UnsharedData(SdfPath(p)) {}
         explicit _UnsharedData(SdfPath &&p)
@@ -414,6 +419,7 @@ private:
             , isDueToAncestor(false)
             , hasTransitiveDirectArc(false)
             , hasTransitiveAncestralArc(false)
+            , elided(false)
             {}
 
         // The site path for a particular node.
@@ -443,6 +449,10 @@ private:
         // Whether this node was transitively introduced by an ancestral
         // arc.
         bool hasTransitiveAncestralArc:1;
+
+        // Whether this node was elided during prim indexing, for example
+        // because a relocation supersedes its opinions.  See Pcp_IsElided.
+        bool elided:1;
     };
     
     // Elements in this vector correspond to nodes in the shared node

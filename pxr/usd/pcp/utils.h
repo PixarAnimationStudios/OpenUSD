@@ -212,7 +212,26 @@ Pcp_IsPropagatedSpecializesNode(
 {
     return (PcpIsSpecializeArc(node._graph->GetArcType(node._nodeIdx)) &&
             node.GetParentNode() == node.GetRootNode() &&
-            node.GetSite() == node.GetOriginNode().GetSite());
+            node.HasSameSiteAs(node.GetOriginNode()));
+}
+
+// Returns true if the given node was elided during prim indexing, so that
+// neither it nor any node implied from it may contribute opinions.  Unlike
+// culling, this is independent of PcpPrimIndexInputs::Cull, and unlike
+// inertness, it distinguishes these nodes from placeholders.
+inline bool
+Pcp_IsElided(
+    const PcpNodeRef& node)
+{
+    return node._graph->_unshared[node._nodeIdx].elided;
+}
+
+// Marks the given node as elided.  See Pcp_IsElided.
+inline void
+Pcp_SetElided(
+    const PcpNodeRef& node)
+{
+    node._graph->_unshared[node._nodeIdx].elided = true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

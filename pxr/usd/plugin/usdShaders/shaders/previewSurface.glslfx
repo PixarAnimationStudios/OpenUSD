@@ -103,12 +103,6 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     // applied to it.  And since the opacity has had its scale and/or biasing
     // applied to it by this point, it can now be applied when appropriate.
 
-    // If opacityMode is "transparent", opacity should only apply to the
-    // diffuseColor component.
-    if (opacityMode == 1) {
-        diffuseColor *= opacity;
-    }
-
 #endif // HD_MATERIAL_TAG_MASKED
 
     // Selection highlighting.
@@ -129,15 +123,23 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         clearcoatColor,
         clearcoatRoughness,
         occlusion,
+        opacity,
+        opacityMode,
         Peye,
         perturbFragmentNormal(Peye.xyz, Neye));
 
-    // If opacityMode is "presence", opacity applies to all color components.
+    float alpha = 1.0;
+    // In "presence" opacityMode; alpha is simply the opacity value.
     if (opacityMode == 0) {
-        c *= opacity;
+        alpha = opacity;
+    }
+    // In "transparent" opacity mode make sure metallic materials are not 
+    // affected by opacity
+    else if (opacityMode == 1) {
+        alpha = mix(opacity, 1.0, metallic);
     }
 
-    return vec4(c, opacity);
+    return vec4(c, alpha);
 }
 
 
@@ -381,6 +383,24 @@ evaluateIndirectLighting(
 }
 
 vec3
+applyOpacityMode(
+    vec3 diffuseContrib,
+    vec3 specularContrib,
+    float opacity,
+    int opacityMode)
+{
+    // If opacityMode is "transparent", opacity should only apply to the
+    // diffuse component.
+    if (opacityMode == 1) {
+        return diffuseContrib * opacity + specularContrib;
+    }
+    // If opacityMode is "presence", opacity applies to all components.
+    else {
+        return (diffuseContrib + specularContrib) * opacity;
+    }
+}
+
+vec3
 evaluateLights(
         vec3 emissiveColor,
         vec3 diffuseColor,
@@ -394,6 +414,8 @@ evaluateLights(
         vec3 clearcoatColor,
         float clearcoatRoughness,
         float occlusion,
+        float opacity,
+        int opacityMode,
         vec4 Peye,
         vec3 Neye)
 {
@@ -466,12 +488,18 @@ evaluateLights(
                     specularRoughness, useSpecularWorkflow,
                     clearcoatAmount, clearcoatColor, clearcoatRoughness,
                     light.worldToLightTransform);
-            indirectLight = (indirectLightContrib.diffuse * light.diffuse.rgb 
-                           + indirectLightContrib.specular * light.specular.rgb);
+            indirectLight =
+                applyOpacityMode(
+                    indirectLightContrib.diffuse * light.diffuse.rgb,
+                    indirectLightContrib.specular * light.specular.rgb,
+                    opacity, opacityMode);
         }
         // all other light sources contribute to the direct lighting
         else {
-            directLight += (lightingContrib.diffuse + lightingContrib.specular);
+            directLight += 
+                applyOpacityMode(
+                    lightingContrib.diffuse, lightingContrib.specular,
+                    opacity, opacityMode);
         }
     }
 #endif

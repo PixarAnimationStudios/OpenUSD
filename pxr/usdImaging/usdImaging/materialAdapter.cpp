@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/materialAdapter.h"
+#include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -114,6 +115,61 @@ _CreateTerminalLocator(const TfToken& output)
 
     // Just point to the whole data source.
     return HdMaterialSchema::GetDefaultLocator();
+}
+
+// Given a Material \p materialPrim which contains a NodeGraph \p nodeGraphPrim,
+// look through \p properties for inputs on the NodeGraph.
+// Return a set of locator names for Shader prims which are connected to 
+// affected input properties of nodeGraphPrim
+TfDenseHashSet<TfToken, TfToken::HashFunctor>
+_CreateNodeGraphLocators(
+    const UsdPrim& materialPrim, 
+    const UsdPrim& nodeGraphPrim,
+    const TfTokenVector& properties)
+{
+    TRACE_FUNCTION();
+    
+    TfDenseHashSet<TfToken, TfToken::HashFunctor> shaderNames;
+    const UsdShadeNodeGraph nodeGraph(nodeGraphPrim);
+    if (!nodeGraph) {
+        return shaderNames;
+    }
+
+    // A NodeGraph can contain several other NodeGraphs
+    // Compute transitive consumers to get to the end of the chain
+    const UsdShadeNodeGraph::InterfaceInputConsumersMap interfaceMap = 
+        nodeGraph.ComputeInterfaceInputConsumersMap(
+            /*computeTransitiveConsumers=*/true);
+    if (interfaceMap.empty()) {
+        return shaderNames;
+    }
+
+    const SdfPath& primPath = materialPrim.GetPath();
+    for (const TfToken& propName : properties) {
+        if (!TfStringStartsWith(propName, UsdShadeTokens->inputs)) {
+            continue;
+        }
+
+        const TfToken inputName(propName.GetString().substr(
+            UsdShadeTokens->inputs.size()));
+        const UsdShadeInput nodeGraphInput = nodeGraph.GetInput(inputName);
+        if (!nodeGraphInput) {
+            continue;
+        }
+
+        auto interfaceIt = interfaceMap.find(nodeGraphInput);
+        if (interfaceIt == interfaceMap.end()) {
+            continue;
+        }
+
+        for (const UsdShadeInput& shaderInput : interfaceIt->second) {
+            const SdfPath shaderPath = shaderInput.GetPrim().GetPath();
+            const SdfPath relativePath = shaderPath.MakeRelativePath(primPath);
+            shaderNames.insert(relativePath.GetAsToken());
+        }
+    }
+
+    return shaderNames;
 }
 
 // Hash map used to track seen connections during notification processing.
@@ -314,17 +370,41 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
             }
         }
         if (outputIsDirty) {
-            // Dirty the associated shader node used by this output.
-            // Also dirty the shader node in the "all" context.
+            // Dirty the associated shader nodes used by this output in both 
+            // the current and "all" context.
+            TfDenseHashSet<TfToken, TfToken::HashFunctor> nodeNames;
+
+            // Specifically only match prims defined as NodeGraph, and not
+            // all prims that pass an IsA test, since Material prims would
+            // otherwise pass this test
+            if (descendentPrim.GetTypeName() == UsdShadeTokens->NodeGraph) {
+                nodeNames = _CreateNodeGraphLocators(
+                    prim, descendentPrim, properties);
+            } else {
+                // descendentPrim could be nested within NodeGraph prims.
+                // In that case the name of the locator should include 
+                // the NodeGraph names.
+                // Example: 
+                // a Shader prim located at 
+                // /Asset/Scope/Material/OuterGroup/InnerGroup/Shader
+                // will have a locator of 'OuterGroup/InnerGroup/Shader'
+                const SdfPath relativePath = 
+                    descendentPrim.GetPath().MakeRelativePath(
+                        prim.GetPath());
+                nodeNames.insert(relativePath.GetAsToken());
+            }
+
             for (TfToken const& renderContext:
                  { _GetRenderContextForShaderOutput(output),
                    HdMaterialSchemaTokens->all })
             {
-                result.insert(
+                const HdDataSourceLocator nodesLocator = 
                     HdMaterialSchema::GetDefaultLocator()
-                    .Append(renderContext)
-                    .Append(HdMaterialNetworkSchemaTokens->nodes)
-                    .Append(descendentPrim.GetName()));
+                        .Append(renderContext)
+                        .Append(HdMaterialNetworkSchemaTokens->nodes);
+                for (const TfToken& nodeName : nodeNames) {
+                    result.insert(nodesLocator.Append(nodeName));
+                }
             }
         }
     }

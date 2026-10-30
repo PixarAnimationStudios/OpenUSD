@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates that a reference with no other opinions
+    composes the same as its target when the target uses nested relocates
+    and inherits.
+
+    feathers.usda: /FeathersRig/RWing inherits the class /FeathersRig/SymWing.
+    Under SymWing, Deform/Flight01Rig/Control/X inherits the sibling class
+    Deform/Flight01Rig/Control/Base.  SymWing also has an unrelated
+    Control/Flight01/Base.
+
+    charrig.usda references /FeathersRig at /CharRig/Rig and relocates both
+    Rig/RWing/Control -> Control/RWing and the nested
+    Rig/RWing/Deform/Flight01Rig/Control -> Control/RWing/Flight01.  So
+    /CharRig/Control/RWing/Flight01 is the target of the nested relocate,
+    which elides the ancestral opinions from Rig/RWing/Control/Flight01 (and
+    from the SymWing class there).  charrig.usda also authors an opinion on
+    /CharRig/Rig/SymWing/Control/Flight01/Base.
+
+    root.usda just references /CharRig at /Saverio.  We expect
+    /Saverio/Control/RWing/Flight01/X to compose the same opinions as
+    /CharRig/Control/RWing/Flight01/X does in charrig.usda alone: the
+    RWing/Deform and SymWing/Deform opinions on Base, and none from
+    SymWing/Control/Flight01/Base, which the nested relocate elides.
+    Previously, the elided class was implied into root.usda, where it
+    contributed opinions.
+    """
+)
+
+def "Saverio" (
+    references = @./charrig.usda@</CharRig>
+)
+{
+}

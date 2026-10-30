@@ -318,6 +318,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displayMetallic)           // simple lighting shader
     (displayRoughness)          // simple lighting shader
 
+    (overlayOpacity)            // overlay shader
+
     (hullColor)                 // terminal shader
     (hullOpacity)               // terminal shader
     (scalarOverride)            // terminal shader
@@ -342,6 +344,8 @@ static const std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
 
             { _tokens->displayMetallic, VtValue(0.0f) },
             { _tokens->displayRoughness, VtValue(1.0f) },
+
+            { _tokens->overlayOpacity, VtValue(0.3f) },
 
             { _tokens->hullColor, VtValue(GfVec3f(1.0f)) },
             { _tokens->hullOpacity, VtValue(1.0f) },
@@ -394,6 +398,8 @@ _GetExtraIncludedShaderPrimvarNames()
 
         _tokens->displayMetallic,
         _tokens->displayRoughness,
+
+        _tokens->overlayOpacity,
 
         _tokens->hullColor,
         _tokens->hullOpacity,

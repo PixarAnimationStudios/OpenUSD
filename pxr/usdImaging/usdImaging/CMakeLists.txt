@@ -179,6 +179,16 @@ pxr_library(usdImaging
 )
 
 # Build tests
+pxr_build_test(testUsdImagingCoordSysBindingEdits
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+        tf
+    CPPFILES
+        testenv/testUsdImagingCoordSysBindingEdits.cpp
+)
 pxr_build_test(testUsdImagingDataSourceAttribute
     LIBRARIES
         usdImaging
@@ -239,6 +249,17 @@ pxr_build_test(testUsdImagingMaterialBinding
     CPPFILES
         testenv/testUsdImagingMaterialBinding.cpp
 )
+pxr_build_test(testUsdImagingMaterialAdapter
+    LIBRARIES
+        usdImaging
+        usdShade
+        usd
+        hd
+        garch
+        tf
+    CPPFILES
+        testenv/testUsdImagingMaterialAdapter.cpp
+)
 pxr_build_test(testUsdImagingNestedInstancingCategories
     LIBRARIES
         usdImaging
@@ -258,8 +279,9 @@ pxr_build_test(testUsdImagingPrimvarUtils
 pxr_build_test(testUsdImagingRerootingSceneIndex
     LIBRARIES
         usdImaging
+        usd
+        sdf
         hd
-        vt
     CPPFILES
         testenv/testUsdImagingRerootingSceneIndex.cpp
 )
@@ -271,6 +293,16 @@ pxr_build_test(testUsdImagingNiAggregationNonDescendantPaths
         tf
     CPPFILES
         testenv/testUsdImagingNiAggregationNonDescendantPaths.cpp
+)
+pxr_build_test(testUsdImagingNiCoordSysBinding
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+        tf
+    CPPFILES
+        testenv/testUsdImagingNiCoordSysBinding.cpp
 )
 pxr_build_test(testUsdImagingRootPrim
     LIBRARIES
@@ -368,6 +400,7 @@ pxr_register_test(testUsdImagingExcluded
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingExcluded"
     EXPECTED_RETURN_CODE 0
 )
+
 # Tests that rely on plugins aren't currently supported in static builds.
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdImagingMaterialBinding
@@ -382,12 +415,26 @@ if (BUILD_SHARED_LIBS)
         ENV
             USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
     )
+    pxr_register_test(testUsdImagingMaterialAdapter
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialAdapter -stage model.usda"
+        TESTENV testenv/testUsdImagingMaterialAdapter
+        EXPECTED_RETURN_CODE 0
+    )
     pxr_register_test(testUsdImagingColorSpace
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingColorSpace"
         TESTENV testenv/testUsdImagingColorSpace
         EXPECTED_RETURN_CODE 0
     )
-endif()
+    pxr_register_test(testUsdImagingNiCoordSysBinding
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNiCoordSysBinding"
+        EXPECTED_RETURN_CODE 0
+    )
+    pxr_register_test(testUsdImagingCoordSysBindingEdits
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCoordSysBindingEdits"
+        EXPECTED_RETURN_CODE 0
+    )
+endif() # BUILD_SHARED_LIBS
+
 pxr_register_test(testUsdImagingNestedInstancingCategories
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
     TESTENV testenv/testUsdImagingNestedInstancingCategories

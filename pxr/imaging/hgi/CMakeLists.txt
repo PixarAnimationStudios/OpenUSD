@@ -53,11 +53,6 @@ if (APPLE)
     return()
 endif()
 
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
-
 if (${PXR_BUILD_GPU_SUPPORT})
     pxr_build_test(testHgiCommand
         LIBRARIES

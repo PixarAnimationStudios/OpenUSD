@@ -189,12 +189,12 @@ following {ref}`Cylinder` has animated translation and rotation using TimeSample
 
 def Cylinder "AnimatedCylinder"
 {
-    double3 xformOp:translate.timeSamples = {
+    float3 xformOp:translate.timeSamples = {
         1:  (0, 0, 0),
         24: (10, 0, 0),
         48: (0, 0, 0)
     }
-    double3 xformOp:rotateXYZ.timeSamples = {
+    float3 xformOp:rotateXYZ.timeSamples = {
         1:  (0, 0, 0),
         24: (0, 180, 0),
         48: (0, 360, 0)
@@ -526,8 +526,8 @@ transformations when combining assets from different sources:
 ```{code-block} usda
 #usda 1.0
 (
-    metersPerUnit = 0.01   # 1 unit = 1 centimeter (Maya default)
-    # metersPerUnit = 1.0  # 1 unit = 1 meter (OpenUSD default)
+    metersPerUnit = 0.01   # 1 unit = 1 centimeter (OpenUSD default)
+    # metersPerUnit = 1.0  # 1 unit = 1 meter
 )
 ```
 

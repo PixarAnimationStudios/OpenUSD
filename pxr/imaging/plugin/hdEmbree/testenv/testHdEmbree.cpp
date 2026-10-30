@@ -17,17 +17,25 @@
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
-
-#include "pxr/imaging/plugin/hdEmbree/rendererPlugin.h"
-#include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
+#include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <embree4/rtcore.h>
 
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+// `enableAmbientOcclusion` and `ambientOcclusionSamples`
+// come from `HdEmbreeRenderSettingsTokens`
+TF_DEFINE_PRIVATE_TOKENS(_EmbreeTestTokens,
+    (HdEmbreeRendererPlugin)            \
+    (enableAmbientOcclusion)            \
+    (ambientOcclusionSamples)           \
+);
 
 // ------------------------------------------------------
 // HdSt_UnitTestGLDrawing is test scaffolding; it can create a window
@@ -92,8 +100,7 @@ private:
     // are a discoverable way to create render delegates.
 
     HdEngine _engine;
-    HdEmbreeRendererPlugin *_rendererPlugin;
-    HdRenderDelegate *_renderDelegate;
+    HdPluginRenderDelegateUniqueHandle _renderDelegate;
     HdRenderIndex *_renderIndex;
     HdUnitTestDelegate *_sceneDelegate;
 
@@ -126,16 +133,11 @@ private:
 
 void HdEmbree_TestGLDrawing::InitTest()
 {
-    // This test bypasses the hydra plugin system; it creates an embree
-    // renderer plugin directly, and then a render delegate, and then
-    // a render index.
-    _rendererPlugin = new HdEmbreeRendererPlugin;
-    TF_VERIFY(_rendererPlugin != nullptr);
+    _renderDelegate = HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
+        _EmbreeTestTokens->HdEmbreeRendererPlugin);
+    TF_VERIFY(_renderDelegate);
 
-    _renderDelegate = _rendererPlugin->CreateRenderDelegate();
-    TF_VERIFY(_renderDelegate != nullptr);
-
-    _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
+    _renderIndex = HdRenderIndex::New(_renderDelegate.Get(), HdDriverVector());
     TF_VERIFY(_renderIndex != nullptr);
 
     // Construct a new scene delegate to populate the render index.
@@ -220,9 +222,9 @@ void HdEmbree_TestGLDrawing::InitTest()
         // has to calculate the normals
         //
         _renderDelegate->SetRenderSetting(
-            HdEmbreeRenderSettingsTokens->enableAmbientOcclusion, VtValue(true));
+            _EmbreeTestTokens->enableAmbientOcclusion, VtValue(true));
         _renderDelegate->SetRenderSetting(
-            HdEmbreeRenderSettingsTokens->ambientOcclusionSamples, VtValue(16));
+            _EmbreeTestTokens->ambientOcclusionSamples, VtValue(16));
     }
 
     if (_instance) {
@@ -426,8 +428,7 @@ void HdEmbree_TestGLDrawing::UninitTest()
     // Deconstruct hydra state.
     delete _sceneDelegate;
     delete _renderIndex;
-    _rendererPlugin->DeleteRenderDelegate(_renderDelegate);
-    delete _rendererPlugin;
+    _renderDelegate = nullptr;
 }
 
 void HdEmbree_TestGLDrawing::ParseArgs(int argc, char *argv[])

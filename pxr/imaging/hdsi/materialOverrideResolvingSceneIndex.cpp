@@ -851,7 +851,6 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
     _SendPrimsAdded(_AddGeneratedMaterials(entries));
 }
 
@@ -860,7 +859,6 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
     _SendPrimsDirtied(_DirtyGeneratedMaterials(entries));
 }
 
@@ -876,6 +874,7 @@ HdMaterialOverrideSchema
 HdsiMaterialOverrideResolvingSceneIndex::_GetMaterialOverrides(
     const SdfPath& primPath) const
 {
+    TRACE_FUNCTION();
     const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
     const HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
     return HdMaterialOverrideSchema::GetFromParent(prim.dataSource);
@@ -903,6 +902,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
     if (!matOverrideSchema.IsDefined()) {
         return {};
     }
+    TRACE_FUNCTION();
 
     // If this geom with material overrides does not have
     // any materials bound to it, no further processing is required
@@ -1002,6 +1002,7 @@ HdSceneIndexObserver::AddedPrimEntries
 HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterials(
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
+    TRACE_FUNCTION();
     HdSceneIndexObserver::AddedPrimEntries newEntries(entries);
     for (const HdSceneIndexObserver::AddedPrimEntry& entry : entries) {
         const SdfPath newMaterialPath =
@@ -1019,6 +1020,7 @@ HdSceneIndexObserver::DirtiedPrimEntries
 HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeneratedMaterials(
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
+    TRACE_FUNCTION();
     // Use sets to produce a minimal number of invalidations
     PathSet addedEntriesSet;
     PathSet removedEntriesSet;

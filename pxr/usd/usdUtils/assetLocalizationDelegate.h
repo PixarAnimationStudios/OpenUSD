@@ -109,6 +109,14 @@ public:
     // is a remapped path (such as in a USDZ archive)
     virtual bool PathShouldResolve(const std::string &path) { return true; }
 
+    // Returns true if the layer at the supplied anchored path should be
+    // opened and traversed for further dependencies.  Clients can return
+    // false for dependencies they have chosen to exclude.
+    virtual bool ShouldTraverse(const std::string &anchoredPath)
+    {
+        return true;
+    }
+
 protected:
     virtual UsdUtilsDependencyInfo _ProcessDependency( 
         const SdfLayerRefPtr &layer, 

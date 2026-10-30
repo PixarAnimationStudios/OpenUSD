@@ -1046,10 +1046,10 @@ struct TestStruct
     }
 
     int _value;
-    static int counter;
+    static uint32_t counter;
 };
 
-int TestStruct::counter = 0;
+uint32_t TestStruct::counter = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
