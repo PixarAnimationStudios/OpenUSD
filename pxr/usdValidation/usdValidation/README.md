@@ -339,7 +339,8 @@ Note that UsdValidationRegistry does not manage fixers directly, and these are
 held by their respective UsdValidationValidator(s).
 
 UsdValidationFixer::ApplyFix() calls `editTarget.GetLayer()->Save()` internally
-on success. The target layer must be file-backed (not anonymous).
+on success. Anonymous layers have no backing asset, so they are not saved and
+the fix remains an unsaved edit on the layer.
 
 ## Listening for Validator Registration  {#listening_for_registration}
 

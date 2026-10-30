@@ -165,6 +165,11 @@ public:
     /// Applies the fix for the given error at the given time code and edit
     /// target. Returns true if the fix was applied successfully.
     ///
+    /// After the fix is applied, the edit target's layer is saved, and false
+    /// is returned if saving fails. Note that in this case the fix has still
+    /// been authored to the layer. Anonymous layers are not saved, since they
+    /// have no backing asset; the fix remains an unsaved edit on the layer.
+    ///
     /// \sa CanApplyFix
     USDVALIDATION_API
     bool ApplyFix(
