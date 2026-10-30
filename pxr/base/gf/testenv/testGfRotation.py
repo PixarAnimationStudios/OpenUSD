@@ -199,6 +199,43 @@ class TestGfRotation(unittest.TestCase):
         self.assertTrue(Gf.IsClose(rot.angle, -1.91983, 0.00001))
         self.assertEqual(rot.axis, axis.GetNormalized())
 
+    def test_SmallAndNearFullTurnAngles(self):
+        # The angle must stay accurate for rotations near 0 and near a full
+        # turn, where the quaternion's real part alone determines it poorly.
+        axis = Gf.Vec3d(0.3, -0.5, 0.8).GetNormalized()
+
+        def quat(radians):
+            return Gf.Quatd(math.cos(radians / 2),
+                            axis * math.sin(radians / 2))
+
+        def quatError(q, p):
+            # Quaternions q and -q are the same rotation.
+            d1 = [q.GetReal() - p.GetReal()] + \
+                 list(q.GetImaginary() - p.GetImaginary())
+            d2 = [q.GetReal() + p.GetReal()] + \
+                 list(q.GetImaginary() + p.GetImaginary())
+            return min(max(map(abs, d1)), max(map(abs, d2)))
+
+        for radians in [1e-8, 1e-6, 1e-3, 0.5,
+                        2 * math.pi - 1e-3, 2 * math.pi - 1e-6,
+                        2 * math.pi - 1e-8]:
+            q = quat(radians)
+            # Round trip quaternion -> rotation -> quaternion.
+            self.assertLess(quatError(Gf.Rotation(q).GetQuat(), q), 1e-14)
+            # The product of two half rotations.
+            half = Gf.Rotation(quat(radians / 2))
+            product = Gf.Rotation(half)
+            product *= half
+            self.assertLess(quatError(product.GetQuat(), q), 1e-14)
+
+        # SetRotateInto with a small angle between the vectors.
+        radians = 1e-3
+        r = Gf.Rotation().SetRotateInto(
+            Gf.Vec3d(1, 0, 0),
+            Gf.Vec3d(math.cos(radians), math.sin(radians), 0))
+        self.assertAlmostEqual(math.radians(r.angle) / radians, 1.0,
+                               places=14)
+
     def test_Hash(self):
         rot = Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 40.0)
         self.assertEqual(hash(rot), hash(rot))
