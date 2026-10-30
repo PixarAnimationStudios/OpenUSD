@@ -25,10 +25,26 @@ using FixerImplFn =
         const UsdValidationError& e, const UsdEditTarget& editTarget,
         const UsdTimeCode& timeCode)>;
 
-using FixerCanApplyFn = 
+using FixerCanApplyFn =
     std::function<bool(
         const UsdValidationError& e, const UsdEditTarget& editTarget,
         const UsdTimeCode& timeCode)>;
+
+/// \enum UsdValidationFixerSaveMode
+///
+/// Specifies whether UsdValidationFixer::ApplyFix() saves the edit target's
+/// layer after a fix has been applied.
+///
+/// Save: Save the edit target's layer after the fix is applied. Anonymous
+///       layers are never saved, since they have no backing asset.
+/// DoNotSave: Leave the fix as an unsaved edit on the edit target's layer.
+///            Use this when applying several fixes before saving the layer
+///            once, or when the layer is known not to be saveable.
+enum class UsdValidationFixerSaveMode
+{
+    Save,
+    DoNotSave
+};
 
 /// \class UsdValidationFixer
 ///
@@ -165,16 +181,24 @@ public:
     /// Applies the fix for the given error at the given time code and edit
     /// target. Returns true if the fix was applied successfully.
     ///
-    /// After the fix is applied, the edit target's layer is saved, and false
-    /// is returned if saving fails. Note that in this case the fix has still
-    /// been authored to the layer. Anonymous layers are not saved, since they
-    /// have no backing asset; the fix remains an unsaved edit on the layer.
+    /// If \p saveMode is UsdValidationFixerSaveMode::Save, the edit target's
+    /// layer is saved after the fix is applied, and false is returned if
+    /// saving fails. Note that in this case the fix has still been authored
+    /// to the layer. Anonymous layers are not saved, since they have no
+    /// backing asset; the fix remains an unsaved edit on the layer.
+    ///
+    /// Pass UsdValidationFixerSaveMode::DoNotSave to apply several fixes and
+    /// save the layer once afterwards, or when the layer is known not to be
+    /// saveable. The return value then only reflects whether the fix was
+    /// applied.
     ///
     /// \sa CanApplyFix
     USDVALIDATION_API
     bool ApplyFix(
-        const UsdValidationError &error, const UsdEditTarget &editTarget, 
-        const UsdTimeCode &timeCode = UsdTimeCode::Default()) const;
+        const UsdValidationError &error, const UsdEditTarget &editTarget,
+        const UsdTimeCode &timeCode = UsdTimeCode::Default(),
+        UsdValidationFixerSaveMode saveMode =
+            UsdValidationFixerSaveMode::Save) const;
 
 private:
     TfToken _name;

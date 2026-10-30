@@ -8,10 +8,17 @@
 #include "pxr/usdValidation/usdValidation/fixer.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/editTarget.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdValidationFixerSaveMode::Save, "Save");
+    TF_ADD_ENUM_NAME(UsdValidationFixerSaveMode::DoNotSave, "DoNotSave");
+}
 
 UsdValidationFixer::UsdValidationFixer(
     const TfToken &name, const std::string &description, 
@@ -60,7 +67,7 @@ UsdValidationFixer::CanApplyFix(
 bool
 UsdValidationFixer::ApplyFix(
     const UsdValidationError& error, const UsdEditTarget &editTarget,
-    const UsdTimeCode &timeCode) const
+    const UsdTimeCode &timeCode, UsdValidationFixerSaveMode saveMode) const
 {
     if (!IsAssociatedWithErrorName(error.GetName())) {
         return false;
@@ -76,6 +83,10 @@ UsdValidationFixer::ApplyFix(
 
     if (!_fixerImplFn(error, editTarget, timeCode)) {
         return false;
+    }
+
+    if (saveMode == UsdValidationFixerSaveMode::DoNotSave) {
+        return true;
     }
 
     const SdfLayerHandle &layer = editTarget.GetLayer();

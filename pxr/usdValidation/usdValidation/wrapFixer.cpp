@@ -10,6 +10,7 @@
 #include "pxr/usd/usd/editTarget.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
@@ -91,6 +92,8 @@ _MakeValidationFixer(const TfToken &name,
 
 void wrapUsdValidationFixer()
 {
+    TfPyWrapEnum<UsdValidationFixerSaveMode>("ValidationFixerSaveMode");
+
     class_<UsdValidationFixer>("ValidationFixer", no_init)
         .def("__init__",
              make_constructor(
@@ -132,10 +135,11 @@ void wrapUsdValidationFixer()
              &UsdValidationFixer::CanApplyFix,
              (arg("error"), arg("editTarget"), 
               arg("timeCode") = UsdTimeCode::Default()))
-        .def("ApplyFix", 
+        .def("ApplyFix",
              &UsdValidationFixer::ApplyFix,
-             (arg("error"), arg("editTarget"), 
-              arg("timeCode") = UsdTimeCode::Default()));
+             (arg("error"), arg("editTarget"),
+              arg("timeCode") = UsdTimeCode::Default(),
+              arg("saveMode") = UsdValidationFixerSaveMode::Save));
 
     TfPyRegisterStlSequencesFromPython<UsdValidationFixer>();
     TfPyRegisterStlSequencesFromPython<const UsdValidationFixer*>();
