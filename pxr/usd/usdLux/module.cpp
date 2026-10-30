@@ -7,14 +7,14 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/blackbody.h"
 #include "pxr/base/tf/pyModule.h"
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    pxr_boost::python::def("BlackbodyTemperatureAsRgb",
-                       UsdLuxBlackbodyTemperatureAsRgb);
+    TfPyGetCurrentNanobindModule().def(
+        "BlackbodyTemperatureAsRgb", UsdLuxBlackbodyTemperatureAsRgb);
 
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

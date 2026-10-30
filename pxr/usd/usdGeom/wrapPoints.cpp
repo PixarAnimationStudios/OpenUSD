@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,14 +40,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateWidthsAttr(UsdGeomPoints &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateWidthsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIdsAttr(UsdGeomPoints &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int64Array), writeSparsely);
 }
@@ -57,50 +63,45 @@ _Repr(const UsdGeomPoints &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomPoints()
+void wrapUsdGeomPoints(nb::module_ &m)
 {
     typedef UsdGeomPoints This;
 
-    class_<This, bases<UsdGeomPointBased> >
-        cls("Points");
+    nb::class_<This, UsdGeomPointBased> cls(m, "Points");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetWidthsAttr",
              &This::GetWidthsAttr)
         .def("CreateWidthsAttr",
              &_CreateWidthsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIdsAttr",
              &This::GetIdsAttr)
         .def("CreateIdsAttr",
              &_CreateIdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -130,7 +131,7 @@ void wrapUsdGeomPoints()
 namespace {
 
 static TfPyObjWrapper 
-_ComputeExtent(object points, object widths) {
+_ComputeExtent(TfPyObjWrapper points, TfPyObjWrapper widths) {
   
     // Convert from python objects to VtValue
     VtVec3fArray extent;
@@ -142,12 +143,12 @@ _ComputeExtent(object points, object widths) {
     // Check Proper conversion to VtVec3fArray
     if (!pointsAsVtValue.IsHolding<VtVec3fArray>()) {
         TF_CODING_ERROR("Improper value for 'points'");
-        return object();
+        return TfPyObjWrapper();
     }
 
     if (!widthsAsVtValue.IsHolding<VtFloatArray>()) {
         TF_CODING_ERROR("Improper value for 'widths'");
-        return object();
+        return TfPyObjWrapper();
     }
 
     // Convert from VtValue to VtVec3fArray
@@ -157,7 +158,7 @@ _ComputeExtent(object points, object widths) {
     if (UsdGeomPoints::ComputeExtent(pointsArray, widthsArray, &extent)) {
         return UsdVtValueToPython(VtValue(extent));
     } else {
-        return object();
+        return TfPyObjWrapper();
     }
 }
 
@@ -165,16 +166,16 @@ WRAP_CUSTOM {
     _class
         .def("GetWidthsInterpolation", &UsdGeomPoints::GetWidthsInterpolation)
         .def("SetWidthsInterpolation", &UsdGeomPoints::SetWidthsInterpolation,
-             arg("interpolation"))
+             nb::arg("interpolation"))
 
-        .def("ComputeExtent",
-            &_ComputeExtent, 
-            (arg("points"), arg("widths")))
         .def("GetPointCount", &UsdGeomPoints::GetPointCount,
-            arg("timeCode")=UsdTimeCode::Default()) 
-        .staticmethod("ComputeExtent")
+            nb::arg("timeCode")=UsdTimeCode::Default())
 
         ;
+    _class.attr("ComputeExtent") = nb::cpp_function(
+        &_ComputeExtent,
+        nb::name("ComputeExtent"),
+        nb::arg("points"), nb::arg("widths"));
 }
 
 } // anonymous namespace

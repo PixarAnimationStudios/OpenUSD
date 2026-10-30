@@ -8,18 +8,25 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/spec.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
-#include "pxr/external/boost/python/class.hpp"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -39,7 +46,7 @@ _WrapIsInertProperty(SdfSpec &self)
 
 static
 void
-_WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
+_WrapSetInfo(SdfSpec &self, const TfToken &name, nb::handle pyObj)
 {
     VtValue fallback;
     if (!self.GetSchema().IsRegistered(name, &fallback)) {
@@ -48,31 +55,36 @@ _WrapSetInfo(SdfSpec &self, const TfToken &name, const object& pyObj)
     }
 
     VtValue value;
-    if (fallback.IsEmpty()) {
-        value = extract<VtValue>(pyObj)();
-    }
-    else {
-        // We have to handle a few things as special cases to disambiguate
-        // types from Python.
-        if (fallback.IsHolding<SdfPath>()) {
-            value = extract<SdfPath>(pyObj)();
-        }
-        else if (fallback.IsHolding<TfTokenVector>()) {
-            value = extract<TfTokenVector>(pyObj)();
-        }
-        else if (fallback.IsHolding<SdfVariantSelectionMap>()) {
-            value = extract<SdfVariantSelectionMap>(pyObj)();
-        }
-        else if (fallback.IsHolding<SdfRelocatesMap>()) {
-            value = extract<SdfRelocatesMap>(pyObj)();
-        }
-        else if (fallback.IsHolding<SdfRelocates>()) {
-            value = extract<SdfRelocates>(pyObj)();
+    try {
+        if (fallback.IsEmpty()) {
+            value = nb::cast<VtValue>(pyObj);
         }
         else {
-            value = extract<VtValue>(pyObj)();
-            value.CastToTypeOf(fallback);
+            // We have to handle a few things as special cases to disambiguate
+            // types from Python.
+            if (fallback.IsHolding<SdfPath>()) {
+                value = nb::cast<SdfPath>(pyObj);
+            }
+            else if (fallback.IsHolding<TfTokenVector>()) {
+                value = nb::cast<TfTokenVector>(pyObj);
+            }
+            else if (fallback.IsHolding<SdfVariantSelectionMap>()) {
+                value = nb::cast<SdfVariantSelectionMap>(pyObj);
+            }
+            else if (fallback.IsHolding<SdfRelocatesMap>()) {
+                value = nb::cast<SdfRelocatesMap>(pyObj);
+            }
+            else if (fallback.IsHolding<SdfRelocates>()) {
+                value = nb::cast<SdfRelocates>(pyObj);
+            }
+            else {
+                value = nb::cast<VtValue>(pyObj);
+                value.CastToTypeOf(fallback);
+            }
         }
+    } catch (const nb::cast_error &) {
+        TfPyThrowTypeError("Invalid type for key");
+        return;
     }
     
     if (value.IsEmpty()) {
@@ -97,24 +109,22 @@ _GetAsText(const SdfSpecHandle &self)
 
 } // anonymous namespace 
 
-void wrapSpec()
+void wrapSpec(nanobind::module_& m)
 {
     typedef SdfSpec This;
 
-    class_<This, SdfHandle<This>, noncopyable>("Spec", no_init)
+    nb::class_<This>(m, "Spec")
         .def(SdfPyAbstractSpec())
 
-        .add_property("layer", &This::GetLayer,
+        .def_prop_ro("layer", &This::GetLayer,
             "The owning layer.")
-        .add_property("path", &This::GetPath,
+        .def_prop_ro("path", &This::GetPath,
             "The absolute scene path.")
 
         .def("GetAsText", &_GetAsText)
 
-        .def("ListInfoKeys", &This::ListInfoKeys,
-            return_value_policy<TfPySequenceToList>())
-        .def("GetMetaDataInfoKeys", &This::GetMetaDataInfoKeys,
-            return_value_policy<TfPySequenceToList>())
+        .def("ListInfoKeys", &This::ListInfoKeys)
+        .def("GetMetaDataInfoKeys", &This::GetMetaDataInfoKeys)
 
         .def("GetMetaDataDisplayGroup", &This::GetMetaDataDisplayGroup)
 
@@ -153,7 +163,7 @@ void wrapSpec()
              "After calling this, HasInfo() will return false. "
              "To make HasInfo() return true, set a value for that scene "
              "spec info.",
-             (arg("key")))
+             nb::arg("key"))
 
         .def("GetTypeForInfo", &This::GetTypeForInfo,
              "GetTypeForInfo(key)\n\n"
@@ -162,16 +172,14 @@ void wrapSpec()
 
              "Returns the type of value for the given key. ")
 
-        .def("GetFallbackForInfo",
-              make_function(&This::GetFallbackForInfo,
-                  return_value_policy<return_by_value>()),
+        .def("GetFallbackForInfo", &This::GetFallbackForInfo,
              "GetFallbackForInfo(key)\n\n"
 
              "key : string\n\n"
 
              "Returns the fallback value for the given key. ")
 
-        .add_property("isInert", &_WrapIsInertProperty,
+        .def_prop_ro("isInert", &_WrapIsInertProperty,
               "Indicates whether this spec has any significant data. This is "
               "for backwards compatibility, use IsInert instead.\n\n"
 
@@ -181,8 +189,7 @@ void wrapSpec()
               "conditions.")
 
         .def("IsInert", &This::IsInert,
-             (arg("ignoreChildren") = false),
-             
+             nb::arg("ignoreChildren") = false,
              "Indicates whether this spec has any significant data. "
              "If ignoreChildren is true, child scenegraph objects will be "
              "ignored.")

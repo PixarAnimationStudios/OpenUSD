@@ -12,24 +12,27 @@
 #include "pxr/base/ts/valueTypeDispatch.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/string.h>
+#include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
+namespace nb = nanobind;
 
 #define SET(knot, setter, type, obj)                            \
     if (!obj.is_none())                                         \
     {                                                           \
-        extract<type> extractor(obj);                           \
-        if (extractor.check())                                  \
+        type val;                                               \
+        if (nb::try_cast<type>(obj, val))                       \
         {                                                       \
-            knot->setter(extractor());                          \
+            knot->setter(val);                                  \
         }                                                       \
         else                                                    \
         {                                                       \
@@ -45,10 +48,10 @@ namespace
     {
         void operator()(
             TsKnot* const knot,
-            const object &value,
-            const object &preValue,
-            const object &preTanSlope,
-            const object &postTanSlope)
+            const nb::handle &value,
+            const nb::handle &preValue,
+            const nb::handle &preTanSlope,
+            const nb::handle &postTanSlope)
         {
             SET(knot, SetValue, T, value);
             SET(knot, SetPreValue, T, preValue);
@@ -60,18 +63,18 @@ namespace
 
 static TsKnot* _WrapInit(
     const std::string &typeName,
-    const object &curveType,
-    const object &time,
-    const object &nextInterp,
-    const object &value,
-    const object &preValue,
-    const object &customData,
-    const object &preTanWidth,
-    const object &preTanSlope,
-    const object &postTanWidth,
-    const object &postTanSlope,
-    const object &preTanAlgorithm,
-    const object &postTanAlgorithm)
+    const nb::handle &curveType,
+    const nb::handle &time,
+    const nb::handle &nextInterp,
+    const nb::handle &value,
+    const nb::handle &preValue,
+    const nb::handle &customData,
+    const nb::handle &preTanWidth,
+    const nb::handle &preTanSlope,
+    const nb::handle &postTanWidth,
+    const nb::handle &postTanSlope,
+    const nb::handle &preTanAlgorithm,
+    const nb::handle &postTanAlgorithm)
 {
     const TfType valueType = Ts_GetTypeFromTypeName(typeName);
     if (!valueType)
@@ -102,15 +105,15 @@ static TsKnot* _WrapInit(
 }
 
 static bool _WrapUpdateTangents(
-    TsKnot& knot, object prevKnot, object nextKnot, TsCurveType curveType)
+    TsKnot& knot, nb::handle prevKnot, nb::handle nextKnot, TsCurveType curveType)
 {
     std::optional<TsKnot> optPrevKnot, optNextKnot;
 
     if (!prevKnot.is_none()) {
-        extract<TsKnot> extractor(prevKnot);
-        if (extractor.check())
+        TsKnot k;
+        if (nb::try_cast<TsKnot>(prevKnot, k))
         {
-            optPrevKnot = extractor();
+            optPrevKnot = k;
         }
         else
         {
@@ -120,10 +123,10 @@ static bool _WrapUpdateTangents(
     }
 
     if (!nextKnot.is_none()) {
-        extract<TsKnot> extractor(nextKnot);
-        if (extractor.check())
+        TsKnot k;
+        if (nb::try_cast<TsKnot>(nextKnot, k))
         {
-            optNextKnot = extractor();
+            optNextKnot = k;
         }
         else
         {
@@ -140,7 +143,6 @@ static std::string _WrapGetValueTypeName(
 {
     return Ts_GetTypeNameFromType(knot.GetValueType());
 }
-
 
 namespace
 {
@@ -182,33 +184,55 @@ namespace
         return vt;                                   \
     }
 
-
-void wrapKnot()
+void wrapKnot(nanobind::module_& m)
 {
     using This = TsKnot;
 
-    class_<This>("Knot", no_init)
-        .def("__init__", make_constructor(
-                &_WrapInit,
-                default_call_policies(),
-                (arg("typeName") = "double",
-                 arg("curveType") = object(),
-                 arg("time") = object(),
-                 arg("nextInterp") = object(),
-                 arg("value") = object(),
-                 arg("preValue") = object(),
-                 arg("customData") = object(),
-                 arg("preTanWidth") = object(),
-                 arg("preTanSlope") = object(),
-                 arg("postTanWidth") = object(),
-                 arg("postTanSlope") = object(),
-                 arg("preTanAlgorithm") = object(),
-                 arg("postTanAlgorithm") = object())))
+    nb::class_<This>(m, "Knot")
+        .def("__init__",
+             [](This* self,
+                const std::string& typeName,
+                nb::handle curveType,
+                nb::handle time,
+                nb::handle nextInterp,
+                nb::handle value,
+                nb::handle preValue,
+                nb::handle customData,
+                nb::handle preTanWidth,
+                nb::handle preTanSlope,
+                nb::handle postTanWidth,
+                nb::handle postTanSlope,
+                nb::handle preTanAlgorithm,
+                nb::handle postTanAlgorithm) {
+                 std::unique_ptr<TsKnot> k(_WrapInit(
+                     typeName,
+                     curveType, time, nextInterp,
+                     value, preValue, customData,
+                     preTanWidth, preTanSlope,
+                     postTanWidth, postTanSlope,
+                     preTanAlgorithm, postTanAlgorithm));
+                 if (k) {
+                     new (self) TsKnot(std::move(*k));
+                 }
+             },
+             nb::arg("typeName") = "double",
+             nb::arg("curveType") = nb::none(),
+             nb::arg("time") = nb::none(),
+             nb::arg("nextInterp") = nb::none(),
+             nb::arg("value") = nb::none(),
+             nb::arg("preValue") = nb::none(),
+             nb::arg("customData") = nb::none(),
+             nb::arg("preTanWidth") = nb::none(),
+             nb::arg("preTanSlope") = nb::none(),
+             nb::arg("postTanWidth") = nb::none(),
+             nb::arg("postTanSlope") = nb::none(),
+             nb::arg("preTanAlgorithm") = nb::none(),
+             nb::arg("postTanAlgorithm") = nb::none())
 
-        .def(init<const TsKnot &>())
+        .def(nb::init<const TsKnot &>())
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("SetTime", &This::SetTime)
         .def("GetTime", &This::GetTime)
@@ -248,9 +272,9 @@ void wrapKnot()
         .def("GetCustomDataByKey", &This::GetCustomDataByKey)
 
         .def("UpdateTangents", &_WrapUpdateTangents,
-             (arg("prevKnot"),
-              arg("nextKnot"),
-              arg("curveType") = TsCurveTypeBezier))
+             nb::arg("prevKnot").none(),
+             nb::arg("nextKnot").none(),
+             nb::arg("curveType") = TsCurveTypeBezier)
 
         ;
 }

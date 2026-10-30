@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,21 +40,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateIncludedPurposesAttr(UsdRenderSettings &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIncludedPurposesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMaterialBindingPurposesAttr(UsdRenderSettings &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMaterialBindingPurposesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRenderingColorSpaceAttr(UsdRenderSettings &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRenderingColorSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -64,57 +70,52 @@ _Repr(const UsdRenderSettings &self)
 
 } // anonymous namespace
 
-void wrapUsdRenderSettings()
+void wrapUsdRenderSettings(nb::module_ &m)
 {
     typedef UsdRenderSettings This;
 
-    class_<This, bases<UsdRenderSettingsBase> >
-        cls("Settings");
+    nb::class_<This, UsdRenderSettingsBase> cls(m, "Settings");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetIncludedPurposesAttr",
              &This::GetIncludedPurposesAttr)
         .def("CreateIncludedPurposesAttr",
              &_CreateIncludedPurposesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMaterialBindingPurposesAttr",
              &This::GetMaterialBindingPurposesAttr)
         .def("CreateMaterialBindingPurposesAttr",
              &_CreateMaterialBindingPurposesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRenderingColorSpaceAttr",
              &This::GetRenderingColorSpaceAttr)
         .def("CreateRenderingColorSpaceAttr",
              &_CreateRenderingColorSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetProductsRel",
@@ -150,9 +151,8 @@ namespace {
 
 WRAP_CUSTOM {
     _class
-        .def("GetStageRenderSettings",
+        .def_static("GetStageRenderSettings",
              &UsdRenderSettings::GetStageRenderSettings)
-        .staticmethod("GetStageRenderSettings")
         ;
 }
 

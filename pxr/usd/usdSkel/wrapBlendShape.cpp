@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,21 +40,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateOffsetsAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOffsetsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateNormalOffsetsAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateNormalOffsetsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreatePointIndicesAttr(UsdSkelBlendShape &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePointIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
@@ -64,57 +70,52 @@ _Repr(const UsdSkelBlendShape &self)
 
 } // anonymous namespace
 
-void wrapUsdSkelBlendShape()
+void wrapUsdSkelBlendShape(nb::module_ &m)
 {
     typedef UsdSkelBlendShape This;
 
-    class_<This, bases<UsdTyped> >
-        cls("BlendShape");
+    nb::class_<This, UsdTyped> cls(m, "BlendShape");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetOffsetsAttr",
              &This::GetOffsetsAttr)
         .def("CreateOffsetsAttr",
              &_CreateOffsetsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetNormalOffsetsAttr",
              &This::GetNormalOffsetsAttr)
         .def("CreateNormalOffsetsAttr",
              &_CreateNormalOffsetsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetPointIndicesAttr",
              &This::GetPointIndicesAttr)
         .def("CreatePointIndicesAttr",
              &_CreatePointIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -141,37 +142,75 @@ void wrapUsdSkelBlendShape()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+namespace nanobind::detail {
+template <typename T>
+struct type_caster<PXR_NS::TfSpan<T>> {
+    NB_TYPE_CASTER(PXR_NS::TfSpan<T>, const_name("TfSpan"))
+
+    using ElemType = std::remove_const_t<T>;
+    using ArrayType = PXR_NS::VtArray<ElemType>;
+    std::optional<ArrayType> holder_;
+
+    bool from_python(handle src, uint8_t flags, cleanup_list *cleanup) noexcept {
+        if (!src.is_valid() || src.is_none()) {
+            return false;
+        }
+        ArrayType *arr = nullptr;
+        if (NB_CALL(nb_type_get)(NB_CTX_C(cleanup), &typeid(ArrayType),
+                                 src.ptr(), flags, cleanup,
+                                 reinterpret_cast<void **>(&arr)) &&
+            arr) {
+            value = PXR_NS::TfSpan<T>(*arr);
+            return true;
+        }
+        if constexpr (std::is_const_v<T>) {
+            if (flags & static_cast<uint8_t>(cast_flags::convert)) {
+                make_caster<ArrayType> caster;
+                if (caster.from_python(src, flags, cleanup)) {
+                    holder_.emplace(static_cast<ArrayType &>(caster));
+                    value = PXR_NS::TfSpan<T>(*holder_);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static handle from_cpp(PXR_NS::TfSpan<T> src, rv_policy, cleanup_list *) noexcept {
+        ArrayType arr(src.begin(), src.end());
+        return type_caster<ArrayType>::from_cpp(arr, rv_policy::copy, nullptr);
+    }
+};
+} // namespace nanobind::detail
+
 namespace {
 
-
-tuple
+nb::tuple
 _ValidatePointIndices(TfSpan<const int> pointIndices,
                       size_t numPoints)
 {
     std::string reason;
     bool valid = UsdSkelBlendShape::ValidatePointIndices(
         pointIndices, numPoints, &reason);
-    return pxr_boost::python::make_tuple(valid, reason);
+    return nb::make_tuple(valid, reason);
 }
-
 
 WRAP_CUSTOM {
 
     using This = UsdSkelBlendShape;
 
     _class
-        .def("CreateInbetween", &This::CreateInbetween, arg("name"))
-        .def("GetInbetween", &This::GetInbetween, arg("name"))
-        .def("HasInbetween", &This::HasInbetween, arg("name"))
+        .def("CreateInbetween", &This::CreateInbetween, nb::arg("name"))
+        .def("GetInbetween", &This::GetInbetween, nb::arg("name"))
+        .def("HasInbetween", &This::HasInbetween, nb::arg("name"))
         
         .def("GetInbetweens", &This::GetInbetweens,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetAuthoredInbetweens", &This::GetAuthoredInbetweens,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
-        .def("ValidatePointIndices", &_ValidatePointIndices,
-             (arg("pointIndices"), arg("numPoints")))
-        .staticmethod("ValidatePointIndices")
+        .def_static("ValidatePointIndices", &_ValidatePointIndices,
+             nb::arg("pointIndices"), nb::arg("numPoints"))
         ;
 }
 

@@ -9,6 +9,7 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -16,13 +17,11 @@
 
 #include "pxr/usd/usd/pyConversions.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
-
 
 namespace {
 
@@ -38,7 +37,6 @@ _Remap(const UsdSkelAnimMapper& self,
     return UsdVtValueToPython(output);
 }
 
-
 template <typename Matrix4>
 VtArray<Matrix4>
 _RemapTransforms(const UsdSkelAnimMapper& self,
@@ -51,37 +49,35 @@ _RemapTransforms(const UsdSkelAnimMapper& self,
     return output;
 }
 
-
 } // namespace
 
-
-void wrapUsdSkelAnimMapper()
+void wrapUsdSkelAnimMapper(nb::module_ &m)
 {
     using This = UsdSkelAnimMapper;
 
-    class_<This,UsdSkelAnimMapperRefPtr>("AnimMapper", no_init)
+    nb::class_<This>(m, "AnimMapper")
 
-        .def(init<>())
+        .def(nb::init<>())
 
-        .def(init<size_t>())
+        .def(nb::init<size_t>())
         
-        .def(init<VtTokenArray,VtTokenArray>(
-                 (arg("sourceOrder"), arg("targetOrder"))))
+        .def(nb::init<VtTokenArray, VtTokenArray>(),
+             nb::arg("sourceOrder"), nb::arg("targetOrder"))
         .def("Remap", &_Remap,
-             (arg("source"),
-              arg("target")=VtValue(),
-              arg("elementSize")=1,
-              arg("defaultValue")=VtValue()))
+             nb::arg("source"),
+             nb::arg("target").none()=VtValue(),
+             nb::arg("elementSize")=1,
+             nb::arg("defaultValue").none()=VtValue())
 
         .def("RemapTransforms", &_RemapTransforms<GfMatrix4d>,
-             (arg("source"),
-              arg("target"),
-              arg("elementSize")=1))
+             nb::arg("source"),
+             nb::arg("target"),
+             nb::arg("elementSize")=1)
 
         .def("RemapTransforms", &_RemapTransforms<GfMatrix4f>,
-             (arg("source"),
-              arg("target"),
-              arg("elementSize")=1))
+             nb::arg("source"),
+             nb::arg("target"),
+             nb::arg("elementSize")=1)
 
         .def("IsIdentity", &This::IsIdentity)
 
@@ -91,4 +87,5 @@ void wrapUsdSkelAnimMapper()
 
         .def("__len__", &This::size)
         ;
-}            
+
+}

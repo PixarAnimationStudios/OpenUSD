@@ -10,13 +10,11 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include "pxr/external/boost/python/handle.hpp"
+#include <nanobind/nanobind.h>
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static unsigned int
 testInterpreter(bool verbose)
@@ -27,20 +25,20 @@ testInterpreter(bool verbose)
     TfPyLock pyLock;
     TfPyRunSimpleString("2+2");
     
-    handle<> result = TfPyRunString("'hello'\n", Py_eval_input);
-    if (!result || !(PyBytes_Check(result.get()) || 
-                        PyUnicode_Check(result.get())) || 
-                    (strcmp(PyUnicode_AsUTF8(result.get()), "hello") != 0)) {
-        if (!result) {
+    nanobind::object result = TfPyRunString("'hello'\n", Py_eval_input);
+    if (!result.is_valid() || !(PyBytes_Check(result.ptr()) || 
+                        PyUnicode_Check(result.ptr())) || 
+                    (strcmp(PyUnicode_AsUTF8(result.ptr()), "hello") != 0)) {
+        if (!result.is_valid()) {
             printf("ERROR: TfPyRunString, no result.\n");
-        } else if (result.get() == Py_None) {
+        } else if (result.ptr() == Py_None) {
             printf("ERROR: TfPyRunString, result is None.\n");
-        } else if (!(PyBytes_Check(result.get()) || 
-                    PyUnicode_Check(result.get()))) {
+        } else if (!(PyBytes_Check(result.ptr()) || 
+                    PyUnicode_Check(result.ptr()))) {
             printf("ERROR: TfPyRunString, result not a string.\n");
-        } else if (strcmp(PyUnicode_AsUTF8(result.get()), "hello") != 0) {
+        } else if (strcmp(PyUnicode_AsUTF8(result.ptr()), "hello") != 0) {
             printf("ERROR: TfPyRunString, string not expected (%s).\n", 
-                    PyUnicode_AsUTF8(result.get()));
+                    PyUnicode_AsUTF8(result.ptr()));
         }
         //PyObject_Print(result, fdopen(STDOUT_FILENO, "w"), 0);
         numErrors++;

@@ -6,6 +6,9 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/usd/usd/object.h"
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usd/wrapUtils.h"
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -21,7 +24,9 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/object.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,13 +44,11 @@ UsdVtValueToPython(const VtValue &value)
 VtValue 
 UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
 {
-    using namespace pxr_boost::python;
-
     // Extract VtValue from python object.
     VtValue val;
     {
         TfPyLock lock;
-        val = extract<VtValue>(pyVal.Get())();
+        VtValueFromPythonObject(pyVal.ptr(), &val);
     }
 
     // Attempt to cast the value to what we want.  Get a default value for this
@@ -69,8 +72,6 @@ UsdPythonToMetadataValue(
     const TfToken &key, const TfToken &keyPath, 
     TfPyObjWrapper pyVal, VtValue *result)
 {
-    using namespace pxr_boost::python;
-
     SdfSchema const &schema = SdfSchema::GetInstance();
 
     SdfSchema::FieldDefinition const *fieldDef = schema.GetFieldDefinition(key);
@@ -80,7 +81,8 @@ UsdPythonToMetadataValue(
         return false;
     }
 
-    VtValue value = extract<VtValue>(pyVal.Get())();
+    VtValue value;
+    VtValueFromPythonObject(pyVal.ptr(), &value);
 
     // Empty values are always considered valid.
     if (value.IsEmpty()) {
@@ -123,15 +125,14 @@ UsdPythonToMetadataValue(
     // types from Python.
     if (!fallback.IsEmpty()) {
         if (fallback.IsHolding<TfTokenVector>()) {
-            value = extract<TfTokenVector>(pyVal.Get())();
+            value = nanobind::cast<TfTokenVector>(pyVal.Get());
         }
         else if (fallback.IsHolding< std::vector<std::string> >()) {
-            extract<std::vector<std::string> > getVecString(pyVal.Get());
-            extract<VtStringArray> getStringArray(pyVal.Get());
-            if (getVecString.check()) {
-                value = getVecString();
-            } else if (getStringArray.check()) {
-                VtStringArray a = getStringArray();
+            std::vector<std::string> vec;
+            VtStringArray a;
+            if (nanobind::try_cast<std::vector<std::string>>(pyVal.Get(), vec)) {
+                value = std::move(vec);
+            } else if (nanobind::try_cast<VtStringArray>(pyVal.Get(), a)) {
                 value = std::vector<std::string>(a.begin(), a.end());
             }
         }
@@ -145,7 +146,8 @@ UsdPythonToMetadataValue(
     if (value.IsEmpty() ||
         (fallback.IsEmpty() &&
          (!fieldDef->IsValidValue(value) || !schema.IsValidValue(value)))) {
-        VtValue origValue = extract<VtValue>(pyVal.Get())();
+        VtValue origValue;
+        VtValueFromPythonObject(pyVal.ptr(), &origValue);
         TfPyThrowValueError(
             TfStringPrintf(
                 "Invalid value '%s' (type '%s') for key '%s%s'.%s",
@@ -160,6 +162,53 @@ UsdPythonToMetadataValue(
     }
     result->Swap(value);
     return true;
+}
+
+static std::type_info const *_objTypeInfos[Usd_NumObjTypes];
+static Usd_ObjectSubclass::DowncastFn _downcastFns[Usd_NumObjTypes];
+
+PyObject *
+Usd_ObjectSubclassConvertToPython(const UsdObject *obj)
+{
+    UsdObjType dynType = Usd_GetObjType(*obj);
+    return NB_CALL(nb_type_put)(
+        NB_CTX, _objTypeInfos[dynType], nullptr,
+        const_cast<void *>(_downcastFns[dynType](obj)),
+        nanobind::rv_policy::copy, nullptr, nullptr);
+}
+
+void
+Usd_ObjectSubclass::_ReplaceConverter(
+    std::type_info const &ti,
+    UsdObjType objType,
+    DowncastFn downcast)
+{
+    _objTypeInfos[objType] = &ti;
+    _downcastFns[objType] = downcast;
+}
+
+static PyObject *(*_primRangeToPython)(const UsdPrimRange &) = nullptr;
+static bool (*_primRangeFromPython)(PyObject *, UsdPrimRange *) = nullptr;
+
+void
+Usd_RegisterPrimRangePythonConversions(
+    PyObject *(*toPy)(const UsdPrimRange &),
+    bool (*fromPy)(PyObject *, UsdPrimRange *))
+{
+    _primRangeToPython = toPy;
+    _primRangeFromPython = fromPy;
+}
+
+PyObject *
+Usd_PrimRangeToPython(const UsdPrimRange &primRange)
+{
+    return _primRangeToPython ? _primRangeToPython(primRange) : nullptr;
+}
+
+bool
+Usd_PrimRangeFromPython(PyObject *obj, UsdPrimRange *out)
+{
+    return _primRangeFromPython ? _primRangeFromPython(obj, out) : false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

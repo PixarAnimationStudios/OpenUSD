@@ -7,26 +7,24 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/dynamicFileFormatDependencyData.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/vt/value.h"
-
-#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 void 
-wrapDynamicFileFormatDependencyData()
+wrapDynamicFileFormatDependencyData(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     using This = PcpDynamicFileFormatDependencyData;
-    class_<This>("DynamicFileFormatDependencyData", no_init)     
-        .def("GetRelevantFieldNames",
-             make_function(&This::GetRelevantFieldNames,
-                           return_value_policy< TfPySequenceToList >()))
-        .def("GetRelevantAttributeNames",
-             make_function(&This::GetRelevantAttributeNames,
-                           return_value_policy< TfPySequenceToList >()))
+    nb::class_<This>(m, "DynamicFileFormatDependencyData")
+        .def("GetRelevantFieldNames", [](const This &self) {
+            return TfNbSequenceToList(self.GetRelevantFieldNames());
+        })
+        .def("GetRelevantAttributeNames", [](const This &self) {
+            return TfNbSequenceToList(self.GetRelevantAttributeNames());
+        })
         .def("CanFieldChangeAffectFileFormatArguments", 
              &This::CanFieldChangeAffectFileFormatArguments)
         .def("CanAttributeDefaultValueChangeAffectFileFormatArguments", 

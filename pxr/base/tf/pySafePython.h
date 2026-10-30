@@ -24,8 +24,22 @@
 ARCH_PRAGMA_PUSH_MACRO(slots)
 #undef slots
 
-#include "pxr/external/boost/python/detail/wrap_python.hpp"
+#if defined(_MSC_VER) && defined(_DEBUG) && !defined(Py_DEBUG)
+#include <corecrt.h>
+#undef _DEBUG
+#include <Python.h>
+#define _DEBUG 1
+#else
+#include <Python.h>
+#endif
 
 ARCH_PRAGMA_POP_MACRO(slots)
+
+#include <nanobind/nb_defs.h>
+#undef NB_NAMESPACE
+#define NB_NAMESPACE nanobind
+#if !defined(NB_BUILD)
+#define NB_BUILD 1
+#endif
 
 #endif // PXR_BASE_TF_PY_SAFE_PYTHON_H

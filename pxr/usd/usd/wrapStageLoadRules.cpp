@@ -5,24 +5,26 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 #include "pxr/usd/usd/stageLoadRules.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/set.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -44,63 +46,62 @@ static size_t __hash__(UsdStageLoadRules const &self)
 
 } // anonymous namespace 
 
-void wrapUsdStageLoadRules()
+void wrapUsdStageLoadRules(nb::module_ &m)
 {
 
     TfPyContainerConversions::tuple_mapping_pair<
         std::pair<SdfPath, UsdStageLoadRules::Rule>>();
 
-    class_<UsdStageLoadRules> thisClass("StageLoadRules");
-    scope s = thisClass;
-    TfPyWrapEnum<UsdStageLoadRules::Rule>();
+    nb::class_<UsdStageLoadRules> thisClass(m, "StageLoadRules");
+    TfNbWrapEnum<UsdStageLoadRules::Rule>(thisClass);
     thisClass
-        .def(init<UsdStageLoadRules>())
+        .def(nb::init<>())
+        .def(nb::init<UsdStageLoadRules>())
 
-        .def("LoadAll", &UsdStageLoadRules::LoadAll).staticmethod("LoadAll")
-        .def("LoadNone", &UsdStageLoadRules::LoadNone).staticmethod("LoadNone")
+        .def_static("LoadAll", &UsdStageLoadRules::LoadAll)
+        .def_static("LoadNone", &UsdStageLoadRules::LoadNone)
 
         .def("LoadWithDescendants",
-             &UsdStageLoadRules::LoadWithDescendants, arg("path"))
+             &UsdStageLoadRules::LoadWithDescendants, nb::arg("path"))
 
         .def("LoadWithoutDescendants",
-             &UsdStageLoadRules::LoadWithoutDescendants, arg("path"))
+             &UsdStageLoadRules::LoadWithoutDescendants, nb::arg("path"))
 
         .def("Unload",
-             &UsdStageLoadRules::Unload, arg("path"))
+             &UsdStageLoadRules::Unload, nb::arg("path"))
 
         .def("LoadAndUnload",
              &UsdStageLoadRules::LoadAndUnload,
-             (arg("loadSet"), arg("unloadSet"), arg("policy")))
+             nb::arg("loadSet"), nb::arg("unloadSet"), nb::arg("policy"))
         
         .def("AddRule", &UsdStageLoadRules::AddRule,
-             (arg("path"), arg("rule")))
+             nb::arg("path"), nb::arg("rule"))
 
         .def("SetRules",
              (void (UsdStageLoadRules::*)(
                  std::vector<std::pair<
                      SdfPath, UsdStageLoadRules::Rule>> const &))
-             &UsdStageLoadRules::SetRules, arg("rules"))
+             &UsdStageLoadRules::SetRules, nb::arg("rules"))
 
         .def("Minimize", &UsdStageLoadRules::Minimize)
 
-        .def("IsLoaded", &UsdStageLoadRules::IsLoaded, arg("path"))
+        .def("IsLoaded", &UsdStageLoadRules::IsLoaded, nb::arg("path"))
 
         .def("IsLoadedWithAllDescendants",
-             &UsdStageLoadRules::IsLoadedWithAllDescendants, arg("path"))
+             &UsdStageLoadRules::IsLoadedWithAllDescendants, nb::arg("path"))
 
         .def("IsLoadedWithNoDescendants",
-             &UsdStageLoadRules::IsLoadedWithNoDescendants, arg("path"))
+             &UsdStageLoadRules::IsLoadedWithNoDescendants, nb::arg("path"))
 
         .def("GetEffectiveRuleForPath",
-             &UsdStageLoadRules::GetEffectiveRuleForPath, arg("path"))
+             &UsdStageLoadRules::GetEffectiveRuleForPath, nb::arg("path"))
 
-        .def("GetRules", &UsdStageLoadRules::GetRules,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetRules", &UsdStageLoadRules::GetRules)
 
-        .def("swap", &UsdStageLoadRules::swap, arg("other"))
+        .def("swap", &UsdStageLoadRules::swap, nb::arg("other"))
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__str__", __str__)
         .def("__repr__", __repr__)

@@ -11,17 +11,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdSkelAnimMapper);
-    TF_WRAP(UsdSkelAnimQuery);
-    TF_WRAP(UsdSkelBakeSkinning);
-    TF_WRAP(UsdSkelBinding);
-    TF_WRAP(UsdSkelBlendShapeQuery);
-    TF_WRAP(UsdSkelCache);
-    TF_WRAP(UsdSkelInbetweenShape);
-    TF_WRAP(UsdSkelSkeletonQuery);
-    TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelTopology);
-    TF_WRAP(UsdSkelUtils);
+    TF_WRAP_NB(UsdSkelAnimMapper);
+    TF_WRAP_NB(UsdSkelAnimQuery);
+    TF_WRAP_NB(UsdSkelBakeSkinning);
+    TF_WRAP_NB(UsdSkelBinding);
+    TF_WRAP_NB(UsdSkelBlendShapeQuery);
+    TF_WRAP_NB(UsdSkelCache);
+    TF_WRAP_NB(UsdSkelInbetweenShape);
+    TF_WRAP_NB(UsdSkelSkeletonQuery);
+    TF_WRAP_NB(UsdSkelSkinningQuery);
+    TF_WRAP_NB(UsdSkelTopology);
+    TF_WRAP_NB(UsdSkelUtils);
 
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"

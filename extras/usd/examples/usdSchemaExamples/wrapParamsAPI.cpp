@@ -14,15 +14,18 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,21 +38,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateMassAttr(UsdSchemaExamplesParamsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMassAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVelocityAttr(UsdSchemaExamplesParamsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVelocityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVolumeAttr(UsdSchemaExamplesParamsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
@@ -80,63 +83,57 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdSchemaExamplesParamsAPI()
+void wrapUsdSchemaExamplesParamsAPI(nb::module_ &m)
 {
     typedef UsdSchemaExamplesParamsAPI This;
 
     UsdSchemaExamplesParamsAPI_CanApplyResult::Wrap<UsdSchemaExamplesParamsAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ParamsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ParamsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetMassAttr",
              &This::GetMassAttr)
         .def("CreateMassAttr",
              &_CreateMassAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVelocityAttr",
              &This::GetVelocityAttr)
         .def("CreateVelocityAttr",
              &_CreateVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

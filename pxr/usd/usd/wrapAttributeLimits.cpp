@@ -10,17 +10,20 @@
 #include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -38,7 +41,7 @@ bool
 _SetValue(
     UsdAttributeLimits& self,
     const TfToken& key,
-    const object& val)
+    nb::handle val)
 {
     VtValue cppVal;
     return UsdPythonToMetadataValue(
@@ -50,7 +53,7 @@ _SetValue(
 bool
 _SetMinimum(
     UsdAttributeLimits& self,
-    const object& val)
+    nb::handle val)
 {
     return self.SetMinimum(
         UsdPythonToSdfType(val, self.GetAttribute().GetTypeName()));
@@ -59,7 +62,7 @@ _SetMinimum(
 bool
 _SetMaximum(
     UsdAttributeLimits& self,
-    const object& val)
+    nb::handle val)
 {
     return self.SetMaximum(
         UsdPythonToSdfType(val, self.GetAttribute().GetTypeName()));
@@ -67,53 +70,50 @@ _SetMaximum(
 
 } // anon
 
-void wrapUsdAttributeLimits()
+void wrapUsdAttributeLimits(nb::module_ &m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "LimitsKeys", UsdLimitsKeys, USD_LIMITS_KEYS);
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "LimitsKeys", UsdLimitsKeys, USD_LIMITS_KEYS);
 
     using This = UsdAttributeLimits;
 
-    class_<This> clsObj("AttributeLimits");
-    scope s = clsObj;
+    nb::class_<This> clsObj(m, "AttributeLimits");
 
-    class_<This::ValidationResult>("ValidationResult")
-        .def(init<>())
+    nb::class_<This::ValidationResult>(clsObj, "ValidationResult")
+        .def(nb::init<>())
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__bool__", [](const This::ValidationResult &self) { return bool(self); })
 
-        .add_property(
+        .def_prop_ro(
             "success", &This::ValidationResult::Success)
-        .add_property(
+        .def_prop_ro(
             "invalidValuesDict",
-            make_function(
-                &This::ValidationResult::GetInvalidValuesDict,
-                return_value_policy<return_by_value>()))
-        .add_property(
+            &This::ValidationResult::GetInvalidValuesDict,
+            nb::rv_policy::copy)
+        .def_prop_ro(
             "conformedSubDict",
-            make_function(
-                &This::ValidationResult::GetConformedSubDict,
-                return_value_policy<return_by_value>()))
+            &This::ValidationResult::GetConformedSubDict,
+            nb::rv_policy::copy)
 
         .def("GetErrorString",
              &This::ValidationResult::GetErrorString)
         ;
 
     clsObj
-        .def(init<>())
-        .def(init<const UsdAttribute&, const TfToken&>(
-             (arg("attr"),
-              arg("key"))))
+        .def(nb::init<>())
+        .def(nb::init<const UsdAttribute&, const TfToken&>(),
+             nb::arg("attr"),
+             nb::arg("key"))
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("IsValid", &This::IsValid)
         .def("GetAttribute", &This::GetAttribute,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetSubDictKey", &This::GetSubDictKey)
 
         .def("HasAuthored",
@@ -137,39 +137,32 @@ void wrapUsdAttributeLimits()
         .def("ClearMaximum", &This::ClearMaximum)
 
         .def("Validate", _Validate,
-             arg("subDict"))
+             nb::arg("subDict"))
         .def("Set",
              (bool (UsdAttributeLimits::*)(const VtDictionary&))
                &This::Set,
-             arg("subDict"))
+             nb::arg("subDict"))
 
         .def("Get",
              (VtValue (UsdAttributeLimits::*)(const TfToken&) const)
                &This::Get,
-             arg("key"))
+             nb::arg("key"))
         .def("Set", _SetValue,
-             (arg("key"),
-              arg("value")))
+             nb::arg("key"),
+             nb::arg("value").none())
 
         .def("GetMinimum",
              (VtValue (UsdAttributeLimits::*)() const)
-               &This::GetMinimum,
-             arg("key"))
+               &This::GetMinimum)
         .def("SetMinimum", _SetMinimum,
-             (arg("key"),
-              arg("value")))
+             nb::arg("value").none())
 
         .def("GetMaximum",
              (VtValue (UsdAttributeLimits::*)() const)
-               &This::GetMaximum,
-             arg("key"))
+               &This::GetMaximum)
         .def("SetMaximum", _SetMaximum,
-             (arg("key"),
-              arg("value")))
+             nb::arg("value").none())
         ;
 
     TfPyRegisterStlSequencesFromPython<This>();
-    to_python_converter<
-        std::vector<This>,
-        TfPySequenceToPython<std::vector<This>>>();
 }

@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,21 +40,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateElementTypeAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateElementTypeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIndicesAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->IntArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateFamilyNameAttr(UsdGeomSubset &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateFamilyNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -64,57 +70,52 @@ _Repr(const UsdGeomSubset &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomSubset()
+void wrapUsdGeomSubset(nb::module_ &m)
 {
     typedef UsdGeomSubset This;
 
-    class_<This, bases<UsdTyped> >
-        cls("Subset");
+    nb::class_<This, UsdTyped> cls(m, "Subset");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetElementTypeAttr",
              &This::GetElementTypeAttr)
         .def("CreateElementTypeAttr",
              &_CreateElementTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIndicesAttr",
              &This::GetIndicesAttr)
         .def("CreateIndicesAttr",
              &_CreateIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetFamilyNameAttr",
              &This::GetFamilyNameAttr)
         .def("CreateFamilyNameAttr",
              &_CreateFamilyNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -141,11 +142,9 @@ void wrapUsdGeomSubset()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/external/boost/python/tuple.hpp"
-
 namespace {
 
-static object
+static nb::tuple
 _WrapValidateFamily(const UsdGeomImageable &geom, 
                const TfToken &elementType,
                const TfToken &familyName)
@@ -153,95 +152,81 @@ _WrapValidateFamily(const UsdGeomImageable &geom,
     std::string reason;
     bool valid = UsdGeomSubset::ValidateFamily(geom, elementType, 
         familyName, &reason);
-    return pxr_boost::python::make_tuple(valid, reason);
+    return nb::make_tuple(valid, reason);
 }
 
-static object
+static nb::tuple
 _WrapValidateSubsets(    const std::vector<UsdGeomSubset> &subsets,
     const size_t elementCount, const TfToken &familyType)
 {
     std::string reason;
     bool valid = UsdGeomSubset::ValidateSubsets(subsets, elementCount, 
         familyType, &reason);
-    return pxr_boost::python::make_tuple(valid, reason);
+    return nb::make_tuple(valid, reason);
 }
 
 WRAP_CUSTOM {
     typedef UsdGeomSubset This;
 
     // Register to and from vector conversions.
-    pxr_boost::python::to_python_converter<std::vector<This>,  
-        TfPySequenceToPython<std::vector<This> > >();
 
     TfPyContainerConversions::from_python_sequence<std::vector<This>,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    scope s_enum = _class 
-        ;
-    scope s = _class
-        .def("CreateGeomSubset", &This::CreateGeomSubset,
-            (arg("geom"), arg("subsetName"), arg("elementType"), 
-             arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=TfToken()))
-            .staticmethod("CreateGeomSubset")
+    _class
+        .def_static("CreateGeomSubset", &This::CreateGeomSubset,
+            nb::arg("geom"), nb::arg("subsetName"), nb::arg("elementType"), 
+             nb::arg("indices"), nb::arg("familyName")=TfToken(),
+             nb::arg("familyType")=TfToken())
 
-        .def("CreateUniqueGeomSubset", &This::CreateUniqueGeomSubset,
-            (arg("geom"), arg("subsetName"), arg("elementType"), 
-             arg("indices"), arg("familyName")=TfToken(),
-             arg("familyType")=TfToken()))
-            .staticmethod("CreateUniqueGeomSubset")
+        .def_static("CreateUniqueGeomSubset", &This::CreateUniqueGeomSubset,
+            nb::arg("geom"), nb::arg("subsetName"), nb::arg("elementType"), 
+             nb::arg("indices"), nb::arg("familyName")=TfToken(),
+             nb::arg("familyType")=TfToken())
 
-        .def("GetAllGeomSubsets", &This::GetAllGeomSubsets,
-            arg("geom"),
-            return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetAllGeomSubsets")
+        .def_static("GetAllGeomSubsets", &This::GetAllGeomSubsets,
+            nb::arg("geom"),
+             nb::rv_policy::copy)
 
-        .def("GetGeomSubsets", &This::GetGeomSubsets,
-            (arg("geom"), 
-             arg("elementType")=TfToken(), 
-             arg("familyName")=TfToken()),
-            return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetGeomSubsets")
+        .def_static("GetGeomSubsets", &This::GetGeomSubsets,
+            nb::arg("geom"), 
+             nb::arg("elementType")=TfToken(), 
+             nb::arg("familyName")=TfToken(),
+             nb::rv_policy::copy)
 
-        .def("GetAllGeomSubsetFamilyNames", &This::GetAllGeomSubsetFamilyNames,
-            (arg("geom")), 
-            return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetAllGeomSubsetFamilyNames")
+        .def_static("GetAllGeomSubsetFamilyNames", &This::GetAllGeomSubsetFamilyNames,
+            nb::arg("geom"),
+             nb::rv_policy::copy)
 
-        .def("SetFamilyType", &This::SetFamilyType,
-            (arg("geom"), arg("familyName"), arg("familyType")))
-            .staticmethod("SetFamilyType")
+        .def_static("SetFamilyType", &This::SetFamilyType,
+            nb::arg("geom"), nb::arg("familyName"), nb::arg("familyType"))
         
-        .def("GetFamilyType", &This::GetFamilyType,
-            (arg("geom"), arg("familyName")))
-            .staticmethod("GetFamilyType")
+        .def_static("GetFamilyType", &This::GetFamilyType,
+            nb::arg("geom"), nb::arg("familyName"))
 
-        .def("GetUnassignedIndices", (VtIntArray(*)(
+        .def_static("GetUnassignedIndices", (VtIntArray(*)(
             const UsdGeomImageable &geom, 
             const TfToken &elementType,
             const TfToken &familyName,
             const UsdTimeCode &time))&This::GetUnassignedIndices,
-            (arg("geom"), arg("elementType"), arg("familyName"),
-             arg("time")=UsdTimeCode::EarliestTime()))
-        .def("GetUnassignedIndices", (VtIntArray(*)(
+            nb::arg("geom"), nb::arg("elementType"), nb::arg("familyName"),
+             nb::arg("time")=UsdTimeCode::EarliestTime())
+        .def_static("GetUnassignedIndices", (VtIntArray(*)(
             const std::vector<UsdGeomSubset> &subsets,
             const size_t elementCount,
             const UsdTimeCode &time))&This::GetUnassignedIndices,
-            (arg("subsets"), arg("elementCount"), 
-             arg("time")=UsdTimeCode::EarliestTime()))
-            .staticmethod("GetUnassignedIndices")
+            nb::arg("subsets"), nb::arg("elementCount"), 
+             nb::arg("time")=UsdTimeCode::EarliestTime())
 
-        .def("ValidateFamily", _WrapValidateFamily, 
-            (arg("geom"), 
-             arg("elementType")=TfToken(), 
-             arg("familyName")=TfToken()))
-            .staticmethod("ValidateFamily")
+        .def_static("ValidateFamily", _WrapValidateFamily, 
+            nb::arg("geom"), 
+             nb::arg("elementType")=TfToken(), 
+             nb::arg("familyName")=TfToken())
 
-        .def("ValidateSubsets", _WrapValidateSubsets, 
-            (arg("subsets"), 
-             arg("elementCount"),
-             arg("familyType")))
-            .staticmethod("ValidateSubsets")
+        .def_static("ValidateSubsets", _WrapValidateSubsets, 
+            nb::arg("subsets"), 
+             nb::arg("elementCount"),
+             nb::arg("familyType"))
 
         ;
 

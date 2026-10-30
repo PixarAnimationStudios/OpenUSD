@@ -7,31 +7,23 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/timeCodeRange.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/usd/usd/timeCode.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/with_custodian_and_ward.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 #include <sstream>
 #include <string>
 
-
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
+namespace nb = nanobind;
 
 namespace {
-
 
 static
 std::string
@@ -89,10 +81,7 @@ private:
 
     void _RaiseIfAtEnd() const {
         if (_iter == _end) {
-            PyErr_SetString(
-                PyExc_StopIteration,
-                "UsdUtilsTimeCodeRange at end");
-            throw_error_already_set();
+            throw nb::stop_iteration("UsdUtilsTimeCodeRange at end");
         }
     }
 
@@ -110,47 +99,45 @@ UsdUtils_PyTimeCodeRangeIteratorCreate(
     return UsdUtils_PyTimeCodeRangeIterator(timeCodeRange);
 }
 
-
 } // anonymous namespace
 
-
-void wrapTimeCodeRange()
+void wrapTimeCodeRange(nanobind::module_ &m)
 {
     using This = UsdUtilsTimeCodeRange;
 
-    scope s = class_<This>("TimeCodeRange")
-        .def(init<UsdTimeCode>(arg("timeCode")))
-        .def(init<UsdTimeCode, UsdTimeCode>(
-            (arg("startTimeCode"), arg("endTimeCode"))))
-        .def(init<UsdTimeCode, UsdTimeCode, double>(
-            (arg("startTimeCode"), arg("endTimeCode"), arg("stride"))))
-        .def("CreateFromFrameSpec", &This::CreateFromFrameSpec)
-            .staticmethod("CreateFromFrameSpec")
-        .add_property("startTimeCode", &This::GetStartTimeCode)
-        .add_property("endTimeCode", &This::GetEndTimeCode)
-        .add_property("stride", &This::GetStride)
-        .add_property("frameSpec", _FrameSpec)
+    nb::class_<This> s(m, "TimeCodeRange");
+    s.def(nb::init<>())
+        .def(nb::init<UsdTimeCode>(), nb::arg("timeCode"))
+        .def(nb::init<UsdTimeCode, UsdTimeCode>(),
+            nb::arg("startTimeCode"), nb::arg("endTimeCode"))
+        .def(nb::init<UsdTimeCode, UsdTimeCode, double>(),
+            nb::arg("startTimeCode"), nb::arg("endTimeCode"), nb::arg("stride"))
+        .def_static("CreateFromFrameSpec", &This::CreateFromFrameSpec)
+        .def_prop_ro("startTimeCode", &This::GetStartTimeCode)
+        .def_prop_ro("endTimeCode", &This::GetEndTimeCode)
+        .def_prop_ro("stride", &This::GetStride)
+        .def_prop_ro("frameSpec", _FrameSpec)
 
         .def("empty", &This::empty)
         .def("IsValid", &This::IsValid)
 
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
+        .def("__bool__", [](const This &self) { return static_cast<bool>(self); })
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("__repr__", _Repr)
         .def("__iter__", &UsdUtils_PyTimeCodeRangeIteratorCreate,
-            with_custodian_and_ward_postcall<0, 1>())
+            nb::keep_alive<0, 1>())
         ;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        s,
         "Tokens",
         UsdUtilsTimeCodeRangeTokens,
         USDUTILS_TIME_CODE_RANGE_TOKENS);
 
-    class_<UsdUtils_PyTimeCodeRangeIterator>("_Iterator", no_init)
-        .def("__iter__", &UsdUtils_PyTimeCodeRangeIterator::iter,
-            return_self<>())
+    nb::class_<UsdUtils_PyTimeCodeRangeIterator>(s, "_Iterator")
+        .def("__iter__", [](nb::handle self) { return self; })
         .def("__next__", &UsdUtils_PyTimeCodeRangeIterator::next,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
         ;
 }

@@ -8,15 +8,17 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -42,15 +44,15 @@ _Repr(const SdrVersion& x)
 
 static
 void
-wrapVersion()
+wrapVersion(nanobind::module_ &m)
 {
     typedef SdrVersion This;
 
-    class_<This>("Version", no_init)
-        .def(init<>())
-        .def(init<int>())
-        .def(init<int, int>())
-        .def(init<std::string>())
+    nb::class_<This>(m, "Version")
+        .def(nb::init<>())
+        .def(nb::init<int>())
+        .def(nb::init<int, int>())
+        .def(nb::init<std::string>())
         .def("GetMajor", &This::GetMajor)
         .def("GetMinor", &This::GetMinor)
         .def("IsDefault", &This::IsDefault)
@@ -59,21 +61,22 @@ wrapVersion()
         .def("__repr__", _Repr)
         .def("__str__", &This::GetString)
         .def("__hash__", &This::GetHash)
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def("__bool__", [](const This& self) { return !(!self); })
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self >= nb::self)
         ;
-}
 
 }
 
-void wrapDeclare()
+}
+
+void wrapDeclare(nanobind::module_ &m)
 {
-    wrapVersion();
+    wrapVersion(m);
 
-    TfPyWrapEnum<SdrVersionFilter>();
+    TfNbWrapEnum<SdrVersionFilter>(m);
 }

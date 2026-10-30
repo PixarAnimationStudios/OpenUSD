@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,14 +40,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateMergeGroupNameAttr(UsdPhysicsCollisionGroup &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMergeGroupNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInvertFilteredGroupsAttr(UsdPhysicsCollisionGroup &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInvertFilteredGroupsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
@@ -57,50 +63,45 @@ _Repr(const UsdPhysicsCollisionGroup &self)
 
 } // anonymous namespace
 
-void wrapUsdPhysicsCollisionGroup()
+void wrapUsdPhysicsCollisionGroup(nb::module_ &m)
 {
     typedef UsdPhysicsCollisionGroup This;
 
-    class_<This, bases<UsdTyped> >
-        cls("CollisionGroup");
+    nb::class_<This, UsdTyped> cls(m, "CollisionGroup");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetMergeGroupNameAttr",
              &This::GetMergeGroupNameAttr)
         .def("CreateMergeGroupNameAttr",
              &_CreateMergeGroupNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInvertFilteredGroupsAttr",
              &This::GetInvertFilteredGroupsAttr)
         .def("CreateInvertFilteredGroupsAttr",
              &_CreateInvertFilteredGroupsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetFilteredGroupsRel",
@@ -132,8 +133,6 @@ void wrapUsdPhysicsCollisionGroup()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "pxr/external/boost/python/suite/indexing/vector_indexing_suite.hpp"
-
 namespace {
 
 static SdfPathVector
@@ -144,34 +143,37 @@ _WrapGetGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
 
 static bool
 _WrapIsCollisionEnabled(const UsdPhysicsCollisionGroup::CollisionGroupTable &table,
-pxr_boost::python::object a, pxr_boost::python::object b)
+                        TfPyObjWrapper aObj, TfPyObjWrapper bObj)
 {
-    pxr_boost::python::extract<int> extractIntA(a);
-    pxr_boost::python::extract<int> extractIntB(b);
-    if (extractIntA.check() && extractIntB.check())
+    nb::object a = aObj.Get();
+    nb::object b = bObj.Get();
+    int intA, intB;
+    if (nb::try_cast<int>(a, intA, false) && nb::try_cast<int>(b, intB, false))
     {
-        return table.IsCollisionEnabled(extractIntA(), extractIntB());
+        return table.IsCollisionEnabled(intA, intB);
     }
 
-    pxr_boost::python::extract<SdfPath> extractPathA(a);
-    pxr_boost::python::extract<SdfPath> extractPathB(b);
-    if (extractPathA.check() && extractPathB.check())
+    SdfPath pathA, pathB;
+    if (nb::try_cast<SdfPath>(a, pathA, false) &&
+        nb::try_cast<SdfPath>(b, pathB, false))
     {
-        return table.IsCollisionEnabled(extractPathA(), extractPathB());
+        return table.IsCollisionEnabled(pathA, pathB);
     }
 
-    pxr_boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupA(a);
-    pxr_boost::python::extract<UsdPhysicsCollisionGroup> extractColGroupB(b);
-    if (extractColGroupA.check() && extractColGroupB.check())
+    UsdPhysicsCollisionGroup colGroupA, colGroupB;
+    if (nb::try_cast<UsdPhysicsCollisionGroup>(a, colGroupA, false) &&
+        nb::try_cast<UsdPhysicsCollisionGroup>(b, colGroupB, false))
     {
-        return table.IsCollisionEnabled(extractColGroupA().GetPrim().GetPrimPath(), extractColGroupB().GetPrim().GetPrimPath());
+        return table.IsCollisionEnabled(
+            colGroupA.GetPrim().GetPrimPath(),
+            colGroupB.GetPrim().GetPrimPath());
     }
 
-    pxr_boost::python::extract<UsdPrim> extractPrimA(a);
-    pxr_boost::python::extract<UsdPrim> extractPrimB(b);
-    if (extractPrimA.check() && extractPrimB.check())
+    UsdPrim primA, primB;
+    if (nb::try_cast<UsdPrim>(a, primA, false) &&
+        nb::try_cast<UsdPrim>(b, primB, false))
     {
-        return table.IsCollisionEnabled(extractPrimA().GetPrimPath(), extractPrimB().GetPrimPath());
+        return table.IsCollisionEnabled(primA.GetPrimPath(), primB.GetPrimPath());
     }
 
     return true;
@@ -183,18 +185,22 @@ WRAP_CUSTOM {
     _class
         .def("GetCollidersCollectionAPI",
              &This::GetCollidersCollectionAPI)
-        .def("ComputeCollisionGroupTable",
+        .def_static("ComputeCollisionGroupTable",
              &This::ComputeCollisionGroupTable,
-             arg("stage"),
-             return_value_policy<return_by_value>())
-        .staticmethod("ComputeCollisionGroupTable")
+             nb::arg("stage"),
+             nb::rv_policy::copy)
         ;
 
-    class_<UsdPhysicsCollisionGroup::CollisionGroupTable>("CollisionGroupTable")
+    nb::class_<UsdPhysicsCollisionGroup::CollisionGroupTable> tableCls(
+        TfPyGetCurrentNanobindModule(),
+        "CollisionGroupTable");
+    tableCls
+        .def(nb::init<>())
         .def("GetGroups", &_WrapGetGroups,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("IsCollisionEnabled", &_WrapIsCollisionEnabled)
         ;
+    _class.attr("CollisionGroupTable") = tableCls;
 }
 
 }

@@ -10,15 +10,12 @@
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python.hpp"
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -40,8 +37,9 @@ _Repr(const SdfLayerOffset &self) {
 
 } // anonymous namespace 
 
-void wrapLayerOffset()
+void wrapLayerOffset(nanobind::module_ &m)
 {    
+    namespace nb = nanobind;
     typedef SdfLayerOffset This;
 
     TfPyContainerConversions::from_python_sequence<
@@ -55,27 +53,27 @@ void wrapLayerOffset()
     //       first explicit reference, but would instead modify a temporary
     //       Sdf.LayerOffset object.
 
-    class_<This>( "LayerOffset" )
-        .def(init<double, double>(
-            ( arg("offset") = 0.0,
-              arg("scale") = 1.0 ) ) )
-        .def(init<const This &>())
+    nb::class_<This>( m, "LayerOffset" )
+        .def(nb::init<double, double>(),
+             nb::arg("offset") = 0.0,
+             nb::arg("scale") = 1.0)
+        .def(nb::init<const This &>())
 
-        .add_property("offset", &This::GetOffset)
-        .add_property("scale", &This::GetScale)
+        .def_prop_ro("offset", &This::GetOffset)
+        .def_prop_ro("scale", &This::GetScale)
 
         .def("IsIdentity", &This::IsIdentity)
         .def("GetInverse", &This::GetInverse)
         
-        .def( self == self )
-        .def( self != self )
-        .def( self * self )
+        .def( nb::self == nb::self )
+        .def( nb::self != nb::self )
+        .def( nb::self * nb::self )
 
         // This order is required to prevent doubles from implicitly converting
         // to GfTimeCode when calling SdfLayerOffset * double.
-        .def( self * GfTimeCode() )
-        .def( self * GfDuration() )
-        .def( self * double() )
+        .def( nb::self * double() )
+        .def( nb::self * GfTimeCode() )
+        .def( nb::self * GfDuration() )
 
         .def("__repr__", _Repr)
         

@@ -7,19 +7,19 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/timeCode.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -48,12 +48,13 @@ static double _Float(GfTimeCode const &self)
 
 } // anonymous namespace
 
-void wrapTimeCode()
+void wrapTimeCode(nanobind::module_& m)
 {
     typedef GfTimeCode This;
 
-    auto selfCls = class_<This>("TimeCode", init<>())
-        .def(init<double>())
+    nb::class_<This>(m, "TimeCode")
+        .def(nb::init<>())
+        .def(nb::init_implicit<double>())
 
         .def("GetValue", &This::GetValue)
 
@@ -63,39 +64,41 @@ void wrapTimeCode()
         .def("__hash__", &This::GetHash)
         .def("__float__", _Float)
 
-        .def( self == self )
-        .def( double() == self )
-        .def( self != self )
-        .def( double() != self )
-        .def( self < self )
-        .def( double() < self )
-        .def( self > self )
-        .def( double() > self )
-        .def( self <= self )
-        .def( double() <= self )
-        .def( self >= self )
-        .def( double() >= self )
+        .def( double() == nb::self )
+        .def( nb::self == nb::self )
+        .def( double() != nb::self )
+        .def( nb::self != nb::self )
+        .def( double() < nb::self )
+        .def( nb::self < nb::self )
+        .def( double() > nb::self )
+        .def( nb::self > nb::self )
+        .def( double() <= nb::self )
+        .def( nb::self <= nb::self )
+        .def( double() >= nb::self )
+        .def( nb::self >= nb::self )
 
-        .def( double() * self )
-        .def( self * double() )
+        .def( double() * nb::self )
+        .def( nb::self * double() )
+        .def("__mul__", [](This const &, This const &) {
+            throw nb::type_error();
+        }, nb::is_operator())
 
-        .def( self / double() )
-        .def( self / self )
+        .def( nb::self / double() )
+        .def( nb::self / nb::self )
 
-        .def( self + self )
-        .def( self + GfDuration() )
-        .def( self + double() )
-        .def( GfDuration() + self )
-        .def( double() + self )
+        .def( nb::self + double() )
+        .def( double() + nb::self )
+        .def( nb::self + GfDuration() )
+        .def( GfDuration() + nb::self )
+        .def( nb::self + nb::self )
 
-        .def( self - self )
-        .def( self - GfDuration() )
-        .def( GfDuration() - self )
-        .def( double() - self )
-        .def( self - double() )
+        .def( nb::self - double() )
+        .def( double() - nb::self )
+        .def( nb::self - GfDuration() )
+        .def( GfDuration() - nb::self )
+        .def( nb::self - nb::self )
 
-        .def( -self )
+        .def( -nb::self )
         ;
 
-    implicitly_convertible<double, This>();
 }

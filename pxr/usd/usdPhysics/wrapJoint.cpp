@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,63 +40,63 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateLocalPos0Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLocalPos0Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalRot0Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLocalRot0Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Quatf), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalPos1Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLocalPos1Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLocalRot1Attr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLocalRot1Attr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Quatf), writeSparsely);
 }
         
 static UsdAttribute
 _CreateJointEnabledAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateJointEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCollisionEnabledAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCollisionEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExcludeFromArticulationAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExcludeFromArticulationAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBreakForceAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBreakForceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBreakTorqueAttr(UsdPhysicsJoint &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBreakTorqueAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -106,99 +112,94 @@ _Repr(const UsdPhysicsJoint &self)
 
 } // anonymous namespace
 
-void wrapUsdPhysicsJoint()
+void wrapUsdPhysicsJoint(nb::module_ &m)
 {
     typedef UsdPhysicsJoint This;
 
-    class_<This, bases<UsdGeomImageable> >
-        cls("Joint");
+    nb::class_<This, UsdGeomImageable> cls(m, "Joint");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetLocalPos0Attr",
              &This::GetLocalPos0Attr)
         .def("CreateLocalPos0Attr",
              &_CreateLocalPos0Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetLocalRot0Attr",
              &This::GetLocalRot0Attr)
         .def("CreateLocalRot0Attr",
              &_CreateLocalRot0Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetLocalPos1Attr",
              &This::GetLocalPos1Attr)
         .def("CreateLocalPos1Attr",
              &_CreateLocalPos1Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetLocalRot1Attr",
              &This::GetLocalRot1Attr)
         .def("CreateLocalRot1Attr",
              &_CreateLocalRot1Attr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetJointEnabledAttr",
              &This::GetJointEnabledAttr)
         .def("CreateJointEnabledAttr",
              &_CreateJointEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetCollisionEnabledAttr",
              &This::GetCollisionEnabledAttr)
         .def("CreateCollisionEnabledAttr",
              &_CreateCollisionEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExcludeFromArticulationAttr",
              &This::GetExcludeFromArticulationAttr)
         .def("CreateExcludeFromArticulationAttr",
              &_CreateExcludeFromArticulationAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetBreakForceAttr",
              &This::GetBreakForceAttr)
         .def("CreateBreakForceAttr",
              &_CreateBreakForceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetBreakTorqueAttr",
              &This::GetBreakTorqueAttr)
         .def("CreateBreakTorqueAttr",
              &_CreateBreakTorqueAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetBody0Rel",

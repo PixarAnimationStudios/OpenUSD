@@ -5,18 +5,18 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/usdUtils/flattenLayerStack.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/pyFunction.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/makePyConstructor.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static
 SdfLayerRefPtr
@@ -40,22 +40,18 @@ _UsdUtilsFlattenLayerStack3(
     return UsdUtilsFlattenLayerStack(stage, resolveAssetPathFn, tag);
 }
 
-void wrapFlattenLayerStack()
+void wrapFlattenLayerStack(nanobind::module_ &m)
 {
-    def("FlattenLayerStack",
+    m.def("FlattenLayerStack",
         &_UsdUtilsFlattenLayerStack2,
-        (arg("stage"), arg("tag")=std::string()),
-        pxr_boost::python::return_value_policy<
-        TfPyRefPtrFactory<SdfLayerHandle> >());
+        nb::arg("stage"), nb::arg("tag")=std::string());
 
     TfPyFunctionFromPython<Py_UsdUtilsResolveAssetPathSig>();
-    def("FlattenLayerStack",
+    m.def("FlattenLayerStack",
         &_UsdUtilsFlattenLayerStack3,
-        (arg("stage"), arg("resolveAssetPathFn"), arg("tag")=std::string()),
-        pxr_boost::python::return_value_policy<
-        TfPyRefPtrFactory<SdfLayerHandle> >());
+        nb::arg("stage"), nb::arg("resolveAssetPathFn"), nb::arg("tag")=std::string());
 
-    def("FlattenLayerStackResolveAssetPath",
+    m.def("FlattenLayerStackResolveAssetPath",
         UsdUtilsFlattenLayerStackResolveAssetPath,
-        (arg("sourceLayer"), arg("assetPath")));
+        nb::arg("sourceLayer"), nb::arg("assetPath"));
 }

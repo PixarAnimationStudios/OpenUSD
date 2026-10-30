@@ -16,20 +16,11 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include "pxr/external/boost/python/def_visitor.hpp"
-#include "pxr/external/boost/python/raw_function.hpp"
-
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Tf_PySingleton {
-
-namespace bp = pxr_boost::python;
-
-TF_API
-bp::object _DummyInit(bp::tuple const & /* args */,
-                      bp::dict const & /* kw */);
 
 template <class T>
 TfWeakPtr<T> GetWeakPtr(T &t) {
@@ -46,38 +37,30 @@ template <class T>
 TfWeakPtr<T> GetWeakPtr(TfWeakPtr<T> const &t) {
     return t;
 }
-   
-template <typename PtrType>
-PtrType _GetSingletonWeakPtr(bp::object const & /* classObj */) {
-    typedef typename PtrType::DataType Singleton;
-    return GetWeakPtr(Singleton::GetInstance());
+
 }
 
-TF_API
-std::string _Repr(bp::object const &self, std::string const &prefix);
-    
-struct Visitor : bp::def_visitor<Visitor> {
-    explicit Visitor() {}
-    
-    friend class bp::def_visitor_access;
-    template <typename CLS>
-    void visit(CLS &c) const {
-        typedef typename CLS::metadata::held_type PtrType;
+template <typename T, typename... Extra>
+void TfNbSingleton(nanobind::class_<T, Extra...> &cls) {
+    TfNbWeakPtr<T>(cls);
+    cls.def_static(
+        "__new__",
+        [](nanobind::handle, nanobind::args, nanobind::kwargs) {
+            return Tf_PySingleton::GetWeakPtr(T::GetInstance());
+        });
+    cls.def("__init__",
+            [](nanobind::handle, nanobind::args, nanobind::kwargs) {});
+}
 
-        // Singleton implies WeakPtr.
-        c.def(TfPyWeakPtr());
-
-        // Wrap __new__ to return a weak pointer to the singleton instance.
-        c.def("__new__", _GetSingletonWeakPtr<PtrType>).staticmethod("__new__");
-        // Make __init__ do nothing.
-        c.def("__init__", bp::raw_function(_DummyInit));
+struct Tf_NbSingletonVisitor : nanobind::def_visitor<Tf_NbSingletonVisitor> {
+    template <typename Class, typename... Extra>
+    static void execute(Class &cls, const Extra &...) {
+        TfNbSingleton(cls);
     }
 };
 
-}
-
-TF_API
-Tf_PySingleton::Visitor TfPySingleton();
+inline Tf_NbSingletonVisitor TfNbSingleton() { return {}; }
+inline Tf_NbSingletonVisitor TfPySingleton() { return {}; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

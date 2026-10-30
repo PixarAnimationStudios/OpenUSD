@@ -4,23 +4,21 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 void
-wrapRenderParams()
+wrapRenderParams(nb::module_ &m)
 {
     // Wrap the DrawMode enum. Accessible as UsdImagingGL.DrawMode
-    enum_<UsdImagingGLDrawMode>("DrawMode")
+    nb::enum_<UsdImagingGLDrawMode>(m, "DrawMode")
         .value("DRAW_POINTS", UsdImagingGLDrawMode::DRAW_POINTS)
         .value("DRAW_WIREFRAME", UsdImagingGLDrawMode::DRAW_WIREFRAME)
         .value("DRAW_WIREFRAME_ON_SURFACE", 
@@ -33,7 +31,7 @@ wrapRenderParams()
         ;
 
     // Wrap the CullStyle enum. Accessible as UsdImagingGL.CullStyle
-    enum_<UsdImagingGLCullStyle>("CullStyle")
+    nb::enum_<UsdImagingGLCullStyle>(m, "CullStyle")
         .value("CULL_STYLE_NOTHING", UsdImagingGLCullStyle::CULL_STYLE_NOTHING)
         .value("CULL_STYLE_BACK", UsdImagingGLCullStyle::CULL_STYLE_BACK)
         .value("CULL_STYLE_FRONT", UsdImagingGLCullStyle::CULL_STYLE_FRONT)
@@ -44,35 +42,36 @@ wrapRenderParams()
     // Wrap the UsdImagingGLRenderParams struct. Accessible as 
     // UsdImagingGL.RenderParams
     using Params = UsdImagingGLRenderParams;
-    class_<UsdImagingGLRenderParams>("RenderParams", "Render parameters")
-        .def_readwrite("frame", &Params::frame)
-        .def_readwrite("complexity", &Params::complexity)
-        .def_readwrite("drawMode", &Params::drawMode)
-        .def_readwrite("showGuides", &Params::showGuides)
-        .def_readwrite("showRender", &Params::showRender)
-        .def_readwrite("showProxy", &Params::showProxy)
-        .def_readwrite("forceRefresh", &Params::forceRefresh)
-        .def_readwrite("cullStyle", &Params::cullStyle)
-        .def_readwrite("enableLighting", &Params::enableLighting)
-        .def_readwrite("enableSampleAlphaToCoverage", 
+    nb::class_<UsdImagingGLRenderParams>(m, "RenderParams", "Render parameters")
+        .def(nb::init<>())
+        .def_rw("frame", &Params::frame)
+        .def_rw("complexity", &Params::complexity)
+        .def_rw("drawMode", &Params::drawMode)
+        .def_rw("showGuides", &Params::showGuides)
+        .def_rw("showRender", &Params::showRender)
+        .def_rw("showProxy", &Params::showProxy)
+        .def_rw("forceRefresh", &Params::forceRefresh)
+        .def_rw("cullStyle", &Params::cullStyle)
+        .def_rw("enableLighting", &Params::enableLighting)
+        .def_rw("enableSampleAlphaToCoverage", 
             &Params::enableSampleAlphaToCoverage)
-        .def_readwrite("applyRenderState", &Params::applyRenderState)
-        .def_readwrite("gammaCorrectColors", &Params::gammaCorrectColors)
-        .def_readwrite("overrideColor", &Params::overrideColor)
-        .def_readwrite("wireframeColor", &Params::wireframeColor)
-        .def_readwrite("clipPlanes", &Params::clipPlanes)
-        .def_readwrite("highlight", &Params::highlight)
-        .def_readwrite("enableSceneMaterials", &Params::enableSceneMaterials)
-        .def_readwrite("enableSceneLights", &Params::enableSceneLights)
-        .def_readwrite("enableUsdDrawModes", &Params::enableUsdDrawModes)
-        .def_readwrite("colorCorrectionMode", &Params::colorCorrectionMode)
-        .def_readwrite("clearColor", &Params::clearColor)
-        .def_readwrite("ocioDisplay", &Params::ocioDisplay)
-        .def_readwrite("ocioView", &Params::ocioView)
-        .def_readwrite("ocioColorSpace", &Params::ocioColorSpace)
-        .def_readwrite("ocioLook", &Params::ocioLook)
-        .def_readwrite("bboxes", &Params::bboxes)
-        .def_readwrite("bboxLineColor", &Params::bboxLineColor)
-        .def_readwrite("bboxLineDashSize", &Params::bboxLineDashSize)
+        .def_rw("applyRenderState", &Params::applyRenderState)
+        .def_rw("gammaCorrectColors", &Params::gammaCorrectColors)
+        .def_rw("overrideColor", &Params::overrideColor)
+        .def_rw("wireframeColor", &Params::wireframeColor)
+        .def_rw("clipPlanes", &Params::clipPlanes)
+        .def_rw("highlight", &Params::highlight)
+        .def_rw("enableSceneMaterials", &Params::enableSceneMaterials)
+        .def_rw("enableSceneLights", &Params::enableSceneLights)
+        .def_rw("enableUsdDrawModes", &Params::enableUsdDrawModes)
+        .def_rw("colorCorrectionMode", &Params::colorCorrectionMode)
+        .def_rw("clearColor", &Params::clearColor)
+        .def_rw("ocioDisplay", &Params::ocioDisplay)
+        .def_rw("ocioView", &Params::ocioView)
+        .def_rw("ocioColorSpace", &Params::ocioColorSpace)
+        .def_rw("ocioLook", &Params::ocioLook)
+        .def_rw("bboxes", &Params::bboxes)
+        .def_rw("bboxLineColor", &Params::bboxLineColor)
+        .def_rw("bboxLineDashSize", &Params::bboxLineDashSize)
         ;
 }

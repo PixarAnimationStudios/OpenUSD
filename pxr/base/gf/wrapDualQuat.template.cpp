@@ -12,28 +12,22 @@
 {% for S in SCALARS %}
 #include "pxr/base/gf/dualQuat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
+#include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,134 +37,90 @@ static string __repr__({{ DUALQUAT }} const &self) {
         TfPyRepr(self.GetDual()) + ")";
 }
 
-static {{ DUALQUAT }} __truediv__(const {{ DUALQUAT }} &self, {{ SCL }} value)
-{
-    return self / value;
-}
-
-static {{ DUALQUAT }}& __itruediv__({{ DUALQUAT }} &self, {{ SCL }} value)
-{
-    return self /= value;
-}
-
 static size_t __hash__({{ DUALQUAT }} const &self) {
     return TfHash{}(self);
 }
 
-// Zero-initialized default ctor for python.
-static {{ DUALQUAT }} *__init__() {
-    return new {{ DUALQUAT }}({{ QUAT }}(0), {{ QUAT }}(0));
-}
-
 } // anonymous namespace
 
-void wrapDualQuat{{ SUFFIX }}()
+void wrapDualQuat{{ SUFFIX }}(nanobind::module_ &m)
 {
-    object getReal =
-        make_function(&{{ DUALQUAT }}::GetReal,
-                      return_value_policy<return_by_value>());
-    object setReal =
-        make_function((void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))
-                      &{{ DUALQUAT }}::SetReal);
+    m.def("Dot",
+          ({{ SCL }} (*)(const {{ DUALQUAT }} &, const {{ DUALQUAT }} &))
+          GfDot);
 
-    object getDual =
-        make_function(&{{ DUALQUAT }}::GetDual,
-                      return_value_policy<return_by_value>());
-    object setDual =
-        make_function((void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))
-                      &{{ DUALQUAT }}::SetDual);
-
-    def( "Dot",
-         ({{ SCL }} (*)(const {{ DUALQUAT }} &, const {{ DUALQUAT }} &))
-         GfDot);
-
-    class_<{{ DUALQUAT }}> cls("DualQuat{{ SUFFIX }}", no_init);
+    nanobind::class_<{{ DUALQUAT }}> cls(m, "DualQuat{{ SUFFIX }}");
     cls
-        .def("__init__", make_constructor(__init__))
+        .def("__init__", []({{ DUALQUAT }} *self) {
+            new (self) {{ DUALQUAT }}({{ QUAT }}(0), {{ QUAT }}(0));
+        })
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .def(init<GfDualQuat{{ SUFFIX }}>())
-        .def(init<{{ SCL }}>(arg("realVal")))
-        .def(init< const {{ QUAT }} & >(arg("real")))
-        .def(init< const {{ QUAT }} &, const {{ QUAT }} & >(
-                 (arg("real"), arg("dual"))))
-        .def(init< const {{ QUAT }} &, const GfVec3{{ SUFFIX }} & >(
-                 (arg("rotation"), arg("translation"))))
-{% for S in SCALARS if S != SCL and not ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-        .def(init<const GfDualQuat{{ SCALAR_SUFFIX(S) }} & >())
+        .def(nanobind::init<GfDualQuat{{ SUFFIX }}>())
+{% for S in SCALARS if S != SCL %}
+{% if ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
+        .def(nanobind::init_implicit<const GfDualQuat{{ SCALAR_SUFFIX(S) }} &>())
+{% else %}
+        .def(nanobind::init<const GfDualQuat{{ SCALAR_SUFFIX(S) }} &>())
+{% endif %}
 {% endfor %}
+        .def(nanobind::init<{{ SCL }}>(), nanobind::arg("realVal"))
+        .def(nanobind::init<const {{ QUAT }} &>(), nanobind::arg("real"))
+        .def(nanobind::init<const {{ QUAT }} &, const {{ QUAT }} &>(),
+             nanobind::arg("real"), nanobind::arg("dual"))
+        .def(nanobind::init<const {{ QUAT }} &, const GfVec3{{ SUFFIX }} &>(),
+             nanobind::arg("rotation"), nanobind::arg("translation"))
 
-        .def("GetZero", &{{ DUALQUAT }}::GetZero)
-        .staticmethod("GetZero")
+        .def_static("GetZero", &{{ DUALQUAT }}::GetZero)
+        .def_static("GetIdentity", &{{ DUALQUAT }}::GetIdentity)
 
-        .def("GetIdentity", &{{ DUALQUAT }}::GetIdentity)
-        .staticmethod("GetIdentity")
+        .def("GetReal", &{{ DUALQUAT }}::GetReal, nanobind::rv_policy::copy)
+        .def("SetReal", (void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))&{{ DUALQUAT }}::SetReal)
+        .def_prop_rw("real", &{{ DUALQUAT }}::GetReal,
+                     (void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))&{{ DUALQUAT }}::SetReal,
+                     nanobind::rv_policy::copy)
 
-        .def("GetReal", getReal)
-        .def("SetReal", setReal)
-        .add_property("real", getReal, setReal)
-
-        .def("GetDual", getDual)
-        .def("SetDual", setDual)
-        .add_property("dual", getDual, setDual)
+        .def("GetDual", &{{ DUALQUAT }}::GetDual, nanobind::rv_policy::copy)
+        .def("SetDual", (void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))&{{ DUALQUAT }}::SetDual)
+        .def_prop_rw("dual", &{{ DUALQUAT }}::GetDual,
+                     (void ({{ DUALQUAT }}::*)(const {{ QUAT }} &))&{{ DUALQUAT }}::SetDual,
+                     nanobind::rv_policy::copy)
 
         .def("GetLength", &{{ DUALQUAT }}::GetLength)
 
         .def("GetNormalized", &{{ DUALQUAT }}::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
-        .def("Normalize", &{{ DUALQUAT }}::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH)
+        .def("Normalize", []({{ DUALQUAT }} &self, {{ SCL }} eps) -> {{ DUALQUAT }} & {
+            self.Normalize(eps);
+            return self;
+        }, nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH, nanobind::rv_policy::reference)
 
         .def("GetConjugate", &{{ DUALQUAT }}::GetConjugate)
         .def("GetInverse", &{{ DUALQUAT }}::GetInverse)
         .def("SetTranslation",
-             (void ({{ DUALQUAT }}::*)(const GfVec3{{ SUFFIX }} &))
-             &{{ DUALQUAT }}::SetTranslation)
+             (void ({{ DUALQUAT }}::*)(const GfVec3{{ SUFFIX }} &))&{{ DUALQUAT }}::SetTranslation)
         .def("GetTranslation", &{{ DUALQUAT }}::GetTranslation)
 
         .def("Transform",
-             (GfVec3{{ SUFFIX }} ({{ DUALQUAT }}::*)(const GfVec3{{ SUFFIX }} &) const)
-             &{{ DUALQUAT }}::Transform)
+             (GfVec3{{ SUFFIX }} ({{ DUALQUAT }}::*)(const GfVec3{{ SUFFIX }} &) const)&{{ DUALQUAT }}::Transform)
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self += self )
-        .def( self -= self )
-        .def( self *= self )
-        .def( self *= {{ SCL }}() )
-        .def( self /= {{ SCL }}() )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
-        .def( self * {{ SCL }}() )
-        .def( {{ SCL }}() * self )
-        .def( self / {{ SCL }}() )
+        .def("__str__", [](const {{ DUALQUAT }} &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self *= {{ SCL }}())
+        .def(nanobind::self /= {{ SCL }}())
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self * {{ SCL }}())
+        .def({{ SCL }}() * nanobind::self)
+        .def(nanobind::self / {{ SCL }}())
 
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-
-{% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-    implicitly_convertible<{{ DUALQUATNAME(S) }}, {{ DUALQUAT }}>();
-{% endfor %}
-
-    to_python_converter<std::vector<{{ DUALQUAT }}>,
-        TfPySequenceToPython<std::vector<{{ DUALQUAT }}> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 }

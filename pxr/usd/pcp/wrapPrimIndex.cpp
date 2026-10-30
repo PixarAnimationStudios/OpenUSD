@@ -10,16 +10,14 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/sdf/siteUtils.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/sdf/pySpec.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _ComputePrimChildNames( PcpPrimIndex &index )
 {
     TfTokenVector nameOrder;
@@ -27,7 +25,7 @@ _ComputePrimChildNames( PcpPrimIndex &index )
     index.ComputePrimChildNames(&nameOrder, &prohibitedNameSet);
     TfTokenVector prohibitedNamesVector(prohibitedNameSet.begin(),
                                         prohibitedNameSet.end());
-    return pxr_boost::python::make_tuple(nameOrder, prohibitedNamesVector);
+    return nanobind::make_tuple(nameOrder, prohibitedNamesVector);
 }
 
 static TfTokenVector
@@ -40,53 +38,47 @@ _ComputePrimPropertyNames( PcpPrimIndex &index )
 
 } // anonymous namespace 
 
-void wrapPrimIndex()
+void wrapPrimIndex(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef PcpPrimIndex This;
 
-    class_<This>("PrimIndex", "", no_init)
-        .add_property("primStack", 
-                      make_function(&PcpComputePrimStackForPrimIndex,
-                                    return_value_policy<TfPySequenceToList>()))
-        .add_property("rootNode", &This::GetRootNode)
-        .add_property("hasAnyPayloads", &This::HasAnyPayloads)
-        .add_property("localErrors", 
-                      make_function(&This::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
+    nb::class_<This>(m, "PrimIndex")
+        .def_prop_ro("primStack", &PcpComputePrimStackForPrimIndex)
+        .def_prop_ro("rootNode", &This::GetRootNode)
+        .def_prop_ro("hasAnyPayloads", &This::HasAnyPayloads)
+        .def_prop_ro("localErrors", &This::GetLocalErrors)
 
         .def("IsValid", &This::IsValid)
         .def("IsUsd", &This::IsUsd)
         .def("IsInstanceable", &This::IsInstanceable)
 
         .def("ComputePrimChildNames", &_ComputePrimChildNames)
-        .def("ComputePrimPropertyNames",
-            &_ComputePrimPropertyNames,
-            return_value_policy<TfPySequenceToList>())
+        .def("ComputePrimPropertyNames", &_ComputePrimPropertyNames)
         .def("ComposeAuthoredVariantSelections",
-             &This::ComposeAuthoredVariantSelections,
-            return_value_policy<TfPyMapToDictionary>())
+             &This::ComposeAuthoredVariantSelections)
         .def("GetSelectionAppliedForVariantSet",
             &This::GetSelectionAppliedForVariantSet)
 
         .def("GetNodeProvidingSpec", 
             (PcpNodeRef (This::*) (const SdfPrimSpecHandle&) const)
                 (&This::GetNodeProvidingSpec),
-            args("primSpec"))
+            nb::arg("primSpec"))
         .def("GetNodeProvidingSpec", 
             (PcpNodeRef (This::*) (const SdfLayerHandle&, const SdfPath&) const)
                 (&This::GetNodeProvidingSpec),
-            (args("layer"),
-             args("path")))
+            nb::arg("layer"),
+            nb::arg("path"))
 
         .def("PrintStatistics", &This::PrintStatistics)
         .def("DumpToString", &This::DumpToString,
-             (args("includeInheritOriginInfo") = true,
-              args("includeMaps") = true))
+             nb::arg("includeInheritOriginInfo") = true,
+             nb::arg("includeMaps") = true)
         .def("DumpToDotGraph", &This::DumpToDotGraph,
-             (args("filename"),
-              args("includeInheritOriginInfo") = true,
-              args("includeMaps") = false))
+             nb::arg("filename"),
+             nb::arg("includeInheritOriginInfo") = true,
+             nb::arg("includeMaps") = false)
         ;
 
-    def("_CheckConsistency", &Pcp_CheckConsistency);
+    m.def("_CheckConsistency", &Pcp_CheckConsistency);
 }

@@ -424,15 +424,7 @@ class VtValue
             // comparison on the *proxied* type instead.
             return _TypedProxyEqualityImpl(a, b, 0);
         }
-        static TfPyObjWrapper GetPyObj(T const &obj) {
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-            ProxiedType const &p = VtGetProxiedObject(obj);
-            TfPyLock lock;
-            return pxr_boost::python::api::object(p);
-#else
-            return {};
-#endif //PXR_PYTHON_SUPPORT_ENABLED
-        }
+        static TfPyObjWrapper GetPyObj(T const &obj);
         static VtValueRef GetValueRef(T const &obj);
         static std::ostream &StreamOut(T const &obj, std::ostream &out) {
             return VtStreamOut(VtGetProxiedObject(obj), out);
@@ -485,15 +477,7 @@ class VtValue
             // comparison on the VtValue containing the *proxied* type instead.
             return _ErasedProxyEqualityImpl(a, b, 0);
         }
-        static TfPyObjWrapper GetPyObj(ErasedProxy const &obj) {
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-            VtValue const *val = VtGetErasedProxiedVtValue(obj);
-            TfPyLock lock;
-            return pxr_boost::python::api::object(*val);
-#else
-            return {};
-#endif //PXR_PYTHON_SUPPORT_ENABLED
-        }
+        static TfPyObjWrapper GetPyObj(ErasedProxy const &obj);
         static VtValueRef GetValueRef(ErasedProxy const &obj);
         static std::ostream &
         StreamOut(ErasedProxy const &obj, std::ostream &out) {
@@ -1017,7 +1001,7 @@ public:
     /// behavior.
     template <class T>
     T UncheckedRemove() {
-        T result;
+        T result{};
         UncheckedSwap(result);
         _Clear();
         return result;
@@ -1503,7 +1487,7 @@ ARCH_PRAGMA_POP
     // class.  This lets the wrapper reach down into a value to get a
     // pxr_boost::python wrapped object corresponding to the held type.  This
     // facility is necessary to get the python API we want.
-    friend TfPyObjWrapper
+    friend VT_API TfPyObjWrapper
     Vt_GetPythonObjectFromHeldValue(VtValue const &self);
 
     VT_API TfPyObjWrapper _GetPythonObject() const;

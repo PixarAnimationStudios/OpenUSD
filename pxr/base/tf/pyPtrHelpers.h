@@ -13,54 +13,29 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyIdentity.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
-#include "pxr/external/boost/python/converter/registered.hpp"
-#include "pxr/external/boost/python/converter/registrations.hpp"
-#include "pxr/external/boost/python/converter/registry.hpp"
-#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
-#include "pxr/external/boost/python/converter/to_python_function_type.hpp"
-#include "pxr/external/boost/python/def_visitor.hpp"
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/to_python_converter.hpp"
 
 #include <memory>
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-//
-// Boost.Python def visitors for wrapping objects held by weak pointers.  This
-// will create a read-only property on your class called 'expired' which is
-// true if the object has expired.  This also adds an implementation for __eq__
-// and __ne__ which compare the pointers for equality and non-equality, 
-// respectively.
-//
-// Example usage:
-//
-// class_<MyClass, MyClassPtr>("MyClass", no_init)
-//     .def(TfPyWeakPtr())
-//     .def(...)
-//     ...
-//
-
 // Helper class to return or create a PyObject holder for a Ptr.  This
 // can be specialized for custom behavior.
 template <typename Ptr>
 struct TfMakePyPtr {
     typedef typename Ptr::DataType Pointee;
-    typedef pxr_boost::python::objects::pointer_holder<Ptr, Pointee> Holder;
     typedef std::pair<PyObject*, bool> Result;
 
     // Return an existing PyObject for the pointer paired with false or
@@ -69,8 +44,10 @@ struct TfMakePyPtr {
     static Result Execute(Ptr const& p)
     {
         // null pointers -> python None.
-        if (!p.GetUniqueIdentifier())
-            return Result(pxr_boost::python::detail::none(), false);
+        if (!p.GetUniqueIdentifier()) {
+            Py_INCREF(Py_None);
+            return Result(Py_None, false);
+        }
 
         // Force instantiation.  We must do this before checking if we
         // have a python identity, otherwise the identity might be set
@@ -81,340 +58,177 @@ struct TfMakePyPtr {
         if (PyObject *id = Tf_PyGetPythonIdentity(p))
             return Result(id, false);
 
-        // Just make a new python object holding this pointer.
-        // TODO: use existing to-python conversion?
-        PyObject *res = pxr_boost::python::objects::make_ptr_instance
-                            <Pointee, Holder>::execute(p);
-        // If we got back Py_None, no new object was made, so make sure
-        // to pass back false in result.
-        return Result(res, res != Py_None);
+        using NonConstPointee = std::remove_const_t<Pointee>;
+        if (nanobind::type<NonConstPointee>().is_valid()) {
+            nanobind::handle pyType = nanobind::type<NonConstPointee>();
+            Pointee *rawPtr = get_pointer(p);
+            if (!rawPtr) {
+                nanobind::object nbObj = nanobind::inst_alloc_zero(pyType);
+                if (nbObj.is_valid()) {
+                    return Result(nbObj.release().ptr(), false);
+                }
+                Py_INCREF(Py_None);
+                return Result(Py_None, false);
+            }
+            void *instPtr = const_cast<NonConstPointee *>(rawPtr);
+            if constexpr (std::is_polymorphic_v<NonConstPointee>) {
+                if (PyObject *dynType =
+                        NB_CALL(nb_type_lookup)(NB_CTX, &typeid(*rawPtr))) {
+                    pyType = dynType;
+                    instPtr = const_cast<void *>(TfCastToMostDerivedType(rawPtr));
+                }
+            }
+            nanobind::object nbObj = nanobind::inst_reference(pyType, instPtr);
+            if (nbObj.is_valid()) {
+                return Result(nbObj.release().ptr(), true);
+            }
+        }
+
+        Py_INCREF(Py_None);
+        return Result(Py_None, false);
     }
 };
 
-namespace Tf_PyDefHelpers {
-
-using namespace pxr_boost::python;
-
-template <typename Ptr>
-struct _PtrInterface {
-    typedef typename Ptr::DataType Pointee;
-    using ConstPointee = std::add_const_t<Pointee>;
-    using NonConstPointee = std::remove_const_t<Pointee>;
-    
-    template <typename U>
-    struct Rebind {
-        typedef typename Ptr::template Rebind<U>::Type Type;
-    };
-
-    typedef typename Rebind<ConstPointee>::Type ConstPtr;
-    typedef typename Rebind<NonConstPointee>::Type NonConstPtr;
-
-};
-
-template <typename PtrType>
-bool _IsPtrExpired(object const &self) {
-    try {
-        PtrType p = extract<PtrType>(self);
-        return !p;
-    } catch (pxr_boost::python::error_already_set const &) {
-        PyErr_Clear();
-        return true;
+template <typename T, typename PtrType = TfWeakPtr<T>, typename... Extra>
+void TfNbWeakPtr(nanobind::class_<T, Extra...> &cls) {
+    static_assert(TF_SUPPORTS_WEAKPTR(T), "Type must support TfWeakPtr.");
+    TF_VERIFY(reinterpret_cast<PyTypeObject *>(cls.ptr())->tp_weaklistoffset != 0,
+              "nanobind::class_<%s> using TfNbWeakPtr must pass "
+              "nanobind::is_weak_referenceable()",
+              ArchGetDemangled(typeid(T)).c_str());
+    static bool initialized = false;
+    if (initialized) {
+        return;
     }
+    initialized = true;
+    Tf_PyRegisterAnyWeakPtrExtractor(
+        typeid(T), +[](PyObject *obj) -> TfAnyWeakPtr {
+            if (!nanobind::inst_ready(obj)) {
+                return TfAnyWeakPtr();
+            }
+            T *ptr = nullptr;
+            if (NB_CALL(nb_type_get)(NB_CTX, &typeid(T), obj, 0, nullptr,
+                                     reinterpret_cast<void **>(&ptr)) &&
+                ptr) {
+                return TfAnyWeakPtr(PtrType(ptr));
+            }
+            return TfAnyWeakPtr();
+        });
+    Tf_RegisterPythonObjectFinder<T, PtrType>();
+
+    cls.def_prop_ro(
+        "expired",
+        [](nanobind::handle self) { return !nanobind::inst_ready(self); },
+        "True if this object has expired, False otherwise.");
+    cls.def(
+        "__bool__",
+        [](nanobind::handle self) { return nanobind::inst_ready(self); },
+        "True if this object has not expired.  False otherwise.");
+    cls.def("__eq__", [](nanobind::handle self, nanobind::handle other) {
+        return self.is(other);
+    });
+    cls.def("__ne__", [](nanobind::handle self, nanobind::handle other) {
+        return !self.is(other);
+    });
+    cls.def("__lt__", [](nanobind::handle self, nanobind::handle other) {
+        return self.ptr() < other.ptr();
+    });
+    cls.def(TfTypePythonClass());
 }
 
-template <typename PtrType>
-bool _IsPtrValid(object const &self) {
-    return !_IsPtrExpired<PtrType>(self);
+template <typename T, typename PtrType = TfWeakPtr<T>, typename... Extra>
+void TfNbRefAndWeakPtr(nanobind::class_<T, Extra...> &cls) {
+    static_assert(TF_SUPPORTS_REFPTR(T), "Type must support TfRefPtr.");
+    TfNbWeakPtr<T, PtrType>(cls);
 }
 
-template <typename PtrType>
-bool _ArePtrsEqual(PtrType const &self,
-                   PtrType const &other) { return self == other; }
-template <typename PtrType>
-bool _ArePtrsNotEqual(PtrType const &self,
-                      PtrType const &other) { return self != other; }
-template <typename PtrType>
-bool _ArePtrsLessThan(PtrType const &self,
-                      PtrType const &other) { return self < other; }
-
-
-// Default ownership policy does nothing.
-template <class PtrType>
-struct _PtrFromPythonConversionPolicy {
-    static void Apply(PtrType const &, PyObject *) { }
-};
-
-// Ownership policy for ref ptrs when going from python to c++ is to
-// transfer ownership (remove ownership from python if it has it).
-template <typename T>
-struct _PtrFromPythonConversionPolicy<TfRefPtr<T> > {
-    static void Apply(TfRefPtr<T> const &p, PyObject *obj) {
-        Tf_PyRemovePythonOwnership(p, obj);
+struct Tf_NbWeakPtrVisitor : nanobind::def_visitor<Tf_NbWeakPtrVisitor> {
+    template <typename Class, typename... Extra>
+    static void execute(Class &cls, const Extra &...) {
+        TfNbWeakPtr(cls);
     }
 };
 
-template <class Ptr>
-struct _PtrFromPython {
-    typedef typename _PtrInterface<Ptr>::Pointee Pointee;
-    _PtrFromPython() {
-        converter::registry::insert(&convertible, &construct,
-                                    type_id<Ptr>());
-    }
-  private:
-    static void *convertible(PyObject *p) {
-        if (p == Py_None)
-            return p;
-        void *result = converter::get_lvalue_from_python
-            (p, converter::registered<Pointee>::converters);
-        return result;
-    }
+inline Tf_NbWeakPtrVisitor TfNbWeakPtr() { return {}; }
 
-    static void construct(PyObject* source, converter::
-                          rvalue_from_python_stage1_data* data) {
-        void* const storage = ((converter::rvalue_from_python_storage<Ptr>*)
-                               data)->storage.bytes;
-        // Deal with the "None" case.
-        if (data->convertible == source)
-            new (storage) Ptr();
-        else {
-            Ptr ptr(static_cast<Pointee*>(data->convertible));
-            new (storage) Ptr(ptr);
-            _PtrFromPythonConversionPolicy<Ptr>::Apply(ptr, source);
-            // Set ptr's python object to source if the pointer is valid.
-            if (ptr)
-                Tf_PySetPythonIdentity(ptr, source);
-        }
-        data->convertible = storage;
+struct Tf_NbRefAndWeakPtrVisitor
+    : nanobind::def_visitor<Tf_NbRefAndWeakPtrVisitor> {
+    template <typename Class, typename... Extra>
+    static void execute(Class &cls, const Extra &...) {
+        TfNbRefAndWeakPtr(cls);
     }
 };
 
-// Converter from python to AnyWeakPtr.  We use this converter to wrap 
-// the weak-pointable object into an AnyWeakPtr when we don't know what
-// specific C++ type it has--for example, see wrapNotice.cpp.
-template <typename PtrType>
-struct _AnyWeakPtrFromPython {
+inline Tf_NbRefAndWeakPtrVisitor TfNbRefAndWeakPtr() { return {}; }
 
-    _AnyWeakPtrFromPython() {
-        converter::registry::insert(&convertible, &construct,
-                                    type_id<TfAnyWeakPtr>());
-    }
+template <typename Func,
+          typename Sig = nanobind::detail::function_signature_t<Func>>
+struct Tf_NbMakePyConstructorVisitor;
 
-    static void *convertible(PyObject *p) {
-        if (p == Py_None)
-            return p;
-        void *result = converter::get_lvalue_from_python
-            (p, converter::registered
-             <typename _PtrInterface<PtrType>::Pointee>::converters);
-        return result;
-    }
-    
-    static void construct(PyObject* source, converter::
-                          rvalue_from_python_stage1_data* data) {
-        void* const storage = ((converter::rvalue_from_python_storage
-                                <TfAnyWeakPtr>*)data)->storage.bytes;
-        // Deal with the "None" case.
-        if (data->convertible == source)
-            new (storage) TfAnyWeakPtr();
-        else {
-            typedef typename _PtrInterface<PtrType>::Pointee T;
-            T *ptr = static_cast<T*>(data->convertible);
-            PtrType smartPtr(ptr);
-            new (storage) TfAnyWeakPtr(smartPtr);
+template <typename Func, typename Return, typename... Args>
+struct Tf_NbMakePyConstructorVisitor<Func, Return(Args...)>
+    : nanobind::def_visitor<
+          Tf_NbMakePyConstructorVisitor<Func, Return(Args...)>> {
+    std::remove_reference_t<Func> func;
 
-        }
-        data->convertible = storage;
-    }
-};
+    Tf_NbMakePyConstructorVisitor(Func &&f)
+        : func((nanobind::detail::forward_t<Func>)f) {}
 
-template <typename Ptr>
-struct _ConstPtrToPython {
-    typedef typename _PtrInterface<Ptr>::ConstPtr ConstPtr;
-    typedef typename _PtrInterface<Ptr>::NonConstPtr NonConstPtr;
-    _ConstPtrToPython() {
-        to_python_converter<ConstPtr, _ConstPtrToPython<Ptr> >();
-    }
-    static PyObject *convert(ConstPtr const &p) {
-        return incref(object(TfConst_cast<NonConstPtr>(p)).ptr());
-    }
-};
+    template <typename Class, typename... Extra>
+    void execute(Class &cl, const Extra &...extra) {
+        using Pointee = typename Return::DataType;
+        using NonConstPointee = std::remove_const_t<Pointee>;
+        using WeakPtrType = TfWeakPtr<NonConstPointee>;
 
-template <typename Ptr>
-struct _PtrToPython {
-    _PtrToPython() {
-        to_python_converter<Ptr, _PtrToPython<Ptr> >();
-    }
-    static PyObject *convert(Ptr const &p) {
-        std::pair<PyObject*, bool> ret = TfMakePyPtr<Ptr>::Execute(p);
-        if (ret.second) {
-            Tf_PySetPythonIdentity(p, ret.first);
-        }
-        return ret.first;
-    }
-};
+        auto wrapper = [func_ = (nanobind::detail::forward_t<Func>)func](
+                           nanobind::handle cls,
+                           Args... args) -> nanobind::object {
+            TfErrorMark m;
+            Return ptr(func_((nanobind::detail::forward_t<Args>)args...));
+            WeakPtrType weakPtr(
+                const_cast<NonConstPointee *>(get_pointer(ptr)));
+            if (TfPyConvertTfErrorsToPythonException(m)) {
+                throw nanobind::python_error();
+            }
+            if (!weakPtr) {
+                TfPyThrowRuntimeError("could not construct " +
+                                      ArchGetDemangled(typeid(WeakPtrType)));
+            }
+            if (PyObject *existing = Tf_PyGetPythonIdentity(weakPtr)) {
+                if constexpr (Tf_PyIsRefPtr<Return>::value) {
+                    if (!PyObject_HasAttrString(existing, "__owner")) {
+                        Tf_PyAddPythonOwnership(
+                            ptr, weakPtr.GetUniqueIdentifier(), existing);
+                    }
+                }
+                return nanobind::steal(existing);
+            }
+            nanobind::object self = nanobind::inst_reference(
+                cls, static_cast<typename Class::Type *>(
+                         const_cast<NonConstPointee *>(get_pointer(ptr))));
+            Tf_PySetPythonIdentity(weakPtr, self.ptr());
+            if constexpr (Tf_PyIsRefPtr<Return>::value) {
+                Tf_PyAddPythonOwnership(
+                    ptr, weakPtr.GetUniqueIdentifier(), self.ptr());
+            }
+            return self;
+        };
 
-template <typename SrcPtr, typename DstPtr>
-struct _ConvertPtrToPython {
-    _ConvertPtrToPython() {
-        to_python_converter<SrcPtr, _ConvertPtrToPython<SrcPtr, DstPtr> >();
-    }
-    static PyObject *convert(SrcPtr const &p) {
-        DstPtr dst = p;
-        return incref(object(dst).ptr());
-    }
-};
-
-template <typename Ptr>
-struct _PtrToPythonWrapper {
-
-    // We store the original to-python converter for our use.  It's fine to be
-    // static, as there's only one to-python converter for a type T, and there's
-    // one instantiation of this template for each T.
-    static converter::to_python_function_t _originalConverter;
-
-    // This signature has to match to_python_function_t
-    static PyObject *Convert(void const *x) {
-        // See pxr/external/boost/python/converter/as_to_python_function.hpp
-        Ptr const &p = *static_cast<Ptr const *>(x);
-
-        std::pair<PyObject*, bool> ret = TfMakePyPtr<Ptr>::Execute(p);
-        if (ret.first == Py_None) {
-            // Fallback to the original converter.
-            Py_DECREF(ret.first);
-            ret.first = _originalConverter(x);
-        }
-        if (ret.second) {
-            Tf_PySetPythonIdentity(p, ret.first);
-        }
-        return ret.first;
-    }
-};
-template <typename T>
-converter::to_python_function_t
-_PtrToPythonWrapper<T>::_originalConverter = 0;
-
-struct WeakPtr : def_visitor<WeakPtr> {
-    friend class def_visitor_access;
-
-    template <typename WrapperPtrType, typename Wrapper, typename T>
-    static void _RegisterConversions(Wrapper *, T *) {
-        _RegisterConversionsHelper<WrapperPtrType, Wrapper, T>();
-    }
-
-    template <typename WrapperPtrType, typename Wrapper, typename T>
-    static void _RegisterConversionsHelper() {
-
-        static_assert(std::is_same<
-                        typename _PtrInterface<WrapperPtrType>::Pointee, 
-                        Wrapper>::value,
-                      "Pointee must be same type as Wrapper.");
-
-        typedef typename
-            _PtrInterface<WrapperPtrType>::template Rebind<T>::Type PtrType;
-        
-        // Register the from-python conversion.
-        _PtrFromPython<PtrType>();
-
-        // Register AnyWeakPtr from python conversion.
-        _AnyWeakPtrFromPython<PtrType>();
-
-        // From python, can always make a const pointer from a non-const one.
-        implicitly_convertible<PtrType,
-            typename _PtrInterface<PtrType>::ConstPtr >();
-
-        // Register a conversion that casts away constness when going to python.
-        _ConstPtrToPython<PtrType>();
-
-        // Replace the existing to_python conversion for weakptr<wrapper> to do
-        // object id first.  It would be great if we could get better support in
-        // boost python for doing this sort of thing.
-        //
-        // We do this for wrapper because this is the "wrapped type" -- the type
-        // for which boost python has already registered a to-python
-        // conversion.  The unwrapped type is handled separately -- we don't
-        // have to replace an existing converter, we can just register our own.
-        converter::registration *r = const_cast<converter::registration *>
-            (converter::registry::query(type_id<WrapperPtrType>()));
-        if (r) {
-            _PtrToPythonWrapper<WrapperPtrType>::
-                _originalConverter = r->m_to_python;
-            r->m_to_python = _PtrToPythonWrapper<WrapperPtrType>::Convert;
+        if constexpr ((nanobind::detail::arg_traits<Extra>::is_arg || ...)) {
+            cl.def_static("__new__", std::move(wrapper), nanobind::arg("cls"),
+                          extra...);
         } else {
-            // CODE_COVERAGE_OFF Can only happen if there's a bug.
-            TF_CODING_ERROR("No python registration for '%s'!",
-                            ArchGetDemangled(typeid(WrapperPtrType)).c_str());
-            // CODE_COVERAGE_ON
+            cl.def_static("__new__", std::move(wrapper), extra...);
         }
-        
-        if (!std::is_same<Wrapper, T>::value)
-            _PtrToPython<PtrType>();
-
-    }
-
-    template <typename PtrType, typename CLS, typename Wrapper, typename T>
-    static void _AddAPI(CLS &c, Wrapper *, T *) {
-        typedef typename
-            _PtrInterface<PtrType>::template Rebind<T>::Type UnwrappedPtrType;
-        // Add 'expired' property and (in)equality testing.
-        c.add_property("expired", _IsPtrExpired<UnwrappedPtrType>,
-                       (const char *)
-                       "True if this object has expired, False otherwise.");
-        c.def("__bool__", _IsPtrValid<UnwrappedPtrType>,
-              (char const *)
-              "True if this object has not expired.  False otherwise.");
-        c.def("__eq__", _ArePtrsEqual<UnwrappedPtrType>,
-              "Equality operator:  x == y");
-        c.def("__ne__", _ArePtrsNotEqual<UnwrappedPtrType>,
-              "Non-equality operator: x != y");
-        c.def("__lt__", _ArePtrsLessThan<UnwrappedPtrType>,
-              "Less than operator: x < y");
-        c.def( TfTypePythonClass() );
-    } 
-
-    template <typename CLS>
-    void visit(CLS &c) const {
-        typedef typename CLS::wrapped_type Type;
-        typedef typename CLS::metadata::held_type_arg PtrType;
-        static_assert(TF_SUPPORTS_WEAKPTR(Type),
-                      "Type must support TfWeakPtr.");
-        // Register conversions
-        _RegisterConversions<PtrType>
-            ((Type *)0, detail::unwrap_wrapper((Type *)0));
-
-        // Register a PyObjectFinder.
-        Tf_RegisterPythonObjectFinder<Type, PtrType>();
-        
-        // Add weak ptr api.
-        _AddAPI<PtrType>(c, (Type *)0, detail::unwrap_wrapper((Type *)0));
+        cl.def("__init__", [](nanobind::handle, Args...) {}, extra...);
     }
 };
 
-struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
-    friend class def_visitor_access;
-
-    template <typename CLS, typename Wrapper, typename T>
-    static void _AddAPI(Wrapper *, T *) {
-        _PtrFromPython<TfRefPtr<T> >();
-        typedef typename
-            _PtrInterface<typename CLS::metadata::held_type>::template
-            Rebind<T>::Type PtrType;
-        _ConvertPtrToPython<TfRefPtr<T>, PtrType>();
-    }
-    
-    template <typename CLS>    
-    void visit(CLS &c) const {
-        typedef typename CLS::wrapped_type Type;
-        static_assert(TF_SUPPORTS_REFPTR(Type),
-                      "Type must support TfRefPtr.");
-        // Same as weak ptr plus ref conversions.
-        WeakPtr().visit(c);
-        _AddAPI<CLS>((Type *)0, detail::unwrap_wrapper((Type *)0));
-    }
-};
-
-};
-
-struct TfPyWeakPtr : Tf_PyDefHelpers::WeakPtr {};
-struct TfPyRefAndWeakPtr : Tf_PyDefHelpers::RefAndWeakPtr {};
+template <typename Func>
+auto TfNbMakePyConstructor(Func &&func) {
+    return Tf_NbMakePyConstructorVisitor<std::decay_t<Func>>(
+        std::forward<Func>(func));
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

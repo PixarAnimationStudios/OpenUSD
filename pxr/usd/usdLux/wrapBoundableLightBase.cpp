@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdLuxBoundableLightBase &self)
@@ -44,173 +49,168 @@ _Repr(const UsdLuxBoundableLightBase &self)
         
 static UsdAttribute
 _CreateShaderIdAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShaderIdAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateMaterialSyncModeAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateMaterialSyncModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIntensityAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIntensityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDiffuseAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDiffuseAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateSpecularAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSpecularAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateNormalizeAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateNormalizeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateColorAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateEnableColorTemperatureAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateEnableColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateColorTemperatureAttr(UsdLuxBoundableLightBase &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
 } // anonymous namespace
 
-void wrapUsdLuxBoundableLightBase()
+void wrapUsdLuxBoundableLightBase(nb::module_ &m)
 {
     typedef UsdLuxBoundableLightBase This;
 
-    class_<This, bases<UsdGeomBoundable> >
-        cls("BoundableLightBase");
+    nb::class_<This, UsdGeomBoundable> cls(m, "BoundableLightBase");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetShaderIdAttr",
              &This::GetShaderIdAttr)
         .def("CreateShaderIdAttr",
              &_CreateShaderIdAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetMaterialSyncModeAttr",
              &This::GetMaterialSyncModeAttr)
         .def("CreateMaterialSyncModeAttr",
              &_CreateMaterialSyncModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
              &_CreateIntensityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureAttr",
              &This::GetExposureAttr)
         .def("CreateExposureAttr",
              &_CreateExposureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDiffuseAttr",
              &This::GetDiffuseAttr)
         .def("CreateDiffuseAttr",
              &_CreateDiffuseAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetSpecularAttr",
              &This::GetSpecularAttr)
         .def("CreateSpecularAttr",
              &_CreateSpecularAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetNormalizeAttr",
              &This::GetNormalizeAttr)
         .def("CreateNormalizeAttr",
              &_CreateNormalizeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetColorAttr",
              &This::GetColorAttr)
         .def("CreateColorAttr",
              &_CreateColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetEnableColorTemperatureAttr",
              &This::GetEnableColorTemperatureAttr)
         .def("CreateEnableColorTemperatureAttr",
              &_CreateEnableColorTemperatureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetColorTemperatureAttr",
              &This::GetColorTemperatureAttr)
         .def("CreateColorTemperatureAttr",
              &_CreateColorTemperatureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("GetFiltersRel",
              &This::GetFiltersRel)

@@ -16,17 +16,12 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static void
 _Report(
@@ -89,61 +84,61 @@ _Constructor1(const std::string &label)
     return TraceReporter::New(label, TraceReporterDataSourceCollector::New());
 }
 
-void wrapReporter()
+void wrapReporter(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = TraceReporter;
-    using ThisPtr = TraceReporterPtr;
 
-    scope reporter_class = 
-        class_<This, ThisPtr, noncopyable>("Reporter", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(_Constructor1))
+    nb::class_<This> reporter_class(
+        m, "Reporter", nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbRefAndWeakPtr(reporter_class);
+    reporter_class
+        .def(TfNbMakePyConstructor(_Constructor1))
 
-        .def("GetLabel", &This::GetLabel,
-             return_value_policy<return_by_value>())
+        .def("GetLabel", &This::GetLabel)
 
         .def("Report", &::_Report,
-             (arg("iterationCount")=1))
+             nb::arg("iterationCount") = 1)
 
         .def("Report", &::_ReportToFile,
-             (arg("iterationCount")=1,
-              arg("append")=false))
+             nb::arg("fileName"),
+             nb::arg("iterationCount") = 1,
+             nb::arg("append") = false)
 
         .def("ReportTimes", &::_ReportTimes)
 
         .def("ReportChromeTracing", &::_ReportChromeTracing)
         .def("ReportChromeTracingToFile", &::_ReportChromeTracingToFile)
 
-        .def("LoadReport", &::_LoadReport, 
-            (arg("fileName")),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("LoadReport")
+        .def_static("LoadReport", &::_LoadReport,
+                    nb::arg("fileName"))
 
-        .add_property("aggregateTreeRoot", &This::GetAggregateTreeRoot)
+        .def_prop_ro("aggregateTreeRoot", &This::GetAggregateTreeRoot)
 
         .def("UpdateTraceTrees", &This::UpdateTraceTrees)
 
         .def("ClearTree", &This::ClearTree)
 
-        .add_property("groupByFunction",
+        .def_prop_rw("groupByFunction",
             &This::GetGroupByFunction, &This::SetGroupByFunction)
         
-        .add_property("foldRecursiveCalls",
+        .def_prop_rw("foldRecursiveCalls",
             &This::GetFoldRecursiveCalls, &This::SetFoldRecursiveCalls)
 
-        .add_property("shouldAdjustForOverheadAndNoise",
+        .def_prop_rw("shouldAdjustForOverheadAndNoise",
             &This::ShouldAdjustForOverheadAndNoise,
             &This::SetShouldAdjustForOverheadAndNoise)
 
-        .add_static_property("globalReporter", &This::GetGlobalReporter)
+        .def_prop_ro_static("globalReporter", [](nb::handle) {
+            return This::GetGlobalReporter();
+        })
         ;
 
-    class_<This::ParsedTree>("ParsedTree", no_init)
-        .add_property("tree", 
-            make_function(+[](const This::ParsedTree &self) {
-                return self.tree;
-            },
-            return_value_policy<TfPyRefPtrFactory<>>()))
-        .def_readonly("iterationCount", &This::ParsedTree::iterationCount)
+    nb::class_<This::ParsedTree> parsedTreeCls(reporter_class, "ParsedTree");
+    parsedTreeCls
+        .def_prop_ro("tree", [](const This::ParsedTree &self) {
+            return self.tree;
+        })
+        .def_ro("iterationCount", &This::ParsedTree::iterationCount)
         ;
 };

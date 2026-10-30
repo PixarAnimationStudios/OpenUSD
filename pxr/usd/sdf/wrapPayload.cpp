@@ -8,18 +8,15 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/vt/valueFromPython.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -59,37 +56,32 @@ static size_t __hash__(const SdfPayload &self)
 
 } // anonymous namespace 
 
-void wrapPayload()
+void wrapPayload(nanobind::module_ &m)
 {    
+    namespace nb = nanobind;
     typedef SdfPayload This;
 
-    class_<This>( "Payload" )
-        .def(init<const string &,
-                  const SdfPath &,
-                  const SdfLayerOffset &>(
-            ( arg("assetPath") = string(),
-              arg("primPath") = SdfPath(),
-              arg("layerOffset") = SdfLayerOffset() ) ) )
-        .def(init<const This &>())
+    nb::class_<This>( m, "Payload" )
+        .def(nb::init<const string &,
+                      const SdfPath &,
+                      const SdfLayerOffset &>(),
+             nb::arg("assetPath") = string(),
+             nb::arg("primPath") = SdfPath(),
+             nb::arg("layerOffset") = SdfLayerOffset())
+        .def(nb::init<const This &>())
 
-        .add_property("assetPath",
-            make_function(
-                &This::GetAssetPath, return_value_policy<return_by_value>()))
+        .def_prop_ro("assetPath", &This::GetAssetPath, nb::rv_policy::copy)
 
-        .add_property("primPath",
-            make_function(
-                &This::GetPrimPath, return_value_policy<return_by_value>()))
+        .def_prop_ro("primPath", &This::GetPrimPath, nb::rv_policy::copy)
 
-        .add_property("layerOffset",
-            make_function(
-                &This::GetLayerOffset, return_value_policy<return_by_value>()))
+        .def_prop_ro("layerOffset", &This::GetLayerOffset, nb::rv_policy::copy)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self >= nb::self)
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
@@ -99,9 +91,6 @@ void wrapPayload()
     VtValueFromPython<SdfPayload>();
 
     // Register conversion for python list <-> vector<SdfPayload>
-    to_python_converter<
-        SdfPayloadVector,
-        TfPySequenceToPython<SdfPayloadVector> >();
     TfPyContainerConversions::from_python_sequence<
         SdfPayloadVector,
         TfPyContainerConversions::variable_capacity_policy >();

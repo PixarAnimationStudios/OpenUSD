@@ -8,19 +8,19 @@
 
 #include "authoring.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/noncopyable.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapAuthoring()
+void wrapAuthoring(nb::module_ &m)
 {
     using This = InvertibleRigsExample_Authoring;
 
-    class_<This, noncopyable>("Authoring", no_init)
-        .def(init<const UsdStageRefPtr &>())
+    nb::class_<This>(m, "Authoring")
+        .def(nb::init<const UsdStageRefPtr &>())
         .def("BreakdownInputAvars", &This::BreakdownInputAvars)
         .def("CompensateSwitch", &This::CompensateSwitch)
     ;

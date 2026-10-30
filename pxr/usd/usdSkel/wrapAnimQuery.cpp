@@ -6,6 +6,7 @@
 //
 #include "pxr/usd/usdSkel/animQuery.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -16,18 +17,18 @@
 
 #include "pxr/base/gf/interval.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
 namespace {
-
 
 VtMatrix4dArray
 _ComputeJointLocalTransforms(const UsdSkelAnimQuery& self, UsdTimeCode time)
@@ -37,8 +38,7 @@ _ComputeJointLocalTransforms(const UsdSkelAnimQuery& self, UsdTimeCode time)
     return xforms;
 }
 
-
-pxr_boost::python::tuple
+nb::tuple
 _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode time)
 {
     VtVec3fArray translations;
@@ -46,9 +46,8 @@ _ComputeJointLocalTransformComponents(const UsdSkelAnimQuery& self, UsdTimeCode 
     VtVec3hArray scales;
     self.ComputeJointLocalTransformComponents(&translations, &rotations,
                                               &scales, time);
-    return pxr_boost::python::make_tuple(translations, rotations, scales);
+    return nb::make_tuple(translations, rotations, scales);
 }
-
 
 VtFloatArray
 _ComputeBlendShapeWeights(const UsdSkelAnimQuery& self, UsdTimeCode time)
@@ -58,7 +57,6 @@ _ComputeBlendShapeWeights(const UsdSkelAnimQuery& self, UsdTimeCode time)
     return weights;
 }
 
-
 std::vector<double>
 _GetJointTransformTimeSamples(const UsdSkelAnimQuery& self)
 {   
@@ -66,7 +64,6 @@ _GetJointTransformTimeSamples(const UsdSkelAnimQuery& self)
     self.GetJointTransformTimeSamples(&times);
     return times;
 }
-
 
 std::vector<double>
 _GetJointTransformTimeSamplesInInterval(const UsdSkelAnimQuery& self,
@@ -77,7 +74,6 @@ _GetJointTransformTimeSamplesInInterval(const UsdSkelAnimQuery& self,
     return times;
 }
 
-
 std::vector<double>
 _GetBlendShapeWeightTimeSamples(const UsdSkelAnimQuery& self)
 {   
@@ -85,7 +81,6 @@ _GetBlendShapeWeightTimeSamples(const UsdSkelAnimQuery& self)
     self.GetBlendShapeWeightTimeSamples(&times);
     return times;
 }
-
 
 std::vector<double>
 _GetBlendShapeWeightTimeSamplesInInterval(const UsdSkelAnimQuery& self,
@@ -96,39 +91,37 @@ _GetBlendShapeWeightTimeSamplesInInterval(const UsdSkelAnimQuery& self,
     return times;
 }
 
-
 } // namespace
 
-
-void wrapUsdSkelAnimQuery()
+void wrapUsdSkelAnimQuery(nb::module_ &m)
 {
     using This = UsdSkelAnimQuery;
 
-    class_<This>("AnimQuery", no_init)
+    nb::class_<This>(m, "AnimQuery")
 
-        .def(!self)
-        .def(self == self)
-        .def(self != self)
+        .def("__bool__", [](const This& self) { return bool(self); })
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__str__", &This::GetDescription)
 
         .def("GetPrim", &This::GetPrim)
 
         .def("ComputeJointLocalTransforms", &_ComputeJointLocalTransforms,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeJointLocalTransformComponents",
              &_ComputeJointLocalTransformComponents,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("ComputeBlendShapeWeights", &_ComputeBlendShapeWeights,
-             (arg("time")=UsdTimeCode::Default()))
+             nb::arg("time")=UsdTimeCode::Default())
 
         .def("GetJointTransformTimeSamples", &_GetJointTransformTimeSamples)
 
         .def("GetJointTransformTimeSamplesInInterval",
              &_GetJointTransformTimeSamplesInInterval,
-             (arg("interval")))
+             nb::arg("interval"))
         
         .def("JointTransformsMightBeTimeVarying",
              &This::JointTransformsMightBeTimeVarying)
@@ -137,7 +130,7 @@ void wrapUsdSkelAnimQuery()
 
         .def("GetBlendShapeWeightTimeSamplesInInterval",
              &_GetBlendShapeWeightTimeSamplesInInterval,
-             (arg("interval")))
+             nb::arg("interval"))
 
         .def("BlendShapeWeightsMightBeTimeVarying",
              &This::BlendShapeWeightsMightBeTimeVarying)
@@ -146,4 +139,5 @@ void wrapUsdSkelAnimQuery()
 
         .def("GetBlendShapeOrder", &This::GetBlendShapeOrder)
         ;
-}            
+
+}

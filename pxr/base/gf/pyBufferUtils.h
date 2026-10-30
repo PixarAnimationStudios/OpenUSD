@@ -9,6 +9,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/api.h"
+#include "pxr/base/gf/half.h"
+#include "pxr/base/tf/pySafePython.h"
+
+#include <nanobind/nanobind.h>
+
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -21,5 +27,36 @@ template <class T>
 char *Gf_GetPyBufferFmtFor();
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+namespace nanobind {
+namespace detail {
+
+template <typename T>
+struct type_caster<T, enable_if_t<std::is_same_v<T, PXR_NS::GfHalf>>> {
+    NB_TYPE_CASTER(T, const_name("float"))
+
+    bool from_python(handle src, uint8_t, cleanup_list *) noexcept {
+        PyObject *flt = PyNumber_Float(src.ptr());
+        if (!flt) {
+            PyErr_Clear();
+            return false;
+        }
+        double d = PyFloat_AsDouble(flt);
+        Py_DECREF(flt);
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            return false;
+        }
+        value = T(static_cast<float>(d));
+        return true;
+    }
+
+    static handle from_cpp(T src, rv_policy, cleanup_list *) noexcept {
+        return PyFloat_FromDouble(src);
+    }
+};
+
+} // namespace detail
+} // namespace nanobind
 
 #endif // PXR_BASE_GF_PY_BUFFER_UTILS_H

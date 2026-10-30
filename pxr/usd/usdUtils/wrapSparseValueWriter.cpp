@@ -5,31 +5,31 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usd/usdUtils/sparseValueWriter.h"
 #include "pxr/usd/usd/pyConversions.h"
-#include "pxr/base/tf/pyContainerConversions.h"
-
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-static UsdUtilsSparseAttrValueWriter *
-__init__(const UsdAttribute &attr, 
-         const object &defaultValue)
+static void
+__init__(UsdUtilsSparseAttrValueWriter *self,
+         const UsdAttribute &attr, 
+         const nb::object &defaultValue)
 {
-    return new UsdUtilsSparseAttrValueWriter(attr, 
+    new (self) UsdUtilsSparseAttrValueWriter(attr, 
             UsdPythonToSdfType(defaultValue, attr.GetTypeName()));
 }
 
 static bool
 _WrapSetTimeSample(
     UsdUtilsSparseAttrValueWriter &vc, 
-    const object &value, 
+    const nb::object &value, 
     const UsdTimeCode time)
 {
     return vc.SetTimeSample(
@@ -41,7 +41,7 @@ static bool
 _WrapSetAttribute(
     UsdUtilsSparseValueWriter &vc, 
     const UsdAttribute & attr, 
-    const object &value,
+    const nb::object &value,
     const UsdTimeCode time) 
 {
     return vc.SetAttribute(attr,
@@ -56,25 +56,21 @@ _WrapGetSparseAttrValueWriters(
     return vc.GetSparseAttrValueWriters();
 }
 
-void wrapSparseValueWriter()
+void wrapSparseValueWriter(nanobind::module_ &m)
 {
-    class_<UsdUtilsSparseAttrValueWriter>("SparseAttrValueWriter", 
-            no_init)
-        .def("__init__", make_constructor(__init__, default_call_policies(),
-             (arg("attr"), arg("defaultValue")=object())))
+    nb::class_<UsdUtilsSparseAttrValueWriter>(m, "SparseAttrValueWriter")
+        .def("__init__", &__init__,
+             nb::arg("attr"), nb::arg("defaultValue").none() = nb::none())
 
         .def("SetTimeSample", _WrapSetTimeSample, 
-            (arg("value"), arg("time")))
+            nb::arg("value").none(), nb::arg("time"))
     ;
 
-    class_<UsdUtilsSparseValueWriter>("SparseValueWriter", init<>())
+    nb::class_<UsdUtilsSparseValueWriter>(m, "SparseValueWriter")
+        .def(nb::init<>())
         .def("SetAttribute", _WrapSetAttribute, 
-            (arg("attr"), arg("value"), arg("time")=UsdTimeCode::Default()))
+            nb::arg("attr"), nb::arg("value").none(), nb::arg("time")=UsdTimeCode::Default())
 
         .def("GetSparseAttrValueWriters", _WrapGetSparseAttrValueWriters)
     ;
-
-    // Register to and from vector conversions.
-    pxr_boost::python::to_python_converter<std::vector<UsdUtilsSparseAttrValueWriter>,
-        TfPySequenceToPython<std::vector<UsdUtilsSparseAttrValueWriter> > >();
 }

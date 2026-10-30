@@ -7,17 +7,19 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderNodeQuery.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -41,68 +43,79 @@ GetValues(const SdrShaderNodeQueryResult& result) {
 SdrShaderNodeQuery&
 CustomFilterWrapper(
     SdrShaderNodeQuery& query,
-    std::function<bool (object)> customFn)
+    nb::callable customFn)
 {
     SdrShaderNodeQuery::FilterFn fn = [customFn](SdrShaderNodeConstPtr node) {
         TfPyLock lock;
-        return customFn(object(ptr(node)));
+        try {
+            nb::object res = customFn(nb::cast(node, nb::rv_policy::reference));
+            bool out = false;
+            if (!nb::try_cast<bool>(res, out)) {
+                PyErr_SetString(PyExc_TypeError, "Expected bool return value");
+                TfPyConvertPythonExceptionToTfErrors();
+                return false;
+            }
+            return out;
+        } catch (nb::python_error &e) {
+            e.restore();
+            TfPyConvertPythonExceptionToTfErrors();
+            return false;
+        }
     };
     return query.CustomFilter(fn);
 }
 
 } // anonymous namespace
 
-void wrapShaderNodeQuery()
+void wrapShaderNodeQuery(nanobind::module_ &m)
 {
-    TfPyFunctionFromPython<bool (object)>();
-
-    class_<SdrShaderNodeQuery>("ShaderNodeQuery")
+    nb::class_<SdrShaderNodeQuery>(m, "ShaderNodeQuery")
+        .def(nb::init<>())
         .def("SelectDistinct", (SdrShaderNodeQuery&
                 (SdrShaderNodeQuery::*) (const TfToken&))
-             &SdrShaderNodeQuery::SelectDistinct, return_self<>{})
+             &SdrShaderNodeQuery::SelectDistinct, nb::rv_policy::reference)
         .def("SelectDistinct", (SdrShaderNodeQuery&
                 (SdrShaderNodeQuery::*) (const std::vector<TfToken>&))
-             &SdrShaderNodeQuery::SelectDistinct, return_self<>{})
+             &SdrShaderNodeQuery::SelectDistinct, nb::rv_policy::reference)
         .def("NodeValueIs", (SdrShaderNodeQuery&
                 (SdrShaderNodeQuery::*) (const TfToken&, const VtValue&))
-             &SdrShaderNodeQuery::NodeValueIs, return_self<>{})
+             &SdrShaderNodeQuery::NodeValueIs, nb::rv_policy::reference)
         .def("NodeValueIsIn", &SdrShaderNodeQuery::NodeValueIsIn,
-             return_self<>{})
+             nb::rv_policy::reference)
         .def("NodeHasValueFor", &SdrShaderNodeQuery::NodeHasValueFor,
-             return_self<>{})
+             nb::rv_policy::reference)
         .def("NodeValueIsNot", (SdrShaderNodeQuery&
                 (SdrShaderNodeQuery::*) (const TfToken&, const VtValue&))
-             &SdrShaderNodeQuery::NodeValueIsNot, return_self<>{})
+             &SdrShaderNodeQuery::NodeValueIsNot, nb::rv_policy::reference)
         .def("NodeValueIsNotIn", &SdrShaderNodeQuery::NodeValueIsNotIn,
-             return_self<>{})
+             nb::rv_policy::reference)
         .def("NodeHasNoValueFor", &SdrShaderNodeQuery::NodeHasNoValueFor,
-             return_self<>{})
-        .def("CustomFilter", &CustomFilterWrapper, return_self<>{})
+             nb::rv_policy::reference)
+        .def("CustomFilter", &CustomFilterWrapper, nb::rv_policy::reference)
         .def("Run", &SdrShaderNodeQuery::Run);
 
-    class_<SdrShaderNodeQueryResult>("ShaderNodeQueryResult", no_init)
+    nb::class_<SdrShaderNodeQueryResult>(m, "ShaderNodeQueryResult")
         .def("GetKeys", GetKeys)
-        .def("GetValues", GetValues, return_value_policy<TfPySequenceToList>())
+        .def("GetValues", GetValues)
         .def("GetStringifiedValues",
-             &SdrShaderNodeQueryResult::GetStringifiedValues,
-             return_value_policy<TfPySequenceToList>())
+             &SdrShaderNodeQueryResult::GetStringifiedValues)
         .def("GetShaderNodesByValues",
-            +[](const SdrShaderNodeQueryResult& r) {
-                list l;
+            [](const SdrShaderNodeQueryResult& r) {
+                nb::list l;
                 for (const auto& nodes : r.GetShaderNodesByValues()) {
-                    list inner;
+                    nb::list inner;
                     for (const auto& node : nodes) {
-                        inner.append(ptr(node));
+                        inner.append(nb::cast(node, nb::rv_policy::reference));
                     }
                     l.append(inner);
                 }
                 return l;
             })
         .def("GetAllShaderNodes",
-            +[](const SdrShaderNodeQueryResult& r) {
-                list l;
-                for (const auto& node :r.GetAllShaderNodes()) {
-                    l.append(ptr(node));
+            [](const SdrShaderNodeQueryResult& r) {
+                nb::list l;
+                for (const auto& node : r.GetAllShaderNodes()) {
+                    l.append(nb::cast(node, nb::rv_policy::reference));
                 }
                 return l;
             });

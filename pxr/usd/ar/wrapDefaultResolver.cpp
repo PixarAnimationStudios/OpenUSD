@@ -5,25 +5,21 @@
 // https://openusd.org/license.
 //
 
-#include "pxr/external/boost/python/class.hpp"
-
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 void
-wrapDefaultResolver()
+wrapDefaultResolver(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = ArDefaultResolver;
 
-    class_<This, bases<ArResolver>, noncopyable>
-        ("DefaultResolver", no_init)
-
-        .def("SetDefaultSearchPath", &This::SetDefaultSearchPath,
-             args("searchPath"))
-        .staticmethod("SetDefaultSearchPath")
+    nb::class_<This, ArResolver>(m, "DefaultResolver")
+        .def_static("SetDefaultSearchPath", &This::SetDefaultSearchPath,
+                    nb::arg("searchPath"))
         ;
 }

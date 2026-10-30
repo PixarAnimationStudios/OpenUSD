@@ -8,15 +8,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependency.h"
 #include "pxr/base/tf/pyEnum.h"
-#include "pxr/base/tf/makePyConstructor.h"
-
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/tf/pyUtils.h"
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -29,29 +26,22 @@ _DependencyRepr(const PcpDependency &dep)
         + TfPyRepr(dep.mapFunc) + ")";
 }
 
-static PcpDependency*
-_DependencyInit(
-    const SdfPath &indexPath,
-    const SdfPath &sitePath,
-    const PcpMapFunction &mapFunc)
-{
-    return new PcpDependency{indexPath, sitePath, mapFunc};
-}
-
 } // anonymous namespace 
 
 void 
-wrapDependency()
+wrapDependency(nanobind::module_ &m)
 {
-    class_<PcpDependency>("Dependency", no_init)
-        .def_readwrite("indexPath", &PcpDependency::indexPath)
-        .def_readwrite("sitePath", &PcpDependency::sitePath)
-        .def_readwrite("mapFunc", &PcpDependency::mapFunc)
+    namespace nb = nanobind;
+
+    nb::class_<PcpDependency>(m, "Dependency")
+        .def_rw("indexPath", &PcpDependency::indexPath, nb::rv_policy::copy)
+        .def_rw("sitePath", &PcpDependency::sitePath, nb::rv_policy::copy)
+        .def_rw("mapFunc", &PcpDependency::mapFunc, nb::rv_policy::copy)
         .def("__repr__", &_DependencyRepr)
-        .def("__init__", make_constructor(_DependencyInit))
-        .def(self == self)
-        .def(self != self)
+        .def(nb::init<const SdfPath &, const SdfPath &, const PcpMapFunction &>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
 
-    TfPyWrapEnum<PcpDependencyType>();
+    TfNbWrapEnum<PcpDependencyType>(m);
 }

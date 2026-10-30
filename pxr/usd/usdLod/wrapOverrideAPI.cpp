@@ -14,15 +14,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -35,14 +34,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateLodOverrideModeAttr(UsdLodOverrideAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLodOverrideModeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLodOverrideIndexAttr(UsdLodOverrideAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLodOverrideIndexAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -73,56 +72,50 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdLodOverrideAPI()
+void wrapUsdLodOverrideAPI(nb::module_ &m)
 {
     typedef UsdLodOverrideAPI This;
 
-    UsdLodOverrideAPI_CanApplyResult::Wrap<UsdLodOverrideAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdLodOverrideAPI_CanApplyResult::WrapNb<UsdLodOverrideAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("OverrideAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "OverrideAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetLodOverrideModeAttr",
              &This::GetLodOverrideModeAttr)
         .def("CreateLodOverrideModeAttr",
              &_CreateLodOverrideModeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetLodOverrideIndexAttr",
              &This::GetLodOverrideIndexAttr)
         .def("CreateLodOverrideIndexAttr",
              &_CreateLodOverrideIndexAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -152,18 +145,16 @@ void wrapUsdLodOverrideAPI()
 namespace {
 
 static
-pxr_boost::python::tuple
+nb::tuple
 _WrapComputeLODOverride(const UsdLodOverrideAPI& self,
                         UsdTimeCode time)
 {
     float overrideIndex;
     TfToken overrideMode = self.ComputeLODOverride(&overrideIndex, time);
     if (overrideMode == UsdLodTokens->indexedLOD) {
-        return pxr_boost::python::make_tuple(overrideMode,
-                                             double(overrideIndex));
+        return nb::make_tuple(overrideMode, double(overrideIndex));
     } else {
-        return pxr_boost::python::make_tuple(overrideMode,
-                                             pxr_boost::python::object());
+        return nb::make_tuple(overrideMode, nb::none());
     }
 }
     
@@ -173,7 +164,7 @@ WRAP_CUSTOM {
     _class
         .def("ComputeLODOverride",
              &_WrapComputeLODOverride,
-             arg("time") = UsdTimeCode::Default())
+             nb::arg("time") = UsdTimeCode::Default())
 
         ;
 }

@@ -7,9 +7,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyWeakObject.h"
+#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-
-#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,43 +57,8 @@ Tf_PyWeakObjectRegistry::Remove(PyObject *obj)
     _weakObjects.erase(obj);
 }
 
-// A deleter instance is passed to PyWeakref_NewRef as the callback object
-// so that when the python object we have the weak ref to dies, we can
-// delete the corresponding weak object.
-struct Tf_PyWeakObjectDeleter {
-    static int WrapIfNecessary();
-    explicit Tf_PyWeakObjectDeleter(Tf_PyWeakObjectPtr const &self);
-    void Deleted(PyObject * /* weakRef */);
-private:
-    Tf_PyWeakObjectPtr _self;
-};
-
-int
-Tf_PyWeakObjectDeleter::WrapIfNecessary()
-{
-    if (TfPyIsNone(TfPyGetClassObject<Tf_PyWeakObjectDeleter>())) {
-        pxr_boost::python::class_<Tf_PyWeakObjectDeleter>
-            ("Tf_PyWeakObject__Deleter", pxr_boost::python::no_init)
-            .def("__call__", &Tf_PyWeakObjectDeleter::Deleted);
-    }
-    return 1;
-}
-
-Tf_PyWeakObjectDeleter::Tf_PyWeakObjectDeleter(Tf_PyWeakObjectPtr const &self)
-    : _self(self)
-{
-    static int ensureWrapped = WrapIfNecessary();
-    (void)ensureWrapped;
-}
-
-void
-Tf_PyWeakObjectDeleter::Deleted(PyObject * /* weakRef */)
-{
-    _self->Delete();
-}
-
 Tf_PyWeakObjectPtr
-Tf_PyWeakObject::GetOrCreate(pxr_boost::python::object const &obj)
+Tf_PyWeakObject::GetOrCreate(nanobind::handle obj)
 {
     // If it's in the registry, return it.
     if (Tf_PyWeakObjectPtr p =
@@ -112,15 +76,15 @@ Tf_PyWeakObject::GetOrCreate(pxr_boost::python::object const &obj)
 }
 
 
-pxr_boost::python::object
+nanobind::object
 Tf_PyWeakObject::GetObject() const
 {
     PyObject *obj;
-    if (Tf_PyWeakrefGetRef(_weakRef.get(), &obj) != 1) {
+    if (Tf_PyWeakrefGetRef(_weakRef.ptr(), &obj) != 1) {
         // The referent has expired; report it as None.
-        return pxr_boost::python::object();
+        return nanobind::none();
     }
-    return pxr_boost::python::object(pxr_boost::python::handle<>(obj));
+    return nanobind::steal(obj);
 }
 
 void
@@ -132,14 +96,17 @@ Tf_PyWeakObject::Delete()
     delete this;
 }
 
-Tf_PyWeakObject::Tf_PyWeakObject(pxr_boost::python::object const &obj)
-    : _weakRef(
-        PyWeakref_NewRef(
-            obj.ptr(), pxr_boost::python::
-            object(Tf_PyWeakObjectDeleter(TfCreateWeakPtr(this))).ptr()))
-    , _refObjKey(obj.ptr())
+Tf_PyWeakObject::Tf_PyWeakObject(nanobind::handle obj)
+    : _refObjKey(obj.ptr())
 {
     Tf_PyWeakObjectPtr self(this);
+    nanobind::object deleter = nanobind::cpp_function(
+        [self](nanobind::handle) {
+            if (self) {
+                self->Delete();
+            }
+        });
+    _weakRef = nanobind::steal(PyWeakref_NewRef(obj.ptr(), deleter.ptr()));
 
     // Set our python identity, but release it immediately, since we are a weak
     // reference and will expire as soon as the python object does.

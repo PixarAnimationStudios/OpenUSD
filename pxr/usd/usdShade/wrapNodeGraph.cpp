@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdShadeNodeGraph &self)
@@ -43,36 +48,30 @@ _Repr(const UsdShadeNodeGraph &self)
 
 } // anonymous namespace
 
-void wrapUsdShadeNodeGraph()
+void wrapUsdShadeNodeGraph(nb::module_ &m)
 {
     typedef UsdShadeNodeGraph This;
 
-    class_<This, bases<UsdTyped> >
-        cls("NodeGraph");
+    nb::class_<This, UsdTyped> cls(m, "NodeGraph");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -100,10 +99,11 @@ void wrapUsdShadeNodeGraph()
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/usd/usdShade/connectableAPI.h"
+#include <nanobind/stl/unordered_map.h>
 
 namespace {
 
-static object
+static nb::object
 _WrapComputeOutputSource(const UsdShadeNodeGraph &self, 
                          const TfToken &outputName)
 {
@@ -111,40 +111,39 @@ _WrapComputeOutputSource(const UsdShadeNodeGraph &self,
     UsdShadeAttributeType sourceType;
     UsdShadeShader source = self.ComputeOutputSource(outputName, &sourceName, 
             &sourceType);
-    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
+    return nb::make_tuple(source, sourceName, sourceType);
 }
 
 WRAP_CUSTOM {
     _class
-        .def(init<UsdShadeConnectableAPI>(arg("connectable")))
+        .def(nb::init<UsdShadeConnectableAPI>(), nb::arg("connectable"))
         .def("ConnectableAPI", &UsdShadeNodeGraph::ConnectableAPI)
 
         .def("CreateOutput", 
              &UsdShadeNodeGraph::CreateOutput,
-             (arg("name"), arg("typeName")))
+             nb::arg("name"), nb::arg("typeName"))
         .def("GetOutput",
              &UsdShadeNodeGraph::GetOutput,
-             (arg("name")))
+             nb::arg("name"))
         .def("GetOutputs",
              &UsdShadeNodeGraph::GetOutputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
         .def("ComputeOutputSource", _WrapComputeOutputSource, 
-             (arg("outputName")))
+             nb::arg("outputName"))
 
         .def("CreateInput", &UsdShadeNodeGraph::CreateInput,
-             (arg("name"), arg("type")))
-        .def("GetInput", &UsdShadeNodeGraph::GetInput, arg("name"))
+             nb::arg("name"), nb::arg("type"))
+        .def("GetInput", &UsdShadeNodeGraph::GetInput, nb::arg("name"))
         .def("GetInputs", &UsdShadeNodeGraph::GetInputs,
-             (arg("onlyAuthored") = true),
-             return_value_policy<TfPySequenceToList>())
+             (nb::arg("onlyAuthored") = true),
+             nb::rv_policy::copy)
         .def("GetInterfaceInputs", &UsdShadeNodeGraph::GetInterfaceInputs,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
         .def("ComputeInterfaceInputConsumersMap",
              &UsdShadeNodeGraph::ComputeInterfaceInputConsumersMap,
-             return_value_policy<TfPyMapToDictionary>(),
-             (arg("computeTransitiveConsumers")=false))
+             (nb::arg("computeTransitiveConsumers")=false))
 
     ;
 }

@@ -14,15 +14,18 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,14 +38,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateTestAttrInternalAttr(UsdContrivedTestReflectedInternalAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateTestAttrInternalAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
         
 static UsdAttribute
 _CreateTestAttrDuplicateAttr(UsdContrivedTestReflectedInternalAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateTestAttrDuplicateAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
@@ -73,56 +76,51 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdContrivedTestReflectedInternalAPI()
+void wrapUsdContrivedTestReflectedInternalAPI(nb::module_ &m)
 {
     typedef UsdContrivedTestReflectedInternalAPI This;
 
     UsdContrivedTestReflectedInternalAPI_CanApplyResult::Wrap<UsdContrivedTestReflectedInternalAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("TestReflectedInternalAPI");
+    nb::class_<This, UsdAPISchemaBase>
+        cls(m, "TestReflectedInternalAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetTestAttrInternalAttr",
              &This::GetTestAttrInternalAttr)
         .def("CreateTestAttrInternalAttr",
              &_CreateTestAttrInternalAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetTestAttrDuplicateAttr",
              &This::GetTestAttrDuplicateAttr)
         .def("CreateTestAttrDuplicateAttr",
              &_CreateTestAttrDuplicateAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetTestRelInternalRel",

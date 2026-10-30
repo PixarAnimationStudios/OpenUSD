@@ -11,19 +11,15 @@
 
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/enum.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -51,94 +47,81 @@ static size_t __hash__(GfFrustum const &self) {
     return TfHash()(self);
 }
 
-static object
+static nanobind::object
 GetPerspectiveHelper( const GfFrustum &self, bool isFovVertical ) {
     double fov, aspect, nearDist, farDist;
     bool result = self.GetPerspective( isFovVertical, 
                                        &fov, &aspect, &nearDist, &farDist );
     return result ?
-        pxr_boost::python::make_tuple( fov, aspect, nearDist, farDist ) : object();
+        nanobind::object(nanobind::make_tuple( fov, aspect, nearDist, farDist )) : nanobind::none();
 }
 
-static tuple
+static nanobind::tuple
 GetOrthographicHelper( const GfFrustum &self ) {
     double left, right, bottom, top, near, far;
     bool result =
         self.GetOrthographic( &left, &right, &bottom, &top, &near, &far );
     return result ?
-        pxr_boost::python::
-        make_tuple( left, right, bottom, top, near, far ) : tuple();
+        nanobind::make_tuple( left, right, bottom, top, near, far ) : nanobind::tuple();
 }
 
-static tuple
+static nanobind::tuple
 ComputeViewFrameHelper( const GfFrustum &self ) {
     GfVec3d side, up, view;
     self.ComputeViewFrame( &side, &up, &view );
-    return pxr_boost::python::make_tuple( side, up, view );
+    return nanobind::make_tuple( side, up, view );
 }
-
-
-PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
-                                        FitToSphere, 2, 3 );
 
 } // anonymous namespace 
 
-void wrapFrustum()
+void wrapFrustum(nanobind::module_ &m)
 {    
     typedef GfFrustum This;
 
-    // Create some objects that will be reused a few times.
-    //
-    object getPositionFunc =
-        make_function(&This::GetPosition,
-                      return_value_policy<copy_const_reference>());
-    object getRotationFunc =
-        make_function(&This::GetRotation,
-                      return_value_policy<copy_const_reference>());
-    object getWindowFunc =
-        make_function(&This::GetWindow,
-                      return_value_policy<copy_const_reference>());
-    object getNearFarFunc =
-        make_function(&This::GetNearFar,
-                      return_value_policy<copy_const_reference>());
-
-    scope thisScope =
-        class_<This>("Frustum", "Basic view frustum", init<>())
-        .def(init< const This & >())
-        .def(init<const GfVec3d &, const GfRotation &,
+    nanobind::class_<This> c(m, "Frustum", "Basic view frustum");
+    c
+        .def(nanobind::init<>())
+        .def(nanobind::init< const This & >())
+        .def(nanobind::init<const GfVec3d &, const GfRotation &,
                   const GfRange2d &, const GfRange1d &,
-                  GfFrustum::ProjectionType, double>
-             ((args("position"), args("rotation"),
-               args("window"), args("nearFar"),
-               args("projectionType"), args("viewDistance") = 5.0)))
+                  GfFrustum::ProjectionType, double>(),
+             nanobind::arg("position"), nanobind::arg("rotation"),
+             nanobind::arg("window"), nanobind::arg("nearFar"),
+             nanobind::arg("projectionType"), nanobind::arg("viewDistance") = 5.0)
 
-        .def(init<const GfMatrix4d &,
+        .def(nanobind::init<const GfMatrix4d &,
                   const GfRange2d &, const GfRange1d &,
-                  GfFrustum::ProjectionType, double>
-             ((args("camToWorldXf"),
-               args("window"), args("nearFar"),
-               args("projectionType"), args("viewDistance") = 5.0)))
+                  GfFrustum::ProjectionType, double>(),
+             nanobind::arg("camToWorldXf"),
+             nanobind::arg("window"), nanobind::arg("nearFar"),
+             nanobind::arg("projectionType"), nanobind::arg("viewDistance") = 5.0)
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
         
-        .add_property( "position", getPositionFunc, &This::SetPosition )
-        .add_property( "rotation", getRotationFunc, &This::SetRotation )
-        .add_property( "window",   getWindowFunc,   &This::SetWindow )
-        .add_property( "nearFar",  getNearFarFunc,  &This::SetNearFar )
-        .add_property( "viewDistance", &This::GetViewDistance,
-                       &This::SetViewDistance )
-        .add_property( "projectionType", &This::GetProjectionType,
-                       &This::SetProjectionType )
+        .def_prop_rw( "position", &This::GetPosition, &This::SetPosition,
+                      nanobind::rv_policy::copy )
+        .def_prop_rw( "rotation", &This::GetRotation, &This::SetRotation,
+                      nanobind::rv_policy::copy )
+        .def_prop_rw( "window",   &This::GetWindow,   &This::SetWindow,
+                      nanobind::rv_policy::copy )
+        .def_prop_rw( "nearFar",  &This::GetNearFar,  &This::SetNearFar,
+                      nanobind::rv_policy::copy )
+        .def_prop_rw( "viewDistance", &This::GetViewDistance,
+                      &This::SetViewDistance )
+        .def_prop_rw( "projectionType", &This::GetProjectionType,
+                      &This::SetProjectionType )
 
         .def("SetPerspective",
              (void (This::*)(double, double, double, double))&This::SetPerspective,
-             (args("fovHeight"), "aspectRatio", "nearDist", "farDist"))
+             nanobind::arg("fovHeight"), nanobind::arg("aspectRatio"),
+             nanobind::arg("nearDist"), nanobind::arg("farDist"))
         .def("SetPerspective",
              (void (This::*)(double, bool, double, double, double))&This::SetPerspective,
-             (args("fov"), "isFovVertical", "aspectRatio", "nearDist", "farDist"))
+             nanobind::arg("fov"), nanobind::arg("isFovVertical"),
+             nanobind::arg("aspectRatio"), nanobind::arg("nearDist"), nanobind::arg("farDist"))
 
         .def("GetPerspective", GetPerspectiveHelper,
-             (args("isFovVertical") = true),
+             nanobind::arg("isFovVertical") = true,
              "Returns the current perspective frustum values suitable\n"
              "for use by SetPerspective.  If the current frustum is a\n"
              "perspective projection, the return value is a tuple of\n"
@@ -147,7 +130,7 @@ void wrapFrustum()
              "value is None.")
 
         .def("GetFOV", &This::GetFOV,
-             (args("isFovVertical") = false),
+             nanobind::arg("isFovVertical") = false,
              "Returns the horizontal fov of the frustum. The fov of the\n"
              "frustum is not necessarily the same value as displayed in\n"
              "the viewer. The displayed fov is a function of the focal\n"
@@ -160,27 +143,28 @@ void wrapFrustum()
         .def("SetOrthographic", &This::SetOrthographic)
         .def("GetOrthographic", GetOrthographicHelper)
 
-        .def("GetPosition", getPositionFunc)
+        .def("GetPosition", &This::GetPosition, nanobind::rv_policy::copy)
         .def("SetPosition", &This::SetPosition)
 
-        .def("GetRotation", getRotationFunc)
+        .def("GetRotation", &This::GetRotation, nanobind::rv_policy::copy)
         .def("SetRotation", &This::SetRotation)
 
         .def("SetPositionAndRotationFromMatrix",
-             &This::SetPositionAndRotationFromMatrix, (args("camToWorldXf")))
+             &This::SetPositionAndRotationFromMatrix, nanobind::arg("camToWorldXf"))
 
-        .def("GetWindow", getWindowFunc)
+        .def("GetWindow", &This::GetWindow, nanobind::rv_policy::copy)
         .def("SetWindow", &This::SetWindow)
 
-        .def("GetNearFar", getNearFarFunc)
+        .def("GetNearFar", &This::GetNearFar, nanobind::rv_policy::copy)
         .def("SetNearFar", &This::SetNearFar)
 
         .def("GetViewDistance", &This::GetViewDistance)
         .def("SetViewDistance", &This::SetViewDistance)
 
-        .def("FitToSphere", &This::FitToSphere, FitToSphere_overloads())
+        .def("FitToSphere", &This::FitToSphere,
+             nanobind::arg("center"), nanobind::arg("radius"), nanobind::arg("slack") = 0.0)
 
-        .def("Transform", &This::Transform, return_self<>())
+        .def("Transform", &This::Transform, nanobind::rv_policy::reference)
 
         .def("ComputeViewDirection", &This::ComputeViewDirection )
         .def("ComputeUpVector", &This::ComputeUpVector )
@@ -197,14 +181,17 @@ void wrapFrustum()
 
         .def("ComputeAspectRatio", &This::ComputeAspectRatio)
 
-        .def("ComputeCorners", &This::ComputeCorners,
-             return_value_policy<TfPySequenceToTuple>())
+        .def("ComputeCorners", [](const This &self) {
+             return TfNbSequenceToTuple(self.ComputeCorners());
+        })
 
-        .def("ComputeCornersAtDistance", &This::ComputeCornersAtDistance,
-             return_value_policy<TfPySequenceToTuple>())
+        .def("ComputeCornersAtDistance", [](const This &self, double d) {
+             return TfNbSequenceToTuple(self.ComputeCornersAtDistance(d));
+        })
 
-        .def("ComputePlanes", &This::ComputePlanes,
-             return_value_policy<TfPySequenceToTuple>())
+        .def("ComputePlanes", [](const This &self) {
+             return TfNbSequenceToTuple(self.ComputePlanes());
+        })
 
         .def("ComputeNarrowedFrustum", 
             (GfFrustum (This::*)(const GfVec2d &, const GfVec2d &) const)
@@ -235,20 +222,18 @@ void wrapFrustum()
         .def("SetProjectionType", &This::SetProjectionType)
         .def("GetProjectionType", &This::GetProjectionType)
 
-        .def("GetReferencePlaneDepth", 
+        .def_static("GetReferencePlaneDepth", 
                 &This::GetReferencePlaneDepth)
-        .staticmethod("GetReferencePlaneDepth") 
 
-        .def("IntersectsViewVolume", &This::IntersectsViewVolume)
-        .staticmethod("IntersectsViewVolume")
+        .def_static("IntersectsViewVolume", &This::IntersectsViewVolume)
         
-        .def(str(self))
-        .def(self == self)
-        .def(self != self)
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
 
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
         ;
 
-    TfPyWrapEnum<This::ProjectionType>();
+    TfNbWrapEnum<This::ProjectionType>(c);
 }

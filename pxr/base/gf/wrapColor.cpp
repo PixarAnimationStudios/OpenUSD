@@ -11,14 +11,10 @@
 #include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/base/tf/wrapTypeHelpers.h"
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -32,27 +28,32 @@ std::string __repr__(GfColor const &self)
 
 }
 
-void wrapColor()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+
+void wrapColor(nanobind::module_ &m)
 {
-    class_<GfColor>("Color", 
+
+    nanobind::class_<GfColor>(m, "Color", 
                     "A class representing a color, supporting different "
                     "color spaces.")
-        .def(init<>()) 
-        .def(init<const GfColor&>()) 
-        .def(init<const GfColorSpace&>()) 
-        .def(init<const GfVec3f&, const GfColorSpace&>()) 
-        .def(init<const GfColor&, const GfColorSpace&>()) 
+        .def(nanobind::init<>()) 
+        .def(nanobind::init<const GfColor&>()) 
+        .def(nanobind::init<const GfColorSpace&>()) 
+        .def(nanobind::init<const GfVec3f&, const GfColorSpace&>()) 
+        .def(nanobind::init<const GfColor&, const GfColorSpace&>()) 
         .def("__repr__", &__repr__) 
         .def("SetFromPlanckianLocus", &GfColor::SetFromPlanckianLocus, 
-             (arg("kelvin"), arg("luminance")))
+             nanobind::arg("kelvin"), nanobind::arg("luminance"))
         .def("GetRGB", &GfColor::GetRGB) 
         .def("GetColorSpace", &GfColor::GetColorSpace) 
-        .def(self == self) 
-        .def(self != self) 
+        .def(nanobind::self == nanobind::self) 
+        .def(nanobind::self != nanobind::self) 
         ;
 
-    def("IsClose", 
+    m.def("IsClose", 
         (bool (*)(const GfColor &v1, const GfColor &v2, double)) GfIsClose,
-        (arg("v1"), arg("v2"), arg("tolerance")));
+        nanobind::arg("v1"), nanobind::arg("v2"), nanobind::arg("tolerance"));
 }
 

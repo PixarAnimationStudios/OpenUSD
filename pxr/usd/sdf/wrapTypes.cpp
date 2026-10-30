@@ -18,6 +18,7 @@
 #include "pxr/usd/sdf/pyListEditorProxy.h"
 #include "pxr/usd/sdf/pyListProxy.h"
 #include "pxr/usd/sdf/pyMapEditProxy.h"
+#include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
@@ -25,100 +26,25 @@
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 
 #include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
-
-struct Sdf_TimeSampleMapConverter {
-public:
-    static PyObject* convert(SdfTimeSampleMap const &c)
-    {
-        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return pxr_boost::python::incref(result.ptr());
-    }
-};
-
-template <class MapType>
-struct Sdf_MapTypeConverter {
-public:
-    using KeyType = typename MapType::key_type;
-    using ValueType = typename MapType::mapped_type;
-
-    Sdf_MapTypeConverter()
-    {
-        pxr_boost::python::converter::registry::push_back(
-            &Sdf_MapTypeConverter::convertible,
-            &Sdf_MapTypeConverter::construct,
-            pxr_boost::python::type_id<MapType>());
-        to_python_converter<MapType,
-                            Sdf_MapTypeConverter>();
-    }
-
-    static void* convertible(PyObject* obj_ptr)
-    {
-        return _convert(obj_ptr, NULL);
-    }
-
-    static void construct(
-      PyObject* obj_ptr,
-      pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
-    {
-        void* storage = (
-            (converter::rvalue_from_python_storage<MapType>*)
-            data)->storage.bytes;
-        new (storage) MapType();
-        data->convertible = storage;
-        _convert(obj_ptr, (MapType*)storage);
-    }
-
-    static PyObject* convert(const MapType& c)
-    {
-        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return pxr_boost::python::incref(result.ptr());
-    }
-
-private:
-    static PyObject* _convert(PyObject* pyDict, MapType* result)
-    {
-        extract<dict> dictProxy(pyDict);
-        if (!dictProxy.check()) {
-            return NULL;
-        }
-        dict d = dictProxy();
-
-        list keys = d.keys();
-        for (int i = 0, numKeys = len(d); i < numKeys; ++i) {
-            object pyKey = keys[i];
-            extract<KeyType> keyProxy(pyKey);
-            if (!keyProxy.check()) {
-                return NULL;
-            }
-
-            object pyValue = d[pyKey];
-            extract<ValueType> valueProxy(pyValue);
-            if (!valueProxy.check()) {
-                return NULL;
-            }
-
-            KeyType key = keyProxy();
-            if (result) {
-                result->insert(std::make_pair(keyProxy(), valueProxy()));
-            }
-        }
-
-        return pyDict;
-    }
-};
 
 class Sdf_VariantSelectionProxyWrap {
 public:
@@ -173,18 +99,24 @@ public:
         }
     }
 
-    static void UpdateDict(Type& x, const pxr_boost::python::dict& d)
-    {
-        UpdateList(x, d.items());
-    }
-
-    static void UpdateList(Type& x, const pxr_boost::python::list& pairs)
+    static void UpdateDict(Type& x, const nb::dict& d)
     {
         std::vector<pair_type> values;
-        for (int i = 0, n = len(pairs); i != n; ++i) {
+        for (auto item : d) {
             values.push_back(pair_type(
-                extract<key_type>(pairs[i][0]),
-                extract<mapped_type>(pairs[i][1])));
+                nb::cast<key_type>(item.first),
+                nb::cast<mapped_type>(item.second)));
+        }
+        Update(x, values);
+    }
+
+    static void UpdateList(Type& x, const nb::list& pairs)
+    {
+        std::vector<pair_type> values;
+        for (size_t i = 0, n = pairs.size(); i != n; ++i) {
+            values.push_back(pair_type(
+                nb::cast<key_type>(pairs[i][0]),
+                nb::cast<mapped_type>(pairs[i][1])));
         }
         Update(x, values);
     }
@@ -201,24 +133,22 @@ _ModifyVariantSelectionProxy()
     // customized methods.  We need to fix __setitem__, setdefault,
     // and update.
     typedef Sdf_VariantSelectionProxyWrap Wrap;
-    object cls = TfPyGetClassObject<SdfVariantSelectionProxy>();
+    nb::class_<SdfVariantSelectionProxy> cls =
+        nb::borrow<nb::class_<SdfVariantSelectionProxy>>(
+            nb::type<SdfVariantSelectionProxy>());
 
     // Erase old methods.
-    PyObject* const ns = cls.ptr();
-    PyObject* dict = ((PyTypeObject*)ns)->tp_dict;
-    PyObject_DelItem(dict, str("__setitem__").ptr());
-    PyObject_DelItem(dict, str("setdefault").ptr());
-    PyObject_DelItem(dict, str("update").ptr());
+    PyTypeObject* typeObj = reinterpret_cast<PyTypeObject*>(cls.ptr());
+    PyDict_DelItemString(typeObj->tp_dict, "__setitem__");
+    PyDict_DelItemString(typeObj->tp_dict, "setdefault");
+    PyDict_DelItemString(typeObj->tp_dict, "update");
+    PyType_Modified(typeObj);
 
     // Insert new methods.
-    object setitem    = make_function(&Wrap::SetItem);
-    object setdefault = make_function(&Wrap::SetDefault);
-    object updateList = make_function(&Wrap::UpdateList);
-    object updateDict = make_function(&Wrap::UpdateDict);
-    objects::add_to_namespace(cls, "__setitem__", setitem);
-    objects::add_to_namespace(cls, "setdefault", setdefault);
-    objects::add_to_namespace(cls, "update", updateDict);
-    objects::add_to_namespace(cls, "update", updateList);
+    cls.def("__setitem__", &Wrap::SetItem);
+    cls.def("setdefault", &Wrap::SetDefault);
+    cls.def("update", &Wrap::UpdateDict);
+    cls.def("update", &Wrap::UpdateList);
 }
 
 static TfEnum
@@ -289,71 +219,50 @@ _FindType(const std::string& typeName)
     return SdfSchema::GetInstance().FindType(typeName);
 }
 
-pxr_boost::python::tuple
+nb::tuple
 _ConvertToValidMetadataDictionary(VtDictionary dict)
 {
     std::string errMsg;
     bool success = SdfConvertToValidMetadataDictionary(&dict, &errMsg);
-    return pxr_boost::python::make_tuple(success, dict, errMsg);
+    return nb::make_tuple(success, dict, errMsg);
 }
 
 } // anonymous namespace 
 
-void wrapTypes()
+void wrapTypes(nanobind::module_& m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("ValueRoleNames",
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "ValueRoleNames",
                              SdfValueRoleNames, SDF_VALUE_ROLE_NAME_TOKENS);
 
-    def( "DefaultUnit", _DefaultUnitWrapper1,
+    m.def("DefaultUnit", _DefaultUnitWrapper1,
         "For a given unit of measurement get the default compatible unit.");
 
-    def( "DefaultUnit", _DefaultUnitWrapper2,
+    m.def("DefaultUnit", _DefaultUnitWrapper2,
         "For a given typeName ('Vector', 'Point' etc.) get the "
         "default unit of measurement.");
 
-    def( "UnitCategory", _UnitCategoryWrapper,
+    m.def("UnitCategory", _UnitCategoryWrapper,
         "For a given unit of measurement get the unit category.");
 
-    def( "ConvertUnit", &SdfConvertUnit,
+    m.def("ConvertUnit", &SdfConvertUnit,
         "Convert a unit of measurement to a compatible unit.");
 
-    def( "ValueHasValidType", &SdfValueHasValidType );
-    def( "GetTypeForValueTypeName", &SdfGetTypeForValueTypeName );
-    def( "GetValueTypeNameForValue", &SdfGetValueTypeNameForValue );
+    m.def("ValueHasValidType", &SdfValueHasValidType);
+    m.def("GetTypeForValueTypeName", &SdfGetTypeForValueTypeName);
+    m.def("GetValueTypeNameForValue", &SdfGetValueTypeNameForValue);
 
-    def( "ConvertToValidMetadataDictionary",
-         &_ConvertToValidMetadataDictionary );
+    m.def("ConvertToValidMetadataDictionary",
+         &_ConvertToValidMetadataDictionary);
 
-    def( "GetUnitFromName", &SdfGetUnitFromName,
-         return_value_policy<return_by_value>() );
-    def( "GetNameForUnit", &SdfGetNameForUnit,
-         return_value_policy<return_by_value>() );
+    m.def("GetUnitFromName", &SdfGetUnitFromName);
+    m.def("GetNameForUnit", &SdfGetNameForUnit);
 
-    // Register Python conversions for std::vector<SdfUnregisteredValue>
-    using _UnregisteredValueVector = std::vector<SdfUnregisteredValue>;
-    to_python_converter<_UnregisteredValueVector,
-                        TfPySequenceToPython<_UnregisteredValueVector> >();
-    TfPyContainerConversions::from_python_sequence<
-        _UnregisteredValueVector,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    // Register python conversions for SdfRelocate and SdfRelocates
-    to_python_converter<SdfRelocate, 
-        TfPyContainerConversions::to_tuple<SdfRelocate>>();
-    TfPyContainerConversions::from_python_tuple_pair<SdfRelocate>();
-
-    to_python_converter<SdfRelocates,
-                        TfPySequenceToPython<SdfRelocates> >();
-    TfPyContainerConversions::from_python_sequence<
-        SdfRelocates,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    TfPyWrapEnum<SdfListOpType>();
-    TfPyWrapEnum<SdfPermission>();
-    TfPyWrapEnum<SdfSpecifier>();
-    TfPyWrapEnum<SdfVariability>();
-    TfPyWrapEnum<SdfSpecType>();
-    TfPyWrapEnum<SdfAuthoringError>();
+    TfNbWrapEnum<SdfListOpType>(m);
+    TfNbWrapEnum<SdfPermission>(m);
+    TfNbWrapEnum<SdfSpecifier>(m);
+    TfNbWrapEnum<SdfVariability>(m);
+    TfNbWrapEnum<SdfSpecType>(m);
+    TfNbWrapEnum<SdfAuthoringError>(m);
 
     VtValueFromPython<SdfListOpType>();
     VtValueFromPython<SdfPermission>();
@@ -364,7 +273,7 @@ void wrapTypes()
 
     // Wrap all units enums.
     #define _WRAP_ENUM(elem)                                 \
-        TfPyWrapEnum<_SDF_UNITSLIST_ENUM(elem)>();           \
+        TfNbWrapEnum<_SDF_UNITSLIST_ENUM(elem)>(m);          \
         VtValueFromPython<_SDF_UNITSLIST_ENUM(elem)>();
     _SDF_FOR_EACH_UNITS(_WRAP_ENUM, _SDF_UNITS)
     #undef _WRAP_ENUM
@@ -388,16 +297,16 @@ void wrapTypes()
     SdfPyWrapMapEditProxy<SdfDictionaryProxy>();
     SdfPyWrapMapEditProxy<SdfVariantSelectionProxy>();
 
-    SdfPyWrapListOp<SdfPathListOp>("PathListOp");
-    SdfPyWrapListOp<SdfPayloadListOp>("PayloadListOp");
-    SdfPyWrapListOp<SdfReferenceListOp>("ReferenceListOp");
-    SdfPyWrapListOp<SdfStringListOp>("StringListOp");
-    SdfPyWrapListOp<SdfTokenListOp>("TokenListOp");
-    SdfPyWrapListOp<SdfIntListOp>("IntListOp");
-    SdfPyWrapListOp<SdfInt64ListOp>("Int64ListOp");
-    SdfPyWrapListOp<SdfUIntListOp>("UIntListOp");
-    SdfPyWrapListOp<SdfUInt64ListOp>("UInt64ListOp");
-    SdfPyWrapListOp<SdfUnregisteredValueListOp>("UnregisteredValueListOp");
+    SdfPyWrapListOp<SdfPathListOp>(m, "PathListOp");
+    SdfPyWrapListOp<SdfPayloadListOp>(m, "PayloadListOp");
+    SdfPyWrapListOp<SdfReferenceListOp>(m, "ReferenceListOp");
+    SdfPyWrapListOp<SdfStringListOp>(m, "StringListOp");
+    SdfPyWrapListOp<SdfTokenListOp>(m, "TokenListOp");
+    SdfPyWrapListOp<SdfIntListOp>(m, "IntListOp");
+    SdfPyWrapListOp<SdfInt64ListOp>(m, "Int64ListOp");
+    SdfPyWrapListOp<SdfUIntListOp>(m, "UIntListOp");
+    SdfPyWrapListOp<SdfUInt64ListOp>(m, "UInt64ListOp");
+    SdfPyWrapListOp<SdfUnregisteredValueListOp>(m, "UnregisteredValueListOp");
 
     VtValueFromPython<SdfPathListOp>();
     VtValueFromPython<SdfPayloadListOp>();
@@ -413,27 +322,17 @@ void wrapTypes()
     // Modify class wrappers for special behaviors (see function comments).
     _ModifyVariantSelectionProxy();
 
-    // Register python conversions for SdfRelocatesMap.
-    Sdf_MapTypeConverter<SdfRelocatesMap>();
+    nb::class_<SdfUnregisteredValue>(m, "UnregisteredValue")
+        .def(nb::init<>())
+        .def(nb::init<const std::string &>())
+        .def(nb::init<const VtDictionary &>())
+        .def(nb::init<const SdfUnregisteredValue &>())
+        .def(nb::init<const SdfUnregisteredValueListOp &>())
 
-    // Register python conversions for SdfVariantSelectionMap.
-    Sdf_MapTypeConverter<SdfVariantSelectionMap>();
+        .def_prop_ro("value", &SdfUnregisteredValue::GetValue)
 
-    // Register python conversions for SdfTimeSampleMap.
-    to_python_converter<SdfTimeSampleMap, Sdf_TimeSampleMapConverter>();
-
-    class_<SdfUnregisteredValue>("UnregisteredValue")
-        .def(init<const std::string &>())
-        .def(init<const VtDictionary &>())
-        .def(init<const SdfUnregisteredValue &>())
-        .def(init<const SdfUnregisteredValueListOp &>())
-
-        .add_property("value",
-            make_function(&SdfUnregisteredValue::GetValue,
-                return_value_policy<return_by_value>()))
-
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__repr__", _UnregisteredValueRepr)
         .def("__hash__", _UnregisteredValueHash)
@@ -441,136 +340,139 @@ void wrapTypes()
 
     VtValueFromPython<SdfUnregisteredValue>();
 
-    class_<Sdf_ValueTypeNamesType, noncopyable>(
-            "ValueTypeNames", no_init)
-        .def( "Find", &_FindType )
-        .staticmethod("Find")
-        .def_readonly("Bool"           , SdfValueTypeNames->Bool)
-        .def_readonly("UChar"          , SdfValueTypeNames->UChar)
-        .def_readonly("Int"            , SdfValueTypeNames->Int)
-        .def_readonly("UInt"           , SdfValueTypeNames->UInt)
-        .def_readonly("Int64"          , SdfValueTypeNames->Int64)
-        .def_readonly("UInt64"         , SdfValueTypeNames->UInt64)
-        .def_readonly("Half"           , SdfValueTypeNames->Half)
-        .def_readonly("Float"          , SdfValueTypeNames->Float)
-        .def_readonly("Double"         , SdfValueTypeNames->Double)
-        .def_readonly("TimeCode"       , SdfValueTypeNames->TimeCode)
-        .def_readonly("Duration"       , SdfValueTypeNames->Duration)
-        .def_readonly("String"         , SdfValueTypeNames->String)
-        .def_readonly("Token"          , SdfValueTypeNames->Token)
-        .def_readonly("Asset"          , SdfValueTypeNames->Asset)
-        .def_readonly("Opaque"         , SdfValueTypeNames->Opaque)
-        .def_readonly("Group"          , SdfValueTypeNames->Group)
-        .def_readonly("PathExpression" , SdfValueTypeNames->PathExpression)
-        .def_readonly("Int2"           , SdfValueTypeNames->Int2)
-        .def_readonly("Int3"           , SdfValueTypeNames->Int3)
-        .def_readonly("Int4"           , SdfValueTypeNames->Int4)
-        .def_readonly("Half2"          , SdfValueTypeNames->Half2)
-        .def_readonly("Half3"          , SdfValueTypeNames->Half3)
-        .def_readonly("Half4"          , SdfValueTypeNames->Half4)
-        .def_readonly("Float2"         , SdfValueTypeNames->Float2)
-        .def_readonly("Float3"         , SdfValueTypeNames->Float3)
-        .def_readonly("Float4"         , SdfValueTypeNames->Float4)
-        .def_readonly("Double2"        , SdfValueTypeNames->Double2)
-        .def_readonly("Double3"        , SdfValueTypeNames->Double3)
-        .def_readonly("Double4"        , SdfValueTypeNames->Double4)
-        .def_readonly("Point3h"        , SdfValueTypeNames->Point3h)
-        .def_readonly("Point3f"        , SdfValueTypeNames->Point3f)
-        .def_readonly("Point3d"        , SdfValueTypeNames->Point3d)
-        .def_readonly("Vector3h"       , SdfValueTypeNames->Vector3h)
-        .def_readonly("Vector3f"       , SdfValueTypeNames->Vector3f)
-        .def_readonly("Vector3d"       , SdfValueTypeNames->Vector3d)
-        .def_readonly("Normal3h"       , SdfValueTypeNames->Normal3h)
-        .def_readonly("Normal3f"       , SdfValueTypeNames->Normal3f)
-        .def_readonly("Normal3d"       , SdfValueTypeNames->Normal3d)
-        .def_readonly("Color3h"        , SdfValueTypeNames->Color3h)
-        .def_readonly("Color3f"        , SdfValueTypeNames->Color3f)
-        .def_readonly("Color3d"        , SdfValueTypeNames->Color3d)
-        .def_readonly("Color4h"        , SdfValueTypeNames->Color4h)
-        .def_readonly("Color4f"        , SdfValueTypeNames->Color4f)
-        .def_readonly("Color4d"        , SdfValueTypeNames->Color4d)
-        .def_readonly("Quath"          , SdfValueTypeNames->Quath)
-        .def_readonly("Quatf"          , SdfValueTypeNames->Quatf)
-        .def_readonly("Quatd"          , SdfValueTypeNames->Quatd)
-        .def_readonly("Matrix2d"       , SdfValueTypeNames->Matrix2d)
-        .def_readonly("Matrix3d"       , SdfValueTypeNames->Matrix3d)
-        .def_readonly("Matrix4d"       , SdfValueTypeNames->Matrix4d)
-        .def_readonly("Frame4d"        , SdfValueTypeNames->Frame4d)
-        .def_readonly("TexCoord2h"     , SdfValueTypeNames->TexCoord2h)
-        .def_readonly("TexCoord2f"     , SdfValueTypeNames->TexCoord2f)
-        .def_readonly("TexCoord2d"     , SdfValueTypeNames->TexCoord2d)
-        .def_readonly("TexCoord3h"     , SdfValueTypeNames->TexCoord3h)
-        .def_readonly("TexCoord3f"     , SdfValueTypeNames->TexCoord3f)
-        .def_readonly("TexCoord3d"     , SdfValueTypeNames->TexCoord3d)
+    #define _DEF_VTN(name) \
+        .def_prop_ro_static(#name, [](nb::handle) { return SdfValueTypeNames->name; })
 
-        .def_readonly("BoolArray"      , SdfValueTypeNames->BoolArray)
-        .def_readonly("UCharArray"     , SdfValueTypeNames->UCharArray)
-        .def_readonly("IntArray"       , SdfValueTypeNames->IntArray)
-        .def_readonly("UIntArray"      , SdfValueTypeNames->UIntArray)
-        .def_readonly("Int64Array"     , SdfValueTypeNames->Int64Array)
-        .def_readonly("UInt64Array"    , SdfValueTypeNames->UInt64Array)
-        .def_readonly("HalfArray"      , SdfValueTypeNames->HalfArray)
-        .def_readonly("FloatArray"     , SdfValueTypeNames->FloatArray)
-        .def_readonly("DoubleArray"    , SdfValueTypeNames->DoubleArray)
-        .def_readonly("TimeCodeArray"  , SdfValueTypeNames->TimeCodeArray)
-        .def_readonly("DurationArray"  , SdfValueTypeNames->DurationArray)
-        .def_readonly("StringArray"    , SdfValueTypeNames->StringArray)
-        .def_readonly("TokenArray"     , SdfValueTypeNames->TokenArray)
-        .def_readonly("AssetArray"     , SdfValueTypeNames->AssetArray)
-        .def_readonly("PathExpressionArray",
-                      SdfValueTypeNames->PathExpressionArray)
-        .def_readonly("Int2Array"      , SdfValueTypeNames->Int2Array)
-        .def_readonly("Int3Array"      , SdfValueTypeNames->Int3Array)
-        .def_readonly("Int4Array"      , SdfValueTypeNames->Int4Array)
-        .def_readonly("Half2Array"     , SdfValueTypeNames->Half2Array)
-        .def_readonly("Half3Array"     , SdfValueTypeNames->Half3Array)
-        .def_readonly("Half4Array"     , SdfValueTypeNames->Half4Array)
-        .def_readonly("Float2Array"    , SdfValueTypeNames->Float2Array)
-        .def_readonly("Float3Array"    , SdfValueTypeNames->Float3Array)
-        .def_readonly("Float4Array"    , SdfValueTypeNames->Float4Array)
-        .def_readonly("Double2Array"   , SdfValueTypeNames->Double2Array)
-        .def_readonly("Double3Array"   , SdfValueTypeNames->Double3Array)
-        .def_readonly("Double4Array"   , SdfValueTypeNames->Double4Array)
-        .def_readonly("Point3hArray"   , SdfValueTypeNames->Point3hArray)
-        .def_readonly("Point3fArray"   , SdfValueTypeNames->Point3fArray)
-        .def_readonly("Point3dArray"   , SdfValueTypeNames->Point3dArray)
-        .def_readonly("Vector3hArray"  , SdfValueTypeNames->Vector3hArray)
-        .def_readonly("Vector3fArray"  , SdfValueTypeNames->Vector3fArray)
-        .def_readonly("Vector3dArray"  , SdfValueTypeNames->Vector3dArray)
-        .def_readonly("Normal3hArray"  , SdfValueTypeNames->Normal3hArray)
-        .def_readonly("Normal3fArray"  , SdfValueTypeNames->Normal3fArray)
-        .def_readonly("Normal3dArray"  , SdfValueTypeNames->Normal3dArray)
-        .def_readonly("Color3hArray"   , SdfValueTypeNames->Color3hArray)
-        .def_readonly("Color3fArray"   , SdfValueTypeNames->Color3fArray)
-        .def_readonly("Color3dArray"   , SdfValueTypeNames->Color3dArray)
-        .def_readonly("Color4hArray"   , SdfValueTypeNames->Color4hArray)
-        .def_readonly("Color4fArray"   , SdfValueTypeNames->Color4fArray)
-        .def_readonly("Color4dArray"   , SdfValueTypeNames->Color4dArray)
-        .def_readonly("QuathArray"     , SdfValueTypeNames->QuathArray)
-        .def_readonly("QuatfArray"     , SdfValueTypeNames->QuatfArray)
-        .def_readonly("QuatdArray"     , SdfValueTypeNames->QuatdArray)
-        .def_readonly("Matrix2dArray"  , SdfValueTypeNames->Matrix2dArray)
-        .def_readonly("Matrix3dArray"  , SdfValueTypeNames->Matrix3dArray)
-        .def_readonly("Matrix4dArray"  , SdfValueTypeNames->Matrix4dArray)
-        .def_readonly("Frame4dArray"   , SdfValueTypeNames->Frame4dArray)
-        .def_readonly("TexCoord2hArray", SdfValueTypeNames->TexCoord2hArray)
-        .def_readonly("TexCoord2fArray", SdfValueTypeNames->TexCoord2fArray)
-        .def_readonly("TexCoord2dArray", SdfValueTypeNames->TexCoord2dArray)
-        .def_readonly("TexCoord3hArray", SdfValueTypeNames->TexCoord3hArray)
-        .def_readonly("TexCoord3fArray", SdfValueTypeNames->TexCoord3fArray)
-        .def_readonly("TexCoord3dArray", SdfValueTypeNames->TexCoord3dArray)
+    nb::class_<Sdf_ValueTypeNamesType>(m, "ValueTypeNames")
+        .def_static("Find", &_FindType)
+        _DEF_VTN(Bool)
+        _DEF_VTN(UChar)
+        _DEF_VTN(Int)
+        _DEF_VTN(UInt)
+        _DEF_VTN(Int64)
+        _DEF_VTN(UInt64)
+        _DEF_VTN(Half)
+        _DEF_VTN(Float)
+        _DEF_VTN(Double)
+        _DEF_VTN(TimeCode)
+        _DEF_VTN(Duration)
+        _DEF_VTN(String)
+        _DEF_VTN(Token)
+        _DEF_VTN(Asset)
+        _DEF_VTN(Opaque)
+        _DEF_VTN(Group)
+        _DEF_VTN(PathExpression)
+        _DEF_VTN(Int2)
+        _DEF_VTN(Int3)
+        _DEF_VTN(Int4)
+        _DEF_VTN(Half2)
+        _DEF_VTN(Half3)
+        _DEF_VTN(Half4)
+        _DEF_VTN(Float2)
+        _DEF_VTN(Float3)
+        _DEF_VTN(Float4)
+        _DEF_VTN(Double2)
+        _DEF_VTN(Double3)
+        _DEF_VTN(Double4)
+        _DEF_VTN(Point3h)
+        _DEF_VTN(Point3f)
+        _DEF_VTN(Point3d)
+        _DEF_VTN(Vector3h)
+        _DEF_VTN(Vector3f)
+        _DEF_VTN(Vector3d)
+        _DEF_VTN(Normal3h)
+        _DEF_VTN(Normal3f)
+        _DEF_VTN(Normal3d)
+        _DEF_VTN(Color3h)
+        _DEF_VTN(Color3f)
+        _DEF_VTN(Color3d)
+        _DEF_VTN(Color4h)
+        _DEF_VTN(Color4f)
+        _DEF_VTN(Color4d)
+        _DEF_VTN(Quath)
+        _DEF_VTN(Quatf)
+        _DEF_VTN(Quatd)
+        _DEF_VTN(Matrix2d)
+        _DEF_VTN(Matrix3d)
+        _DEF_VTN(Matrix4d)
+        _DEF_VTN(Frame4d)
+        _DEF_VTN(TexCoord2h)
+        _DEF_VTN(TexCoord2f)
+        _DEF_VTN(TexCoord2d)
+        _DEF_VTN(TexCoord3h)
+        _DEF_VTN(TexCoord3f)
+        _DEF_VTN(TexCoord3d)
+
+        _DEF_VTN(BoolArray)
+        _DEF_VTN(UCharArray)
+        _DEF_VTN(IntArray)
+        _DEF_VTN(UIntArray)
+        _DEF_VTN(Int64Array)
+        _DEF_VTN(UInt64Array)
+        _DEF_VTN(HalfArray)
+        _DEF_VTN(FloatArray)
+        _DEF_VTN(DoubleArray)
+        _DEF_VTN(TimeCodeArray)
+        _DEF_VTN(DurationArray)
+        _DEF_VTN(StringArray)
+        _DEF_VTN(TokenArray)
+        _DEF_VTN(AssetArray)
+        _DEF_VTN(PathExpressionArray)
+        _DEF_VTN(Int2Array)
+        _DEF_VTN(Int3Array)
+        _DEF_VTN(Int4Array)
+        _DEF_VTN(Half2Array)
+        _DEF_VTN(Half3Array)
+        _DEF_VTN(Half4Array)
+        _DEF_VTN(Float2Array)
+        _DEF_VTN(Float3Array)
+        _DEF_VTN(Float4Array)
+        _DEF_VTN(Double2Array)
+        _DEF_VTN(Double3Array)
+        _DEF_VTN(Double4Array)
+        _DEF_VTN(Point3hArray)
+        _DEF_VTN(Point3fArray)
+        _DEF_VTN(Point3dArray)
+        _DEF_VTN(Vector3hArray)
+        _DEF_VTN(Vector3fArray)
+        _DEF_VTN(Vector3dArray)
+        _DEF_VTN(Normal3hArray)
+        _DEF_VTN(Normal3fArray)
+        _DEF_VTN(Normal3dArray)
+        _DEF_VTN(Color3hArray)
+        _DEF_VTN(Color3fArray)
+        _DEF_VTN(Color3dArray)
+        _DEF_VTN(Color4hArray)
+        _DEF_VTN(Color4fArray)
+        _DEF_VTN(Color4dArray)
+        _DEF_VTN(QuathArray)
+        _DEF_VTN(QuatfArray)
+        _DEF_VTN(QuatdArray)
+        _DEF_VTN(Matrix2dArray)
+        _DEF_VTN(Matrix3dArray)
+        _DEF_VTN(Matrix4dArray)
+        _DEF_VTN(Frame4dArray)
+        _DEF_VTN(TexCoord2hArray)
+        _DEF_VTN(TexCoord2fArray)
+        _DEF_VTN(TexCoord2dArray)
+        _DEF_VTN(TexCoord3hArray)
+        _DEF_VTN(TexCoord3fArray)
+        _DEF_VTN(TexCoord3dArray)
         ;
+    #undef _DEF_VTN
 
-    class_<SdfValueBlock>("ValueBlock")
-        .def(self == self)
-        .def(self != self)
+    nb::class_<SdfValueBlock>(m, "ValueBlock")
+        .def(nb::init<>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("__repr__", _SdfValueBlockRepr)
         .def("__hash__", _SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();
 
-    class_<SdfAnimationBlock>("AnimationBlock")
-        .def(self == self)
-        .def(self != self)
+    nb::class_<SdfAnimationBlock>(m, "AnimationBlock")
+        .def(nb::init<>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("__repr__", _SdfAnimationBlockRepr)
         .def("__hash__", _SdfAnimationBlockHash);
     VtValueFromPython<SdfAnimationBlock>();

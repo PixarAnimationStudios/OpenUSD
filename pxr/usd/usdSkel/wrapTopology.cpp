@@ -6,50 +6,48 @@
 //
 #include "pxr/usd/usdSkel/topology.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
 namespace {
 
-
-tuple
+nb::tuple
 _Validate(const UsdSkelTopology& self)
 {
     std::string reason;
     bool success = self.Validate(&reason);
-    return pxr_boost::python::make_tuple(success, reason);
+    return nb::make_tuple(success, reason);
 }
-
 
 } // namespace
 
-
-void wrapUsdSkelTopology()
+void wrapUsdSkelTopology(nb::module_ &m)
 {
     using This = UsdSkelTopology;
 
-    class_<This>("Topology", no_init)
-        .def(init<const SdfPathVector&>())
-        .def(init<const VtTokenArray&>())
-        .def(init<VtIntArray>())
+    nb::class_<This>(m, "Topology")
+        .def(nb::init<const VtTokenArray&>())
+        .def(nb::init<const SdfPathVector&>())
+        .def(nb::init<VtIntArray>())
 
         .def("GetParent", &This::GetParent)
 
         .def("IsRoot", &This::IsRoot)
         
         .def("GetParentIndices", &This::GetParentIndices,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetNumJoints", &This::GetNumJoints)
 
@@ -57,4 +55,5 @@ void wrapUsdSkelTopology()
 
         .def("Validate", &_Validate)
         ;
+
 }

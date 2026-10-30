@@ -8,13 +8,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/instanceKey.h"
 #include "pxr/usd/pcp/primIndex.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
  
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -27,15 +23,19 @@ __hash__(const PcpInstanceKey& key)
 } // anonymous namespace 
 
 void
-wrapInstanceKey()
+wrapInstanceKey(nanobind::module_ &m)
 {
-    class_<PcpInstanceKey>("InstanceKey")
-        .def(init<const PcpPrimIndex&>(args("primIndex")))
+    namespace nb = nanobind;
 
-        .def(self == self)
-        .def(self != self)
+    nb::class_<PcpInstanceKey>(m, "InstanceKey")
+        .def(nb::init<>())
+        .def(nb::init<const PcpPrimIndex&>(), nb::arg("primIndex"))
+
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__str__", &PcpInstanceKey::GetString)
         .def("__hash__", __hash__)
         ;
+
 }

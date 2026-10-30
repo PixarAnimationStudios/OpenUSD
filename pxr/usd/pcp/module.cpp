@@ -12,25 +12,25 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Dependency );
-    TF_WRAP( DynamicFileFormatDependencyData );
-    TF_WRAP( Cache );
-    TF_WRAP( Errors );
-    TF_WRAP( InstanceKey );
-    TF_WRAP( LayerRelocatesEditBuilder );
+    TF_WRAP_NB( Dependency );
+    TF_WRAP_NB( DynamicFileFormatDependencyData );
+    TF_WRAP_NB( Cache );
+    TF_WRAP_NB( Errors );
+    TF_WRAP_NB( InstanceKey );
+    TF_WRAP_NB( LayerRelocatesEditBuilder );
 
-    TF_WRAP( ExpressionVariablesSource ); // Required by LayerStackIdentifier
-    TF_WRAP( LayerStackIdentifier );
+    TF_WRAP_NB( ExpressionVariablesSource ); // Required by LayerStackIdentifier
+    TF_WRAP_NB( LayerStackIdentifier );
 
-    TF_WRAP( LayerStack );
-    TF_WRAP( MapExpression );
-    TF_WRAP( MapFunction );
-    TF_WRAP( Node );
-    TF_WRAP( PathTranslation );
-    TF_WRAP( PrimIndex );
-    TF_WRAP( PropertyIndex );
-    TF_WRAP( Site );
-    TF_WRAP( ExpressionVariables );
-    TF_WRAP( TestChangeProcessor );
-    TF_WRAP( Types );
+    TF_WRAP_NB( LayerStack );
+    TF_WRAP_NB( MapExpression );
+    TF_WRAP_NB( MapFunction );
+    TF_WRAP_NB( Node );
+    TF_WRAP_NB( PathTranslation );
+    TF_WRAP_NB( PrimIndex );
+    TF_WRAP_NB( PropertyIndex );
+    TF_WRAP_NB( Site );
+    TF_WRAP_NB( ExpressionVariables );
+    TF_WRAP_NB( TestChangeProcessor );
+    TF_WRAP_NB( Types );
 }

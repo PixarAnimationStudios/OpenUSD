@@ -12,28 +12,21 @@
 #include <locale>
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/token.h"
 
-#include "pxr/external/boost/python/class.hpp"
+#include <nanobind/nanobind.h>
 
 using std::pair;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
 class Tf_TestPyContainerConversions {
 public:
     static void Init() {
-        // Initialize any test-specific Python bindings and conversions.
-        // This ensures these registrations aren't present outside of tests.
-        using TupleType = std::tuple<int, int, int>;
-        pxr_boost::python::to_python_converter<
-            TupleType, TfPyContainerConversions::to_tuple<TupleType>>();
-        TfPyContainerConversions::from_python_tuple<TupleType>();
     }
 
     static vector<double> GetVectorTimesTwo(const vector<int>& inVec) {
@@ -67,24 +60,16 @@ public:
 
 } // anonymous namespace 
 
-void wrapTf_TestPyContainerConversions()
+void wrapTf_TestPyContainerConversions(nanobind::module_ &m)
 {
     typedef Tf_TestPyContainerConversions This;
+    namespace nb = nanobind;
 
-    class_<This, noncopyable>("Tf_TestPyContainerConversions")
-        .def("Init", &This::Init)
-        .staticmethod("Init")
-
-        .def("GetVectorTimesTwo", &This::GetVectorTimesTwo)
-        .staticmethod("GetVectorTimesTwo")
-        
-        .def("GetPairTimesTwo", &This::GetPairTimesTwo)
-        .staticmethod("GetPairTimesTwo")
-
-        .def("GetTupleTimesTwo", &This::GetTupleTimesTwo)
-        .staticmethod("GetTupleTimesTwo")
-
-        .def("GetTokens", &This::GetTokens)
-        .staticmethod("GetTokens")
+    nb::class_<This>(m, "Tf_TestPyContainerConversions")
+        .def_static("Init", &This::Init)
+        .def_static("GetVectorTimesTwo", &This::GetVectorTimesTwo)
+        .def_static("GetPairTimesTwo", &This::GetPairTimesTwo)
+        .def_static("GetTupleTimesTwo", &This::GetTupleTimesTwo)
+        .def_static("GetTokens", &This::GetTokens)
         ;
 }

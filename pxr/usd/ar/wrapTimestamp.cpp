@@ -11,12 +11,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static size_t
 __hash__(const ArTimestamp &self)
@@ -32,21 +27,25 @@ __repr__(const ArTimestamp &self)
             TfStringPrintf("(%s)", TfPyRepr(self.GetTime()).c_str()) : "()");
 }
 
-void wrapTimestamp()
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+void wrapTimestamp(nanobind::module_& m)
 {
-    class_<ArTimestamp>("Timestamp")
-        .def(init<double>())
-        .def(init<ArTimestamp>())
+    namespace nb = nanobind;
+    nb::class_<ArTimestamp>(m, "Timestamp")
+        .def(nb::init<>())
+        .def(nb::init<double>())
+        .def(nb::init<ArTimestamp>())
 
         .def("IsValid", &ArTimestamp::IsValid)
         .def("GetTime", &ArTimestamp::GetTime)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)  
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self >= nb::self)
 
         .def("__hash__", __hash__)
         .def("__repr__", __repr__)

@@ -5,52 +5,57 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/usd/usd/tokens.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return UsdTokens->name.GetString(); });
+using UsdTokens_StaticTokenType = UsdTokensType;
 
-void wrapUsdTokens()
+#define USD_TOKENS \
+    (apiSchemas) \
+    (automatic) \
+    (clips) \
+    (clipSets) \
+    (collection) \
+    (collection_MultipleApplyTemplate_) \
+    (collection_MultipleApplyTemplate_Excludes) \
+    (collection_MultipleApplyTemplate_ExpansionRule) \
+    (collection_MultipleApplyTemplate_IncludeRoot) \
+    (collection_MultipleApplyTemplate_Includes) \
+    (collection_MultipleApplyTemplate_MembershipExpression) \
+    (collection_MultipleApplyTemplate_Mode) \
+    (colorSpaceDefinition) \
+    (colorSpaceDefinition_MultipleApplyTemplate_BlueChroma) \
+    (colorSpaceDefinition_MultipleApplyTemplate_Gamma) \
+    (colorSpaceDefinition_MultipleApplyTemplate_GreenChroma) \
+    (colorSpaceDefinition_MultipleApplyTemplate_LinearBias) \
+    (colorSpaceDefinition_MultipleApplyTemplate_Name) \
+    (colorSpaceDefinition_MultipleApplyTemplate_RedChroma) \
+    (colorSpaceDefinition_MultipleApplyTemplate_WhitePoint) \
+    (colorSpaceName) \
+    (custom) \
+    (exclude) \
+    (expandPrims) \
+    (expandPrimsAndProperties) \
+    (explicitOnly) \
+    (expression) \
+    (fallbackPrimTypes) \
+    (relationship) \
+    (APISchemaBase) \
+    (ClipsAPI) \
+    (CollectionAPI) \
+    (ColorSpaceAPI) \
+    (ColorSpaceDefinitionAPI) \
+    (ModelAPI) \
+    (Typed)
+
+void wrapUsdTokens(nanobind::module_ &m)
 {
-    pxr_boost::python::class_<UsdTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
-    _ADD_TOKEN(cls, apiSchemas);
-    _ADD_TOKEN(cls, automatic);
-    _ADD_TOKEN(cls, clips);
-    _ADD_TOKEN(cls, clipSets);
-    _ADD_TOKEN(cls, collection);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Excludes);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_ExpansionRule);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_IncludeRoot);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Includes);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_MembershipExpression);
-    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Mode);
-    _ADD_TOKEN(cls, colorSpaceDefinition);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_BlueChroma);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_Gamma);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_GreenChroma);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_LinearBias);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_Name);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_RedChroma);
-    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_WhitePoint);
-    _ADD_TOKEN(cls, colorSpaceName);
-    _ADD_TOKEN(cls, custom);
-    _ADD_TOKEN(cls, exclude);
-    _ADD_TOKEN(cls, expandPrims);
-    _ADD_TOKEN(cls, expandPrimsAndProperties);
-    _ADD_TOKEN(cls, explicitOnly);
-    _ADD_TOKEN(cls, expression);
-    _ADD_TOKEN(cls, fallbackPrimTypes);
-    _ADD_TOKEN(cls, relationship);
-    _ADD_TOKEN(cls, APISchemaBase);
-    _ADD_TOKEN(cls, ClipsAPI);
-    _ADD_TOKEN(cls, CollectionAPI);
-    _ADD_TOKEN(cls, ColorSpaceAPI);
-    _ADD_TOKEN(cls, ColorSpaceDefinitionAPI);
-    _ADD_TOKEN(cls, ModelAPI);
-    _ADD_TOKEN(cls, Typed);
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "Tokens", UsdTokens, USD_TOKENS);
 }
+

@@ -9,19 +9,19 @@
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include "pxr/external/boost/python/object.hpp"
+#include <nanobind/nanobind.h>
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapFunction() {
+void wrapFunction(nanobind::module_ &) {
     TfPyFunctionFromPython<void ()>();
     TfPyFunctionFromPython<bool ()>();
     TfPyFunctionFromPython<int ()>();
     TfPyFunctionFromPython<long ()>();
     TfPyFunctionFromPython<double ()>();
     TfPyFunctionFromPython<std::string ()>();
-    TfPyFunctionFromPython<pxr_boost::python::object ()>();
+    TfPyFunctionFromPython<nanobind::object ()>();
     TfPyFunctionFromPython<TfPyObjWrapper ()>();
 }

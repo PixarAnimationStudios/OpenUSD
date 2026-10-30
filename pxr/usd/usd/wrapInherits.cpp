@@ -7,28 +7,34 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/inherits.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdInherits()
+void wrapUsdInherits(nb::module_ &m)
 {
-    class_<UsdInherits>("Inherits", no_init)
+    nb::class_<UsdInherits>(m, "Inherits")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddInherit", &UsdInherits::AddInherit,
-             (arg("primPath"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("RemoveInherit", &UsdInherits::RemoveInherit, arg("primPath"))
+             nb::arg("primPath"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("RemoveInherit", &UsdInherits::RemoveInherit, nb::arg("primPath"))
         .def("ClearInherits", &UsdInherits::ClearInherits)
         .def("SetInherits", &UsdInherits::SetInherits)
-        .def("GetAllDirectInherits", &UsdInherits::GetAllDirectInherits,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetAllDirectInherits", &UsdInherits::GetAllDirectInherits)
         .def("GetPrim", (UsdPrim (UsdInherits::*)()) &UsdInherits::GetPrim)
-        .def(!self)
+        .def("__bool__", [](UsdInherits &self) { return bool(self); })
         ;
 }

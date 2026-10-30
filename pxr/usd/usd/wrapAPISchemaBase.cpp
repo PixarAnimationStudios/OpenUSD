@@ -11,17 +11,20 @@
 
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -31,31 +34,25 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-
 } // anonymous namespace
 
-void wrapUsdAPISchemaBase()
+void wrapUsdAPISchemaBase(nanobind::module_ &m)
 {
     typedef UsdAPISchemaBase This;
 
-    class_< This , bases<UsdSchemaBase>, noncopyable> cls ("APISchemaBase", "", no_init);
+    nb::class_<This, UsdSchemaBase> cls(m, "APISchemaBase", "");
 
     cls
         .def(TfTypePythonClass())
 
-
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited") = true)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
     ;
 

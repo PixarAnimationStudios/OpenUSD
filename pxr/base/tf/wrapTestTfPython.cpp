@@ -24,17 +24,8 @@
 #include "pxr/base/tf/weakPtr.h"
 
 #include "pxr/base/tf/pyArg.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPolymorphic.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/manage_new_object.hpp"
-#include "pxr/external/boost/python/pure_virtual.hpp"
-#include "pxr/external/boost/python/register_ptr_to_python.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
 
 #include <functional>
 #include <string>
@@ -46,8 +37,6 @@ using std::vector;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 // Base
 typedef TfWeakPtr<class Tf_TestBase> Tf_TestBasePtr;
@@ -110,11 +99,11 @@ static Tf_TestBaseRefPtr ReturnsBaseRefPtr(Tf_TestBasePtr base) {
     return base;
 }
 
-static tuple TakesBase(Tf_TestBasePtr base) {
+static nanobind::tuple TakesBase(Tf_TestBasePtr base) {
     base->Virtual3("hello from TakesConstBase");
     base->Virtual2();
     bool isDerived = TfDynamic_cast<Tf_TestDerivedPtr>(base);
-    return pxr_boost::python::make_tuple(isDerived, base->Virtual());
+    return nanobind::make_tuple(isDerived, base->Virtual());
 }
 
 static string TakesDerived(Tf_TestDerivedPtr derived) {
@@ -233,12 +222,12 @@ struct _TestErrorClass
         return obj;
     }
 
-    static void ClassMethod(object& pyClassObj)
+    static void ClassMethod(nanobind::object& pyClassObj)
     {
         TF_ERROR(TF_TEST_ERROR_1, "Error from class method");
     }
 
-    static void ClassMethod(object& pyClassObj, std::string const&)
+    static void ClassMethod(nanobind::object& pyClassObj, std::string const&)
     {
         TF_ERROR(TF_TEST_ERROR_1, "Error from class method overload");
     }
@@ -286,41 +275,42 @@ struct _TestErrorClass
     }
 
     using Self = _TestErrorClass<I>;
-    static class_<Self> Wrap(char const* name)
+    static nanobind::class_<Self> Wrap(nanobind::handle scope, char const* name)
     {
-        return class_<Self>(name)
-            .def(init<std::string const&>())
+        namespace nb = nanobind;
+        return nb::class_<Self>(scope, name)
+            .def(nb::init<>())
+            .def(nb::init<std::string const&>())
 
-            .def("Create", &Self::Create)
-            .staticmethod("Create")
+            .def_static("Create", &Self::Create)
 
             .def("ClassMethod", 
-                (void(*)(object&))&Self::ClassMethod)
+                (void(*)(nb::object&))&Self::ClassMethod)
             .def("ClassMethod", 
-                (void(*)(object&, std::string const&))&Self::ClassMethod)
+                (void(*)(nb::object&, std::string const&))&Self::ClassMethod)
             .def(TfPyClassMethod("ClassMethod"))
 
-            .def("StaticMethod", 
+            .def_static("StaticMethod", 
                 (void(*)())&Self::StaticMethod)
-            .def("StaticMethod", 
+            .def_static("StaticMethod", 
                 (void(*)(std::string const&))&Self::StaticMethod)
-            .staticmethod("StaticMethod")
 
             .def("InstanceMethod", 
                 (void(Self::*)() const)&Self::InstanceMethod)
             .def("InstanceMethod", 
                 (void(Self::*)(std::string const&) const)&Self::InstanceMethod)
 
-            .add_property("property", &Self::Getter, &Self::Setter)
-            .add_property("property_2",
+            .def_prop_rw("property", &Self::Getter, &Self::Setter)
+            .def_prop_rw("property_2",
                 +[](Self const& s) { return s.Getter(); },
                 +[](Self& s, std::string const& v) { s.Setter(v); })
             
-            .add_static_property("static_property", 
-                &Self::StaticGetter, &Self::StaticSetter)
-            .add_static_property("static_property_2",
-                +[]() { return Self::StaticGetter(); },
-                +[](std::string const& v) { Self::StaticSetter(v); })
+            .def_prop_rw_static("static_property", 
+                +[](nb::handle) { return Self::StaticGetter(); },
+                +[](nb::handle, std::string const& v) { Self::StaticSetter(v); })
+            .def_prop_rw_static("static_property_2",
+                +[](nb::handle) { return Self::StaticGetter(); },
+                +[](nb::handle, std::string const& v) { Self::StaticSetter(v); })
             ;
     }
 
@@ -450,13 +440,11 @@ static void takesTestEnum2(Tf_Enum::TestEnum2 e) {
            (int)e, TfEnum::GetName(e).c_str());
 }
 
-static void registerInvalidEnum(object &obj) {
-    scope s = obj;
-
+static void registerInvalidEnum(nanobind::handle obj) {
     // This should be used to produce a coding error. The _Alpha value will
     // conflict with the corresponding (sanitized) enum name that was already
     // wrapped for Tf_TestEnum.
-    TfPyWrapEnum<Tf_Enum::TestEnum3>();
+    TfNbWrapEnum<Tf_Enum::TestEnum3>(obj);
 }
 
 
@@ -510,11 +498,11 @@ public:
     virtual ~Tf_ClassWithClassMethod() {}
 };
 
-static tuple
-_TestClassMethod( object & pyClassObj, const object & callable )
+static nanobind::tuple
+_TestClassMethod( nanobind::object & pyClassObj, const nanobind::object & callable )
 {
-    return pxr_boost::python::make_tuple(
-        pyClassObj, TfPyCall<object>(callable)() );
+    return nanobind::make_tuple(
+        pyClassObj, TfPyCall<nanobind::object>(callable)() );
 }
 
 // ////////////////////////////////
@@ -557,13 +545,13 @@ class Tf_ClassWithVarArgInit : public TfRefBase, public TfWeakBase
 {
 public:
     bool allowExtraArgs;
-    tuple args;
-    dict kwargs;
+    nanobind::tuple args;
+    nanobind::dict kwargs;
 };
 
 static Tf_ClassWithVarArgInitRefPtr 
 _MakeClassWithVarArgInit(bool allowExtraArgs, 
-                         const tuple& args, const dict& kwargs)
+                         const nanobind::tuple& args, const nanobind::dict& kwargs)
 {
     // To Python consumer, this class has 3 explicit optional arguments, named 
     // 'a', 'b', and 'c'.
@@ -572,7 +560,7 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
         TfPyArg("b", ""),
         TfPyArg("c", "") }};
 
-    const std::pair<tuple, dict> params = 
+    const std::pair<nanobind::tuple, nanobind::dict> params = 
         TfPyProcessOptionalArgs(args, kwargs, optionalArgs, allowExtraArgs);
 
     Tf_ClassWithVarArgInitRefPtr rval = 
@@ -588,12 +576,12 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
 ////////////////////////////////
 // Bytearray conversion
 
-static object
-_ConvertByteListToByteArray(const list& byteList)
+static nanobind::object
+_ConvertByteListToByteArray(const nanobind::list& byteList)
 {
     std::vector<char> inputList;
-    for (int i = 0; i < len(byteList); ++i) {
-        inputList.push_back(extract<char>(byteList[i]));
+    for (size_t i = 0; i < byteList.size(); ++i) {
+        inputList.push_back(nanobind::cast<char>(byteList[i]));
     }
 
     return TfPyCopyBufferToByteArray(inputList.data(), inputList.size());
@@ -602,117 +590,144 @@ _ConvertByteListToByteArray(const list& byteList)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-void wrapTf_TestTfPython()
+void wrapTf_TestTfPython(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
 
-//      def("f", f1, (arg("x")=3, arg("y")=4));
-//      def("f", f2, (arg("x")=5, arg("y")=6));
+    m.def("_ConvertByteListToByteArray", _ConvertByteListToByteArray);
 
-    def("_ConvertByteListToByteArray", _ConvertByteListToByteArray);
-
-    def("_sendTfNoticeWithSender", sendTfNoticeWithSender);
+    m.def("_sendTfNoticeWithSender", sendTfNoticeWithSender);
     
-    def("_callback", callback);
-    def("_stringCallback", stringCallback);
+    m.def("_callback", callback);
+    m.def("_stringCallback", stringCallback);
     TfPyFunctionFromPython<string (string)>();
-    def("_stringStringCallback", stringStringCallback);
-    def("_setTestCallback", setTestCallback);
-    def("_invokeTestCallback", invokeTestCallback);
-    def("_callUnboundInstance", callUnboundInstance);
+    m.def("_stringStringCallback", stringStringCallback);
+    m.def("_setTestCallback", [](nb::object const &callable) {
+        setTestCallback(
+            TfPyFunctionFromPython<string ()>::ConstructFunction(callable.ptr()));
+    });
+    m.def("_invokeTestCallback", invokeTestCallback);
+    m.def("_callUnboundInstance", [](nb::object const &callable, string const &str) {
+        return callUnboundInstance(
+            TfPyFunctionFromPython<string (string)>::ConstructFunction(callable.ptr()),
+            str);
+    });
 
-    TfPyWrapEnum<Tf_TestEnum>();
-
-    {
-        scope enumScope = class_<Tf_Enum>("_Enum", no_init);
-        TfPyWrapEnum<Tf_Enum::TestEnum2>();
-        TfPyWrapEnum<Tf_Enum::TestScopedEnum>();
-        TfPyWrapEnum<Tf_Enum::TestKeywords>();
-    }
-
-    TfPyWrapEnum<Tf_TestScopedEnum>();
-
-    def("_takesTfEnum", takesTfEnum);
-    def("_returnsTfEnum", returnsTfEnum);
-    def("_takesTestEnum", takesTestEnum);
-    def("_takesTestEnum2", takesTestEnum2);
-    def("_registerInvalidEnum", registerInvalidEnum);
-
-    
-    def("_doErrors", doErrors);
-    
-    def("_mightRaise", mightRaise);
-
-    def("_ThrowCppException", _ThrowCppException);
-
-    def("_TakesVecVecString", TakesVecVecString);
+    TfNbWrapEnum<Tf_TestEnum>(m);
 
     {
-        def("_TestErrorFunction", (void(*)())&TestErrorFunction);
-        def("_TestErrorFunction", 
-            (void(*)(std::string const&))&TestErrorFunction);
-        scope s = _TestErrorClass1::Wrap("_TestErrorClass1");
-
-        def("_TestErrorFunction", (void(*)())&TestErrorFunction);
-        def("_TestErrorFunction", 
-            (void(*)(std::string const&))&TestErrorFunction);
-        _TestErrorClass2::Wrap("_TestErrorClass2");        
+        nb::class_<Tf_Enum> enumScope(m, "_Enum");
+        TfNbWrapEnum<Tf_Enum::TestEnum2>(enumScope);
+        TfNbWrapEnum<Tf_Enum::TestScopedEnum>(enumScope);
+        TfNbWrapEnum<Tf_Enum::TestKeywords>(enumScope);
     }
 
-    def("_TakesReference", TakesReference);
-    def("_TakesConstBase", TakesConstBase);
-    def("_ReturnsConstBase", ReturnsConstBase);
-    def("_TakesBase", TakesBase);
-    def("_ReturnsBase", ReturnsBase);
-    def("_ReturnsBaseRefPtr", ReturnsBaseRefPtr);
-    def("_TakesDerived", TakesDerived);
-    
-    def("_DerivedFactory", Tf_TestDerived::Factory,
-        return_value_policy<TfPyRefPtrFactory<> >());
+    TfNbWrapEnum<Tf_TestScopedEnum>(m);
 
-    def("_DerivedNullFactory", Tf_TestDerived::NullFactory,
-        return_value_policy<TfPyRefPtrFactory<> >());
+    m.def("_takesTfEnum", takesTfEnum);
+    m.def("_returnsTfEnum", returnsTfEnum);
+    m.def("_takesTestEnum", takesTestEnum);
+    m.def("_takesTestEnum2", takesTestEnum2);
+    m.def("_registerInvalidEnum", registerInvalidEnum);
+
     
-    class_<polymorphic_Tf_TestBase<>,
-        TfWeakPtr<polymorphic_Tf_TestBase<> >, noncopyable>
-        ("_TestBase", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestBase<> >))
-        .def("Virtual", pure_virtual(&Tf_TestBase::Virtual))
-        .def("Virtual2", pure_virtual(&Tf_TestBase::Virtual2))
-        .def("Virtual3", pure_virtual(&Tf_TestBase::Virtual3))
-        .def("Virtual4", &Tf_TestBase::Virtual4,
-             &polymorphic_Tf_TestBase<>::default_Virtual4)
+    m.def("_doErrors", doErrors);
+    
+    m.def("_mightRaise", mightRaise);
+
+    m.def("_ThrowCppException", _ThrowCppException);
+
+    m.def("_TakesVecVecString", TakesVecVecString);
+
+    {
+        m.def("_TestErrorFunction", (void(*)())&TestErrorFunction);
+        m.def("_TestErrorFunction", 
+            (void(*)(std::string const&))&TestErrorFunction);
+        auto s = _TestErrorClass1::Wrap(m, "_TestErrorClass1");
+
+        s.def_static("_TestErrorFunction", (void(*)())&TestErrorFunction);
+        s.def_static("_TestErrorFunction", 
+            (void(*)(std::string const&))&TestErrorFunction);
+        _TestErrorClass2::Wrap(s, "_TestErrorClass2");        
+    }
+
+    m.def("_TakesReference", TakesReference);
+    m.def("_TakesConstBase", TakesConstBase);
+    m.def("_ReturnsConstBase", ReturnsConstBase);
+    m.def("_TakesBase", TakesBase);
+    m.def("_ReturnsBase", ReturnsBase);
+    m.def("_ReturnsBaseRefPtr", ReturnsBaseRefPtr);
+    m.def("_TakesDerived", TakesDerived);
+    
+    m.def("_DerivedFactory", Tf_TestDerived::Factory);
+
+    m.def("_DerivedNullFactory", Tf_TestDerived::NullFactory);
+    
+    nb::class_<Tf_TestBase>(
+        m, "_TestBase", nb::is_weak_referenceable(), nb::dynamic_attr())
+        .def(TfNbRefAndWeakPtr())
+        .def(TfNbMakePyConstructor(__Ref_init__<polymorphic_Tf_TestBase<> >))
+        .def("Virtual", &Tf_TestBase::Virtual)
+        .def("Virtual2", &Tf_TestBase::Virtual2)
+        .def("Virtual3", &Tf_TestBase::Virtual3)
+        .def("Virtual4", [](Tf_TestBase const &self) {
+            return self.Tf_TestBase::Virtual4();
+        })
         .def("TestCallVirtual", &callVirtual)
         ;
  
-    class_<polymorphic_Tf_TestDerived<>,
-        TfWeakPtr<polymorphic_Tf_TestDerived<> >,
-        bases<Tf_TestBase>, noncopyable>
-        ("_TestDerived", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def("__init__",
-             TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestDerived<> >))
-        .def("Virtual", &Tf_TestDerived::Virtual,
-             &polymorphic_Tf_TestDerived<>::default_Virtual)
-        .def("Virtual2", &Tf_TestDerived::Virtual2,
-             &polymorphic_Tf_TestDerived<>::default_Virtual2)
-        .def("Virtual3", &Tf_TestDerived::Virtual3,
-             &polymorphic_Tf_TestDerived<>::default_Virtual3)
+    nb::class_<Tf_TestDerived, Tf_TestBase>(
+        m, "_TestDerived", nb::is_weak_referenceable(), nb::dynamic_attr())
+        .def(TfNbRefAndWeakPtr())
+        .def(TfNbMakePyConstructor(__Ref_init__<polymorphic_Tf_TestDerived<> >))
+        .def("Virtual", [](Tf_TestDerived const &self) {
+            return self.Tf_TestDerived::Virtual();
+        })
+        .def("Virtual2", [](Tf_TestDerived const &self) {
+            self.Tf_TestDerived::Virtual2();
+        })
+        .def("Virtual3", [](Tf_TestDerived &self, string const &arg) {
+            self.Tf_TestDerived::Virtual3(arg);
+        })
         ;
 
-    class_<Tf_ClassWithClassMethod>("_ClassWithClassMethod", init<>() )
+    nb::class_<Tf_ClassWithClassMethod>(m, "_ClassWithClassMethod")
+        .def(nb::init<>())
         .def("Test", &_TestClassMethod)
         .def(TfPyClassMethod("Test"))
         ;
 
-    class_<Tf_ClassWithVarArgInit, Tf_ClassWithVarArgInitPtr>
-        ("_ClassWithVarArgInit", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructorWithVarArgs(&_MakeClassWithVarArgInit))
-        .add_property("allowExtraArgs", 
-                      &Tf_ClassWithVarArgInit::allowExtraArgs)
-        .add_property("args", &Tf_ClassWithVarArgInit::args)
-        .add_property("kwargs", &Tf_ClassWithVarArgInit::kwargs)
+    nb::class_<Tf_ClassWithVarArgInit>(
+        m, "_ClassWithVarArgInit", nb::is_weak_referenceable(), nb::dynamic_attr())
+        .def(TfNbRefAndWeakPtr())
+        .def_static("__new__", [](nb::handle cls, nb::args args, nb::kwargs kwargs) {
+            if (args.size() < 1) {
+                TfPyThrowTypeError(
+                    "Arguments to __init__ did not match C++ signature:\n"
+                    "\t__init__(bool, ...)");
+            }
+            bool allowExtraArgs = nb::cast<bool>(args[0]);
+            nb::tuple nbArgs = nb::steal<nb::tuple>(
+                PyTuple_GetSlice(args.ptr(), 1, args.size()));
+            nb::dict nbKwargs = (kwargs.is_valid() && kwargs.ptr())
+                ? nb::borrow<nb::dict>(kwargs.ptr())
+                : nb::dict();
+            TfErrorMark mark;
+            Tf_ClassWithVarArgInitRefPtr ptr =
+                _MakeClassWithVarArgInit(allowExtraArgs, nbArgs, nbKwargs);
+            if (TfPyConvertTfErrorsToPythonException(mark)) {
+                throw nb::python_error();
+            }
+            Tf_ClassWithVarArgInitPtr weakPtr(get_pointer(ptr));
+            nb::object self = nb::inst_reference(cls, get_pointer(ptr));
+            Tf_PySetPythonIdentity(weakPtr, self.ptr());
+            Tf_PyAddPythonOwnership(ptr, weakPtr.GetUniqueIdentifier(), self.ptr());
+            return self;
+        })
+        .def("__init__", [](nb::handle, nb::args, nb::kwargs) {})
+        .def_ro("allowExtraArgs", &Tf_ClassWithVarArgInit::allowExtraArgs)
+        .def_ro("args", &Tf_ClassWithVarArgInit::args)
+        .def_ro("kwargs", &Tf_ClassWithVarArgInit::kwargs)
         ;
 
 }

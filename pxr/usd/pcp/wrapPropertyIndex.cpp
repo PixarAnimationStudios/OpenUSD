@@ -10,14 +10,10 @@
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/cache.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/sdf/pySpec.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -36,7 +32,7 @@ _WrapLocalPropertyStack(const PcpPropertyIndex& propIndex)
     return SdfPropertySpecHandleVector(range.first, range.second);
 }
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _WrapBuildPrimPropertyIndex(
     const SdfPath &path, const PcpCache &cache, const PcpPrimIndex &primIndex)
 {
@@ -44,25 +40,23 @@ _WrapBuildPrimPropertyIndex(
     PcpPropertyIndex propIndex;
     PcpBuildPrimPropertyIndex(path, cache, primIndex, &propIndex, &errors);
 
-    return pxr_boost::python::make_tuple(
-        pxr_boost::python::object(propIndex), errors);
+    return nanobind::make_tuple(propIndex, errors);
 }
 
 } // anonymous namespace 
 
 void
-wrapPropertyIndex()
+wrapPropertyIndex(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef PcpPropertyIndex This;
 
-    def("BuildPrimPropertyIndex", _WrapBuildPrimPropertyIndex);
+    m.def("BuildPrimPropertyIndex", _WrapBuildPrimPropertyIndex);
 
-    class_<This>
-        ("PropertyIndex", "", no_init)
-        .add_property("propertyStack", _WrapPropertyStack)
-        .add_property("localPropertyStack", _WrapLocalPropertyStack)
-        .add_property("localErrors", 
-                      make_function(&This::GetLocalErrors,
-                                    return_value_policy<TfPySequenceToList>()))
+    nb::class_<This>(m, "PropertyIndex")
+        .def_prop_ro("propertyStack", _WrapPropertyStack)
+        .def_prop_ro("localPropertyStack", _WrapLocalPropertyStack)
+        .def_prop_ro("localErrors", &This::GetLocalErrors)
         ;
+
 }

@@ -4,7 +4,12 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/pxr.h"
+#include "pxr/base/plug/plugin.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/error.h"
@@ -13,14 +18,9 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/object.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace
 {
@@ -48,75 +48,71 @@ namespace
             isSuite };
     }
 
-    list
+    nb::list
     _GetContainedValidators(const UsdValidationValidatorSuite &validatorSuite)
     {
-        list result;
+        nb::list result;
         for (const auto *validator : validatorSuite.GetContainedValidators())
         {
-            result.append(pointer_wrapper(validator));
+            result.append(nb::cast(validator, nb::rv_policy::reference));
         }
         return result;
     }
 
-    list
+    nb::list
     _GetFixers(const UsdValidationValidator &validator)
     {
-        list result;
+        nb::list result;
         for (const auto *fixer : validator.GetFixers())
         {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 
-    list
+    nb::list
     _GetFixersByErrorName(const UsdValidationValidator &validator, 
                          const TfToken &errorName)
     {
-        list result;
+        nb::list result;
         for (const auto *fixer : validator.GetFixersByErrorName(errorName))
         {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 
-    list
+    nb::list
     _GetFixersByKeywords(const UsdValidationValidator &validator, 
                         const TfTokenVector &keywords)
     {
-        list result;
+        nb::list result;
         for (const auto *fixer : validator.GetFixersByKeywords(keywords))
         {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 
 } // anonymous namespace
 
-void wrapUsdValidationValidator()
+void wrapUsdValidationValidator(nb::module_ &m)
 {
-    class_<UsdValidationValidatorMetadata>("ValidatorMetadata", no_init)
-        .def("__init__", make_constructor(&_NewMetadata, default_call_policies(),
-                                          (arg("name") = TfToken(),
-                                           arg("plugin") = PlugPluginPtr(),
-                                           arg("keywords") = TfTokenVector(),
-                                           arg("doc") = TfToken(),
-                                           arg("schemaTypes") = TfTokenVector(),
-                                           arg("isTimeDependent") = false,
-                                           arg("isSuite") = false)))
-        .add_property("name", make_getter(
-            &UsdValidationValidatorMetadata::name, 
-            return_value_policy<return_by_value>()))
-        .add_property("plugin", make_getter(
-            &UsdValidationValidatorMetadata::pluginPtr, 
-            return_value_policy<return_by_value>()))
-        .def_readonly("doc", &UsdValidationValidatorMetadata::doc)
-        .def_readonly("isTimeDependent", 
-                      &UsdValidationValidatorMetadata::isTimeDependent)
-        .def_readonly("isSuite", &UsdValidationValidatorMetadata::isSuite)
+    nb::class_<UsdValidationValidatorMetadata>(m, "ValidatorMetadata")
+        .def(nb::new_(&_NewMetadata),
+             nb::arg("name") = TfToken(),
+             nb::arg("plugin") = PlugPluginPtr(),
+             nb::arg("keywords") = TfTokenVector(),
+             nb::arg("doc") = TfToken(),
+             nb::arg("schemaTypes") = TfTokenVector(),
+             nb::arg("isTimeDependent") = false,
+             nb::arg("isSuite") = false)
+        .def_ro("name", &UsdValidationValidatorMetadata::name)
+        .def_ro("plugin", &UsdValidationValidatorMetadata::pluginPtr)
+        .def_ro("doc", &UsdValidationValidatorMetadata::doc)
+        .def_ro("isTimeDependent", 
+                &UsdValidationValidatorMetadata::isTimeDependent)
+        .def_ro("isSuite", &UsdValidationValidatorMetadata::isSuite)
         .def("GetKeywords", 
              +[](const UsdValidationValidatorMetadata &self) {
                  return self.keywords;
@@ -125,23 +121,21 @@ void wrapUsdValidationValidator()
              +[](const UsdValidationValidatorMetadata &self) {
                  return self.schemaTypes;
              });
-        TfPyRegisterStlSequencesFromPython<UsdValidationValidatorMetadata>();
+    TfPyRegisterStlSequencesFromPython<UsdValidationValidatorMetadata>();
 
     TfPyRegisterStlSequencesFromPython<UsdValidationError>();
-    class_<UsdValidationValidator, noncopyable>("Validator", no_init)
+    nb::class_<UsdValidationValidator>(m, "Validator")
         .def("GetMetadata", 
              +[](const UsdValidationValidator &validator) {
                 return validator.GetMetadata();
-             },
-             return_value_policy<return_by_value>())
+             })
         .def("Validate", 
              +[](const UsdValidationValidator &validator, 
                  const SdfLayerHandle &layer) 
                 -> UsdValidationErrorVector {
                 return validator.Validate(layer);
              },
-             return_value_policy<TfPySequenceToList>(),
-             (arg("layer")))
+             nb::arg("layer"))
         .def("Validate", 
              +[](const UsdValidationValidator &validator, 
                  const UsdStagePtr &stage, 
@@ -149,18 +143,16 @@ void wrapUsdValidationValidator()
                 -> UsdValidationErrorVector {
                 return validator.Validate(stage, timeRange);
              },
-             return_value_policy<TfPySequenceToList>(),
-             (arg("stage"), 
-              arg("timeRange") = UsdValidationTimeRange()))
+             nb::arg("stage"), 
+             nb::arg("timeRange") = UsdValidationTimeRange())
         .def("Validate", 
              +[](const UsdValidationValidator &validator, const UsdPrim &prim,
                  const UsdValidationTimeRange &timeRange)
                 -> UsdValidationErrorVector {
                 return validator.Validate(prim, timeRange);
              },
-             return_value_policy<TfPySequenceToList>(),
-             (arg("prim"), 
-              arg("timeRange") = UsdValidationTimeRange()))
+             nb::arg("prim"), 
+             nb::arg("timeRange") = UsdValidationTimeRange())
         .def("GetFixers", _GetFixers)
         .def("GetFixerByName", 
              +[](const UsdValidationValidator &validator, 
@@ -168,10 +160,10 @@ void wrapUsdValidationValidator()
                 -> const UsdValidationFixer* {
                 return validator.GetFixerByName(name);
              },
-             return_value_policy<reference_existing_object>(),
-             (arg("name")))
+             nb::rv_policy::reference,
+             nb::arg("name"))
         .def("GetFixersByErrorName", _GetFixersByErrorName,
-             (arg("errorName")))
+             nb::arg("errorName"))
         .def("GetFixerByNameAndErrorName",
              +[](const UsdValidationValidator &validator, 
                  const TfToken &name, 
@@ -180,29 +172,28 @@ void wrapUsdValidationValidator()
                 return validator.GetFixerByNameAndErrorName(
                     name, errorName);
              },
-             return_value_policy<reference_existing_object>(),
-             (arg("name"), arg("errorName")))
+             nb::rv_policy::reference,
+             nb::arg("name"), nb::arg("errorName"))
         .def("GetFixersByKeywords", _GetFixersByKeywords,
-             (arg("keywords")))
+             nb::arg("keywords"))
         .def("__eq__", 
              +[](const UsdValidationValidator *left, 
                  const UsdValidationValidator *right) {
                  return left == right;
-             })
+             }, nb::arg().none())
         .def("__repr__", &_Repr);
-        TfPyRegisterStlSequencesFromPython<const UsdValidationValidator*>();
+    TfPyRegisterStlSequencesFromPython<const UsdValidationValidator*>();
 
-    class_<UsdValidationValidatorSuite, noncopyable>("ValidatorSuite", no_init)
+    nb::class_<UsdValidationValidatorSuite>(m, "ValidatorSuite")
         .def("GetMetadata", 
              +[](const UsdValidationValidatorSuite &validatorSuite) {
                 return validatorSuite.GetMetadata();
-             },
-             return_value_policy<return_by_value>())
+             })
         .def("GetContainedValidators", &_GetContainedValidators)
         .def("__eq__", 
              +[](const UsdValidationValidatorSuite *left, 
                  const UsdValidationValidatorSuite *right) {
                  return left == right;
-             });
-        TfPyRegisterStlSequencesFromPython<const UsdValidationValidatorSuite*>();
+             }, nb::arg().none());
+    TfPyRegisterStlSequencesFromPython<const UsdValidationValidatorSuite*>();
 }

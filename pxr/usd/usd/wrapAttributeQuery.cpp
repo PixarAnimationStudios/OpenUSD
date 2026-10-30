@@ -9,23 +9,24 @@
 
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
 
+namespace nb = nanobind;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -62,7 +63,7 @@ _GetUnionedTimeSamplesInInterval(const vector<UsdAttributeQuery>& attrQueries,
     return result;
 }
 
-static object
+static nb::object
 _GetBracketingTimeSamples(const UsdAttributeQuery& self, double desiredTime) 
 {
     double lower = 0.0, upper = 0.0;
@@ -70,9 +71,9 @@ _GetBracketingTimeSamples(const UsdAttributeQuery& self, double desiredTime)
 
     if (self.GetBracketingTimeSamples(
             desiredTime, &lower, &upper, &hasTimeSamples)) {
-        return hasTimeSamples ? make_tuple(lower, upper) : make_tuple();
+        return hasTimeSamples ? nb::make_tuple(lower, upper) : nb::make_tuple();
     }
-    return object();
+    return nb::none();
 }
 
 static TfPyObjWrapper
@@ -93,52 +94,43 @@ _GetFallbackValue(const UsdAttributeQuery &self)
 
 } // anonymous namespace 
 
-void wrapUsdAttributeQuery()
+void wrapUsdAttributeQuery(nb::module_ &m)
 {
-    class_<UsdAttributeQuery, noncopyable>
-        ("AttributeQuery", no_init)
-        .def(init<const UsdAttribute&>(
-                (arg("attribute"))))
+    nb::class_<UsdAttributeQuery>(m, "AttributeQuery")
+        .def(nb::init<const UsdAttribute&>(),
+             nb::arg("attribute"))
         
-        .def(init<const UsdPrim&, const TfToken&>(
-                (arg("prim"), arg("attributeName"))))
+        .def(nb::init<const UsdPrim&, const TfToken&>(),
+             nb::arg("prim"), nb::arg("attributeName"))
 
-        .def(init<const UsdAttribute&, const UsdResolveTarget&>(
-                (arg("attribute"), arg("resolveTarget"))))
+        .def(nb::init<const UsdAttribute&, const UsdResolveTarget&>(),
+             nb::arg("attribute"), nb::arg("resolveTarget"))
 
-        .def("CreateQueries", &UsdAttributeQuery::CreateQueries,
-             (arg("prim"), arg("attributeNames")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("CreateQueries")
+        .def_static("CreateQueries", &UsdAttributeQuery::CreateQueries,
+             nb::arg("prim"), nb::arg("attributeNames"))
         
         .def("IsValid", &UsdAttributeQuery::IsValid)
-        .def(!self)
+        .def("__bool__", [](const UsdAttributeQuery &self) { return bool(self); })
 
         .def("GetAttribute", &UsdAttributeQuery::GetAttribute,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
-        .def("GetTimeSamples", _GetTimeSamples,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetTimeSamples", _GetTimeSamples)
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-             arg("interval"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("interval"))
 
-        .def("GetUnionedTimeSamples", 
+        .def_static("GetUnionedTimeSamples", 
              _GetUnionedTimeSamples,
-             arg("attrQueries"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetUnionedTimeSamples")
+             nb::arg("attrQueries"))
 
-        .def("GetUnionedTimeSamplesInInterval", 
+        .def_static("GetUnionedTimeSamplesInInterval", 
              _GetUnionedTimeSamplesInInterval,
-             (arg("attrQueries"), arg("interval")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetUnionedTimeSamplesInInterval")
+             nb::arg("attrQueries"), nb::arg("interval"))
 
         .def("GetNumTimeSamples", &UsdAttributeQuery::GetNumTimeSamples)
         .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
-             arg("desiredTime"))
+             nb::arg("desiredTime"))
 
         .def("HasValue", &UsdAttributeQuery::HasValue)
         .def("HasSpline", &UsdAttributeQuery::HasSpline)
@@ -153,9 +145,9 @@ void wrapUsdAttributeQuery()
         .def("ValueSourceMightBeTimeVarying", 
              &UsdAttributeQuery::ValueSourceMightBeTimeVarying)
 
-        .def("Get", _Get, arg("time")=UsdTimeCode::Default())
+        .def("Get", _Get, nb::arg("time")=UsdTimeCode::Default())
         .def("GetSpline", &UsdAttributeQuery::GetSpline,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
          
         ;
 

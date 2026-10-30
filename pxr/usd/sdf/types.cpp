@@ -661,8 +661,8 @@ bool _PySeqToVtArray(VtValue *value,
     VtArray<T> result(len);
     ElemType *elem = result.data();
     for (Py_ssize_t i = 0; i != len; ++i) {
-        pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
-        if (!h) {
+        nanobind::object h = nanobind::steal(PySequence_ITEM(obj.ptr(), i));
+        if (!h.ptr()) {
             if (PyErr_Occurred()) {
                 PyErr_Clear();
             }
@@ -672,21 +672,21 @@ bool _PySeqToVtArray(VtValue *value,
                                _GetKeyPathText(*keyPath).c_str()));
             allValid = false;
         }
-        pxr_boost::python::extract<ElemType> e(h.get());
-        if (!e.check()) {
+        ElemType val;
+        if (!nanobind::try_cast<ElemType>(h, val)) {
+            VtValue elemVal;
+            VtValueFromPythonObject(h.ptr(), &elemVal);
             errMsgs->push_back(
                 TfStringPrintf("failed to cast sequence element "
                                "%s: %s%s to <%s>",
                                TfStringify(i).c_str(),
-                               _GetDiagnosticStringForValue(
-                                   pxr_boost::python::extract<VtValue>(
-                                       h.get())).c_str(),
+                               _GetDiagnosticStringForValue(elemVal).c_str(),
                                _GetKeyPathText(*keyPath).c_str(),
                                ArchGetDemangled<ElemType>().c_str()));
             allValid = false;
         }
         else {
-            *elem++ = e();
+            *elem++ = std::move(val);
         }
     }
     if (!allValid) {
@@ -754,8 +754,8 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
     }
     // Pull the type from the first element, and try to invoke the conversion
     // function to convert all elements.
-    pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
-    if (!h) {
+    nanobind::object h = nanobind::steal(PySequence_ITEM(obj.ptr(), 0));
+    if (!h.ptr()) {
         if (PyErr_Occurred()) {
             PyErr_Clear();
         }
@@ -765,15 +765,14 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
         *value = VtValue();
         return false;
     }
-    pxr_boost::python::extract<VtValue> e(h.get());
-    if (!e.check()) {
+    VtValue firstVal;
+    if (!VtValueFromPythonObject(h.ptr(), &firstVal)) {
         errMsgs->push_back(
             TfStringPrintf("failed to obtain first element from sequence%s",
                            _GetKeyPathText(*keyPath).c_str()));
         *value = VtValue();
         return false;
     }
-    VtValue firstVal = e();
     if (SdfValueHasValidType(firstVal)) {
         return _GetTypedPySeqToVtArrayFn(
             firstVal.GetType())(value, errMsgs, keyPath);

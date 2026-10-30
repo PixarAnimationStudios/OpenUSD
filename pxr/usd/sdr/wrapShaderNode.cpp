@@ -7,79 +7,81 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/weakPtr.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
+
+namespace std {
+template <>
+struct is_copy_constructible<PXR_NS::SdrShaderNode> : std::false_type {};
+template <>
+struct is_move_constructible<PXR_NS::SdrShaderNode> : std::false_type {};
+} // namespace std
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapShaderNode()
+void wrapShaderNode(nanobind::module_ &m)
 {
     typedef SdrShaderNode This;
-    typedef SdrShaderNodePtr ThisPtr;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeFieldKey", SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeFieldKey", SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS
     );
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-    register_ptr_to_python<SdrShaderNodeConstPtr>();
-
-    class_<This, ThisPtr, noncopyable>("ShaderNode", no_init)
+    nb::class_<This>(m, "ShaderNode")
         .def("__repr__", &This::GetInfoString)
         .def("__bool__", &This::IsValid)
-        .def("GetIdentifier", &This::GetIdentifier, copyRefPolicy)
+        .def("GetIdentifier", &This::GetIdentifier)
         .def("GetShaderVersion", &This::GetShaderVersion)
-        .def("GetName", &This::GetName, copyRefPolicy)
-        .def("GetFamily", &This::GetFamily, copyRefPolicy)
-        .def("GetFunction", &This::GetFunction, copyRefPolicy)
-        .def("GetShadingSystem", &This::GetShadingSystem, copyRefPolicy)
-        .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
-        .def("GetResolvedDefinitionURI", &This::GetResolvedDefinitionURI,
-            copyRefPolicy)
+        .def("GetName", &This::GetName)
+        .def("GetFamily", &This::GetFamily)
+        .def("GetFunction", &This::GetFunction)
+        .def("GetShadingSystem", &This::GetShadingSystem)
+        .def("GetSourceType", &This::GetSourceType)
+        .def("GetResolvedDefinitionURI", &This::GetResolvedDefinitionURI)
         .def("GetResolvedImplementationURI",
-            &This::GetResolvedImplementationURI, copyRefPolicy)
+            &This::GetResolvedImplementationURI)
         .def("IsValid", &This::IsValid)
         .def("GetInfoString", &This::GetInfoString)
-        .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
-        .def("GetMetadata", &This::GetMetadata,
-            return_value_policy<TfPyMapToDictionary>())
-        .def("GetMetadataObject", &This::GetMetadataObject, copyRefPolicy)
+        .def("GetSourceCode", &This::GetSourceCode)
+        .def("GetMetadata", &This::GetMetadata)
+        .def("GetMetadataObject", &This::GetMetadataObject)
         .def("GetShaderInput", &This::GetShaderInput,
-            return_internal_reference<>())
+            nb::rv_policy::reference_internal)
         .def("GetShaderOutput", &This::GetShaderOutput,
-            return_internal_reference<>())
-        .def("GetShaderInputNames", &This::GetShaderInputNames,
-            copyRefPolicy)
-        .def("GetShaderOutputNames", &This::GetShaderOutputNames,
-            copyRefPolicy)
+            nb::rv_policy::reference_internal)
+        .def("GetShaderInputNames", &This::GetShaderInputNames)
+        .def("GetShaderOutputNames", &This::GetShaderOutputNames)
         .def("GetAssetIdentifierInputNames",
-            &This::GetAssetIdentifierInputNames,
-            return_value_policy<TfPySequenceToList>())
+            &This::GetAssetIdentifierInputNames)
         .def("GetDefaultInput", &This::GetDefaultInput,
-            return_internal_reference<>())
-        .def("GetDomain", &This::GetDomain, copyRefPolicy)
-        .def("GetSubdomain", &This::GetSubdomain, copyRefPolicy)
-        .def("GetContext", &This::GetContext, copyRefPolicy)
+            nb::rv_policy::reference_internal)
+        .def("GetDomain", &This::GetDomain)
+        .def("GetSubdomain", &This::GetSubdomain)
+        .def("GetContext", &This::GetContext)
         .def("GetRole", &This::GetRole)
-        .def("GetLabel", &This::GetLabel, copyRefPolicy)
-        .def("GetCategory", &This::GetCategory, copyRefPolicy)
+        .def("GetLabel", &This::GetLabel)
+        .def("GetCategory", &This::GetCategory)
         .def("GetHelp", &This::GetHelp)
-        .def("GetDepartments", &This::GetDepartments, copyRefPolicy)
-        .def("GetPages", &This::GetPages, copyRefPolicy)
-        .def("GetOpenPages", &This::GetOpenPages, copyRefPolicy)
-        .def("GetPagesShownIf", &This::GetPagesShownIf, copyRefPolicy)
-        .def("GetPrimvars", &This::GetPrimvars, copyRefPolicy)
+        .def("GetDepartments", &This::GetDepartments)
+        .def("GetPages", &This::GetPages)
+        .def("GetOpenPages", &This::GetOpenPages)
+        .def("GetPagesShownIf", &This::GetPagesShownIf)
+        .def("GetPrimvars", &This::GetPrimvars)
         .def("GetAdditionalPrimvarProperties",
-            &This::GetAdditionalPrimvarProperties, copyRefPolicy)
+            &This::GetAdditionalPrimvarProperties)
         .def("GetImplementationName", &This::GetImplementationName)
         .def("GetPropertyNamesForPage", &This::GetPropertyNamesForPage)
         .def("GetAllVstructNames", &This::GetAllVstructNames)

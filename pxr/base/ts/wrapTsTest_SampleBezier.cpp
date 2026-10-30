@@ -7,20 +7,19 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/tsTest_SampleBezier.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
-
-void wrapTsTest_SampleBezier()
+void wrapTsTest_SampleBezier(nb::module_ &m)
 {
-    def("TsTest_SampleBezier", &TsTest_SampleBezier,
-        (arg("splineData"),
-         arg("numSamples")),
-        return_value_policy<TfPySequenceToList>());
+    m.def("TsTest_SampleBezier", &TsTest_SampleBezier,
+          nb::arg("splineData"),
+          nb::arg("numSamples"),
+          nb::rv_policy::copy);
 }

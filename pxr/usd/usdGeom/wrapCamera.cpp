@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,126 +40,126 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateProjectionAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateProjectionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateHorizontalApertureAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateHorizontalApertureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVerticalApertureAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVerticalApertureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateHorizontalApertureOffsetAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateHorizontalApertureOffsetAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVerticalApertureOffsetAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVerticalApertureOffsetAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateFocalLengthAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateFocalLengthAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateClippingRangeAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateClippingRangeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateClippingPlanesAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateClippingPlanesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float4Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateFStopAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateFStopAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateFocusDistanceAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateFocusDistanceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStereoRoleAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateStereoRoleAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShutterOpenAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShutterOpenAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateShutterCloseAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateShutterCloseAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureIsoAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureIsoAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureTimeAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureTimeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureFStopAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureFStopAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExposureResponsivityAttr(UsdGeomCamera &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExposureResponsivityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -169,162 +175,157 @@ _Repr(const UsdGeomCamera &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomCamera()
+void wrapUsdGeomCamera(nb::module_ &m)
 {
     typedef UsdGeomCamera This;
 
-    class_<This, bases<UsdGeomXformable> >
-        cls("Camera");
+    nb::class_<This, UsdGeomXformable> cls(m, "Camera");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetProjectionAttr",
              &This::GetProjectionAttr)
         .def("CreateProjectionAttr",
              &_CreateProjectionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetHorizontalApertureAttr",
              &This::GetHorizontalApertureAttr)
         .def("CreateHorizontalApertureAttr",
              &_CreateHorizontalApertureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVerticalApertureAttr",
              &This::GetVerticalApertureAttr)
         .def("CreateVerticalApertureAttr",
              &_CreateVerticalApertureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetHorizontalApertureOffsetAttr",
              &This::GetHorizontalApertureOffsetAttr)
         .def("CreateHorizontalApertureOffsetAttr",
              &_CreateHorizontalApertureOffsetAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVerticalApertureOffsetAttr",
              &This::GetVerticalApertureOffsetAttr)
         .def("CreateVerticalApertureOffsetAttr",
              &_CreateVerticalApertureOffsetAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetFocalLengthAttr",
              &This::GetFocalLengthAttr)
         .def("CreateFocalLengthAttr",
              &_CreateFocalLengthAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetClippingRangeAttr",
              &This::GetClippingRangeAttr)
         .def("CreateClippingRangeAttr",
              &_CreateClippingRangeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetClippingPlanesAttr",
              &This::GetClippingPlanesAttr)
         .def("CreateClippingPlanesAttr",
              &_CreateClippingPlanesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetFStopAttr",
              &This::GetFStopAttr)
         .def("CreateFStopAttr",
              &_CreateFStopAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetFocusDistanceAttr",
              &This::GetFocusDistanceAttr)
         .def("CreateFocusDistanceAttr",
              &_CreateFocusDistanceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetStereoRoleAttr",
              &This::GetStereoRoleAttr)
         .def("CreateStereoRoleAttr",
              &_CreateStereoRoleAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShutterOpenAttr",
              &This::GetShutterOpenAttr)
         .def("CreateShutterOpenAttr",
              &_CreateShutterOpenAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetShutterCloseAttr",
              &This::GetShutterCloseAttr)
         .def("CreateShutterCloseAttr",
              &_CreateShutterCloseAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureAttr",
              &This::GetExposureAttr)
         .def("CreateExposureAttr",
              &_CreateExposureAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureIsoAttr",
              &This::GetExposureIsoAttr)
         .def("CreateExposureIsoAttr",
              &_CreateExposureIsoAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureTimeAttr",
              &This::GetExposureTimeAttr)
         .def("CreateExposureTimeAttr",
              &_CreateExposureTimeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureFStopAttr",
              &This::GetExposureFStopAttr)
         .def("CreateExposureFStopAttr",
              &_CreateExposureFStopAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExposureResponsivityAttr",
              &This::GetExposureResponsivityAttr)
         .def("CreateExposureResponsivityAttr",
              &_CreateExposureResponsivityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -356,13 +357,13 @@ namespace {
 WRAP_CUSTOM {
     _class
         .def("GetCamera", &UsdGeomCamera::GetCamera,
-             (arg("time") = UsdTimeCode::Default()))
+             (nb::arg("time") = UsdTimeCode::Default()))
         .def("SetFromCamera", &UsdGeomCamera::SetFromCamera,
-             (arg("camera"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("camera"),
+              nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeLinearExposureScale",
              &UsdGeomCamera::ComputeLinearExposureScale,
-             (arg("time") = UsdTimeCode::Default()))
+             (nb::arg("time") = UsdTimeCode::Default()))
     ;
 }
 

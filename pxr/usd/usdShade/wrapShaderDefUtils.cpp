@@ -6,36 +6,37 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usd/usdShade/shaderDefUtils.h"
 #include "pxr/usd/usdShade/shader.h"
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdShadeShaderDefUtils()
+void wrapUsdShadeShaderDefUtils(nanobind::module_ &m)
 {
-    scope thisScope = class_<UsdShadeShaderDefUtils>("ShaderDefUtils", no_init)
-        .def("GetDiscoveryResults", 
+    typedef UsdShadeShaderDefUtils This;
+
+    nb::class_<This>(m, "ShaderDefUtils")
+        .def_static("GetDiscoveryResults", 
              &UsdShadeShaderDefUtils::GetDiscoveryResults,
-             (arg("shaderDef"), arg("sourceUri")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetDiscoveryResults")
-        .def("GetProperties", 
+             nb::arg("shaderDef"), nb::arg("sourceUri"),
+             nb::rv_policy::copy)
+        .def_static("GetProperties", 
              &UsdShadeShaderDefUtils::GetProperties,
-             arg("shaderDef"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetProperties")
-        .def("GetPrimvarNamesMetadataString", 
+             nb::arg("shaderDef"))
+        .def_static("GetPrimvarNamesMetadataString", 
              &UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString,
-             (arg("metadata"), arg("shaderDef")))
-        .staticmethod("GetPrimvarNamesMetadataString")
+             nb::arg("metadata"), nb::arg("shaderDef"))
     ;
+
 }

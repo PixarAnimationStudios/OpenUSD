@@ -244,6 +244,7 @@ pxr_library(tf
 
     PYTHON_PUBLIC_HEADERS
         py3Compat.h
+        pyNanobindBridge.h
         pySafePython.h
         pySignatureExt.h
         pyStaticTokens.h
@@ -351,6 +352,44 @@ pxr_library(tf
 )
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
+    set(_NB_SOURCES
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/common.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/error.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/implicit.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_datetime.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_enum.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_ft.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_func.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_internals.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_ndarray.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_static_property.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_type.cpp
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/trampoline.cpp
+    )
+    set_source_files_properties(${_NB_SOURCES} pyModule.cpp pyEnum.cpp
+        PROPERTIES COMPILE_DEFINITIONS "NB_BUILD=1"
+    )
+    set_source_files_properties(
+        ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src/nb_enum.cpp
+        PROPERTIES COMPILE_DEFINITIONS
+            "NB_BUILD=1;enum_from_python=nb_orig_enum_from_python;enum_from_cpp=nb_orig_enum_from_cpp"
+    )
+    target_sources(tf PRIVATE ${_NB_SOURCES})
+    target_include_directories(tf
+        PRIVATE ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/src
+    )
+    target_compile_definitions(tf
+        PUBLIC NB_SHARED=1
+    )
+    install(
+        DIRECTORY ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/include/nanobind
+        DESTINATION include
+    )
+    install(
+        DIRECTORY ${PROJECT_SOURCE_DIR}/pxr/external/nanobind/include/tsl
+        DESTINATION include
+    )
+
     pxr_build_test(testTfPyFunction
         LIBRARIES
             tf

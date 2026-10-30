@@ -9,22 +9,20 @@
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyUtils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
-    static pxr_boost::python::object                                        \
+    static nanobind::object                                             \
     _ ## nodeFn(const PcpNodeRef& node)                                 \
     {                                                                   \
         PcpNodeRef n = node.nodeFn();                                   \
-        return n ? pxr_boost::python::object(n) : pxr_boost::python::object();  \
+        return n ? nanobind::cast(n) : nanobind::none();                \
     }
 
 PCP_GET_NODE_FN(GetParentNode);
@@ -55,64 +53,56 @@ _GetInvalidPcpNode()
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on PcpNodeRef.
-static object
-__getattribute__(object selfObj, const char *name) {
+static nanobind::object
+__getattribute__(nanobind::object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', or if the
     // node is valid.
     if ((name[0] == '_' && name[1] == '_') ||
-        bool(extract<PcpNodeRef &>(selfObj)())){
+        bool(nanobind::cast<PcpNodeRef &>(selfObj))){
         // Dispatch to object's __getattribute__.
-        return (*_object__getattribute__)(selfObj, name);
+        return nanobind::borrow<nanobind::object>(
+            _object__getattribute__->ptr())(selfObj, name);
     } else {
         // Otherwise raise a runtime error.
         TfPyThrowRuntimeError(
             TfStringPrintf("Invalid access to %s", TfPyRepr(selfObj).c_str()));
     }
     // Unreachable.
-    return object();
+    return nanobind::object();
 }
 
 void
-wrapNode()
+wrapNode(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
 
-    def("_GetInvalidPcpNode", &_GetInvalidPcpNode);
+    m.def("_GetInvalidPcpNode", &_GetInvalidPcpNode);
 
     typedef PcpNodeRef This;
 
-    class_<This> clsObj("NodeRef", no_init);
+    nb::class_<This> clsObj(m, "NodeRef");
     clsObj
-        .add_property("site", &This::GetSite)
-        .add_property("path", 
-                      make_function(&This::GetPath, 
-                                    return_value_policy<return_by_value>()))
-        .add_property("layerStack", 
-                      make_function(&This::GetLayerStack, 
-                                    return_value_policy<return_by_value>()))
+        .def_prop_ro("site", &This::GetSite)
+        .def_prop_ro("path", &This::GetPath, nb::rv_policy::copy)
+        .def_prop_ro("layerStack", &This::GetLayerStack, nb::rv_policy::copy)
 
-        .add_property("parent", &_GetParentNode)
-        .add_property("origin", &_GetOriginNode)
-        .add_property("children", 
-                      make_function(&_GetChildren, 
-                                    return_value_policy<TfPySequenceToList>()))
+        .def_prop_ro("parent", &_GetParentNode)
+        .def_prop_ro("origin", &_GetOriginNode)
+        .def_prop_ro("children", &_GetChildren)
 
-        .add_property("arcType", &This::GetArcType)
-        .add_property("mapToParent", 
-                      make_function(&This::GetMapToParent,
-                                    return_value_policy<return_by_value>()))
-        .add_property("mapToRoot", 
-                      make_function(&This::GetMapToRoot,
-                                    return_value_policy<return_by_value>()))
+        .def_prop_ro("arcType", &This::GetArcType)
+        .def_prop_ro("mapToParent", &This::GetMapToParent, nb::rv_policy::copy)
+        .def_prop_ro("mapToRoot", &This::GetMapToRoot, nb::rv_policy::copy)
         
-        .add_property("siblingNumAtOrigin", &This::GetSiblingNumAtOrigin)
-        .add_property("namespaceDepth", &This::GetNamespaceDepth)
+        .def_prop_ro("siblingNumAtOrigin", &This::GetSiblingNumAtOrigin)
+        .def_prop_ro("namespaceDepth", &This::GetNamespaceDepth)
 
-        .add_property("hasSymmetry", &This::HasSymmetry)
-        .add_property("hasSpecs", &This::HasSpecs)
-        .add_property("isInert", &This::IsInert)
-        .add_property("isCulled", &This::IsCulled)
-        .add_property("isRestricted", &This::IsRestricted)
-        .add_property("permission", &This::GetPermission)
+        .def_prop_ro("hasSymmetry", &This::HasSymmetry)
+        .def_prop_ro("hasSpecs", &This::HasSpecs)
+        .def_prop_ro("isInert", &This::IsInert)
+        .def_prop_ro("isCulled", &This::IsCulled)
+        .def_prop_ro("isRestricted", &This::IsRestricted)
+        .def_prop_ro("permission", &This::GetPermission)
 
         .def("GetRootNode", &_GetRootNode)
         .def("GetOriginRootNode", &_GetOriginRootNode)
@@ -131,12 +121,13 @@ wrapNode()
         .def("GetSpecContributionRestrictedDepth",
             &This::GetSpecContributionRestrictedDepth)
 
-        .def(self == self)
-        .def(self != self)
-        .def(!self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(!nb::self)
         ;
 
     // Save existing __getattribute__ and replace.
-    *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+    *_object__getattribute__ =
+        nb::cast<TfPyObjWrapper>(clsObj.attr("__getattribute__"));
     clsObj.def("__getattribute__", __getattribute__);
 }

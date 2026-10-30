@@ -7,43 +7,42 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUI/propertyHints.h"
+#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <vector>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdUIPropertyHints()
+void wrapUsdUIPropertyHints(nanobind::module_ &m)
 {
     using This = UsdUIPropertyHints;
 
-    class_<This, bases<UsdUIObjectHints>>
-        clsObj("PropertyHints");
+    nb::class_<This, UsdUIObjectHints> clsObj(m, "PropertyHints");
     clsObj
-        .def(init<UsdProperty>(arg("prop")))
+        .def(nb::init<>())
+        .def(nb::init<const UsdProperty &>(), nb::arg("prop"))
 
         .def("GetProperty", &This::GetProperty,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
 
         .def("GetDisplayGroup", &This::GetDisplayGroup)
         .def("SetDisplayGroup", &This::SetDisplayGroup,
-             arg("group"))
+             nb::arg("group"))
 
         .def("GetShownIf", &This::GetShownIf)
         .def("SetShownIf", &This::SetShownIf,
-             arg("shownIf"))
+             nb::arg("shownIf"))
         ;
 
     TfPyRegisterStlSequencesFromPython<This>();
-    to_python_converter<
-        std::vector<This>,
-        TfPySequenceToPython<std::vector<This>>>();
 }

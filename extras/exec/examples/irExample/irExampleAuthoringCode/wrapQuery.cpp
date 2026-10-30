@@ -8,19 +8,19 @@
 
 #include "query.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/noncopyable.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapQuery()
+void wrapQuery(nb::module_ &m)
 {
     using This = InvertibleRigsExample_Query;
 
-    class_<This, noncopyable>("Query", no_init)
-        .def(init<const UsdStageRefPtr &>())
+    nb::class_<This>(m, "Query")
+        .def(nb::init<const UsdStageRefPtr &>())
         .def("FindSwitchAvars", &This::FindSwitchAvars)
     ;
 }

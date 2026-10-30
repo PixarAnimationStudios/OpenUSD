@@ -11,19 +11,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Authoring );
-    TF_WRAP( CoalescingDiagnosticDelegate );
-    TF_WRAP( ConditionalAbortDiagnosticDelegate );
-    TF_WRAP( Dependencies );
-    TF_WRAP( FlattenLayerStack );
-    TF_WRAP( Introspection );
-    TF_WRAP( Pipeline );
-    TF_WRAP( RegisteredVariantSet );
-    TF_WRAP( SparseValueWriter );
-    TF_WRAP( StageCache );
-    TF_WRAP( Stitch );
-    TF_WRAP( StitchClips );
-    TF_WRAP( TimeCodeRange );
-    TF_WRAP( UserProcessingFunc );
-    TF_WRAP( LocalizeAsset );
+    TF_WRAP_NB( Authoring );
+    TF_WRAP_NB( CoalescingDiagnosticDelegate );
+    TF_WRAP_NB( ConditionalAbortDiagnosticDelegate );
+    TF_WRAP_NB( Dependencies );
+    TF_WRAP_NB( FlattenLayerStack );
+    TF_WRAP_NB( Introspection );
+    TF_WRAP_NB( Pipeline );
+    TF_WRAP_NB( RegisteredVariantSet );
+    TF_WRAP_NB( SparseValueWriter );
+    TF_WRAP_NB( StageCache );
+    TF_WRAP_NB( Stitch );
+    TF_WRAP_NB( StitchClips );
+    TF_WRAP_NB( TimeCodeRange );
+    TF_WRAP_NB( UserProcessingFunc );
+    TF_WRAP_NB( LocalizeAsset );
 }

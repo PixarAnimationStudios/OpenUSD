@@ -12,5 +12,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdBakeMtlx);
+    TF_WRAP_NB(UsdBakeMtlx);
 }

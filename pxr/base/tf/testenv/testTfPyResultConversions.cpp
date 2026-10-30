@@ -10,11 +10,10 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/import.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <tuple>
 #include <unordered_set>
@@ -22,7 +21,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace
 {
@@ -95,14 +94,14 @@ private:
 template <typename T>
 static void
 AssertPySeqVecEqual(
-    pxr_boost::python::object seq,
+    nb::object seq,
     const std::vector<T> &vec,
     const char *file,
     const int line)
 {
     try {
-        const int seqSize = len(seq);
-        const int vecSize = vec.size();
+        const int seqSize = static_cast<int>(nb::len(seq));
+        const int vecSize = static_cast<int>(vec.size());
         if (seqSize != vecSize) {
             fprintf(
                 stderr, "Size mismatch: py size = %d, c++ size = %d (%s:%d)\n",
@@ -110,7 +109,7 @@ AssertPySeqVecEqual(
             _Exit(1);
         }
         for (int i=0; i<vecSize; ++i) {
-            T val = extract<T>(seq[i]);
+            T val = nb::cast<T>(seq[i]);
             if (val != vec[i]) {
                 fprintf(
                     stderr, "Items not equal @ pos %d (%s:%d)",
@@ -119,7 +118,8 @@ AssertPySeqVecEqual(
             }
         }
     }
-    catch (pxr_boost::python::error_already_set &) {
+    catch (nb::python_error &e) {
+        e.restore();
         fprintf(stderr, "Unexpected Python exception (%s:%d)\n", file, line);
         PyErr_Print();
         _Exit(1);
@@ -134,21 +134,21 @@ AssertPySeqVecEqual(
 template <typename T>
 static void
 AssertPySetVecEqual(
-    pxr_boost::python::object set,
+    nb::object set,
     const std::vector<T> &vec,
     const char *file,
     const int line)
 {
     try {
-        handle<> iter(PyObject_GetIter(set.ptr()));
-        TF_AXIOM(iter);
+        nb::object iter = nb::steal(PyObject_GetIter(set.ptr()));
+        TF_AXIOM(iter.is_valid());
 
         std::vector<T> newVec;
 
         PyObject *item = nullptr;
-        while ((item = PyIter_Next(iter.get()))) {
-            handle<> itemHandle(item);
-            newVec.push_back(extract<T>(itemHandle.get()));
+        while ((item = PyIter_Next(iter.ptr()))) {
+            nb::object itemHandle = nb::steal(item);
+            newVec.push_back(nb::cast<T>(itemHandle));
         }
 
         if (vec.size() != newVec.size()) {
@@ -165,7 +165,8 @@ AssertPySetVecEqual(
             _Exit(1);
         }
     }
-    catch (pxr_boost::python::error_already_set &) {
+    catch (nb::python_error &e) {
+        e.restore();
         fprintf(stderr, "Unexpected Python exception (%s:%d)\n", file, line);
         PyErr_Print();
         _Exit(1);
@@ -182,70 +183,57 @@ main(int argc, char **argv)
 
     TfPyLock lock;
 
-    class_<Unhashable>("Unhashable", init<>())
-        .def(self == self)
-        .def(self != self)
+    nb::module_ mainMod = nb::module_::import_("__main__");
 
-        // Disable hash function for this type.
-        .setattr("__hash__", object())
+    nb::class_<Unhashable> unhashableCls(mainMod, "Unhashable");
+    unhashableCls
+        .def(nb::init<>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         ;
+    nb::setattr(unhashableCls, "__hash__", nb::none());
 
     using This = Tf_TestPyResultConversions;
-    class_<This> PyResultConversions("TestPyResultConversions", init<>());
+    nb::class_<This> PyResultConversions(mainMod, "TestPyResultConversions");
     PyResultConversions
+        .def(nb::init<>())
         // TfPySequenceToList methods
-        .def("GetEmptyVecAsList", &This::GetEmptyVec,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetUniqueVecAsList", &This::GetUniqueVec,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetDuplicateVecAsList", &This::GetDuplicateVec,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetEmptyVecAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetEmptyVec()); })
+        .def("GetUniqueVecAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetUniqueVec()); })
+        .def("GetDuplicateVecAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetDuplicateVec()); })
 
-        .def("GetEmptySetAsList", &This::GetEmptySet,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSetAsList", &This::GetSet,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetUnhashableVecAsList", &This::GetUnhashableVec,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetEmptySetAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetEmptySet()); })
+        .def("GetSetAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetSet()); })
+        .def("GetUnhashableVecAsList", [](const This &s) { return TfPyCopySequenceToList(s.GetUnhashableVec()); })
 
         // TfPySequenceToTuple methods
-        .def("GetEmptyVecAsTuple", &This::GetEmptyVec,
-             return_value_policy<TfPySequenceToTuple>())
-        .def("GetUniqueVecAsTuple", &This::GetUniqueVec,
-             return_value_policy<TfPySequenceToTuple>())
-        .def("GetDuplicateVecAsTuple", &This::GetDuplicateVec,
-             return_value_policy<TfPySequenceToTuple>())
+        .def("GetEmptyVecAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetEmptyVec()); })
+        .def("GetUniqueVecAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetUniqueVec()); })
+        .def("GetDuplicateVecAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetDuplicateVec()); })
 
-        .def("GetEmptySetAsTuple", &This::GetEmptySet,
-             return_value_policy<TfPySequenceToTuple>())
-        .def("GetSetAsTuple", &This::GetSet,
-             return_value_policy<TfPySequenceToTuple>())
-        .def("GetUnhashableVecAsTuple", &This::GetUnhashableVec,
-             return_value_policy<TfPySequenceToTuple>())
+        .def("GetEmptySetAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetEmptySet()); })
+        .def("GetSetAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetSet()); })
+        .def("GetUnhashableVecAsTuple", [](const This &s) { return TfPyCopySequenceToTuple(s.GetUnhashableVec()); })
 
         // TfPySequenceToSet methods
-        .def("GetEmptyVecAsSet", &This::GetEmptyVec,
-             return_value_policy<TfPySequenceToSet>())
-        .def("GetUniqueVecAsSet", &This::GetUniqueVec,
-             return_value_policy<TfPySequenceToSet>())
-        .def("GetDuplicateVecAsSet", &This::GetDuplicateVec,
-             return_value_policy<TfPySequenceToSet>())
+        .def("GetEmptyVecAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetEmptyVec()); })
+        .def("GetUniqueVecAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetUniqueVec()); })
+        .def("GetDuplicateVecAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetDuplicateVec()); })
 
-        .def("GetEmptySetAsSet", &This::GetEmptySet,
-             return_value_policy<TfPySequenceToSet>())
-        .def("GetSetAsSet", &This::GetSet,
-             return_value_policy<TfPySequenceToSet>())
-        .def("GetUnhashableVecAsSet", &This::GetUnhashableVec,
-             return_value_policy<TfPySequenceToSet>())
+        .def("GetEmptySetAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetEmptySet()); })
+        .def("GetSetAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetSet()); })
+        .def("GetUnhashableVecAsSet", [](const This &s) { return TfPyCopySequenceToSet(s.GetUnhashableVec()); })
 
         // TfPyPairToTuple methods
-        .def("GetPair", &This::GetPair,
-             return_value_policy<TfPyPairToTuple>())
+        .def("GetPair", [](const This &s) {
+            auto p = s.GetPair();
+            return nb::make_tuple(p.first, p.second);
+        })
         ;
 
     Tf_TestPyResultConversions conv;
-    pxr_boost::python::object pyConv = PyResultConversions();
-    TF_AXIOM(pyConv);
+    nb::object pyConv = PyResultConversions();
+    TF_AXIOM(pyConv.is_valid());
 
     // TfPySequenceToList tests
     ASSERT_PY_SEQ_VEC_EQUAL(
@@ -325,7 +313,7 @@ main(int argc, char **argv)
         TF_FATAL_ERROR("Conversion of unhashable type to Python set failed "
                        "to throw the expected exception");
     }
-    catch (pxr_boost::python::error_already_set &) {
+    catch (nb::python_error &) {
         PyErr_Clear();
     }
 
@@ -333,12 +321,13 @@ main(int argc, char **argv)
     {
         try {
             auto res = pyConv.attr("GetPair")();
-            int first = extract<int>(res[0]);
-            double second = extract<double>(res[1]);
+            int first = nb::cast<int>(res[0]);
+            double second = nb::cast<double>(res[1]);
             TF_AXIOM(first == conv.GetPair().first);
             TF_AXIOM(second == conv.GetPair().second);
         }
-        catch (pxr_boost::python::error_already_set &) {
+        catch (nb::python_error &e) {
+            e.restore();
             fprintf(
                 stderr,
                 "Unexpected Python exception when extracting pair (%s:%d)\n",

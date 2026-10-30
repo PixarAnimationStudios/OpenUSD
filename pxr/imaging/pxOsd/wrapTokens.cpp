@@ -11,10 +11,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapTokens()
+void wrapTokens(nanobind::module_& m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "OpenSubdivTokens",
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "OpenSubdivTokens",
         PxOsdOpenSubdivTokens, PXOSD_OPENSUBDIV_TOKENS);
 }
 

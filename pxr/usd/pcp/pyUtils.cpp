@@ -7,49 +7,33 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/pyUtils.h"
+#include "pxr/base/tf/diagnostic.h"
+
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
-// Given a python object and a pointer to a variable, 
-// attempts to extract a value of the variable's type out of the object
-// If successful, returns the pointer; otherwise returns null
-template <typename T>
-static T*
-_ExtractValue(object &pyObject, T* varPtr)
-{
-    extract<T> extractor(pyObject);
-    if (extractor.check()) {
-        *varPtr = extractor();
-        return varPtr;
-    } else {
-        return NULL;
-    }
-}
-
 bool
-PcpVariantFallbackMapFromPython( const dict& d,
-                                 PcpVariantFallbackMap *result)
+PcpVariantFallbackMapFromPython(
+    const nanobind::dict& d,
+    PcpVariantFallbackMap *result)
 {
-    object iterItems = d.items();
-    for (int i = 0; i < len(iterItems); ++i) {
-        object key = iterItems[i][0];
-        object value = iterItems[i][1];
+    for (auto item : d) {
         std::string k;
         std::vector<std::string> v;
-        
-        if (!_ExtractValue(key, &k)) {
+
+        if (!nanobind::try_cast<std::string>(item.first, k)) {
             TF_CODING_ERROR("unrecognized type for PcpVariantFallbackMap key");
             return false;
         }
-        if (!_ExtractValue(value, &v)) {
+        if (!nanobind::try_cast<std::vector<std::string>>(item.second, v)) {
             TF_CODING_ERROR("unrecognized type for PcpVariantFallbackMap val");
             return false;
         }
-        if (!k.empty() && !v.empty()) { 
+        if (!k.empty() && !v.empty()) {
             (*result)[k] = v;
         }
     }

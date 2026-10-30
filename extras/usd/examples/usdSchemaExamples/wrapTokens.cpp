@@ -5,18 +5,20 @@
 // https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include "pxr/external/boost/python/class.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 #include "./tokens.h"
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 #define _ADD_TOKEN(cls, name) \
-    cls.add_static_property(#name, +[]() { return UsdSchemaExamplesTokens->name.GetString(); });
+    cls.def_prop_ro_static(#name, [](nb::handle) { return UsdSchemaExamplesTokens->name.GetString(); });
 
-void wrapUsdSchemaExamplesTokens()
+void wrapUsdSchemaExamplesTokens(nb::module_ &m)
 {
-    pxr_boost::python::class_<UsdSchemaExamplesTokensType, pxr_boost::python::noncopyable>
-        cls("Tokens", pxr_boost::python::no_init);
+    nb::class_<UsdSchemaExamplesTokensType> cls(m, "Tokens");
     _ADD_TOKEN(cls, complexString);
     _ADD_TOKEN(cls, intAttr);
     _ADD_TOKEN(cls, paramsMass);

@@ -8,15 +8,12 @@
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/changeManager.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -31,7 +28,7 @@ public:
         _block.reset(new SdfChangeBlock);
     }
 
-    void Close(object, object, object)
+    void Close(nanobind::args)
     {
         if (!_enabled || !TF_VERIFY(_block)) {
             return;
@@ -47,13 +44,14 @@ private:
 } // anonymous namespace 
 
 void
-wrapChangeBlock()
+wrapChangeBlock(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     // This allows SdfChangeBlocks to be used in an RAII fashion in Python 
     // with the 'with' statement.
     typedef Sdf_PythonChangeBlock This;
-    class_<This, noncopyable>("ChangeBlock",
-                                     init<bool>(arg("enabled")=true))
+    nb::class_<This>(m, "ChangeBlock")
+        .def(nb::init<bool>(), nb::arg("enabled") = true)
         .def("__enter__", &This::Open)
         .def("__exit__", &This::Close)
         ;

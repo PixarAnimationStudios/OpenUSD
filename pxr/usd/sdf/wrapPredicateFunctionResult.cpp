@@ -8,14 +8,11 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include "pxr/usd/sdf/predicateLibrary.h"
 
-#include "pxr/external/boost/python/class.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static std::string
 _Repr(SdfPredicateFunctionResult const &self) {
@@ -30,24 +27,25 @@ _Bool(SdfPredicateFunctionResult const &self) {
     return self.GetValue();
 }
                            
-void wrapPredicateFunctionResult()
+void wrapPredicateFunctionResult(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     using FunctionResult = SdfPredicateFunctionResult;
     
-    scope s = class_<FunctionResult>("PredicateFunctionResult")
-        .def(init<FunctionResult const &>())
-        .def(init<bool, optional<FunctionResult::Constancy>>(
-                 (arg("value"), arg("constancy"))))
+    nb::class_<FunctionResult> s(m, "PredicateFunctionResult");
+    TfNbWrapEnum<FunctionResult::Constancy>(s);
+    s
+        .def(nb::init<>())
+        .def(nb::init<FunctionResult const &>())
+        .def(nb::init<bool, FunctionResult::Constancy>(),
+             nb::arg("value"),
+             nb::arg("constancy") = FunctionResult::MayVaryOverDescendants)
 
-        .def("MakeConstant", &FunctionResult::MakeConstant, arg("value"))
-        .staticmethod("MakeConstant")
-        .def("MakeVarying", &FunctionResult::MakeVarying, arg("value"))
-        .staticmethod("MakeVarying")
+        .def_static("MakeConstant", &FunctionResult::MakeConstant, nb::arg("value"))
+        .def_static("MakeVarying", &FunctionResult::MakeVarying, nb::arg("value"))
 
-        .def("And", &FunctionResult::And, (arg("lhs"), arg("rhs")))
-        .staticmethod("And")
-        .def("Or", &FunctionResult::Or, (arg("lhs"), arg("rhs")))
-        .staticmethod("Or")
+        .def_static("And", &FunctionResult::And, nb::arg("lhs"), nb::arg("rhs"))
+        .def_static("Or", &FunctionResult::Or, nb::arg("lhs"), nb::arg("rhs"))
         
         .def("GetValue", &FunctionResult::GetValue)
         .def("GetConstancy", &FunctionResult::GetConstancy)
@@ -56,17 +54,15 @@ void wrapPredicateFunctionResult()
         .def("SetAndPropagateConstancy",
              &FunctionResult::SetAndPropagateConstancy)
 
-        .def(!self)
         .def("__bool__", _Bool)
-        .def(self == self)
-        .def(self != self)
-        .def(self == bool{})
-        .def(bool{} == self)
-        .def(self != bool{})
-        .def(bool{} != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self == bool{})
+        .def(bool{} == nb::self)
+        .def(nb::self != bool{})
+        .def(bool{} != nb::self)
 
         .def("__repr__", _Repr)
         ;
 
-    TfPyWrapEnum<FunctionResult::Constancy>();
 }

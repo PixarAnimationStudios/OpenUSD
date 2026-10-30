@@ -4,28 +4,27 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+
 #include "pxr/pxr.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/usd/usd/timeCode.h"
 
 #include "pxr/usdValidation/usdValidation/timeRange.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/object.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapUsdValidationTimeRange()
+void wrapUsdValidationTimeRange(nb::module_ &m)
 {
-    class_<UsdValidationTimeRange>("ValidationTimeRange")
-        .def(init<const UsdTimeCode &>(
-            args("timeCode")))
-        .def(init<const GfInterval &, bool>(
-            (args("interval"), args("includeTimeCodeDefault") = false)))
+    nb::class_<UsdValidationTimeRange>(m, "ValidationTimeRange")
+        .def(nb::init<>())
+        .def(nb::init<const UsdTimeCode &>(),
+             nb::arg("timeCode"))
+        .def(nb::init<const GfInterval &, bool>(),
+             nb::arg("interval"), nb::arg("includeTimeCodeDefault") = false)
         .def("IncludesTimeCodeDefault", 
              &UsdValidationTimeRange::IncludesTimeCodeDefault)
         .def("GetInterval", &UsdValidationTimeRange::GetInterval);

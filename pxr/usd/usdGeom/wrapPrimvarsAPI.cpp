@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdGeomPrimvarsAPI &self)
@@ -43,33 +48,28 @@ _Repr(const UsdGeomPrimvarsAPI &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomPrimvarsAPI()
+void wrapUsdGeomPrimvarsAPI(nb::module_ &m)
 {
     typedef UsdGeomPrimvarsAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("PrimvarsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "PrimvarsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -100,7 +100,7 @@ namespace {
 
 static UsdGeomPrimvar
 _CreateNonIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
-        const SdfValueTypeName &typeName, const object &pyVal, 
+        const SdfValueTypeName &typeName, TfPyObjWrapper pyVal, 
         const TfToken &interpolation, int elementSize, UsdTimeCode time)
 {
     VtValue val = UsdPythonToSdfType(pyVal, typeName);
@@ -110,7 +110,7 @@ _CreateNonIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name,
 
 static UsdGeomPrimvar
 _CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name, 
-        const SdfValueTypeName &typeName, const object &pyVal, 
+        const SdfValueTypeName &typeName, TfPyObjWrapper pyVal, 
         const VtIntArray &indices, const TfToken &interpolation, 
         int elementSize, UsdTimeCode time)
 {
@@ -122,57 +122,56 @@ _CreateIndexedPrimvar(const UsdGeomPrimvarsAPI &self, const TfToken &name,
 WRAP_CUSTOM {
     _class
         .def("CreatePrimvar", &UsdGeomPrimvarsAPI::CreatePrimvar,
-             (arg("name"), arg("typeName"), arg("interpolation")=TfToken(),
-              arg("elementSize")=-1))
+             nb::arg("name"), nb::arg("typeName"), nb::arg("interpolation")=TfToken(),
+              nb::arg("elementSize")=-1)
         .def("CreateNonIndexedPrimvar", _CreateNonIndexedPrimvar,
-             (arg("name"), arg("typeName"), arg("value"),
-              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("name"), nb::arg("typeName"), nb::arg("value"),
+              nb::arg("interpolation")=TfToken(), nb::arg("elementSize")=-1, 
+              nb::arg("time")=UsdTimeCode::Default())
         .def("CreateIndexedPrimvar", _CreateIndexedPrimvar,
-             (arg("name"), arg("typeName"), arg("value"), arg("indices"),
-              arg("interpolation")=TfToken(), arg("elementSize")=-1, 
-              arg("time")=UsdTimeCode::Default()))
+             nb::arg("name"), nb::arg("typeName"), nb::arg("value"), nb::arg("indices"),
+              nb::arg("interpolation")=TfToken(), nb::arg("elementSize")=-1, 
+              nb::arg("time")=UsdTimeCode::Default())
         .def("RemovePrimvar", &UsdGeomPrimvarsAPI::RemovePrimvar,
-             arg("name"))
+             nb::arg("name"))
         .def("BlockPrimvar", &UsdGeomPrimvarsAPI::BlockPrimvar,
-             arg("name"))
-        .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, arg("name"))
+             nb::arg("name"))
+        .def("GetPrimvar", &UsdGeomPrimvarsAPI::GetPrimvar, nb::arg("name"))
         .def("GetPrimvars", &UsdGeomPrimvarsAPI::GetPrimvars,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetAuthoredPrimvars", &UsdGeomPrimvarsAPI::GetAuthoredPrimvars,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetPrimvarsWithValues", &UsdGeomPrimvarsAPI::GetPrimvarsWithValues,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetPrimvarsWithAuthoredValues", 
              &UsdGeomPrimvarsAPI::GetPrimvarsWithAuthoredValues,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("FindInheritablePrimvars", 
              &UsdGeomPrimvarsAPI::FindInheritablePrimvars,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("FindIncrementallyInheritablePrimvars", 
              &UsdGeomPrimvarsAPI::FindIncrementallyInheritablePrimvars,
-             (arg("inheritedFromAncestors")),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("inheritedFromAncestors"),
+             nb::rv_policy::copy)
         .def("FindPrimvarWithInheritance", 
              (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
-             (arg("name")))
+             nb::arg("name"))
         .def("FindPrimvarWithInheritance", 
              (UsdGeomPrimvar (UsdGeomPrimvarsAPI::*)(const TfToken&, const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarWithInheritance,
-             (arg("name"), arg("inheritedFromAncestors")))
+             nb::arg("name"), nb::arg("inheritedFromAncestors"))
         .def("FindPrimvarsWithInheritance", 
              (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)() const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("FindPrimvarsWithInheritance", 
              (std::vector<UsdGeomPrimvar> (UsdGeomPrimvarsAPI::*)(const std::vector<UsdGeomPrimvar>&) const)&UsdGeomPrimvarsAPI::FindPrimvarsWithInheritance,
-             (arg("inheritedFromAncestors")),
-             return_value_policy<TfPySequenceToList>())
-        .def("HasPrimvar", &UsdGeomPrimvarsAPI::HasPrimvar, arg("name"))
+             nb::arg("inheritedFromAncestors"),
+             nb::rv_policy::copy)
+        .def("HasPrimvar", &UsdGeomPrimvarsAPI::HasPrimvar, nb::arg("name"))
         .def("HasPossiblyInheritedPrimvar", 
              &UsdGeomPrimvarsAPI::HasPossiblyInheritedPrimvar,
-             arg("name"))
-        .def("CanContainPropertyName", 
-             &UsdGeomPrimvarsAPI::CanContainPropertyName, arg("name"))
-        .staticmethod("CanContainPropertyName")
+             nb::arg("name"))
+        .def_static("CanContainPropertyName", 
+             &UsdGeomPrimvarsAPI::CanContainPropertyName, nb::arg("name"))
         ;
 }
 

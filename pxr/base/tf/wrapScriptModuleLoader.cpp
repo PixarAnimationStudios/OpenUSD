@@ -13,17 +13,18 @@
 #include "pxr/base/tf/pySingleton.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
-void wrapScriptModuleLoader() {
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+void wrapScriptModuleLoader(nanobind::module_& m) {
     typedef TfScriptModuleLoader This;
-    class_<This, TfWeakPtr<This>,
-        noncopyable>("ScriptModuleLoader", no_init)
-        .def(TfPySingleton())
+    nanobind::class_<This>(m, "ScriptModuleLoader", nanobind::is_weak_referenceable())
+        .def(TfNbSingleton())
         .def("GetModulesDict", &This::GetModulesDict)
         .def("WriteDotFile", &This::WriteDotFile)
 

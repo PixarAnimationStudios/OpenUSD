@@ -11,8 +11,7 @@
 
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyExceptionState.h"
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/object_fwd.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -20,8 +19,8 @@ enum Tf_PyExceptionErrorCode {
     TF_PYTHON_EXCEPTION
 };
 
-TF_API pxr_boost::python::handle<> Tf_PyGetErrorExceptionClass();
-TF_API void Tf_PySetErrorExceptionClass(pxr_boost::python::object const &cls);
+TF_API nanobind::handle Tf_PyGetErrorExceptionClass();
+TF_API void Tf_PySetErrorExceptionClass(nanobind::object const &cls);
 
 /// RAII class to save and restore the Python exception state.  The client
 /// must hold the GIL during all methods, including the c'tor and d'tor.

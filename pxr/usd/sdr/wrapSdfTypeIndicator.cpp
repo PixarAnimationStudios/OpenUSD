@@ -6,20 +6,20 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/vt/valueFromPython.h"
 #include "pxr/usd/sdr/sdfTypeIndicator.h"
 
-#include "pxr/external/boost/python.hpp"
-#include <iostream>
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapSdfTypeIndicator()
+void wrapSdfTypeIndicator(nanobind::module_ &m)
 {
     typedef SdrSdfTypeIndicator This;
-    class_<This>("SdfTypeIndicator", no_init)
+    nb::class_<This>(m, "SdfTypeIndicator")
         .def("GetSdfType", &This::GetSdfType)
         .def("HasSdfType", &This::HasSdfType)
         .def("GetSdrType", &This::GetSdrType)

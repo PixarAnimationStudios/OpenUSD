@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,35 +41,35 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateRigidBodyEnabledAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRigidBodyEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateKinematicEnabledAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateKinematicEnabledAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStartsAsleepAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateStartsAsleepAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVelocityAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVelocityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateAngularVelocityAttr(UsdPhysicsRigidBodyAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateAngularVelocityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3f), writeSparsely);
 }
@@ -94,77 +100,70 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdPhysicsRigidBodyAPI()
+void wrapUsdPhysicsRigidBodyAPI(nb::module_ &m)
 {
     typedef UsdPhysicsRigidBodyAPI This;
 
-    UsdPhysicsRigidBodyAPI_CanApplyResult::Wrap<UsdPhysicsRigidBodyAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdPhysicsRigidBodyAPI_CanApplyResult::WrapNb<UsdPhysicsRigidBodyAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("RigidBodyAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "RigidBodyAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetRigidBodyEnabledAttr",
              &This::GetRigidBodyEnabledAttr)
         .def("CreateRigidBodyEnabledAttr",
              &_CreateRigidBodyEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetKinematicEnabledAttr",
              &This::GetKinematicEnabledAttr)
         .def("CreateKinematicEnabledAttr",
              &_CreateKinematicEnabledAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetStartsAsleepAttr",
              &This::GetStartsAsleepAttr)
         .def("CreateStartsAsleepAttr",
              &_CreateStartsAsleepAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVelocityAttr",
              &This::GetVelocityAttr)
         .def("CreateVelocityAttr",
              &_CreateVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetAngularVelocityAttr",
              &This::GetAngularVelocityAttr)
         .def("CreateAngularVelocityAttr",
              &_CreateAngularVelocityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         
         .def("GetSimulationOwnerRel",
@@ -200,14 +199,14 @@ void wrapUsdPhysicsRigidBodyAPI()
 
 namespace {
 
-    static tuple
+    static nb::tuple
     ComputeMassPropertiesHelper( const UsdPhysicsRigidBodyAPI &self, const UsdPhysicsRigidBodyAPI::MassInformationFn& massInfoFn)
     {    
         GfVec3f diagonalInertia;
         GfVec3f com;
         GfQuatf principalAxes;
         float mass = self.ComputeMassProperties(&diagonalInertia, &com, &principalAxes, massInfoFn);        
-        return pxr_boost::python::make_tuple( mass, diagonalInertia, com, principalAxes );
+        return nb::make_tuple( mass, diagonalInertia, com, principalAxes );
     }
         
 
@@ -217,20 +216,19 @@ namespace {
 
         TfPyFunctionFromPython<UsdPhysicsRigidBodyAPI::MassInformationFnSig>();
 
-        scope s = _class
+        nb::class_<UsdPhysicsRigidBodyAPI::MassInformation>(_class, "MassInformation")
+            .def(nb::init<>())
+            .def_rw("volume", &UsdPhysicsRigidBodyAPI::MassInformation::volume)
+            .def_rw("inertia", &UsdPhysicsRigidBodyAPI::MassInformation::inertia)
+            .def_rw("centerOfMass", &UsdPhysicsRigidBodyAPI::MassInformation::centerOfMass)
+            .def_rw("localPos", &UsdPhysicsRigidBodyAPI::MassInformation::localPos)
+            .def_rw("localRot", &UsdPhysicsRigidBodyAPI::MassInformation::localRot)
+        ;
+
+        _class
             .def("ComputeMassProperties", ComputeMassPropertiesHelper)
 
         ;
-
-        class_<UsdPhysicsRigidBodyAPI::MassInformation>("MassInformation")
-            .def_readwrite("volume", &UsdPhysicsRigidBodyAPI::MassInformation::volume)
-            .def_readwrite("inertia", &UsdPhysicsRigidBodyAPI::MassInformation::inertia)
-            .def_readwrite("centerOfMass", &UsdPhysicsRigidBodyAPI::MassInformation::centerOfMass)
-            .def_readwrite("localPos", &UsdPhysicsRigidBodyAPI::MassInformation::localPos)
-            .def_readwrite("localRot", &UsdPhysicsRigidBodyAPI::MassInformation::localRot)
-        ;
-
-
     }
 
 } // anonymous namespace 

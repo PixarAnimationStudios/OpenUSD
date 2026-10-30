@@ -20,7 +20,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include <numeric>
 #include <string>
@@ -35,8 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ////////////////////////////////////////////////////////////////////////
 // Producer side: Implement the buffer protocol on VtArrays.
 namespace {
-
-namespace bp = pxr_boost::python;
 
 ////////////////////////////////////////////////////////////////////////
 // Element sub-type.  e.g. GfVec3f -> float.
@@ -235,7 +233,7 @@ Vt_getbuffer(PyObject *self, Py_buffer *view, int flags)
         return -1;
     }
 
-    T &array = bp::extract<T &>(self);
+    T &array = *nanobind::inst_ptr<T>(self);
     auto wrapper = std::unique_ptr<Vt_ArrayBufferWrapper<T>>(
         new Vt_ArrayBufferWrapper<T>(array));
 
@@ -292,8 +290,8 @@ Vt_AddBufferProtocol()
 
     // Look up the python class object, then set its fields to point at our
     // buffer protocol implementation.
-    bp::object cls = TfPyGetClassObject<ArrayType>();
-    if (TfPyIsNone(cls)) {
+    nanobind::handle cls = nanobind::type<ArrayType>();
+    if (!cls.is_valid() || cls.is_none()) {
         TF_CODING_ERROR("Failed to find python class object for '%s'",
                         ArchGetDemangled<ArrayType>().c_str());
         return;
@@ -472,50 +470,42 @@ static VtValue Vt_CastVectorToArray(VtValue const &v) {
         // a python list, and then attempt to convert each element in it.
         VtArray<T> result;
         TfPyLock lock;
-        try {
-            auto obj = TfPyObject(v);
-            bp::list pylist = bp::extract<bp::list>(obj);
-            size_t len = bp::len(pylist);
-            result.reserve(len);
-            for (size_t i = 0; i != len; ++i) {
-                bp::object item = pylist[i];
-                bp::extract<T> e(item);
-                if (e.check()) {
-                    result.push_back(e());
+        auto const &vec = v.UncheckedGet<vector<VtValue>>();
+        result.reserve(vec.size());
+        for (VtValue const &itemVal : vec) {
+            nanobind::object obj = nanobind::cast(itemVal);
+            T elem{};
+            if (obj.is_valid() && Vt_WrapArray::Vt_TryExtractElement<T>(obj.ptr(), &elem)) {
+                result.push_back(std::move(elem));
+            } else {
+                VtValue val = itemVal;
+                if (val.Cast<T>().template IsHolding<T>()) {
+                    result.push_back(val.UncheckedGet<T>());
                 } else {
-                    VtValue val = bp::extract<VtValue>(item);
-                    if (val.Cast<T>().template IsHolding<T>()) {
-                        result.push_back(val.UncheckedGet<T>());
-                    } else {
-                        TfPyThrowValueError(TfStringPrintf(
-                            "Failed to produce an element of type '%s'",
-                            ArchGetDemangled<T>().c_str()));
-                    }
+                    PyErr_Clear();
+                    return ret;
                 }
             }
-            ret.Swap(result);
-        } catch (bp::error_already_set const &) {
-            // swallow the exception and just fail the cast.
-            PyErr_Clear();
         }
+        ret.Swap(result);
     }
     return ret;
 }
 
 template <class T>
-TfPyObjWrapper
+VtArray<T>
 Vt_WrapArrayFromBuffer(TfPyObjWrapper const &obj)
 {
     VtArray<T> result;
     string err;
     if (Vt_ArrayFromBuffer(obj, &result, &err)) {
-        return bp::object(result);
+        return result;
     }
     TfPyThrowValueError(
         TfStringPrintf("Failed to produce VtArray<%s> via python buffer "
                        "protocol: %s",
                        ArchGetDemangled<T>().c_str(), err.c_str()));
-    return TfPyObjWrapper();
+    return result;
 }
 
 } // anon
@@ -539,6 +529,7 @@ TF_PP_SEQ_FOR_EACH(INSTANTIATE, ~, VT_ARRAY_PYBUFFER_TYPES)
 
 VT_API void Vt_AddBufferProtocolSupportToVtArrays()
 {
+    nanobind::module_ m = TfPyGetCurrentNanobindModule();
 
 // Add the buffer protocol support to every array type that we support it for.
 #define VT_ADD_BUFFER_PROTOCOL(unused, elem)                         \
@@ -547,9 +538,8 @@ VT_API void Vt_AddBufferProtocolSupportToVtArrays()
         Vt_CastPyObjToArray<VT_TYPE(elem)>);                         \
     VtValue::RegisterCast<vector<VtValue>, VtArray<VT_TYPE(elem)> >( \
         Vt_CastVectorToArray<VT_TYPE(elem)>);                        \
-    pxr_boost::python::def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem))           \
-                        "ArrayFromBuffer",                           \
-                        Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
+    m.def(TF_PP_STRINGIZE(VT_TYPE_NAME(elem)) "ArrayFromBuffer",     \
+          Vt_WrapArrayFromBuffer<VT_TYPE(elem)>);
 
 TF_PP_SEQ_FOR_EACH(VT_ADD_BUFFER_PROTOCOL, ~, VT_ARRAY_PYBUFFER_TYPES)
 

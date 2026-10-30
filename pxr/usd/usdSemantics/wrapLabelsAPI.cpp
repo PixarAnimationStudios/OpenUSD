@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,7 +41,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateLabelsAttr(UsdSemanticsLabelsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLabelsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
@@ -73,74 +79,65 @@ _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 
 } // anonymous namespace
 
-void wrapUsdSemanticsLabelsAPI()
+void wrapUsdSemanticsLabelsAPI(nb::module_ &m)
 {
     typedef UsdSemanticsLabelsAPI This;
 
-    UsdSemanticsLabelsAPI_CanApplyResult::Wrap<UsdSemanticsLabelsAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdSemanticsLabelsAPI_CanApplyResult::WrapNb<UsdSemanticsLabelsAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("LabelsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "LabelsAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
         .def(TfTypePythonClass())
 
-        .def("Get",
+        .def_static("Get",
             (UsdSemanticsLabelsAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             (UsdSemanticsLabelsAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
-        .staticmethod("Get")
+            nb::arg("prim"), nb::arg("name"))
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<UsdSemanticsLabelsAPI>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+             nb::rv_policy::copy)
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetLabelsAttr",
              &This::GetLabelsAttr)
         .def("CreateLabelsAttr",
              &_CreateLabelsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
-        .def("IsSemanticsLabelsAPIPath", _WrapIsSemanticsLabelsAPIPath)
-            .staticmethod("IsSemanticsLabelsAPIPath")
+        .def_static("IsSemanticsLabelsAPIPath", _WrapIsSemanticsLabelsAPIPath)
         .def("__repr__", ::_Repr)
     ;
 
@@ -171,10 +168,8 @@ namespace {
 WRAP_CUSTOM {
     using This = UsdSemanticsLabelsAPI;
     _class
-        .def("GetDirectTaxonomies", &This::GetDirectTaxonomies)
-        .staticmethod("GetDirectTaxonomies")
-        .def("ComputeInheritedTaxonomies", &This::ComputeInheritedTaxonomies)
-        .staticmethod("ComputeInheritedTaxonomies")
+        .def_static("GetDirectTaxonomies", &This::GetDirectTaxonomies)
+        .def_static("ComputeInheritedTaxonomies", &This::ComputeInheritedTaxonomies)
         ;
 }
 

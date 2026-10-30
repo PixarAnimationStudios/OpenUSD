@@ -5,25 +5,29 @@
 // https://openusd.org/license.
 //
 
+#ifndef PXR_BASE_TF_PY_EXCEPTION_STATE_H
+#define PXR_BASE_TF_PY_EXCEPTION_STATE_H
+
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
-#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct TfPyExceptionState {
-    TfPyExceptionState(pxr_boost::python::handle<> const &type,
-                       pxr_boost::python::handle<> const &value,
-                       pxr_boost::python::handle<> const &trace) :
+    TfPyExceptionState(nanobind::object const &type,
+                       nanobind::object const &value,
+                       nanobind::object const &trace) :
             _type(type), _value(value), _trace(trace) {}
 
     TF_API
     ~TfPyExceptionState();
 
     TF_API
-    TfPyExceptionState (TfPyExceptionState const &);
+    TfPyExceptionState(TfPyExceptionState const &);
 
     TF_API
     TfPyExceptionState &operator=(TfPyExceptionState const &);
@@ -34,9 +38,9 @@ struct TfPyExceptionState {
     TF_API
     static TfPyExceptionState Fetch();
 
-    pxr_boost::python::handle<> const &GetType() const { return _type; }
-    pxr_boost::python::handle<> const &GetValue() const { return _value; }
-    pxr_boost::python::handle<> const &GetTrace() const { return _trace; }
+    nanobind::object const &GetType() const { return _type; }
+    nanobind::object const &GetValue() const { return _value; }
+    nanobind::object const &GetTrace() const { return _trace; }
 
     // Move this object's exception state into Python's current exception state,
     // as by PyErr_Restore().  This leaves this object's exception state clear.
@@ -49,7 +53,9 @@ struct TfPyExceptionState {
     std::string GetExceptionString() const;
 
 private:
-    pxr_boost::python::handle<> _type, _value, _trace;
+    nanobind::object _type, _value, _trace;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_BASE_TF_PY_EXCEPTION_STATE_H

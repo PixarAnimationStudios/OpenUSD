@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -30,7 +36,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static std::string
 _Repr(const UsdClipsAPI &self)
@@ -43,33 +48,28 @@ _Repr(const UsdClipsAPI &self)
 
 } // anonymous namespace
 
-void wrapUsdClipsAPI()
+void wrapUsdClipsAPI(nb::module_ &m)
 {
     typedef UsdClipsAPI This;
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ClipsAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ClipsAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         .def("__repr__", ::_Repr)
     ;
@@ -273,39 +273,39 @@ WRAP_CUSTOM {
     _class
         .def("GetClips", _GetClips)
         .def("SetClips", &UsdClipsAPI::SetClips,
-             arg("clips"))
+             nb::arg("clips"))
 
         .def("GetClipSets", _GetClipSets)
         .def("SetClipSets", &UsdClipsAPI::SetClipSets,
-             arg("clipSets"))
+             nb::arg("clipSets"))
 
         .def("GetClipAssetPaths", 
              (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&))
                  (&_GetClipAssetPaths),
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("GetClipAssetPaths", 
              (VtArray<SdfAssetPath>(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipAssetPaths),
-             return_value_policy<TfPySequenceToList>(),
-             arg("clipSet"))
+             nb::rv_policy::copy,
+             nb::arg("clipSet"))
         .def("SetClipAssetPaths", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipAssetPaths), 
-             arg("assetPaths"))
+             nb::arg("assetPaths"))
         .def("SetClipAssetPaths", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipAssetPaths), 
-             (arg("assetPaths"), arg("clipSet")))
+             nb::arg("assetPaths"), nb::arg("clipSet"))
 
         .def("ComputeClipAssetPaths",
             (VtArray<SdfAssetPath>(UsdClipsAPI::*)() const)
                 (&UsdClipsAPI::ComputeClipAssetPaths),
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("ComputeClipAssetPaths",
             (VtArray<SdfAssetPath>(UsdClipsAPI::*)(const std::string&) const)
                 (&UsdClipsAPI::ComputeClipAssetPaths),
-             arg("clipSet"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("clipSet"),
+             nb::rv_policy::copy)
 
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&))
@@ -313,15 +313,15 @@ WRAP_CUSTOM {
         .def("GetClipPrimPath", 
              (std::string(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipPrimPath),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipPrimPath", 
              (bool(UsdClipsAPI::*)(const std::string&))
                  (&UsdClipsAPI::SetClipPrimPath), 
-             arg("primPath"))
+             nb::arg("primPath"))
         .def("SetClipPrimPath", 
              (bool(UsdClipsAPI::*)(const std::string&, const std::string&))
                  (&UsdClipsAPI::SetClipPrimPath), 
-             (arg("primPath"), arg("clipSet")))
+             nb::arg("primPath"), nb::arg("clipSet"))
 
         .def("GetClipActive", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&))
@@ -329,15 +329,15 @@ WRAP_CUSTOM {
         .def("GetClipActive", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipActive),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipActive", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipActive), 
-             arg("activeClips"))
+             nb::arg("activeClips"))
         .def("SetClipActive", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipActive), 
-             (arg("activeClips"), arg("clipSet")))
+             nb::arg("activeClips"), nb::arg("clipSet"))
 
         .def("GetClipTimes", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&))
@@ -345,15 +345,15 @@ WRAP_CUSTOM {
         .def("GetClipTimes", 
              (TfPyObjWrapper(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTimes),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTimes", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipTimes), 
-             arg("clipTimes"))
+             nb::arg("clipTimes"))
         .def("SetClipTimes", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipTimes), 
-             (arg("clipTimes"), arg("clipSet")))
+             nb::arg("clipTimes"), nb::arg("clipSet"))
 
         .def("GetClipManifestAssetPath", 
              (SdfAssetPath(*)(const UsdClipsAPI&))
@@ -361,33 +361,29 @@ WRAP_CUSTOM {
         .def("GetClipManifestAssetPath", 
              (SdfAssetPath(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipManifestAssetPath),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipManifestAssetPath", 
              (bool(UsdClipsAPI::*)(const SdfAssetPath&))
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
-             arg("manifestAssetPath"))
+             nb::arg("manifestAssetPath"))
         .def("SetClipManifestAssetPath", 
              (bool(UsdClipsAPI::*)(const SdfAssetPath&, const std::string&))
                  (&UsdClipsAPI::SetClipManifestAssetPath), 
-             (arg("manifestAssetPath"), arg("clipSet")))
+             nb::arg("manifestAssetPath"), nb::arg("clipSet"))
 
         .def("GenerateClipManifest", 
              (SdfLayerRefPtr(UsdClipsAPI::*)(bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
-             arg("writeBlocksForClipsWithMissingValues") = false,
-             return_value_policy<TfPyRefPtrFactory<> >())
+             nb::arg("writeBlocksForClipsWithMissingValues") = false)
         .def("GenerateClipManifest", 
              (SdfLayerRefPtr(UsdClipsAPI::*)(const std::string&, bool) const)
                  (&UsdClipsAPI::GenerateClipManifest),
-             (arg("clipSet"),
-              arg("writeBlocksForClipsWithMissingValues") = false),
-             return_value_policy<TfPyRefPtrFactory<> >())
+             nb::arg("clipSet"),
+              nb::arg("writeBlocksForClipsWithMissingValues") = false)
 
-        .def("GenerateClipManifestFromLayers", 
+        .def_static("GenerateClipManifestFromLayers", 
              &UsdClipsAPI::GenerateClipManifestFromLayers,
-             (arg("clipLayers"), arg("clipPrimPath")),
-             return_value_policy<TfPyRefPtrFactory<> >())
-        .staticmethod("GenerateClipManifestFromLayers")
+             nb::arg("clipLayers"), nb::arg("clipPrimPath"))
 
         .def("GetInterpolateMissingClipValues", 
              (bool(*)(const UsdClipsAPI&))
@@ -395,15 +391,15 @@ WRAP_CUSTOM {
         .def("GetInterpolateMissingClipValues", 
              (bool(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetInterpolateMissingClipValues),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetInterpolateMissingClipValues", 
              (bool(UsdClipsAPI::*)(bool))
                  (&UsdClipsAPI::SetInterpolateMissingClipValues), 
-             arg("interpolate"))
+             nb::arg("interpolate"))
         .def("SetInterpolateMissingClipValues", 
              (bool(UsdClipsAPI::*)(bool, const std::string&))
                  (&UsdClipsAPI::SetInterpolateMissingClipValues), 
-             (arg("interpolate"), arg("clipSet")))
+             nb::arg("interpolate"), nb::arg("clipSet"))
 
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&))
@@ -411,15 +407,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateAssetPath", 
              (std::string(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateAssetPath),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTemplateAssetPath", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper))
                  (&_SetClipTemplateAssetPath), 
-             arg("clipTemplateAssetPath"))
+             nb::arg("clipTemplateAssetPath"))
         .def("SetClipTemplateAssetPath", 
              (void(*)(UsdClipsAPI&, TfPyObjWrapper, const std::string&))
                  (&_SetClipTemplateAssetPath), 
-             (arg("clipTemplateAssetPath"), arg("clipSet")))
+             nb::arg("clipTemplateAssetPath"), nb::arg("clipSet"))
 
         .def("GetClipTemplateStride", 
              (double(*)(const UsdClipsAPI&))
@@ -427,15 +423,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateStride", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateStride),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTemplateStride", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateStride),
-             arg("clipTemplateStride"))
+             nb::arg("clipTemplateStride"))
         .def("SetClipTemplateStride", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateStride),
-             (arg("clipTemplateStride"), arg("clipSet")))
+             nb::arg("clipTemplateStride"), nb::arg("clipSet"))
 
         .def("GetClipTemplateActiveOffset", 
              (double(*)(const UsdClipsAPI&))
@@ -443,15 +439,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateActiveOffset", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateActiveOffset),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTemplateActiveOffset", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateActiveOffset),
-             arg("clipTemplateActiveOffset"))
+             nb::arg("clipTemplateActiveOffset"))
         .def("SetClipTemplateActiveOffset", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateActiveOffset),
-             (arg("clipTemplateActiveOffset"), arg("clipSet")))
+             nb::arg("clipTemplateActiveOffset"), nb::arg("clipSet"))
 
         .def("GetClipTemplateStartTime", 
              (double(*)(const UsdClipsAPI&))
@@ -459,15 +455,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateStartTime", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateStartTime),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTemplateStartTime", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateStartTime),
-             arg("clipTemplateStartTime"))
+             nb::arg("clipTemplateStartTime"))
         .def("SetClipTemplateStartTime", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateStartTime),
-             (arg("clipTemplateStartTime"), arg("clipSet")))
+             nb::arg("clipTemplateStartTime"), nb::arg("clipSet"))
 
         .def("GetClipTemplateEndTime", 
              (double(*)(const UsdClipsAPI&))
@@ -475,15 +471,15 @@ WRAP_CUSTOM {
         .def("GetClipTemplateEndTime", 
              (double(*)(const UsdClipsAPI&, const std::string&))
                  (&_GetClipTemplateEndTime),
-             arg("clipSet"))
+             nb::arg("clipSet"))
         .def("SetClipTemplateEndTime", 
              (bool(UsdClipsAPI::*)(double))
                  (&UsdClipsAPI::SetClipTemplateEndTime),
-             arg("clipTemplateEndTime"))
+             nb::arg("clipTemplateEndTime"))
         .def("SetClipTemplateEndTime", 
              (bool(UsdClipsAPI::*)(double, const std::string&))
                  (&UsdClipsAPI::SetClipTemplateEndTime),
-             (arg("clipTemplateEndTime"), arg("clipSet")))
+             nb::arg("clipTemplateEndTime"), nb::arg("clipSet"))
         ;
 }
 

@@ -11,35 +11,32 @@
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
 #include "pxr/base/tf/token.h"
-
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/return_by_value.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapUsdRiRmanUtilities()
+void wrapUsdRiRmanUtilities(nb::module_ &m)
 {
-    def("ConvertToRManInterpolateBoundary", (int (*)(const TfToken &))
-        UsdRiConvertToRManInterpolateBoundary,
-        return_value_policy<return_by_value>());
-    def("ConvertFromRManInterpolateBoundary", (const TfToken & (*)(int))
-        UsdRiConvertFromRManInterpolateBoundary,
-        return_value_policy<return_by_value>());
+    m.def("ConvertToRManInterpolateBoundary", (int (*)(const TfToken &))
+          UsdRiConvertToRManInterpolateBoundary,
+          nb::rv_policy::copy);
+    m.def("ConvertFromRManInterpolateBoundary", (const TfToken & (*)(int))
+          UsdRiConvertFromRManInterpolateBoundary,
+          nb::rv_policy::copy);
 
-    def("ConvertToRManFaceVaryingLinearInterpolation",
-        (int (*)(const TfToken &))
-        UsdRiConvertToRManFaceVaryingLinearInterpolation,
-        return_value_policy<return_by_value>());
-    def("ConvertFromRManFaceVaryingLinearInterpolation",
-        (const TfToken & (*)(int))
-        UsdRiConvertFromRManFaceVaryingLinearInterpolation,
-        return_value_policy<return_by_value>());
+    m.def("ConvertToRManFaceVaryingLinearInterpolation",
+          (int (*)(const TfToken &))
+          UsdRiConvertToRManFaceVaryingLinearInterpolation,
+          nb::rv_policy::copy);
+    m.def("ConvertFromRManFaceVaryingLinearInterpolation",
+          (const TfToken & (*)(int))
+          UsdRiConvertFromRManFaceVaryingLinearInterpolation,
+          nb::rv_policy::copy);
 
-    def("ConvertRManSetSpecificationToListOp",
-        &UsdRiConvertRManSetSpecificationToListOp);
-    def("DoesAttributeUseSetSpecification",
-        &UsdRiDoesAttributeUseSetSpecification);
+    m.def("ConvertRManSetSpecificationToListOp",
+          &UsdRiConvertRManSetSpecificationToListOp);
+    m.def("DoesAttributeUseSetSpecification",
+          &UsdRiDoesAttributeUseSetSpecification);
 }

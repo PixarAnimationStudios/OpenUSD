@@ -15,20 +15,16 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/args.hpp"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/init.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
+#include <vector>
 
 using std::string;
 using std::vector;
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -65,116 +61,107 @@ static string _Repr(GfTransform const &self)
 
 } // anonymous namespace 
 
-void wrapTransform()
+void wrapTransform(nanobind::module_ &m)
 {    
     typedef GfTransform This;
 
-    class_<This>( "Transform", init<>() )
+    nanobind::class_<This>(m, "Transform")
+        .def(nanobind::init<>())
 
-        .def(init<const GfVec3d&, const GfRotation&, const GfVec3d&,
-                  const GfVec3d&, const GfRotation&>
-             ((args("translation") = _NoTranslation(),
-               args("rotation") = _NoRotation(),
-               args("scale") = _IdentityScale(),
-               args("pivotPosition") = _NoTranslation(),
-               args("pivotOrientation") = _NoRotation()),
-              "Initializer used by 3x code."))
+        .def(nanobind::init<const GfVec3d&, const GfRotation&, const GfVec3d&,
+                  const GfVec3d&, const GfRotation&>(),
+             nanobind::arg("translation") = _NoTranslation(),
+             nanobind::arg("rotation") = _NoRotation(),
+             nanobind::arg("scale") = _IdentityScale(),
+             nanobind::arg("pivotPosition") = _NoTranslation(),
+             nanobind::arg("pivotOrientation") = _NoRotation(),
+             "Initializer used by 3x code.")
 
         // This is the constructor used by 2x code.  Leave the initial
         // arguments as non-default to force the user to provide enough
         // values to indicate her intentions.
-        .def(init<const GfVec3d &, const GfRotation &, const GfRotation&,
-                  const GfVec3d &, const GfVec3d &>
-             ((args("scale"),
-               args("pivotOrientation"),
-               args("rotation"),
-               args("pivotPosition"),
-               args("translation")),
-              "Initializer used by old 2x code. (Deprecated)"))
+        .def(nanobind::init<const GfVec3d &, const GfRotation &, const GfRotation&,
+                  const GfVec3d &, const GfVec3d &>(),
+             nanobind::arg("scale"),
+             nanobind::arg("pivotOrientation"),
+             nanobind::arg("rotation"),
+             nanobind::arg("pivotPosition"),
+             nanobind::arg("translation"),
+             "Initializer used by old 2x code. (Deprecated)")
 
-        .def(init<const GfMatrix4d &>())
+        .def(nanobind::init<const GfMatrix4d &>())
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
         .def( "Set",
               (This & (This::*)( const GfVec3d &, const GfRotation &,
                                  const GfVec3d &, const GfVec3d &,
                                  const GfRotation & ))( &This::Set ),
-              return_self<>(),
-             (args("translation") = _NoTranslation(),
-              args("rotation") = _NoRotation(),
-              args("scale") = _IdentityScale(),
-              args("pivotPosition") = _NoTranslation(),
-              args("pivotOrientation") = _NoRotation()))
+              nanobind::rv_policy::reference,
+              nanobind::arg("translation") = _NoTranslation(),
+              nanobind::arg("rotation") = _NoRotation(),
+              nanobind::arg("scale") = _IdentityScale(),
+              nanobind::arg("pivotPosition") = _NoTranslation(),
+              nanobind::arg("pivotOrientation") = _NoRotation())
 
         .def( "Set",
               (This & (This::*)( const GfVec3d &, const GfRotation &,
                                  const GfRotation &, const GfVec3d &,
                                  const GfVec3d &))&This::Set,
-              return_self<>(),
-              (args("scale"),
-               args("pivotOrientation"),
-               args("rotation"),
-               args("pivotPosition"),
-               args("translation")),
+              nanobind::rv_policy::reference,
+              nanobind::arg("scale"),
+              nanobind::arg("pivotOrientation"),
+              nanobind::arg("rotation"),
+              nanobind::arg("pivotPosition"),
+              nanobind::arg("translation"),
               "Set method used by old 2x code. (Deprecated)")
 
-        .def( "SetMatrix", &This::SetMatrix, return_self<>() )
+        .def( "SetMatrix", &This::SetMatrix, nanobind::rv_policy::reference )
         .def( "GetMatrix", &This::GetMatrix )
 
-        .def( "SetIdentity", &This::SetIdentity, return_self<>() )
+        .def( "SetIdentity", &This::SetIdentity, nanobind::rv_policy::reference )
 
-        .add_property( "translation", make_function
-                       (&This::GetTranslation,
-                        return_value_policy<return_by_value>()),
-                       &This::SetTranslation )
+        .def_prop_rw( "translation", &This::GetTranslation,
+                      &This::SetTranslation, nanobind::rv_policy::copy )
 
-        .add_property( "rotation", make_function
-                       (&This::GetRotation,
-                        return_value_policy<return_by_value>()),
-                       &This::SetRotation )
+        .def_prop_rw( "rotation", &This::GetRotation,
+                      &This::SetRotation, nanobind::rv_policy::copy )
 
-        .add_property( "scale", make_function
-                       (&This::GetScale,
-                        return_value_policy<return_by_value>()),
-                       &This::SetScale )
+        .def_prop_rw( "scale", &This::GetScale,
+                      &This::SetScale, nanobind::rv_policy::copy )
 
-        .add_property( "pivotPosition", make_function
-                       (&This::GetPivotPosition,
-                        return_value_policy<return_by_value>()),
-                       &This::SetPivotPosition )
+        .def_prop_rw( "pivotPosition", &This::GetPivotPosition,
+                      &This::SetPivotPosition, nanobind::rv_policy::copy )
 
-        .add_property( "pivotOrientation", make_function
-                       (&This::GetPivotOrientation,
-                        return_value_policy<return_by_value>()),
-                       &This::SetPivotOrientation )
+        .def_prop_rw( "pivotOrientation", &This::GetPivotOrientation,
+                      &This::SetPivotOrientation, nanobind::rv_policy::copy )
 
         .def("GetTranslation", &This::GetTranslation,
-             return_value_policy<return_by_value>())
+             nanobind::rv_policy::copy)
         .def("SetTranslation", &This::SetTranslation )
 
         .def("GetRotation", &This::GetRotation,
-             return_value_policy<return_by_value>())
+             nanobind::rv_policy::copy)
         .def("SetRotation", &This::SetRotation)
 
         .def("GetScale", &This::GetScale,
-             return_value_policy<return_by_value>())
+             nanobind::rv_policy::copy)
         .def("SetScale", &This::SetScale )
 
         .def("GetPivotPosition", &This::GetPivotPosition,
-             return_value_policy<return_by_value>())
+             nanobind::rv_policy::copy)
         .def("SetPivotPosition", &This::SetPivotPosition )
 
         .def("GetPivotOrientation", &This::GetPivotOrientation,
-             return_value_policy<return_by_value>())
+             nanobind::rv_policy::copy)
         .def("SetPivotOrientation", &This::SetPivotOrientation )
 
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self *= self )
-        .def( self * self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def( nanobind::self == nanobind::self )
+        .def( nanobind::self != nanobind::self )
+        .def( nanobind::self *= nanobind::self )
+        .def( nanobind::self * nanobind::self )
         
         .def("__repr__", _Repr)
 

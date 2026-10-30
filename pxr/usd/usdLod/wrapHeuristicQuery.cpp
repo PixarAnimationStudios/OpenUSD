@@ -7,24 +7,22 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLod/heuristicQuery.h"
-
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapHeuristicQuery()
+void wrapHeuristicQuery(nb::module_ &m)
 {
     typedef UsdLodHeuristicQuery This;
 
-    class_<This>("HeuristicQuery", no_init)
-
-        .add_property(
+    nb::class_<This>(m, "HeuristicQuery")
+        .def_prop_rw(
             "lodDomain",
             +[](const This& self) { return self.lodDomain.GetString(); },
             +[](This& self,
                 const std::string& value) { self.lodDomain = TfToken(value); })
-
         ;
 }

@@ -11,26 +11,28 @@
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
 
 namespace {
 
 static void
-_PrintStackTrace(object &obj, const std::string &reason)
+_PrintStackTrace(nanobind::handle obj, const std::string &reason)
 {
     int fd = PyObject_AsFileDescriptor(obj.ptr());
     if (fd >= 0)
     {
-        FILE * file = expect_non_null(ArchFdOpen(fd, "w"));
-        if (file)
-        {
-            TfPrintStackTrace(file, reason);
-            fclose(file);
+        FILE * file = ArchFdOpen(fd, "w");
+        if (!file) {
+            PyErr_SetFromErrno(PyExc_OSError);
+            throw nanobind::python_error();
         }
+        TfPrintStackTrace(file, reason);
+        fclose(file);
     }
     else {
         // Wrong type for obj
@@ -41,20 +43,21 @@ _PrintStackTrace(object &obj, const std::string &reason)
 } // anonymous namespace 
 
 void
-wrapStackTrace()
+wrapStackTrace(nanobind::module_& m)
 {
-    def("GetStackTrace", TfGetStackTrace,
+    namespace nb = nanobind;
+    m.def("GetStackTrace", TfGetStackTrace,
         "GetStackTrace()\n\n"
         "Return both the C++ and the python stack as a string.");
     
-    def("PrintStackTrace", _PrintStackTrace,
+    m.def("PrintStackTrace", _PrintStackTrace,
         "PrintStackTrace(file, str)\n\n"
         "Prints both the C++ and the python stack to the file provided.");
 
-    def("LogStackTrace", TfLogStackTrace,
-        (arg("reason"), arg("logToDb")=false));
+    m.def("LogStackTrace", TfLogStackTrace,
+        nb::arg("reason"), nb::arg("logToDb")=false);
 
-    def("GetAppLaunchTime", TfGetAppLaunchTime,
+    m.def("GetAppLaunchTime", TfGetAppLaunchTime,
         "GetAppLaunchTime() -> int \n\n"
         "Return the time (in seconds since the epoch) at which "
         "the application was started.");

@@ -11,16 +11,11 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/init.hpp"
-#include "pxr/external/boost/python/operators.hpp"
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -41,34 +36,38 @@ _Repr(GfInterval const &self)
 
 } // anonymous namespace 
 
-void wrapInterval()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+
+void wrapInterval(nanobind::module_ &m)
 {    
     typedef GfInterval This;
 
-    class_<This>( "Interval", "Basic mathematical interval class", init<>() )
-        .def(init<double>(
-                 "Create a closed interval representing the single point [val,val]."))
-        .def(init<double, double>(
-                 "Create a closed interval representing the range [v1,v2]."))
-        .def(init<double, double, bool, bool>("Create the interval."))
-        .def(init<This>())
+    nanobind::class_<This>(m, "Interval", "Basic mathematical interval class")
+        .def(nanobind::init<>())
+        .def(nanobind::init<double>(),
+             "Create a closed interval representing the single point [val,val].")
+        .def(nanobind::init<double, double>(),
+             "Create a closed interval representing the range [v1,v2].")
+        .def(nanobind::init<double, double, bool, bool>(),
+             "Create the interval.")
+        .def(nanobind::init<This>())
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .add_property("min", &This::GetMin, "The minimum value." )
-        .add_property("max", &This::GetMax, "The maximum value." )
-        .add_property("minClosed", &This::IsMinClosed)
-        .add_property("maxClosed", &This::IsMaxClosed)
-        .add_property("minOpen", &This::IsMinOpen)
-        .add_property("maxOpen", &This::IsMaxOpen)
-        .add_property("minFinite", &This::IsMinFinite)
-        .add_property("maxFinite", &This::IsMaxFinite)
-        .add_property("finite", &This::IsFinite)
-
-        .add_property("isEmpty", &This::IsEmpty,
-             "True if the interval is empty." )
-
-        .add_property("size", &This::GetSize,
+        .def_prop_ro("min", &This::GetMin, "The minimum value.")
+        .def_prop_ro("max", &This::GetMax, "The maximum value.")
+        .def_prop_ro("minClosed", &This::IsMinClosed)
+        .def_prop_ro("maxClosed", &This::IsMaxClosed)
+        .def_prop_ro("minOpen", &This::IsMinOpen)
+        .def_prop_ro("maxOpen", &This::IsMaxOpen)
+        .def_prop_ro("minFinite", &This::IsMinFinite)
+        .def_prop_ro("maxFinite", &This::IsMaxFinite)
+        .def_prop_ro("finite", &This::IsFinite)
+        .def_prop_ro("isEmpty", &This::IsEmpty,
+             "True if the interval is empty.")
+        .def_prop_ro("size", &This::GetSize,
             "The width of the interval.")
 
         .def("Contains",
@@ -83,8 +82,7 @@ void wrapInterval()
             (bool (This::*)(double) const) &This::Contains,
             "Returns true if x is inside the interval.")
 
-        .def("GetFullInterval", &This::GetFullInterval)
-        .staticmethod("GetFullInterval")
+        .def_static("GetFullInterval", &This::GetFullInterval)
 
         .def("Intersects", &This::Intersects)
 
@@ -118,31 +116,31 @@ void wrapInterval()
              "Set the minimum value and boundary condition.")
 
         // ring_operators
-        .def(self + self)
-        .def(self += self)
-        .def(self * self)
-        .def(self *= self)
-        .def(self - self)
-        .def(self -= self)
-        .def( -self )
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(-nanobind::self)
 
         // andable
-        .def(self &= self)
-        .def(self & self)
+        .def(nanobind::self &= nanobind::self)
+        .def(nanobind::self & nanobind::self)
 
         // orable
-        .def(self |= self)
-        .def(self | self)
+        .def(nanobind::self |= nanobind::self)
+        .def(nanobind::self | nanobind::self)
 
         // totally_ordered
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self < nanobind::self)
+        .def("__le__", [](const This &self, const This &rhs) { return !(rhs < self); }, nanobind::is_operator())
+        .def("__gt__", [](const This &self, const This &rhs) { return rhs < self; }, nanobind::is_operator())
+        .def("__ge__", [](const This &self, const This &rhs) { return !(self < rhs); }, nanobind::is_operator())
 
-        .def(str(self))
+        .def("__str__", [](const This &self) { return TfStringify(self); })
         .def("__repr__", _Repr)
         .def("__hash__", &This::Hash)
         ;

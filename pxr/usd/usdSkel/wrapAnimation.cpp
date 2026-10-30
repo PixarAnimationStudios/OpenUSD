@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,42 +40,42 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateJointsAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateJointsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateTranslationsAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateTranslationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRotationsAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRotationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateScalesAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateScalesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlendShapesAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBlendShapesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlendShapeWeightsAttr(UsdSkelAnimation &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBlendShapeWeightsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
@@ -85,78 +91,73 @@ _Repr(const UsdSkelAnimation &self)
 
 } // anonymous namespace
 
-void wrapUsdSkelAnimation()
+void wrapUsdSkelAnimation(nb::module_ &m)
 {
     typedef UsdSkelAnimation This;
 
-    class_<This, bases<UsdTyped> >
-        cls("Animation");
+    nb::class_<This, UsdTyped> cls(m, "Animation");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetJointsAttr",
              &This::GetJointsAttr)
         .def("CreateJointsAttr",
              &_CreateJointsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetTranslationsAttr",
              &This::GetTranslationsAttr)
         .def("CreateTranslationsAttr",
              &_CreateTranslationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRotationsAttr",
              &This::GetRotationsAttr)
         .def("CreateRotationsAttr",
              &_CreateRotationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetScalesAttr",
              &This::GetScalesAttr)
         .def("CreateScalesAttr",
              &_CreateScalesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetBlendShapesAttr",
              &This::GetBlendShapesAttr)
         .def("CreateBlendShapesAttr",
              &_CreateBlendShapesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetBlendShapeWeightsAttr",
              &This::GetBlendShapeWeightsAttr)
         .def("CreateBlendShapeWeightsAttr",
              &_CreateBlendShapeWeightsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -193,15 +194,14 @@ _GetTransforms(const UsdSkelAnimation& self, UsdTimeCode time)
     return xforms;
 }
 
-
 WRAP_CUSTOM {
     using This = UsdSkelAnimation;
 
     _class
         .def("GetTransforms", &_GetTransforms,
-             (arg("time")=UsdTimeCode::Default()))
+             (nb::arg("time")=UsdTimeCode::Default()))
         .def("SetTransforms", &This::SetTransforms,
-             (arg("xforms"), arg("time")=UsdTimeCode::Default()))
+             nb::arg("xforms"), nb::arg("time")=UsdTimeCode::Default())
         ;
 }
 

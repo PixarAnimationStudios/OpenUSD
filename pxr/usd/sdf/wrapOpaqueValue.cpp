@@ -7,16 +7,13 @@
 
 #include "pxr/usd/sdf/opaqueValue.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/external/boost/python.hpp"
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
-
 
 static std::string
 _SdfOpaqueValueRepr(const SdfOpaqueValue &self)
@@ -30,11 +27,13 @@ _SdfOpaqueValueHash(const SdfOpaqueValue &self)
     return TfHash()(self);
 }
 
-void wrapOpaqueValue()
+void wrapOpaqueValue(nanobind::module_ &m)
 {
-    class_<SdfOpaqueValue>("OpaqueValue")
-        .def(self == self)
-        .def(self != self)
+    namespace nb = nanobind;
+    nb::class_<SdfOpaqueValue>(m, "OpaqueValue")
+        .def(nb::init<>())
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
         .def("__repr__", _SdfOpaqueValueRepr)
         .def("__hash__", _SdfOpaqueValueHash);
     VtValueFromPython<SdfOpaqueValue>();

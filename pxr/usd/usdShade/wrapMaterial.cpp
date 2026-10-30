@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,21 +40,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateSurfaceAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSurfaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplacementAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisplacementAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVolumeAttr(UsdShadeMaterial &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -64,57 +70,52 @@ _Repr(const UsdShadeMaterial &self)
 
 } // anonymous namespace
 
-void wrapUsdShadeMaterial()
+void wrapUsdShadeMaterial(nb::module_ &m)
 {
     typedef UsdShadeMaterial This;
 
-    class_<This, bases<UsdShadeNodeGraph> >
-        cls("Material");
+    nb::class_<This, UsdShadeNodeGraph> cls(m, "Material");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
              &_CreateSurfaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
              &_CreateDisplacementAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -145,8 +146,6 @@ void wrapUsdShadeMaterial()
 #include "pxr/usd/usd/pyEditContext.h"
 #include "pxr/usd/usdShade/utils.h"
 
-#include "pxr/external/boost/python/tuple.hpp"
-
 namespace {
 
 static UsdPyEditContext
@@ -157,7 +156,7 @@ _GetEditContextForVariant(const UsdShadeMaterial &self,
         self.GetEditContextForVariant(materialVariantName, layer));
 }
 
-static object
+static nb::object
 _WrapComputeSurfaceSource(const UsdShadeMaterial &self, 
                           const TfToken &renderContext) 
 {
@@ -165,10 +164,10 @@ _WrapComputeSurfaceSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeSurfaceSource({renderContext}, &sourceName, &sourceType);
-    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
+    return nb::make_tuple(source, sourceName, sourceType);
 }
 
-static object
+static nb::object
 _WrapComputeDisplacementSource(const UsdShadeMaterial &self, 
                                const TfToken &renderContext) 
 {
@@ -176,10 +175,10 @@ _WrapComputeDisplacementSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeDisplacementSource({renderContext}, &sourceName, &sourceType);
-    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
+    return nb::make_tuple(source, sourceName, sourceType);
 }
 
-static object
+static nb::object
 _WrapComputeVolumeSource(const UsdShadeMaterial &self, 
                          const TfToken &renderContext) 
 {
@@ -187,19 +186,18 @@ _WrapComputeVolumeSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeVolumeSource({renderContext}, &sourceName, &sourceType);
-    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
+    return nb::make_tuple(source, sourceName, sourceType);
 }
 
 WRAP_CUSTOM {
     _class
         .def("GetMaterialVariant", &UsdShadeMaterial::GetMaterialVariant)
-        .def("CreateMasterMaterialVariant",
+        .def_static("CreateMasterMaterialVariant",
              &UsdShadeMaterial::CreateMasterMaterialVariant,
-             (arg("masterPrim"), arg("materialPrims"),
-              arg("masterVariantSetName")=TfToken()))
-        .staticmethod("CreateMasterMaterialVariant")
+             nb::arg("masterPrim"), nb::arg("materialPrims"),
+              nb::arg("masterVariantSetName")=TfToken())
         .def("GetEditContextForVariant", _GetEditContextForVariant,
-             (arg("materialVariantName"), arg("layer")=SdfLayerHandle()))
+             nb::arg("materialVariantName"), nb::arg("layer")=SdfLayerHandle())
 
         .def("GetBaseMaterialPath",
              &UsdShadeMaterial::GetBaseMaterialPath)
@@ -207,48 +205,45 @@ WRAP_CUSTOM {
               &UsdShadeMaterial::GetBaseMaterial)
         .def("SetBaseMaterialPath",
              &UsdShadeMaterial::SetBaseMaterialPath,
-             (arg("baseLookPath")))
+             nb::arg("baseLookPath"))
          .def("SetBaseMaterial",
               &UsdShadeMaterial::SetBaseMaterial,
-              (arg("baseMaterial")))
+              nb::arg("baseMaterial"))
         .def("ClearBaseMaterial",
              &UsdShadeMaterial::ClearBaseMaterial)
         .def("HasBaseMaterial",
              &UsdShadeMaterial::HasBaseMaterial)
 
-
         .def("CreateSurfaceOutput", &UsdShadeMaterial::CreateSurfaceOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutput", &UsdShadeMaterial::GetSurfaceOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetSurfaceOutputs", &UsdShadeMaterial::GetSurfaceOutputs)
         .def("ComputeSurfaceSource", &_WrapComputeSurfaceSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         .def("CreateDisplacementOutput", 
             &UsdShadeMaterial::CreateDisplacementOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetDisplacementOutput", 
             &UsdShadeMaterial::GetDisplacementOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetDisplacementOutputs",
             &UsdShadeMaterial::GetDisplacementOutputs)
         .def("ComputeDisplacementSource", &_WrapComputeDisplacementSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         .def("CreateVolumeOutput", &UsdShadeMaterial::CreateVolumeOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetVolumeOutput", &UsdShadeMaterial::GetVolumeOutput, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
         .def("GetVolumeOutputs", &UsdShadeMaterial::GetVolumeOutputs)
         .def("ComputeVolumeSource", &_WrapComputeVolumeSource, 
-            (arg("renderContext")=UsdShadeTokens->universalRenderContext))
+            (nb::arg("renderContext")=UsdShadeTokens->universalRenderContext))
 
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdShadeMaterial>();
-    to_python_converter<std::vector<UsdShadeMaterial>,
-                        TfPySequenceToPython<std::vector<UsdShadeMaterial>>>();
 
 }
 

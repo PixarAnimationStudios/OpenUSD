@@ -9,14 +9,15 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/external/boost/python/def.hpp"
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
 
 namespace {
 
@@ -41,7 +42,7 @@ _FindLongestAccessiblePrefix(string const &path)
 
     if (!error.empty()) {
         PyErr_SetString(PyExc_OSError, error.c_str());
-        throw_error_already_set();
+        throw nanobind::python_error();
     }
 
     return result;
@@ -49,12 +50,13 @@ _FindLongestAccessiblePrefix(string const &path)
 
 } // anonymous namespace 
 
-void wrapPathUtils()
+void wrapPathUtils(nanobind::module_& m)
 {
-    def("RealPath", _RealPath,
-        ( arg("path"),
-          arg("allowInaccessibleSuffix") = false,
-          arg("raiseOnError") = false ));
+    namespace nb = nanobind;
+    m.def("RealPath", _RealPath,
+          nb::arg("path"),
+          nb::arg("allowInaccessibleSuffix") = false,
+          nb::arg("raiseOnError") = false);
 
-    def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
+    m.def("FindLongestAccessiblePrefix", _FindLongestAccessiblePrefix);
 }

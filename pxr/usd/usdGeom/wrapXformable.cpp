@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,7 +40,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateXformOpOrderAttr(UsdGeomXformable &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateXformOpOrderAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
@@ -50,40 +56,36 @@ _Repr(const UsdGeomXformable &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomXformable()
+void wrapUsdGeomXformable(nb::module_ &m)
 {
     typedef UsdGeomXformable This;
 
-    class_<This, bases<UsdGeomImageable> >
-        cls("Xformable");
+    nb::class_<This, UsdGeomImageable> cls(m, "Xformable");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetXformOpOrderAttr",
              &This::GetXformOpOrderAttr)
         .def("CreateXformOpOrderAttr",
              &_CreateXformOpOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -168,200 +170,200 @@ WRAP_CUSTOM {
         const std::vector<UsdGeomXformOp> &) const 
         = &This::TransformMightBeTimeVarying;
 
-    scope s = _class
+    _class
         .def("AddXformOp", &This::AddXformOp, 
-            (arg("opType"), 
-             arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opType"), 
+             nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddTranslateXOp", &This::AddTranslateXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddTranslateYOp", &This::AddTranslateYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddTranslateZOp", &This::AddTranslateZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddTranslateOp", &This::AddTranslateOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddScaleXOp", &This::AddScaleXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddScaleYOp", &This::AddScaleYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddScaleZOp", &This::AddScaleZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddScaleOp", &This::AddScaleOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateXOp", &This::AddRotateXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateYOp", &This::AddRotateYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateZOp", &This::AddRotateZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateXYZOp", &This::AddRotateXYZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateXZYOp", &This::AddRotateXZYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateYXZOp", &This::AddRotateYXZOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateYZXOp", &This::AddRotateYZXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateZXYOp", &This::AddRotateZXYOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddRotateZYXOp", &This::AddRotateZYXOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddOrientOp", &This::AddOrientOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionFloat,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionFloat,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("AddTransformOp", &This::AddTransformOp, 
-            (arg("precision")=UsdGeomXformOp::PrecisionDouble,
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("precision")=UsdGeomXformOp::PrecisionDouble,
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetXformOp", &This::GetXformOp, 
-            (arg("opType"), 
-             arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opType"), 
+             nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetTranslateXOp", &This::GetTranslateXOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetTranslateYOp", &This::GetTranslateYOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetTranslateZOp", &This::GetTranslateZOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetTranslateOp", &This::GetTranslateOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetScaleXOp", &This::GetScaleXOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetScaleYOp", &This::GetScaleYOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetScaleZOp", &This::GetScaleZOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetScaleOp", &This::GetScaleOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateXOp", &This::GetRotateXOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateYOp", &This::GetRotateYOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateZOp", &This::GetRotateZOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateXYZOp", &This::GetRotateXYZOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateXZYOp", &This::GetRotateXZYOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateYXZOp", &This::GetRotateYXZOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateYZXOp", &This::GetRotateYZXOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateZXYOp", &This::GetRotateZXYOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetRotateZYXOp", &This::GetRotateZYXOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetOrientOp", &This::GetOrientOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("GetTransformOp", &This::GetTransformOp, 
-            (arg("opSuffix")=TfToken(),
-             arg("isInverseOp")=false))
+            nb::arg("opSuffix")=TfToken(),
+             nb::arg("isInverseOp")=false)
 
         .def("SetResetXformStack", &This::SetResetXformStack,
-            (arg("resetXform")))
+            nb::arg("resetXform"))
 
         .def("GetResetXformStack", &This::GetResetXformStack)
 
         .def("SetXformOpOrder", &This::SetXformOpOrder,
-            (arg("orderedXformOps"),
-             arg("resetXformStack")=false))
+            nb::arg("orderedXformOps"),
+             nb::arg("resetXformStack")=false)
 
-        .def("GetOrderedXformOps", &_GetOrderedXformOps, 
-            return_value_policy<TfPySequenceToList>(),
+        .def("GetOrderedXformOps", &_GetOrderedXformOps,
+             nb::rv_policy::copy,
             "Return the ordered list of transform operations to be applied to "
             "this prim, in least-to-most-local order.  This is determined by "
             "the intersection of authored op-attributes and the explicit "
@@ -384,13 +386,13 @@ WRAP_CUSTOM {
         .def("TransformMightBeTimeVarying", TransformMightBeTimeVarying_2)
 
         .def("GetTimeSamples", _GetTimeSamples,
-            return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-            return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
         .def("GetLocalTransformation", _GetLocalTransformation1,
-            (arg("time")=UsdTimeCode::Default()),
+            (nb::arg("time")=UsdTimeCode::Default()),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim.\n"
             "If a client does not need to manipulate the individual ops "
@@ -404,7 +406,7 @@ WRAP_CUSTOM {
             " GetResetXformStack() to be able to construct the local-to-world"
             " transformation.")
         .def("GetLocalTransformation", _GetLocalTransformation2,
-            (arg("ops"),arg("time")=UsdTimeCode::Default()),
+            nb::arg("ops"),nb::arg("time")=UsdTimeCode::Default(),
             "Compute the fully-combined, local-to-parent transformation for "
             "this prim as efficiently as possible, using pre-fetched "
             "list of ordered xform ops supplied by the client.\n"
@@ -413,8 +415,7 @@ WRAP_CUSTOM {
             " GetResetXformStack() to be able to construct the local-to-world"
             " transformation.")
 
-        .def("IsTransformationAffectedByAttrNamed", &This::IsTransformationAffectedByAttrNamed)
-            .staticmethod("IsTransformationAffectedByAttrNamed")
+        .def_static("IsTransformationAffectedByAttrNamed", &This::IsTransformationAffectedByAttrNamed)
     ;
 }
 

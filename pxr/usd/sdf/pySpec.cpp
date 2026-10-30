@@ -21,15 +21,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_PySpecDetail {
 
-bp::object
-_DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */)
-{
-    return bp::object();
-}
-
 // Returns a repr based on Sdf.Find().
 std::string
-_SpecRepr(const bp::object& self, const SdfSpec* spec)
+_SpecRepr(nanobind::handle self, const SdfSpec* spec)
 {
     if (!spec || spec->IsDormant() || !spec->GetLayer()) {
         return "<dormant " + TfPyGetClassName(self) + ">";
@@ -66,7 +60,7 @@ PyObject*
 _CreateHolder(const std::type_info& ti, const SdfSpec& spec)
 {
     if (spec.IsDormant()) {
-        return bp::detail::none();
+        Py_RETURN_NONE;
     }
     else {
         // Get the TfType for the object's actual type.  If there's an
@@ -80,7 +74,7 @@ _CreateHolder(const std::type_info& ti, const SdfSpec& spec)
                 TF_CODING_ERROR("No conversion for registed for \"%s\"",
                                 type.GetTypeName().c_str());
             }
-            return bp::detail::none();
+            Py_RETURN_NONE;
         }
         else {
             return (i->second)(spec);

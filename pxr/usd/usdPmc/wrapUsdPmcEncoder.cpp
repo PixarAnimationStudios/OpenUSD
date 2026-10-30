@@ -8,12 +8,14 @@
 #include "usdPmcEncoder.h"
 
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/init.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -28,10 +30,12 @@ _EncodeStage(UsdPmcMeshEncoder& self,
 
 } // anonymous namespace
 
-void wrapUsdPmcMeshEncoder()
+void wrapUsdPmcMeshEncoder(nb::module_ &m)
 {
-    class_<UsdPmcMeshEncoder>("UsdPmcMeshEncoder", init<>())
+    nb::class_<UsdPmcMeshEncoder>(m, "UsdPmcMeshEncoder")
+        .def(nb::init<>())
         .def("EncodeStage", &_EncodeStage,
-             (arg("inFile"), arg("outFile"), arg("options") = VtDictionary()))
+             nb::arg("inFile"), nb::arg("outFile"),
+             nb::arg("options") = VtDictionary())
         ;
 }

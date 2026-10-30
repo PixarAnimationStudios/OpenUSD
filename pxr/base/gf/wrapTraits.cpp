@@ -7,19 +7,20 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/external/boost/python/def.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapTraits()
+void wrapTraits(nb::module_ &m)
 {
-    def("IsFloatingPointType",
+    m.def("IsFloatingPointType",
         (bool (*)(const TfType&))GfIsFloatingPointType,
-        arg("type"),
+        nb::arg("type"),
         "Return True if the TfType represents a floating-point type "
         "(double, float, or GfHalf).");
 }

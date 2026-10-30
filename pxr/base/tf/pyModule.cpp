@@ -12,10 +12,12 @@
 
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyModuleNotice.h"
 #include "pxr/base/tf/pyTracing.h"
 #include "pxr/base/tf/pyWrapContext.h"
@@ -24,24 +26,136 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include "pxr/external/boost/python/docstring_options.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/object/function.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python/dict.hpp"
-#include "pxr/external/boost/python/raw_function.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/type_list.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include "nb_internals.h"
+#include "pxr/base/tf/hashmap.h"
 
 #include <string>
+#include <vector>
 
 using std::string;
 
+namespace nanobind::detail {
+static nb_internals *tf_nb_internals = nullptr;
+NB_CORE nb_internals *nb_ctx_unavailable() noexcept {
+    return tf_nb_internals;
+}
+} // namespace nanobind::detail
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
+namespace {
+
+struct _NbFuncHookInfo {
+    vectorcallfunc origVectorcall;
+    std::string funcName;
+    std::string fileName;
+};
+
+TfHashMap<PyObject *, _NbFuncHookInfo, TfHash> &
+_GetNbFuncHookMap()
+{
+    static auto *map = new TfHashMap<PyObject *, _NbFuncHookInfo, TfHash>();
+    return *map;
+}
+
+PyObject *
+_NbVectorcallWithErrorHandling(
+    PyObject *self, PyObject *const *args, size_t nargsf, PyObject *kwnames)
+{
+    auto &hookMap = _GetNbFuncHookMap();
+    auto it = hookMap.find(self);
+    if (ARCH_UNLIKELY(it == hookMap.end())) {
+        PyErr_SetString(PyExc_SystemError,
+                        "Tf_ModuleProcessor: missing nanobind vectorcall hook");
+        return nullptr;
+    }
+    const _NbFuncHookInfo &hook = it->second;
+
+    TfPyTraceInfo info;
+    info.arg = NULL;
+    info.funcName = hook.funcName.c_str();
+    info.fileName = hook.fileName.c_str();
+    info.funcLine = 0;
+
+    info.what = PyTrace_CALL;
+    Tf_PyFabricateTraceEvent(info);
+
+    TfErrorMark m;
+    PyObject *ret = hook.origVectorcall(self, args, nargsf, kwnames);
+
+    info.what = PyTrace_RETURN;
+    Tf_PyFabricateTraceEvent(info);
+
+    if (ARCH_UNLIKELY(!ret)) {
+        return nullptr;
+    }
+
+    if (ARCH_UNLIKELY(!m.IsClean() &&
+                      TfPyConvertTfErrorsToPythonException(m))) {
+        Py_DECREF(ret);
+        return nullptr;
+    }
+
+    return ret;
+}
+
+std::vector<PyObject *> &
+_GetNanobindModuleStack()
+{
+    static auto *stack = new std::vector<PyObject *>();
+    return *stack;
+}
+
+} // namespace
+
+TF_API
+nanobind::module_
+TfPyGetCurrentNanobindModule()
+{
+    auto &stack = _GetNanobindModuleStack();
+    if (stack.empty()) {
+        return nanobind::borrow<nanobind::module_>(nullptr);
+    }
+    return nanobind::borrow<nanobind::module_>(stack.back());
+}
+
+TF_API
+PyObject*
+Tf_PyInitModule(PyModuleDef& moduledef, void (*init_function)())
+{
+    PyObject *mod = PyModule_Create(&moduledef);
+    if (!mod) {
+        return nullptr;
+    }
+    _GetNanobindModuleStack().push_back(mod);
+    try {
+        init_function();
+        _GetNanobindModuleStack().pop_back();
+        if (PyErr_Occurred()) {
+            Py_DECREF(mod);
+            return nullptr;
+        }
+        return mod;
+    } catch (nanobind::python_error &e) {
+        _GetNanobindModuleStack().pop_back();
+        e.restore();
+    } catch (std::exception const &e) {
+        _GetNanobindModuleStack().pop_back();
+        if (!PyErr_Occurred()) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+        }
+    } catch (...) {
+        _GetNanobindModuleStack().pop_back();
+        if (!PyErr_Occurred()) {
+            PyErr_SetString(PyExc_RuntimeError, "unidentifiable C++ exception");
+        }
+    }
+    Py_DECREF(mod);
+    return nullptr;
+}
 
 class Tf_ModuleProcessor {
 public:
@@ -49,71 +163,52 @@ public:
     typedef Tf_ModuleProcessor This;
 
     using WalkCallbackFn =
-        bool (This::*) (char const *, object const &, object const &);
+        bool (This::*) (char const *, nanobind::object const &, nanobind::object const &);
 
-    inline bool IsBoostPythonFunc(object const &obj)
+    inline bool IsNanobindFunc(nanobind::object const &obj)
     {
-        if (!_cachedBPFuncType) {
-            handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
-            if (strstr(PyUnicode_AsUTF8(typeStr.get()), "Boost.Python.function")) {
-                _cachedBPFuncType = (PyObject *)obj.ptr()->ob_type;
-                return true;
-            }
-            return false;
-        }
-        return (PyObject *)obj.ptr()->ob_type == _cachedBPFuncType;
+        const char *tpName = Py_TYPE(obj.ptr())->tp_name;
+        return tpName && (strstr(tpName, "nanobind.nb_func") ||
+                          strstr(tpName, "nanobind.nb_method"));
     }
 
-    inline bool IsBoostPythonClass(object const &obj)
-    { 
-        if (!_cachedBPClassType) {
-            handle<> typeStr(PyObject_Str((PyObject *)obj.ptr()->ob_type));
-            if (strstr(PyUnicode_AsUTF8(typeStr.get()), "Boost.Python.class")) {
-                _cachedBPClassType = (PyObject *)obj.ptr()->ob_type;
-                return true;
-            }
-            return false;
-        }
-        return (PyObject *)obj.ptr()->ob_type == _cachedBPClassType;
+    inline bool IsNanobindClass(nanobind::object const &obj)
+    {
+        const char *tpName = Py_TYPE(obj.ptr())->tp_name;
+        return tpName && strstr(tpName, "nanobind.nb_type");
     }
 
-    inline bool IsProperty(object const &obj)
+    inline bool IsProperty(nanobind::object const &obj)
     {
         return PyObject_TypeCheck(obj.ptr(), &PyProperty_Type);
     }
 
-    inline bool IsStaticMethod(object const &obj)
+    inline bool IsStaticMethod(nanobind::object const &obj)
     {
         return PyObject_TypeCheck(obj.ptr(), &PyStaticMethod_Type);
     }
     
-    inline bool IsClassMethod(object const &obj)
+    inline bool IsClassMethod(nanobind::object const &obj)
     { 
         return PyObject_TypeCheck(obj.ptr(), &PyClassMethod_Type);
     }
 
 private:
-    void _WalkModule(object const &obj, WalkCallbackFn callback,
+    void _WalkModule(nanobind::object const &obj, WalkCallbackFn callback,
                      TfHashSet<PyObject *, TfHash> *visitedObjs)
     {
         if (PyObject_HasAttrString(obj.ptr(), "__dict__")) {
-            // In python 3 dict.items() returns a proxy view object, not a list.
-            // pxr_boost::python::extract<list> fails on these views, and raises:
-            // 
-            // TypeError: Expecting an object of type list; got an object of type
-            // dict_items instead
-            //
-            // A workaround is to use the pxr_boost::python::list constructor
-            object items_view = obj.attr("__dict__").attr("items")();
-            list items(items_view);
-            size_t lenItems = len(items);
+            nanobind::object items_view = obj.attr("__dict__").attr("items")();
+            nanobind::list items(items_view);
+            size_t lenItems = nanobind::len(items);
             for (size_t i = 0; i < lenItems; ++i) {
-                object value = items[i][1];
+                nanobind::object item = items[i];
+                nanobind::object value = item[1];
                 if (!visitedObjs->count(value.ptr())) {
-                    const std::string name = PyUnicode_AsUTF8(object(items[i][0]).ptr());
+                    const std::string name = PyUnicode_AsUTF8(nanobind::object(item[0]).ptr());
                     bool keepGoing = (this->*callback)(name.c_str(), obj, value);
                     visitedObjs->insert(value.ptr());
-                    if (IsBoostPythonClass(value) && keepGoing) {
+                    if (IsNanobindClass(value) && keepGoing) {
                         _WalkModule(value, callback, visitedObjs);
                     }
                 }
@@ -122,187 +217,78 @@ private:
     }
 
 public:
-    void WalkModule(object const &obj, WalkCallbackFn callback)
+    void WalkModule(nanobind::object const &obj, WalkCallbackFn callback)
     {
         TfHashSet<PyObject *, TfHash> visited;
         _WalkModule(obj, callback, &visited);
     }
 
-    class _InvokeWithErrorHandling
+    void HookNanobindFunc(
+        const char *name, nanobind::object const &owner, nanobind::object const &fn)
     {
-    public:
-        _InvokeWithErrorHandling(object const &fn,
-                                 string const &funcName,
-                                 string const &fileName)
-            : _fn(fn)
-            , _funcName(funcName)
-            , _fileName(fileName)
-        {}
-
-        PyObject *operator()(PyObject *args, PyObject *kw) const {
-
-            // Fabricate a python tracing event to record the python -> c++ ->
-            // python transition.
-            TfPyTraceInfo info;
-            info.arg = NULL;
-            info.funcName = _funcName.c_str();
-            info.fileName = _fileName.c_str();
-            info.funcLine = 0;
-
-            // Fabricate the call tracing event.
-            info.what = PyTrace_CALL;
-            Tf_PyFabricateTraceEvent(info);
-
-            // Make an error mark.
-            TfErrorMark m;
-
-            // Call the function.
-            PyObject *ret = PyObject_Call(_fn.ptr(), args, kw);
-
-            // Fabricate the return tracing event.
-            info.what = PyTrace_RETURN;
-            Tf_PyFabricateTraceEvent(info);
-
-            // If the call did not complete successfully, just throw back into
-            // python.
-            if (ARCH_UNLIKELY(!ret)) {
-                TF_VERIFY(PyErr_Occurred());
-                throw_error_already_set();
-            }
-
-            // If the call completed successfully, then we need to see if any tf
-            // errors occurred, and if so, convert them to python exceptions.
-            if (ARCH_UNLIKELY(!m.IsClean() &&
-                              TfPyConvertTfErrorsToPythonException(m))) {
-                Py_DECREF(ret);
-                throw_error_already_set();
-            }
-
-            // Otherwise everything was clean -- return the result.
-            return ret;
+        if (fn.ptr() == Py_None || !IsNanobindFunc(fn)) {
+            return;
         }
-
-    private:
-        object _fn;
-        std::string _funcName;
-        std::string _fileName;
-    };
-
-    object DecorateForErrorHandling(
-        const char *name, object const &owner, object const &fn)
-    {
-        object ret = fn;
-        if (ARCH_LIKELY(fn.ptr() != Py_None)) {
-            // Make a new function, and bind in the tracing info, funcname and
-            // filename.  The perhaps slighly unusual string operations are for
-            // performance reasons.
-            string *fullNamePrefix = &_newModuleName;
-            string localPrefix;
-            if (PyObject_HasAttrString(owner.ptr(), "__module__")) {
-                char const *ownerName =
-                    PyUnicode_AsUTF8(PyObject_GetAttrString
-                                       (owner.ptr(), "__name__"));
-                localPrefix.append(_newModuleName);
-                localPrefix.push_back('.');
-                localPrefix.append(ownerName);
-                fullNamePrefix = &localPrefix;
-            }
-
-            ret = pxr_boost::python::detail::make_raw_function(
-                pxr_boost::python::objects::py_function(
-                    _InvokeWithErrorHandling(
-                        fn, *fullNamePrefix + "." + name, *fullNamePrefix),
-                    pxr_boost::python::type_list<PyObject *>(),
-                    /*min_args =*/ 0,
-                    /*max_args =*/ ~0
-                    )
-                );
-            
-            ret.attr("__doc__") = fn.attr("__doc__");
+        auto *nbFn = reinterpret_cast<nanobind::detail::nb_func *>(fn.ptr());
+        if (nbFn->vectorcall == &_NbVectorcallWithErrorHandling) {
+            return;
         }
-
-        return ret;
+        string *fullNamePrefix = &_newModuleName;
+        string localPrefix;
+        if (PyObject_HasAttrString(owner.ptr(), "__module__")) {
+            PyObject *ownerNameObj = PyObject_GetAttrString(owner.ptr(), "__name__");
+            if (ownerNameObj) {
+                char const *ownerName = PyUnicode_AsUTF8(ownerNameObj);
+                if (ownerName) {
+                    localPrefix.append(_newModuleName);
+                    localPrefix.push_back('.');
+                    localPrefix.append(ownerName);
+                    fullNamePrefix = &localPrefix;
+                }
+                Py_DECREF(ownerNameObj);
+            } else {
+                PyErr_Clear();
+            }
+        }
+        _GetNbFuncHookMap()[fn.ptr()] = _NbFuncHookInfo{
+            nbFn->vectorcall,
+            *fullNamePrefix + "." + name,
+            *fullNamePrefix
+        };
+        nbFn->vectorcall = &_NbVectorcallWithErrorHandling;
     }
 
-    inline object ReplaceFunctionOnOwner(char const *name, object owner, object fn)
-    {
-        object newFn = DecorateForErrorHandling(name, owner, fn);
-        PyObject_DelAttrString(owner.ptr(), name);
-        objects::function::add_to_namespace(owner, name, newFn);
-        return newFn;
-    }
-    
     bool WrapForErrorHandlingCB(
-        char const *name, object const &owner, object const &obj)
+        char const *name, nanobind::object const &owner, nanobind::object const &obj)
     {
         // Handle no-throw list stuff...
         if (!strcmp(name, "RepostErrors") || 
             !strcmp(name, "ReportActiveMarks")) {
-            // We don't wrap these with error handling because they are used to
-            // manage error handling, and wrapping them with it would make them
-            // misbehave.  RepostErrors() is intended to either push errors back
-            // onto the error list or report them, if there are no extant error
-            // marks.  If we wrapped RepostErrors with error handling, then it
-            // would always have an error mark (to do the error handling) and
-            // could not ever report errors correctly.  It would also simply
-            // reraise the posted errors as an exception in python, defeating
-            // its purpose entirely.
             return false;
-        } else if (IsBoostPythonFunc(obj)) {
-            // Replace owner's name attribute with decorated function obj.
-            // Do this by using boost.python's add_to_namespace, since that sets
-            // up the function name correctly.  Unfortunately to do this we need
-            // to make the new function, delete the old function, and add it
-            // again.  Otherwise add_to_namespace will attempt to add an
-            // overload.
-            ReplaceFunctionOnOwner(name, owner, obj);
+        } else if (IsNanobindFunc(obj)) {
+            HookNanobindFunc(name, owner, obj);
             return false;
         } else if (IsProperty(obj)) {
-            // Replace owner's name attribute with a new property, decorating the
-            // get, set, and del functions.
-
-            // XXX: In Python 3.9+ this is equivalent to
-            // if (!Py_IS_TYPE(obj.ptr(), &PyProperty_Type)) {
-            if (Py_TYPE(obj.ptr()) != &PyProperty_Type) {
-                // XXX If the type of this object is not Python's built-in
-                // property descriptor, this at least for now means that this 
-                // is likely a static property. For now, we just don't wrap
-                // static properties with error handling.
-            } else {
-                object propType(handle<>(borrowed(&PyProperty_Type)));
-                object newfget =
-                    DecorateForErrorHandling(name, owner, obj.attr("fget"));
-                object newfset =
-                    DecorateForErrorHandling(name, owner, obj.attr("fset"));
-                object newfdel =
-                    DecorateForErrorHandling(name, owner, obj.attr("fdel"));
-                object newProp =
-                    propType(newfget, newfset, newfdel,
-                             object(obj.attr("__doc__")));
-                setattr(owner, name, newProp);
+            if (Py_TYPE(obj.ptr()) == &PyProperty_Type) {
+                nanobind::object fget = obj.attr("fget");
+                nanobind::object fset = obj.attr("fset");
+                nanobind::object fdel = obj.attr("fdel");
+                HookNanobindFunc(name, owner, fget);
+                HookNanobindFunc(name, owner, fset);
+                HookNanobindFunc(name, owner, fdel);
             }
             return false;
         } else if (IsStaticMethod(obj)) {
-            object underlyingFn = obj.attr("__get__")(owner);
-            if (IsBoostPythonFunc(underlyingFn)) {
-                // Replace owner's name attribute with a new staticmethod,
-                // decorating the underlying function.
-                object newFn =
-                    ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                setattr(owner, name,
-                    object(handle<>(PyStaticMethod_New(newFn.ptr()))));
+            nanobind::object underlyingFn = obj.attr("__get__")(owner);
+            if (IsNanobindFunc(underlyingFn)) {
+                HookNanobindFunc(name, owner, underlyingFn);
             }
             return false;
         } else if (IsClassMethod(obj)) {
-            object underlyingFn =
+            nanobind::object underlyingFn =
                 obj.attr("__get__")(owner).attr("__func__");
-            if (IsBoostPythonFunc(underlyingFn)) {
-                // Replace owner's name attribute with a new classmethod, decorating
-                // the underlying function.
-                object newFn =
-                    ReplaceFunctionOnOwner(name, owner, underlyingFn);
-                setattr(owner, name,
-                    object(handle<>(PyClassMethod_New(newFn.ptr()))));
+            if (IsNanobindFunc(underlyingFn)) {
+                HookNanobindFunc(name, owner, underlyingFn);
             }
             return false;
         }
@@ -316,15 +302,17 @@ public:
 
 
     bool FixModuleAttrsCB(
-        char const *name, object const& owner, object const &obj)
+        char const *name, nanobind::object const& owner, nanobind::object const &obj)
     {
+        if (IsNanobindFunc(obj)) {
+            auto *nbFn = reinterpret_cast<nanobind::detail::nb_func *>(obj.ptr());
+            Py_XSETREF(nbFn->module_name, Py_NewRef(_newModuleNameObj.ptr()));
+            return true;
+        }
         if (PyObject_HasAttrString(obj.ptr(), "__module__")) {
             PyObject_SetAttrString(obj.ptr(), "__module__",
                                    _newModuleNameObj.ptr());
             if (PyErr_Occurred()) {
-                /*
-                 * Boost python functions still screw up here.
-                 */
                 PyErr_Clear();
             }
         }
@@ -336,43 +324,38 @@ public:
     }
 
 
-    Tf_ModuleProcessor(object const &module)
+    Tf_ModuleProcessor(nanobind::object const &module)
         : _module(module)
-        , _cachedBPFuncType(0)
-        , _cachedBPClassType(0)
     {
-        auto obj = object(module.attr("__name__"));
+        auto obj = nanobind::object(module.attr("__name__"));
         _oldModuleName =
             PyUnicode_AsUTF8(obj.ptr());
         _newModuleName = TfStringGetBeforeSuffix(_oldModuleName);
-        _newModuleNameObj = object(_newModuleName);
+        _newModuleNameObj = nanobind::cast(_newModuleName);
     }
 
 private:
 
     string _oldModuleName, _newModuleName;
-    object _newModuleNameObj;
+    nanobind::object _newModuleNameObj;
 
-    object _module;
-
-    PyObject *_cachedBPFuncType;
-    PyObject *_cachedBPClassType;
-
+    nanobind::object _module;
 };
     
 void Tf_PyPostProcessModule()
 {
-    // First fix up module names for classes, the wrap all functions with proper
+    // First fix up module names for classes, then wrap all functions with proper
     // error handling.
-    scope module;
+    nanobind::module_ module = TfPyGetCurrentNanobindModule();
     try {
         Tf_ModuleProcessor mp(module);
         mp.FixModuleAttrs();
         mp.WrapForErrorHandling();
         if (PyErr_Occurred())
-            throw_error_already_set();
-    } catch (error_already_set const &) {
-        string name = extract<string>(module.attr("__name__"));
+            throw nanobind::python_error();
+    } catch (nanobind::python_error &e) {
+        e.restore();
+        string name = nanobind::cast<string>(module.attr("__name__"));
         TF_WARN("Error occurred postprocessing module %s!", name.c_str());
         TfPyPrintError();
     }
@@ -400,7 +383,7 @@ void Tf_PyInitWrapModule(
     TfScriptModuleLoader::GetInstance().
         LoadModulesForLibrary(TfToken(packageName));
     if (PyErr_Occurred()) {
-        throw_error_already_set();
+        throw nanobind::python_error();
     }
 
     TfAutoMallocTag tag(packageTag2, "WrapModule", packageTag);
@@ -411,11 +394,20 @@ void Tf_PyInitWrapModule(
     // Provide a way to find the full mfb name of the package.  Can't use the
     // TfToken, because when we get here in loading Tf, TfToken has not yet been
     // wrapped.
-    pxr_boost::python::scope().attr("__MFB_FULL_PACKAGE_NAME") = packageName;
+    nanobind::module_ mod = TfPyGetCurrentNanobindModule();
+    PyObject_SetAttrString(mod.ptr(), "__MFB_FULL_PACKAGE_NAME",
+                           PyUnicode_FromString(packageName));
 
-    // Disable docstring auto signatures.
-    pxr_boost::python::docstring_options docOpts(true /*show user-defined*/,
-                                             false /*show signatures*/);
+    nanobind::detail::init_singletons();
+    nanobind::detail::tf_nb_internals =
+        nanobind::detail::nb_module_init(NB_DOMAIN_STR, mod.ptr());
+    nanobind::set_leak_warnings(false);
+    Tf_PyIdentityHelper::SetEraseCallback([](PyObject *obj) {
+        if (nanobind::inst_check(obj)) {
+            nanobind::inst_set_state(
+                obj, /*ready=*/false, /*destruct=*/false);
+        }
+    });
 
     // Do the wrapping.
     wrapModule();

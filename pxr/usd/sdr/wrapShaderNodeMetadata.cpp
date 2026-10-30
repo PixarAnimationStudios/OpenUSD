@@ -6,46 +6,50 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/usd/sdr/shaderNodeMetadata.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapShaderNodeMetadata()
+void wrapShaderNodeMetadata(nanobind::module_ &m)
 {
     typedef SdrShaderNodeMetadata This;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeMetadata", SdrNodeMetadata, SDR_NODE_METADATA_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeMetadata", SdrNodeMetadata, SDR_NODE_METADATA_TOKENS
     );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeDomain", SdrNodeDomain, SDR_NODE_DOMAIN_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeDomain", SdrNodeDomain, SDR_NODE_DOMAIN_TOKENS
     );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeSubdomain", SdrNodeSubdomain, SDR_NODE_SUBDOMAIN_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeSubdomain", SdrNodeSubdomain, SDR_NODE_SUBDOMAIN_TOKENS
     );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeContext", SdrNodeContext, SDR_NODE_CONTEXT_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeContext", SdrNodeContext, SDR_NODE_CONTEXT_TOKENS
     );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
     );
 
-    class_<This>("ShaderNodeMetadata", no_init)
+    nb::class_<This>(m, "ShaderNodeMetadata")
         .def("HasItem", &This::HasItem)
         .def("GetItemValue", &This::GetItemValue)
         .def("GetItems",
-             +[](const SdrShaderNodeMetadata& metadata) {
+             [](const SdrShaderNodeMetadata& metadata) {
                 return metadata.GetItems();
-             }, return_value_policy<return_by_value>())
-        .def("GetDefaultValue", &This::GetDefaultValue)
-        .staticmethod("GetDefaultValue")
-        .def("GetDefaultValues", &This::GetDefaultValues,
-            return_value_policy<return_by_value>())
-        .staticmethod("GetDefaultValues")
+             })
+        .def_static("GetDefaultValue", &This::GetDefaultValue)
+        .def_static("GetDefaultValues", &This::GetDefaultValues)
         .def("HasLabel", &This::HasLabel)
         .def("GetLabel", &This::GetLabel)
         .def("HasCategory", &This::HasCategory)
@@ -78,4 +82,5 @@ void wrapShaderNodeMetadata()
              &This::HasSdrDefinitionNameFallbackPrefix)
         .def("GetSdrDefinitionNameFallbackPrefix",
              &This::GetSdrDefinitionNameFallbackPrefix);
+
 }

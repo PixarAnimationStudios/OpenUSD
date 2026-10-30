@@ -9,28 +9,28 @@
 
 #include "pxr/base/tf/stopwatch.h"
 
-#include "pxr/external/boost/python/class.hpp"
-
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-void wrapStopwatch() {
+void wrapStopwatch(nanobind::module_& m) {
 
     typedef TfStopwatch This;
+    namespace nb = nanobind;
 
-    class_<This>("Stopwatch")
+    nb::class_<This>(m, "Stopwatch")
+        .def(nb::init<>())
+        .def(nb::init<const This&>())
 
         .def("Start", &This::Start)
         .def("Stop", &This::Stop)
         .def("Reset", &This::Reset)
         .def("AddFrom", &This::AddFrom)
 
-        .add_property("nanoseconds", &This::GetNanoseconds)
-        .add_property("microseconds", &This::GetMicroseconds)
-        .add_property("milliseconds", &This::GetMilliseconds)
-        .add_property("sampleCount", &This::GetSampleCount)
-        .add_property("seconds", &This::GetSeconds)
+        .def_prop_ro("nanoseconds", &This::GetNanoseconds)
+        .def_prop_ro("microseconds", &This::GetMicroseconds)
+        .def_prop_ro("milliseconds", &This::GetMilliseconds)
+        .def_prop_ro("sampleCount", &This::GetSampleCount)
+        .def_prop_ro("seconds", &This::GetSeconds)
         ;
 }

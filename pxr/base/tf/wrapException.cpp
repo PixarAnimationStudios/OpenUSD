@@ -14,12 +14,10 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyErrorInternal.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/exception_translator.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 // This is created below, in the wrap function.
 static PyObject *tfExceptionClass;
@@ -69,14 +67,14 @@ static void Translate(TfBaseException const &exc)
     std::exception_ptr cppExc = std::current_exception();
     if (TF_VERIFY(cppExc)) {
         TfPyExceptionStateScope pyExcState;
-        pxr_boost::python::object pyErr(pyExcState.Get().GetValue());
+        nanobind::object pyErr = pyExcState.Get().GetValue();
         uintptr_t cppExcAddr;
         std::unique_ptr<std::exception_ptr>
             cppExecPtrPtr(new std::exception_ptr(cppExc));
         std::exception_ptr *eptrAddr = cppExecPtrPtr.get();
         memcpy(&cppExcAddr, &eptrAddr, sizeof(cppExcAddr));
         // Stash it.
-        pyErr.attr("_pxr_SavedTfException") = cppExcAddr;
+        pyErr.attr("_pxr_SavedTfException") = nanobind::cast(cppExcAddr);
         cppExecPtrPtr.release();
     }
 }
@@ -99,24 +97,35 @@ static void _ThrowTest(std::string message)
     PXR_TF_THROW(_TestExceptionToPython, message);
 }
 
-static void _CallThrowTest(pxr_boost::python::object fn)
+static void _CallThrowTest(nanobind::object fn)
 {
     TfPyCall<void> callFn(fn);
     callFn();
 }
 
-void wrapException()
+void wrapException(nanobind::module_& m)
 {
     char excClassName[] = "pxr.Tf.CppException"; // XXX: Custom py NS here?
     tfExceptionClass = PyErr_NewException(excClassName, NULL, NULL);
 
     // Expose the exception class to python.
-    scope().attr("CppException") = pxr_boost::python::handle<>(tfExceptionClass);
+    m.attr("CppException") = nanobind::steal(tfExceptionClass);
     
-    // Register the exception translator with pxr_boost::python.
-    register_exception_translator<TfBaseException>(Translate);
+    // Register the exception translator with nanobind.
+    nanobind::register_exception_translator(
+        [](const std::exception_ptr &p, void *) {
+            try {
+                if (p) {
+                    std::rethrow_exception(p);
+                }
+            } catch (const TfBaseException &e) {
+                Translate(e);
+            }
+        });
 
     // Test support.
-    pxr_boost::python::def("_ThrowTest", _ThrowTest);
-    pxr_boost::python::def("_CallThrowTest", _CallThrowTest);
+    m.def("_ThrowTest", _ThrowTest);
+    m.def("_CallThrowTest", [](nanobind::handle fn) {
+        _CallThrowTest(nanobind::borrow<nanobind::object>(fn));
+    });
 }

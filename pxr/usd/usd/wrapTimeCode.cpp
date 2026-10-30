@@ -12,19 +12,20 @@
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 using std::string;
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -58,28 +59,26 @@ static string __repr__(const UsdTimeCode &self)
 
 } // anonymous namespace 
 
-void wrapUsdTimeCode()
+void wrapUsdTimeCode(nb::module_ &m)
 {
-    scope s = class_<UsdTimeCode>("TimeCode")
-        .def(init<double>())
-        .def(init<GfTimeCode>())
-        .def(init<UsdTimeCode>())
+    nb::class_<UsdTimeCode> s(m, "TimeCode");
+    s
+        .def(nb::init<>())
+        .def(nb::init<double>())
+        .def(nb::init<GfTimeCode>())
+        .def(nb::init<UsdTimeCode>())
 
-        .def("PreTime", static_cast<UsdTimeCode(*)(double)>(
-            &UsdTimeCode::PreTime), (arg("value")))
-        .def("PreTime", static_cast<UsdTimeCode(*)(const GfTimeCode&)>(
-            &UsdTimeCode::PreTime), (arg("timeCode")))
-        .staticmethod("PreTime")
+        .def_static("PreTime", static_cast<UsdTimeCode(*)(double)>(
+            &UsdTimeCode::PreTime), nb::arg("value"))
+        .def_static("PreTime", static_cast<UsdTimeCode(*)(const GfTimeCode&)>(
+            &UsdTimeCode::PreTime), nb::arg("timeCode"))
 
-        .def("EarliestTime", &UsdTimeCode::EarliestTime)
-        .staticmethod("EarliestTime")
+        .def_static("EarliestTime", &UsdTimeCode::EarliestTime)
         
-        .def("Default", &UsdTimeCode::Default)
-        .staticmethod("Default")
+        .def_static("Default", &UsdTimeCode::Default)
         
-        .def("SafeStep", &UsdTimeCode::SafeStep,
-             (arg("maxValue")=1e6, arg("maxCompression")=10.0))
-        .staticmethod("SafeStep")
+        .def_static("SafeStep", &UsdTimeCode::SafeStep,
+             nb::arg("maxValue")=1e6, nb::arg("maxCompression")=10.0)
 
         .def("IsPreTime", &UsdTimeCode::IsPreTime)
         .def("IsEarliestTime", &UsdTimeCode::IsEarliestTime)
@@ -87,36 +86,36 @@ void wrapUsdTimeCode()
         .def("IsNumeric", &UsdTimeCode::IsNumeric)
         .def("GetValue", &UsdTimeCode::GetValue)
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self <= self)
-        .def(self > self)
-        .def(self >= self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self >= nb::self)
 
-
-        .def(other<SdfLayerOffset>() * self)
+        .def(SdfLayerOffset() * nb::self)
 
         .def("__hash__", __hash__)
         .def("__repr__", __repr__)
 //        .def(str(self))
         .def("__str__", _Str)
         ;
-        TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
-        to_python_converter<std::vector<UsdTimeCode>, 
-            TfPySequenceToPython<std::vector<UsdTimeCode>>>();
 
-        // Following is only to test that we can pass a vector of UsdTimeCode
-        // objects to and from Python.
-        def("Test_TimeCodeSequenceRoundTrip", 
-            +[](const std::vector<UsdTimeCode> &times) {
-                return times;  
-            },
-            return_value_policy<TfPySequenceToList>());
-            (args("times"));
+    TfPyRegisterStlSequencesFromPython<UsdTimeCode>();
 
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdTimeCodeTokens, USD_TIME_CODE_TOKENS);
+    // Following is only to test that we can pass a vector of UsdTimeCode
+    // objects to and from Python.
+    s.def_static("Test_TimeCodeSequenceRoundTrip", 
+        +[](const std::vector<UsdTimeCode> &times) {
+            return times;  
+        },
+        nb::arg("times"));
 
-    implicitly_convertible<double, UsdTimeCode>();
-    implicitly_convertible<GfTimeCode, UsdTimeCode>();
+    TF_NB_WRAP_PUBLIC_TOKENS(s, "Tokens", UsdTimeCodeTokens, USD_TIME_CODE_TOKENS)
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        });
+
+    nb::implicitly_convertible<double, UsdTimeCode>();
+    nb::implicitly_convertible<GfTimeCode, UsdTimeCode>();
 }

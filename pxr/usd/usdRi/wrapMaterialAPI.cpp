@@ -14,15 +14,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -35,21 +34,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateSurfaceAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSurfaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplacementAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisplacementAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateVolumeAttr(UsdRiMaterialAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateVolumeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -80,63 +79,57 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdRiMaterialAPI()
+void wrapUsdRiMaterialAPI(nb::module_ &m)
 {
     typedef UsdRiMaterialAPI This;
 
-    UsdRiMaterialAPI_CanApplyResult::Wrap<UsdRiMaterialAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdRiMaterialAPI_CanApplyResult::WrapNb<UsdRiMaterialAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("MaterialAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "MaterialAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetSurfaceAttr",
              &This::GetSurfaceAttr)
         .def("CreateSurfaceAttr",
              &_CreateSurfaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetDisplacementAttr",
              &This::GetDisplacementAttr)
         .def("CreateDisplacementAttr",
              &_CreateDisplacementAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetVolumeAttr",
              &This::GetVolumeAttr)
         .def("CreateVolumeAttr",
              &_CreateVolumeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -168,12 +161,12 @@ namespace {
 WRAP_CUSTOM {
     typedef UsdRiMaterialAPI This;
     _class
-        .def(init<UsdShadeMaterial>(arg("material")))
+        .def(nb::init<UsdShadeMaterial>(), nb::arg("material"))
 
-        .def("GetSurface", &This::GetSurface, (arg("ignoreBaseMaterial")=false))
+        .def("GetSurface", &This::GetSurface, nb::arg("ignoreBaseMaterial")=false)
         .def("GetDisplacement", &This::GetDisplacement, 
-             (arg("ignoreBaseMaterial")=false))
-        .def("GetVolume", &This::GetVolume, (arg("ignoreBaseMaterial")=false))
+             nb::arg("ignoreBaseMaterial")=false)
+        .def("GetVolume", &This::GetVolume, nb::arg("ignoreBaseMaterial")=false)
  
         .def("GetSurfaceOutput", &This::GetSurfaceOutput)
         .def("GetDisplacementOutput", &This::GetDisplacementOutput)
@@ -185,8 +178,8 @@ WRAP_CUSTOM {
  
         .def("ComputeInterfaceInputConsumersMap", 
             &This::ComputeInterfaceInputConsumersMap, 
-            (arg("computeTransitiveConsumers")=false),
-            return_value_policy<TfPyMapToDictionary>())
+            nb::arg("computeTransitiveConsumers")=false,
+            nb::rv_policy::copy)
     ;
 }
 

@@ -21,15 +21,10 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"
-#include "pxr/external/boost/python/errors.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
@@ -38,8 +33,6 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -60,7 +53,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    {{ MAT }} &mat = extract<{{ MAT }} &>(self);
+    {{ MAT }} &mat = *nanobind::inst_ptr<{{ MAT }}>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(mat.GetArray());
@@ -94,11 +87,9 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return 0;
 }
 
-// This structure serves to instantiate a PyBufferProcs instance with pointers
-// to the right buffer protocol functions.
-static PyBufferProcs bufferProcs = {
-    (getbufferproc) getbuffer,
-    (releasebufferproc) 0,
+static const PyType_Slot bufferSlots[] = {
+    { Py_bf_getbuffer, (void *)getbuffer },
+    { 0, nullptr }
 };
 
 // End python buffer protocol support.
@@ -121,7 +112,7 @@ static void
 throwIndexErr( const char *msg )
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    pxr_boost::python::throw_error_already_set();
+    throw nanobind::python_error();
 }    
 
 static int
@@ -134,11 +125,11 @@ static int __len__({{ MAT }} const &self) {
     return {{ DIM }};
 }
 
-static {{ SCL }} __getitem__{{ SCL }}({{ MAT }} const &self, tuple index) {
+static {{ SCL }} __getitem__{{ SCL }}({{ MAT }} const &self, nanobind::tuple index) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (nanobind::len(index) == 2) {
+        i1 = normalizeIndex(nanobind::cast<int>(index[0]));
+        i2 = normalizeIndex(nanobind::cast<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -149,11 +140,11 @@ static GfVec{{ SUFFIX }} __getitem__vector({{ MAT }} const &self, int index) {
     return GfVec{{ SUFFIX }}(self[normalizeIndex(index)]);
 }
 
-static void __setitem__{{ SCL }}({{ MAT }} &self, tuple index, {{ SCL }} value) {
+static void __setitem__{{ SCL }}({{ MAT }} &self, nanobind::tuple index, {{ SCL }} value) {
     int i1=0, i2=0;
-    if (len(index) == 2) {
-        i1 = normalizeIndex(extract<int>(index[0]));
-        i2 = normalizeIndex(extract<int>(index[1]));
+    if (nanobind::len(index) == 2) {
+        i1 = normalizeIndex(nanobind::cast<int>(index[0]));
+        i2 = normalizeIndex(nanobind::cast<int>(index[1]));
     } else
         throwIndexErr("Index has incorrect size.");
 
@@ -181,98 +172,68 @@ static bool __contains__vector( const {{ MAT }} &self, GfVec{{ SUFFIX }} value )
     return false;
 }
 
-static {{ MAT }} __truediv__(const {{ MAT }} &self, {{ MAT }} value)
-{
-    return self / value;
-}
-
-static {{ MAT }} *__init__() {
-    // Default constructor produces identity from python.
-    return new {{ MAT }}(1);
-}
-
 {% block customFunctions %}
 {% endblock customFunctions %}
 
-// This adds support for python's builtin pickling library
-// This is used by our Shake plugins which need to pickle entire classes
-// (including code), which we don't support in pxml.
-struct {{ MAT }}_Pickle_Suite : pxr_boost::python::pickle_suite
-{
-    static pxr_boost::python::tuple getinitargs(const {{ MAT }} &m)
-    {
-        return pxr_boost::python::make_tuple(
-            {{ MATRIX("m[%(i)s][%(j)s]", indent=12) }});
-    }
-};
-
 static size_t __hash__({{ MAT }} const &m) { return TfHash{}(m); }
-
-static pxr_boost::python::tuple get_dimension()
-{
-    // At one time this was a constant static tuple we returned for
-    // dimension. With boost building for python 3 that results in
-    // a segfault at shutdown. Building for python 2 with a static
-    // tuple returned here seems to work fine.
-    //
-    // It seems likely that this has to do with the order of
-    // destruction of these objects when deinitializing, but we did
-    // not dig deeply into this difference.
-    return make_tuple({{ DIM }}, {{ DIM }});
-}
 
 } // anonymous namespace 
 
-void wrapMatrix{{ SUFFIX }}()
+void wrapMatrix{{ SUFFIX }}(nanobind::module_ &m)
 {    
     typedef {{ MAT }} This;
 
-    def("IsClose", (bool (*)(const {{ MAT}} &m1, const {{ MAT }} &m2, double))
+    m.def("IsClose", (bool (*)(const {{ MAT}} &m1, const {{ MAT }} &m2, double))
         GfIsClose);
     
-    class_<This> cls( "Matrix{{ SUFFIX }}", no_init);
+    nanobind::class_<This> cls(m, "Matrix{{ SUFFIX }}", nanobind::type_slots(bufferSlots));
     cls
-        .def_pickle({{ MAT }}_Pickle_Suite())
-	.def("__init__", make_constructor(__init__))
-        .def(init< const GfMatrix{{ DIM }}d & >())
-        .def(init< const GfMatrix{{ DIM }}f & >())
-        .def(init< int >())
-        .def(init< {{ SCL }} >())
-        .def(init<
-             {{ MATRIX(SCL, indent=13) }} 
+        .def("__getinitargs__", [](const This &m) {
+            return nanobind::make_tuple(
+                {{ MATRIX("m[%(i)s][%(j)s]", indent=16) }});
+        })
+        .def("__init__", [](This *self) { new (self) This(1); })
+        .def(nanobind::init<const GfMatrix{{ DIM }}d &>())
+        .def(nanobind::init<const GfMatrix{{ DIM }}f &>())
+        .def(nanobind::init<int>())
+        .def(nanobind::init<{{ SCL }}>())
+        .def(nanobind::init<
+             {{ MATRIX(SCL, indent=13) }}
              >())
-        .def(init< const GfVec{{ SUFFIX }} & >())
-        .def(init< const vector< vector<float> >& >())
-        .def(init< const vector< vector<double> >& >())
+        .def(nanobind::init<const GfVec{{ SUFFIX }} &>())
+        .def(nanobind::init<const vector<vector<double>> &>())
+        .def(nanobind::init<const vector<vector<float>> &>())
 {% block customInit %}
 {% endblock customInit %}
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .add_static_property("dimension", get_dimension)
-        .def( "__len__", __len__, "Return number of rows" )
+        .def_prop_ro_static("dimension", [](nanobind::handle) {
+            return nanobind::make_tuple({{ DIM }}, {{ DIM }});
+        })
+        .def("__len__", __len__, "Return number of rows")
 
-        .def( "__getitem__", __getitem__{{ SCL }} )
-        .def( "__getitem__", __getitem__vector )
-        .def( "__setitem__", __setitem__{{ SCL }} )
-        .def( "__setitem__", __setitem__vector )
-        .def( "__contains__", __contains__{{ SCL }} )
-        .def( "__contains__", __contains__vector, "Check rows against GfVec"  )
+        .def("__getitem__", __getitem__{{ SCL }})
+        .def("__getitem__", __getitem__vector)
+        .def("__setitem__", __setitem__{{ SCL }})
+        .def("__setitem__", __setitem__vector)
+        .def("__contains__", __contains__{{ SCL }})
+        .def("__contains__", __contains__vector, "Check rows against GfVec")
 {% block customSpecialMethods %}
 {% endblock customSpecialMethods %}
 
         .def("Set", (This &(This::*)({{ MATRIX(SCL, indent=37) }}))&This::Set,
-             return_self<>())
+             nanobind::rv_policy::reference)
         
-        .def("SetIdentity", &This::SetIdentity, return_self<>())
-        .def("SetZero", &This::SetZero, return_self<>())
+        .def("SetIdentity", &This::SetIdentity, nanobind::rv_policy::reference)
+        .def("SetZero", &This::SetZero, nanobind::rv_policy::reference)
 
         .def("SetDiagonal", 
              (This & (This::*)({{ SCL }}))&This::SetDiagonal, 
-             return_self<>())
+             nanobind::rv_policy::reference)
         .def("SetDiagonal", 
              (This & (This::*)(const GfVec{{ SUFFIX }} &))&This::SetDiagonal, 
-             return_self<>())
+             nanobind::rv_policy::reference)
 
         .def("SetRow", &This::SetRow)
         .def("SetColumn", &This::SetColumn)
@@ -286,39 +247,39 @@ void wrapMatrix{{ SUFFIX }}()
 {% block customDefs %}
 {% endblock customDefs %}
         
-        .def( str(self) )
-        .def( self == self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
 {% if SCL == 'float' %}
-        .def( self == GfMatrix{{ DIM }}d() )
+        .def(nanobind::self == GfMatrix{{ DIM }}d())
 {% elif SCL == 'double' %}
-        .def( self == GfMatrix{{ DIM }}f() )
+        .def(nanobind::self == GfMatrix{{ DIM }}f())
 {% endif %}
-        .def( self != self )
+        .def(nanobind::self != nanobind::self)
 {% if SCL == 'float' %}
-        .def( self != GfMatrix{{ DIM }}d() )
+        .def(nanobind::self != GfMatrix{{ DIM }}d())
 {% elif SCL == 'double' %}
-        .def( self != GfMatrix{{ DIM }}f() )
+        .def(nanobind::self != GfMatrix{{ DIM }}f())
 {% endif %}
-        .def( self *= self )
-        .def( self * self )
-        .def( self *= double() )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self += self )
-        .def( self + self )
-        .def( self -= self )
-        .def( self - self )
-        .def( -self )
-        .def( self / self )
-        .def( self * GfVec{{ SUFFIX }}() )
-        .def( GfVec{{ SUFFIX }}() * self )
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self *= {{ SCL }}())
+        .def(nanobind::self * {{ SCL }}())
+        .def({{ SCL }}() * nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(-nanobind::self)
+        .def(nanobind::self / nanobind::self)
+        .def(nanobind::self * GfVec{{ SUFFIX }}())
+        .def(GfVec{{ SUFFIX }}() * nanobind::self)
 {% if SCL == 'double' %}
 
         // Provide wrapping that makes up for the fact that, in Python, we
         // don't allow implicit conversion from GfVec3f to GfVec3d (which we
         // do in C++).
-        .def( self * GfVec{{ DIM }}f() )
-        .def( GfVec{{ DIM }}f() * self )
+        .def(nanobind::self * GfVec{{ DIM }}f())
+        .def(GfVec{{ DIM }}f() * nanobind::self)
 {% endif %}
 
 {% block customXformDefs %}
@@ -327,19 +288,4 @@ void wrapMatrix{{ SUFFIX }}()
         .def("__hash__", __hash__)
 
         ;
-    to_python_converter<std::vector<This>,
-        TfPySequenceToPython<std::vector<This> > >();
-    
-    // Install buffer protocol: set the tp_as_buffer slot to point to a
-    // structure of function pointers that implement the buffer protocol for
-    // this type.
-    auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / self ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__ );
-    }
 }

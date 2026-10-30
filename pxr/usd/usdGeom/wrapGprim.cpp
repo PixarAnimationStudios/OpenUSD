@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,28 +40,28 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateDisplayColorAttr(UsdGeomGprim &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisplayColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3fArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplayOpacityAttr(UsdGeomGprim &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisplayOpacityAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDoubleSidedAttr(UsdGeomGprim &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDoubleSidedAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOrientationAttr(UsdGeomGprim &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrientationAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -71,61 +77,57 @@ _Repr(const UsdGeomGprim &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomGprim()
+void wrapUsdGeomGprim(nb::module_ &m)
 {
     typedef UsdGeomGprim This;
 
-    class_<This, bases<UsdGeomBoundable> >
-        cls("Gprim");
+    nb::class_<This, UsdGeomBoundable> cls(m, "Gprim");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetDisplayColorAttr",
              &This::GetDisplayColorAttr)
         .def("CreateDisplayColorAttr",
              &_CreateDisplayColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDisplayOpacityAttr",
              &This::GetDisplayOpacityAttr)
         .def("CreateDisplayOpacityAttr",
              &_CreateDisplayOpacityAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDoubleSidedAttr",
              &This::GetDoubleSidedAttr)
         .def("CreateDoubleSidedAttr",
              &_CreateDoubleSidedAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOrientationAttr",
              &This::GetOrientationAttr)
         .def("CreateOrientationAttr",
              &_CreateOrientationAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -159,12 +161,12 @@ WRAP_CUSTOM {
         .def("GetDisplayColorPrimvar", &UsdGeomGprim::GetDisplayColorPrimvar)
         .def("CreateDisplayColorPrimvar", 
              &UsdGeomGprim::CreateDisplayColorPrimvar,
-             (arg("interpolation")=TfToken(), arg("elementSize")=-1))
+             nb::arg("interpolation")=TfToken(), nb::arg("elementSize")=-1)
         .def("GetDisplayOpacityPrimvar",
              &UsdGeomGprim::GetDisplayOpacityPrimvar)
         .def("CreateDisplayOpacityPrimvar", 
              &UsdGeomGprim::CreateDisplayOpacityPrimvar,
-             (arg("interpolation")=TfToken(), arg("elementSize")=-1))
+             nb::arg("interpolation")=TfToken(), nb::arg("elementSize")=-1)
         ;
 }
 

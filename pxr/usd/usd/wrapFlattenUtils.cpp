@@ -7,19 +7,22 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/pragmas.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-
 #include "pxr/usd/usd/flattenUtils.h"
+#include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static
 SdfLayerRefPtr
@@ -45,33 +48,29 @@ _UsdFlattenLayerStack3(
     return UsdFlattenLayerStack(layerStack, resolveAssetPathFn, tag);
 }
 
-void wrapUsdFlattenUtils()
+void wrapUsdFlattenUtils(nanobind::module_ &m)
 {
-    def("FlattenLayerStack",
+    m.def("FlattenLayerStack",
         &_UsdFlattenLayerStack2,
-        (arg("layerStack"), arg("tag")=std::string()),
-        pxr_boost::python::return_value_policy<
-        TfPyRefPtrFactory<SdfLayerHandle> >());
+        nb::arg("layerStack"), nb::arg("tag")=std::string());
 
     TfPyFunctionFromPython<Py_UsdFlattenResolveAssetPathSig>();
-    def("FlattenLayerStack",
+    m.def("FlattenLayerStack",
         &_UsdFlattenLayerStack3,
-        (arg("layerStack"), arg("resolveAssetPathFn"), arg("tag")=std::string()),
-        pxr_boost::python::return_value_policy<
-        TfPyRefPtrFactory<SdfLayerHandle> >());
+        nb::arg("layerStack"), nb::arg("resolveAssetPathFn"),
+        nb::arg("tag")=std::string());
 
-    def("FlattenLayerStackResolveAssetPath",
-        UsdFlattenLayerStackResolveAssetPath,
-        (arg("sourceLayer"), arg("assetPath")));
+    m.def("FlattenLayerStackResolveAssetPath",
+        &UsdFlattenLayerStackResolveAssetPath,
+        nb::arg("sourceLayer"), nb::arg("assetPath"));
 
     using Context = UsdFlattenResolveAssetPathContext;
-    class_<Context>
-        ("FlattenResolveAssetPathContext", no_init)
-        .add_property("sourceLayer", 
+    nb::class_<Context>(m, "FlattenResolveAssetPathContext")
+        .def_prop_ro("sourceLayer", 
             +[](const Context& c) { return c.sourceLayer; })
-        .add_property("assetPath", 
+        .def_prop_ro("assetPath", 
             +[](const Context& c) { return c.assetPath; })
-        .add_property("expressionVariables", 
+        .def_prop_ro("expressionVariables", 
             +[](const Context& c) { return c.expressionVariables; })
         ;
 
@@ -84,16 +83,16 @@ void wrapUsdFlattenUtils()
     // from the other FlattenLayerStack function that also takes a
     // callback because TfPyFunctionFromFunction doesn't let us
     // distinguish between the two different callback types.
-    def("FlattenLayerStackAdvanced",
+    m.def("FlattenLayerStackAdvanced",
         (SdfLayerRefPtr(*)(
             const PcpLayerStackRefPtr&,
             const UsdFlattenResolveAssetPathAdvancedFn&,
             const std::string&))&UsdFlattenLayerStack,
-        (arg("layerStack"), arg("resolveAssetPathFn"), 
-            arg("tag")=std::string()),
-        return_value_policy<TfPyRefPtrFactory<SdfLayerHandle>>());
+        nb::arg("layerStack"), nb::arg("resolveAssetPathFn"), 
+        nb::arg("tag")=std::string());
 
-    def("FlattenLayerStackResolveAssetPathAdvanced",
+    m.def("FlattenLayerStackResolveAssetPathAdvanced",
         &UsdFlattenLayerStackResolveAssetPathAdvanced,
-        (arg("context")));
+        nb::arg("context"));
 }
+

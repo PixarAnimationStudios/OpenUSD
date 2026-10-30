@@ -7,19 +7,20 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/resolveInfo.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include <nanobind/nanobind.h>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapUsdResolveInfo()
+void wrapUsdResolveInfo(nanobind::module_ &m)
 {
-    class_<UsdResolveInfo>("ResolveInfo")
+    nb::class_<UsdResolveInfo>(m, "ResolveInfo")
+        .def(nb::init<>())
         .def("GetSource", &UsdResolveInfo::GetSource)
         .def("HasAuthoredValueOpinion",
              &UsdResolveInfo::HasAuthoredValueOpinion)
@@ -33,8 +34,9 @@ void wrapUsdResolveInfo()
              &UsdResolveInfo::HasNextWeakerInfo)
         .def("GetNextWeakerInfo",
              &UsdResolveInfo::GetNextWeakerInfo,
-             return_internal_reference<>())
+             nb::rv_policy::reference_internal)
         ;
 
-    TfPyWrapEnum<UsdResolveInfoSource>();
+    TfNbWrapEnum<UsdResolveInfoSource>(m);
 }
+

@@ -29,15 +29,12 @@ struct _DummyScope {
 }
 
 void
-wrapTf_TestPyStaticTokens()
+wrapTf_TestPyStaticTokens(nanobind::module_& m)
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("_testStaticTokens",
+    TF_NB_WRAP_PUBLIC_TOKENS(m, "_testStaticTokens",
                              tfTestStaticTokens, TF_TEST_TOKENS);
 
-    pxr_boost::python::class_<_DummyScope, pxr_boost::python::noncopyable>
-        cls("_TestStaticTokens", pxr_boost::python::no_init);
-    pxr_boost::python::scope testScope = cls;
-
-    TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(
-        tfTestStaticTokens, TF_TEST_TOKENS);
+    nanobind::class_<_DummyScope> cls(m, "_TestStaticTokens");
+    TF_NB_WRAP_PUBLIC_TOKENS_IN_SCOPE(
+        cls, tfTestStaticTokens, TF_TEST_TOKENS);
 }

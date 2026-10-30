@@ -13,29 +13,25 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 
-#include "pxr/external/boost/python/handle.hpp"
-#include "pxr/external/boost/python/object.hpp"
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(TF_PYTHON_EXCEPTION);
 }
 
-// The held handle<> is intentionally leaked to avoid Python refcount ops
+// The held PyObject* is intentionally leaked to avoid Python refcount ops
 // during shutdown, which is unsafe if Python has been finalized.
-static TfStaticData<handle<>> _ExceptionClass;
+static TfStaticData<PyObject *> _ExceptionClass;
 
-handle<> Tf_PyGetErrorExceptionClass()
+nanobind::handle Tf_PyGetErrorExceptionClass()
 {
-    return *_ExceptionClass;
+    return nanobind::handle(*_ExceptionClass);
 }
 
-void Tf_PySetErrorExceptionClass(object const &cls)
+void Tf_PySetErrorExceptionClass(nanobind::object const &cls)
 {
-    *_ExceptionClass = handle<>(borrowed(cls.ptr()));
+    Py_XINCREF(cls.ptr());
+    *_ExceptionClass = cls.ptr();
 }
 
 TfPyExceptionStateScope::TfPyExceptionStateScope() :

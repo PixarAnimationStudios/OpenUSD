@@ -11,9 +11,6 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/collector.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/enum.hpp"
-#include "pxr/external/boost/python/list.hpp"
 
 #include <chrono>
 #include <string>
@@ -22,7 +19,6 @@
 using namespace std::chrono_literals;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 // ----------------------------------------
 // A set of functions using TRACE_FUNCTION, TRACE_SCOPE
@@ -117,11 +113,13 @@ TestCreateEvents()
     
 }
 
-void wrapTestTrace()
-{    
-    def("TestNesting", &::TestNesting);
-    def("TestAuto", &::TestAuto);
-    def("TestCreateEvents", &::TestCreateEvents);
-    def("GetTestEventName", &::TestEventName);
+#include "pxr/base/tf/pyNanobindBridge.h"
+
+void wrapTestTrace(nanobind::module_& m)
+{
+    m.def("TestNesting", &::TestNesting);
+    m.def("TestAuto", &::TestAuto);
+    m.def("TestCreateEvents", &::TestCreateEvents);
+    m.def("GetTestEventName", &::TestEventName);
 }
 

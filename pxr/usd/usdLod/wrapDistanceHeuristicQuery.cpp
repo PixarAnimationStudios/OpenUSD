@@ -7,14 +7,12 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLod/distanceHeuristicQuery.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static
 double
@@ -55,7 +53,7 @@ _WrapComputeLOD2(const UsdLodDistanceHeuristicQuery& query,
 }
 
 static
-pxr_boost::python::tuple
+nb::tuple
 _WrapComputeLOD3(const UsdLodDistanceHeuristicQuery& query,
                  const GfVec3d& viewpoint,
                  const GfMatrix4d& transform,
@@ -66,65 +64,54 @@ _WrapComputeLOD3(const UsdLodDistanceHeuristicQuery& query,
     double lodIndex = query.ComputeLOD(viewpoint, transform,
                                        prevDistance, hysteresis,
                                        &distanceOut);
-    return pxr_boost::python::make_tuple(lodIndex, distanceOut);
+    return nb::make_tuple(lodIndex, distanceOut);
 }
 
-static
-UsdLodDistanceHeuristicQuery*
-_WrapInit(const std::string& lodDomain,
-          const GfVec3f& center,
-          const GfRange3d& extent,
-          const VtFloatArray& thresholds,
-          const VtFloatArray& blendThresholds)
-{
-    return new UsdLodDistanceHeuristicQuery(
-        TfToken(lodDomain), center, extent, thresholds, blendThresholds);
-}
-
-void wrapDistanceHeuristicQuery()
+void wrapDistanceHeuristicQuery(nb::module_ &m)
 {
     typedef UsdLodDistanceHeuristicQuery This;
 
-    class_<This, bases<UsdLodHeuristicQuery>>("DistanceHeuristicQuery")
-
+    nb::class_<This, UsdLodHeuristicQuery>(m, "DistanceHeuristicQuery")
+        .def(nb::init<>())
+        .def(nb::init<const UsdLodDistanceHeuristicQuery&>())
         .def("__init__",
-             make_constructor(&_WrapInit,
-                              default_call_policies(),
-                              (arg("lodDomain"),
-                               arg("center") = GfVec3f(0.0, 0.0, 0.0),
-                               arg("extent") = GfRange3d(),
-                               arg("thresholds") = VtFloatArray(),
-                               arg("blendThresholds") = VtFloatArray())))
-        .def(init<>())
+             +[](This* self,
+                 const std::string& lodDomain,
+                 const GfVec3f& center,
+                 const GfRange3d& extent,
+                 const VtFloatArray& thresholds,
+                 const VtFloatArray& blendThresholds) {
+                 new (self) This(TfToken(lodDomain), center, extent,
+                                 thresholds, blendThresholds);
+             },
+             nb::arg("lodDomain"),
+             nb::arg("center") = GfVec3f(0.0, 0.0, 0.0),
+             nb::arg("extent") = GfRange3d(),
+             nb::arg("thresholds") = VtFloatArray(),
+             nb::arg("blendThresholds") = VtFloatArray())
 
-        .def(init<const UsdLodDistanceHeuristicQuery&>())
-
-        .def_readwrite(
-            "center", &UsdLodDistanceHeuristicQuery::center)
-        .def_readwrite(
-            "extent", &UsdLodDistanceHeuristicQuery::extent)
-        .def_readwrite(
-            "thresholds", &UsdLodDistanceHeuristicQuery::thresholds)
-        .def_readwrite(
-            "blendThresholds", &UsdLodDistanceHeuristicQuery::blendThresholds)
+        .def_rw("center", &UsdLodDistanceHeuristicQuery::center)
+        .def_rw("extent", &UsdLodDistanceHeuristicQuery::extent)
+        .def_rw("thresholds", &UsdLodDistanceHeuristicQuery::thresholds)
+        .def_rw("blendThresholds", &UsdLodDistanceHeuristicQuery::blendThresholds)
 
         .def("ComputeDistance", &_WrapComputeDistance1,
-             (arg("viewpoint"),
-              arg("transform")))
+             nb::arg("viewpoint"),
+             nb::arg("transform"))
         .def("ComputeDistance", &_WrapComputeDistance2,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("prevDistance"),
-              arg("hysteresis")))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("prevDistance"),
+             nb::arg("hysteresis"))
         .def("ComputeLOD", &_WrapComputeLOD1,
-             arg("distance"))
+             nb::arg("distance"))
         .def("ComputeLOD", &_WrapComputeLOD2,
-             (arg("viewpoint"),
-              arg("transform")))
+             nb::arg("viewpoint"),
+             nb::arg("transform"))
         .def("ComputeLOD", &_WrapComputeLOD3,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("prevDistance"),
-              arg("hysteresis")))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("prevDistance"),
+             nb::arg("hysteresis"))
         ;
 }

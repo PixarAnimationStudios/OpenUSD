@@ -10,12 +10,9 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
@@ -23,31 +20,11 @@ using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
 static string _Repr(GfLine const &self) {
     return TF_PY_REPR_PREFIX + "Line(" + TfPyRepr(self.GetPoint(0.0)) + ", " +
         TfPyRepr(self.GetDirection()) + ")";
-}
-
-
-static tuple
-FindClosestPointsHelper( const GfLine &l1, const GfLine &l2 )
-{
-    GfVec3d p1(0), p2(0);
-    double t1 = 0.0, t2 = 0.0;
-    bool result = GfFindClosestPoints( l1, l2, &p1, &p2, &t1, &t2 );
-    return pxr_boost::python::make_tuple( result, p1, p2, t1, t2 );
-}
-
-static tuple
-FindClosestPointHelper( const GfLine &self, const GfVec3d &point )
-{
-    double t;
-    GfVec3d result = self.FindClosestPoint( point, &t );
-    return pxr_boost::python::make_tuple( result, t );
 }
 
 static void
@@ -58,11 +35,16 @@ SetDirectionHelper( GfLine &self, const GfVec3d &dir )
 
 } // anonymous namespace 
 
-void wrapLine()
+void wrapLine(nanobind::module_ &m)
 {    
     typedef GfLine This;
 
-    def("FindClosestPoints", FindClosestPointsHelper, 
+    m.def("FindClosestPoints", [](const GfLine &l1, const GfLine &l2) {
+        GfVec3d p1(0), p2(0);
+        double t1 = 0.0, t2 = 0.0;
+        bool result = GfFindClosestPoints(l1, l2, &p1, &p2, &t1, &t2);
+        return nanobind::make_tuple(result, p1, p2, t1, t2);
+    },
         "FindClosestPoints( l1, l2 ) -> tuple<intersects = bool, p1 = GfVec3d, p2 = GfVec3d,"
         " t1 = double, t2 = double>\n"
         "\n"
@@ -76,32 +58,32 @@ void wrapLine()
         "in t1 and t2.\n"
         "----------------------------------------------------------------------" );
     
-    class_<This>( "Line", "Line class", init<>() )
-        .def(init< const GfVec3d &, const GfVec3d & >())
+    nanobind::class_<This>(m, "Line", "Line class")
+        .def(nanobind::init<>())
+        .def(nanobind::init<const GfVec3d &, const GfVec3d &>())
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .def("Set", &This::Set, return_self<>())
+        .def("Set", &This::Set, nanobind::rv_policy::reference)
 
         .def("GetPoint", &This::GetPoint)
 
         .def("GetDirection", &This::GetDirection,
-             return_value_policy<copy_const_reference>())
+             nanobind::rv_policy::copy)
 
-        .add_property( "direction",
-                       make_function(&This::GetDirection,
-                                     return_value_policy
-                                     <copy_const_reference>()),
-                       SetDirectionHelper )
+        .def_prop_rw("direction", &This::GetDirection, SetDirectionHelper,
+                     nanobind::rv_policy::copy)
 
-        .def( "FindClosestPoint", FindClosestPointHelper )
+        .def("FindClosestPoint", [](const GfLine &self, const GfVec3d &point) {
+            double t;
+            GfVec3d result = self.FindClosestPoint(point, &t);
+            return nanobind::make_tuple(result, t);
+        })
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
+        .def("__str__", [](const This &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
 
         .def("__repr__", _Repr)
-
         ;
-    
 }

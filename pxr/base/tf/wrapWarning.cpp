@@ -13,15 +13,9 @@
 #include "pxr/base/tf/diagnosticMgr.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -52,14 +46,15 @@ TfWarning__repr__(TfWarning const &self)
 
 } // anonymous namespace 
 
-void wrapWarning() {
-    def("_Warn", &_Warn);
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+
+void wrapWarning(nanobind::module_& m) {
+    m.def("_Warn", &_Warn);
 
     typedef TfWarning This;
 
-    scope warningScope =
-        class_<This, bases<TfDiagnosticBase> >("Warning", no_init)
-
+    nanobind::class_<This, TfDiagnosticBase>(m, "Warning")
         .def("__repr__", TfWarning__repr__)
         ;
 }

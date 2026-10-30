@@ -7,20 +7,18 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/camera.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/def.hpp"
-
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
+namespace nb = nanobind;
 
 void
-wrapCamera()
+wrapCamera(nanobind::module_ &m)
 {
-    def(
+    m.def(
         "GetCameraAtPath",
         UsdAppUtilsGetCameraAtPath,
-        (arg("stage"), arg("cameraPath")));
+        nb::arg("stage"), nb::arg("cameraPath"));
 }

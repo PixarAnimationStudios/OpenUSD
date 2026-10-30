@@ -8,43 +8,44 @@
 #include "pxr/usd/sdf/crateInfo.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python.hpp"
 
 using std::string;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapCrateInfo()
+void wrapCrateInfo(nanobind::module_ &m)
 {
-    scope thisClass = class_<SdfCrateInfo>("CrateInfo")
-        .def("Open", &SdfCrateInfo::Open, arg("fileName"))
-        .staticmethod("Open")
+    namespace nb = nanobind;
+
+    nb::class_<SdfCrateInfo> thisClass(m, "CrateInfo");
+    thisClass
+        .def(nb::init<>())
+        .def_static("Open", &SdfCrateInfo::Open, nb::arg("fileName"))
         .def("GetSummaryStats", &SdfCrateInfo::GetSummaryStats)
-        .def("GetSections", &SdfCrateInfo::GetSections,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetSections", &SdfCrateInfo::GetSections)
         .def("GetFileVersion", &SdfCrateInfo::GetFileVersion)
         .def("GetSoftwareVersion", &SdfCrateInfo::GetSoftwareVersion)
-        .def(!self)
+        .def("__bool__", [](const SdfCrateInfo &self) { return !(!self); })
         ;
 
-    class_<SdfCrateInfo::Section>("Section")
-        .def(init<string, int64_t, int64_t>(
-                 (arg("name"), arg("start"), arg("size"))))
-        .def_readwrite("name", &SdfCrateInfo::Section::name)
-        .def_readwrite("start", &SdfCrateInfo::Section::start)
-        .def_readwrite("size", &SdfCrateInfo::Section::size)
+    nb::class_<SdfCrateInfo::Section>(thisClass, "Section")
+        .def(nb::init<>())
+        .def(nb::init<string, int64_t, int64_t>(),
+             nb::arg("name"), nb::arg("start"), nb::arg("size"))
+        .def_rw("name", &SdfCrateInfo::Section::name)
+        .def_rw("start", &SdfCrateInfo::Section::start)
+        .def_rw("size", &SdfCrateInfo::Section::size)
         ;
 
     using SummaryStats = SdfCrateInfo::SummaryStats;
-    class_<SummaryStats>("SummaryStats")
-        .def_readwrite("numSpecs", &SummaryStats::numSpecs)
-        .def_readwrite("numUniquePaths", &SummaryStats::numUniquePaths)
-        .def_readwrite("numUniqueTokens", &SummaryStats::numUniqueTokens)
-        .def_readwrite("numUniqueStrings", &SummaryStats::numUniqueStrings)
-        .def_readwrite("numUniqueFields", &SummaryStats::numUniqueFields)
-        .def_readwrite("numUniqueFieldSets", &SummaryStats::numUniqueFieldSets)
+    nb::class_<SummaryStats>(thisClass, "SummaryStats")
+        .def(nb::init<>())
+        .def_rw("numSpecs", &SummaryStats::numSpecs)
+        .def_rw("numUniquePaths", &SummaryStats::numUniquePaths)
+        .def_rw("numUniqueTokens", &SummaryStats::numUniqueTokens)
+        .def_rw("numUniqueStrings", &SummaryStats::numUniqueStrings)
+        .def_rw("numUniqueFields", &SummaryStats::numUniqueFields)
+        .def_rw("numUniqueFieldSets", &SummaryStats::numUniqueFieldSets)
         ;
 }

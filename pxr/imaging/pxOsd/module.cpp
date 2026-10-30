@@ -11,8 +11,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Tokens);
-    TF_WRAP(MeshTopologyValidation);
-    TF_WRAP(MeshTopology);
-    TF_WRAP(SubdivTags);
+    TF_WRAP_NB(Tokens);
+    TF_WRAP_NB(SubdivTags);
+    TF_WRAP_NB(MeshTopologyValidation);
+    TF_WRAP_NB(MeshTopology);
 }

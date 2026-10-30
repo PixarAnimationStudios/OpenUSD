@@ -11,17 +11,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/slice.hpp"
-#include "pxr/external/boost/python/stl_iterator.hpp"
+#include <algorithm>
+#include <functional>
 
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 static bool
 _ArgumentIsNamed(const std::string& name, const TfPyArg& arg)
@@ -29,28 +25,27 @@ _ArgumentIsNamed(const std::string& name, const TfPyArg& arg)
     return arg.GetName() == name;
 }
 
-std::pair<tuple, dict>
+std::pair<nanobind::tuple, nanobind::dict>
 TfPyProcessOptionalArgs(
-    const tuple& args, const dict& kwargs, 
+    const nanobind::tuple& args, const nanobind::dict& kwargs, 
     const TfPyArgs& expectedArgs,
     bool allowExtraArgs)
 {
-    std::pair<tuple, dict> rval;
+    std::pair<nanobind::tuple, nanobind::dict> rval;
 
-    const unsigned int numArgs = static_cast<unsigned int>(len(args));
-    const unsigned int numExpectedArgs = static_cast<unsigned int>(expectedArgs.size());
+    const unsigned int numArgs = static_cast<unsigned int>(nanobind::len(args));
+    const unsigned int numExpectedArgs =
+        static_cast<unsigned int>(expectedArgs.size());
 
     if (!allowExtraArgs) {
         if (numArgs > numExpectedArgs) {
             TfPyThrowTypeError("Too many arguments for function");
         }
 
-        const list keys = kwargs.keys();
-
-        typedef stl_input_iterator<string> KeyIterator;
-        for (KeyIterator it(keys), it_end; it != it_end; ++it) {
+        for (auto item : kwargs) {
+            string key = nanobind::cast<string>(item.first);
             if (std::find_if(expectedArgs.begin(), expectedArgs.end(),
-                             std::bind(_ArgumentIsNamed, *it,
+                             std::bind(_ArgumentIsNamed, key,
                                        std::placeholders::_1))
                 == expectedArgs.end()) {
 
@@ -59,21 +54,24 @@ TfPyProcessOptionalArgs(
         }
     }
 
-    rval.second = kwargs;
+    rval.second = nanobind::steal<nanobind::dict>(PyDict_Copy(kwargs.ptr()));
 
     for (unsigned int i = 0; i < std::min(numArgs, numExpectedArgs); ++i) {
         const string& argName = expectedArgs[i].GetName();
-        if (rval.second.has_key(argName)) {
+        if (rval.second.contains(argName.c_str())) {
             TfPyThrowTypeError(
                 TfStringPrintf("Multiple values for keyword argument '%s'",
                                argName.c_str()));
         }
 
-        rval.second[argName] = args[i];
+        rval.second[argName.c_str()] = args[i];
     }
 
     if (numArgs > numExpectedArgs) {
-        rval.first = tuple(args[slice(numExpectedArgs, numArgs)]);
+        rval.first = nanobind::steal<nanobind::tuple>(
+            PyTuple_GetSlice(args.ptr(), numExpectedArgs, numArgs));
+    } else {
+        rval.first = nanobind::tuple();
     }
 
     return rval;

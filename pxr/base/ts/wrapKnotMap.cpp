@@ -7,18 +7,18 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/knotMap.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
+namespace nb = nanobind;
 
 static int _WrapLen(const TsKnotMap &knotMap)
 {
@@ -30,9 +30,9 @@ static int _WrapLen(const TsKnotMap &knotMap)
 static PyObject* _WrapIter(const TsKnotMap &knotMap)
 {
     // Make a native dict that is a copy of the (time, knot) pairs.
-    dict d;
+    nb::dict d;
     for (const TsKnot &knot : knotMap)
-        d[knot.GetTime()] = knot;
+        d[nb::cast(knot.GetTime())] = nb::cast(knot);
 
     // Return a native Python iterator for the dict.  This will INCREF the dict,
     // and will be the only refcount on it, so that it is freed when iteration
@@ -78,20 +78,6 @@ _WrapValues(const TsKnotMap &knotMap)
     return std::vector<TsKnot>(knotMap.begin(), knotMap.end());
 }
 
-static object
-_WrapFindClosest(const TsKnotMap &knotMap, const TsTime time)
-{
-    const auto it = knotMap.FindClosest(time);
-    if (it != knotMap.end())
-    {
-        return object(*it);
-    }
-    else
-    {
-        return object();
-    }
-}
-
 // The C++ KnotMap interface is a hybrid of vector and map.  Knot objects can be
 // looked up by time, but they also contain their own time.  Our Python
 // interface is dict-like, so our mutator interface is map[time] = knot.  This
@@ -128,33 +114,38 @@ static void _WrapDelItem(
     knotMap.erase(time);
 }
 
-
-void wrapKnotMap()
+void wrapKnotMap(nanobind::module_& m)
 {
     using This = TsKnotMap;
 
-    class_<This>("KnotMap", no_init)
+    nb::class_<This>(m, "KnotMap")
 
-        .def(init<>())
-        .def(init<const TsKnotMap &>())
+        .def(nb::init<>())
+        .def(nb::init<const TsKnotMap &>())
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         // Dict-like interface.  All iteration is on copies of the knot data.
         .def("__len__", &_WrapLen)
-        .def("__iter__", &_WrapIter)
+        .def("__iter__", [](const TsKnotMap& knotMap) {
+            return nb::steal<nb::object>(_WrapIter(knotMap));
+        })
         .def("__getitem__", &_WrapGetItem)
         .def("__contains__", &_WrapContains)
-        .def("keys", &_WrapKeys,
-            return_value_policy<TfPySequenceToList>())
-        .def("values", &_WrapValues,
-            return_value_policy<TfPySequenceToList>())
+        .def("keys", &_WrapKeys)
+        .def("values", &_WrapValues)
         .def("__setitem__", &_WrapSetItem)
         .def("__delitem__", &_WrapDelItem)
         .def("clear", &This::clear)
 
-        .def("FindClosest", &_WrapFindClosest)
+        .def("FindClosest", [](const TsKnotMap& knotMap, TsTime time) -> nb::object {
+            const auto it = knotMap.FindClosest(time);
+            if (it != knotMap.end()) {
+                return nb::cast(*it);
+            }
+            return nb::none();
+        })
         .def("GetValueType", &This::GetValueType)
         .def("GetTimeSpan", &This::GetTimeSpan)
         .def("HasCurveSegments", &This::HasCurveSegments)

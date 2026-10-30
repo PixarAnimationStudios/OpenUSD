@@ -95,9 +95,9 @@ struct TfType::_TypeInfo {
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Python class handle.
-    // We use handle<> rather than pxr_boost::python::object in case Python
+    // We use PyObject* rather than nanobind::object in case Python
     // has not yet been initialized.
-    pxr_boost::python::handle<> pyClass;
+    PyObject *pyClass;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
     // Direct base types.
@@ -136,7 +136,7 @@ struct TfType::_TypeInfo {
     // Python class object.
     inline bool IsDefined() {
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-        return typeInfo.load() != nullptr || pyClass.get();
+        return typeInfo.load() != nullptr || pyClass != nullptr;
 #else
         return typeInfo.load() != nullptr;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -180,23 +180,15 @@ struct TfType::_TypeInfo {
         definitionCallback(nullptr),
         typeInfo(nullptr),
         sizeofType(0),
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+        pyClass(nullptr),
+#endif
         isPodType(false),
         isEnumType(false),
         hasSentNotice(false)
     {
     }
 };
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-// Comparison for pxr_boost::python::handle.
-struct Tf_PyHandleLess
-{
-    bool operator()(const pxr_boost::python::handle<> &lhs,
-                    const pxr_boost::python::handle<> &rhs) const {
-        return lhs.get() < rhs.get();
-    }
-};
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 // Registry for _TypeInfos.
 //
@@ -273,17 +265,18 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     void SetPythonClass(TfType::_TypeInfo *info,
-                        const pxr_boost::python::object & classObj) {
+                        const nanobind::object & classObj) {
         // Hold a reference to this PyObject in our map.
-        pxr_boost::python::handle<> handle(
-            pxr_boost::python::borrowed(classObj.ptr()));
+        PyObject *handle = classObj.ptr();
+        Py_XINCREF(handle);
+        Py_XDECREF(info->pyClass);
 
         info->pyClass = handle;
         _pyClassMap[handle] = info;
 
         // Do not overwrite the size of a C++ type.
         if (!info->sizeofType) {
-            info->sizeofType = TfSizeofType<pxr_boost::python::object>::value;
+            info->sizeofType = TfSizeofType<nanobind::object>::value;
         }
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -306,10 +299,8 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     TfType::_TypeInfo *
-    FindByPythonClass(const pxr_boost::python::object &classObj) const {
-        pxr_boost::python::handle<> handle(
-            pxr_boost::python::borrowed(classObj.ptr()));
-        auto it = _pyClassMap.find(handle);
+    FindByPythonClass(const nanobind::object &classObj) const {
+        auto it = _pyClassMap.find(classObj.ptr());
         return it != _pyClassMap.end() ? it->second : nullptr;
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -330,8 +321,7 @@ private:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Map of python class handles to _TypeInfo*.
-    typedef map<pxr_boost::python::handle<>,
-                TfType::_TypeInfo *, Tf_PyHandleLess> PyClassMap;
+    typedef map<PyObject *, TfType::_TypeInfo *> PyClassMap;
     PyClassMap _pyClassMap;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
@@ -538,8 +528,8 @@ TfType::GetPythonClass() const
 
     ScopedLock lock(GetRegistryMutex(), /*write=*/false);
     
-    if (_info->pyClass.get()) {
-        return TfPyObjWrapper(pxr_boost::python::object(_info->pyClass));
+    if (_info->pyClass) {
+        return TfPyObjWrapper(nanobind::borrow<nanobind::object>(_info->pyClass));
     }
     return TfPyObjWrapper();
 }
@@ -714,16 +704,15 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 TfType const &
 TfType::_FindImplPyPolymorphic(PyPolymorphicBase const *ptr) {
-    using namespace pxr_boost::python;
     TfType ret;
     if (TfPyIsInitialized()) {
         TfPyLock lock;
         // See if we can find a polymorphic python object...
-        object pyObj = Tf_FindPythonObject(
+        nanobind::object pyObj = Tf_FindPythonObject(
             TfCastToMostDerivedType(ptr), typeid(*ptr));
         if (!TfPyIsNone(pyObj))
             ret = FindByPythonClass(
-                TfPyObjWrapper(pyObj.attr("__class__")));
+                TfPyObjWrapper(nanobind::object(pyObj.attr("__class__"))));
     }
     return !ret.IsUnknown() ? ret.GetCanonicalType() : Find(typeid(*ptr));
 }

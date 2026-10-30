@@ -8,22 +8,21 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/tsTest_SampleTimes.h"
-#include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 #include <sstream>
 #include <string>
 #include <cstdio>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 using This = TsTest_SampleTimes;
 
@@ -52,28 +51,22 @@ _SampleTimeRepr(const This::SampleTime &st)
     return result.str();
 }
 
-static This*
+static void
 _ConstructSampleTimes(
-    const object &times)
+    This *self,
+    const nb::object &times)
 {
-    This *result = new This();
+    new (self) This();
 
     std::vector<This::SampleTime> sts;
     if (!times.is_none())
     {
-        extract<std::vector<This::SampleTime>> extractor(times);
-        if (extractor.check())
-        {
-            sts = extractor();
-        }
-        else
+        if (!nb::try_cast<std::vector<This::SampleTime>>(times, sts))
         {
             TF_CODING_ERROR("Unexpected type for times");
         }
     }
-    result->AddTimes(sts);
-
-    return result;
+    self->AddTimes(sts);
 }
 
 static std::string
@@ -91,38 +84,28 @@ _SampleTimesRepr(const This &times)
 }
 
 
-void wrapTsTest_SampleTimes()
+void wrapTsTest_SampleTimes(nb::module_ &m)
 {
-    // First the class object, so we can create a scope for it...
-    class_<This> classObj("TsTest_SampleTimes", no_init);
-    scope classScope(classObj);
+    nb::class_<This> classObj(m, "TsTest_SampleTimes");
 
-    // ...then the nested type wrappings, which require the scope...
-
-    class_<This::SampleTime>("SampleTime")
-        // Note default init is not suppressed, so automatically created.
-        .def(init<double>())
-        .def(init<double, bool>())
-        .def(init<const This::SampleTime&>())
+    nb::class_<This::SampleTime>(classObj, "SampleTime")
+        .def(nb::init<>())
+        .def(nb::init_implicit<double>())
+        .def(nb::init<double, bool>())
+        .def(nb::init<const This::SampleTime&>())
         .def("__repr__", &_SampleTimeRepr)
-        .def(self < self)
-        .def(self == self)
-        .def(self != self)
-        .def_readwrite("time", &This::SampleTime::time)
-        .def_readwrite("pre", &This::SampleTime::pre)
+        .def(nb::self < nb::self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def_rw("time", &This::SampleTime::time)
+        .def_rw("pre", &This::SampleTime::pre)
         ;
 
-    TfPyRegisterStlSequencesFromPython<double>();
-    TfPyRegisterStlSequencesFromPython<This::SampleTime>();
-
-    // ...then the defs, which must occur after the nested type wrappings.
     classObj
+        .def(nb::init<const TsSpline&>())
 
-        // This serves as a default constructor and a from-repr constructor.
-        .def("__init__",
-            make_constructor(
-                &_ConstructSampleTimes, default_call_policies(),
-                (arg("times") = object())))
+        .def("__init__", &_ConstructSampleTimes,
+             nb::arg("times") = nb::none())
 
         .def("__repr__", &_SampleTimesRepr)
 
@@ -134,25 +117,22 @@ void wrapTsTest_SampleTimes()
             static_cast<void (This::*)(const std::vector<This::SampleTime>&)>(
                 &This::AddTimes))
 
-        .def(init<const TsSpline&>())
-
         .def("AddKnotTimes", &This::AddKnotTimes)
 
         .def("AddUniformInterpolationTimes",
             &This::AddUniformInterpolationTimes,
-            (arg("numSamples")))
+            nb::arg("numSamples"))
 
         .def("AddExtrapolationTimes", &This::AddExtrapolationTimes,
-            (arg("extrapolationFactor")))
+            nb::arg("extrapolationFactor"))
 
         .def("AddExtrapolatingLoopTimes", &This::AddExtrapolatingLoopTimes,
-            (arg("numIterations"),
-             arg("numSamplesPerIteration")))
+            nb::arg("numIterations"),
+            nb::arg("numSamplesPerIteration"))
 
         .def("AddStandardTimes", &This::AddStandardTimes)
 
-        .def("GetTimes", &This::GetTimes,
-            return_value_policy<TfPySequenceToList>())
+        .def("GetTimes", &This::GetTimes)
 
         .def("GetMinTime", &This::GetMinTime)
         .def("GetMaxTime", &This::GetMaxTime)

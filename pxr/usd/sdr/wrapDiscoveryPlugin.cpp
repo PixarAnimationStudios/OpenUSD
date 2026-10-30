@@ -7,39 +7,41 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/usd/sdr/discoveryPlugin.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-static void wrapDiscoveryPluginContext()
+static void wrapDiscoveryPluginContext(nanobind::module_ &m)
 {
     typedef SdrDiscoveryPluginContext This;
-    typedef TfWeakPtr<SdrDiscoveryPluginContext> ThisPtr;
 
-    class_<This, ThisPtr, noncopyable>("DiscoveryPluginContext", no_init)
-        .def(TfPyWeakPtr())
-        .def("GetShadingSystem", pure_virtual(&This::GetShadingSystem))
-        .def("GetSourceType", pure_virtual(&This::GetSourceType))
+    nb::class_<This> cls(m, "DiscoveryPluginContext",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbWeakPtr(cls);
+    cls.def("GetShadingSystem", &This::GetShadingSystem)
+        .def("GetSourceType", &This::GetSourceType)
         ;
 }
 
-void wrapDiscoveryPlugin()
+void wrapDiscoveryPlugin(nanobind::module_ &m)
 {
     typedef SdrDiscoveryPlugin This;
-    typedef SdrDiscoveryPluginPtr ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
-
-    class_<This, ThisPtr, noncopyable>("DiscoveryPlugin", no_init)
-        .def(TfPyWeakPtr())
-        .def("DiscoverShaderNodes", pure_virtual(&This::DiscoverShaderNodes))
-        .def("GetSearchURIs", pure_virtual(&This::GetSearchURIs), copyRefPolicy)
+    nb::class_<This> cls(m, "DiscoveryPlugin",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbWeakPtr(cls);
+    cls.def("DiscoverShaderNodes", &This::DiscoverShaderNodes)
+        .def("GetSearchURIs", &This::GetSearchURIs)
         ;
 
-    wrapDiscoveryPluginContext();
+    wrapDiscoveryPluginContext(m);
 }

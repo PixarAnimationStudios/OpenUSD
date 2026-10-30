@@ -11,72 +11,64 @@
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 
-static object _WrapConvertToStandardTangent(
+static nb::object _WrapConvertToStandardTangent(
     const double widthIn,
     const double slopeOrHeightIn,
     bool convertHeightToSlope,
     bool divideValuesByThree,
     bool negateHeight)
 {
-    bool ok;
     double widthOut, slopeOut;
 
-    ok = TsConvertToStandardTangent(
-        widthIn, slopeOrHeightIn, convertHeightToSlope, divideValuesByThree,
-        negateHeight, &widthOut, &slopeOut);
-
-    if (ok) {
-        return make_tuple(widthOut, slopeOut);
-    } else {
-        return object();
+    if (TsConvertToStandardTangent(
+            widthIn, slopeOrHeightIn, convertHeightToSlope, divideValuesByThree,
+            negateHeight, &widthOut, &slopeOut)) {
+        return nb::make_tuple(widthOut, slopeOut);
     }
+    return nb::none();
 }
 
-static object _WrapConvertFromStandardTangent(
+static nb::object _WrapConvertFromStandardTangent(
     const double widthIn,
     const double slopeIn,
     bool convertSlopeToHeight,
     bool multiplyValuesByThree,
     bool negateHeight)
 {
-    bool ok;
     double widthOut, slopeOrHeightOut;
 
-    ok = TsConvertFromStandardTangent(
-        widthIn, slopeIn, convertSlopeToHeight, multiplyValuesByThree,
-        negateHeight, &widthOut, &slopeOrHeightOut);
-
-    if (ok) {
-        return make_tuple(widthOut, slopeOrHeightOut);
-    } else {
-        return object();
+    if (TsConvertFromStandardTangent(
+            widthIn, slopeIn, convertSlopeToHeight, multiplyValuesByThree,
+            negateHeight, &widthOut, &slopeOrHeightOut)) {
+        return nb::make_tuple(widthOut, slopeOrHeightOut);
     }
+    return nb::none();
 }
 
-void wrapTangentConversions()
+void wrapTangentConversions(nanobind::module_& m)
 {
-    def("ConvertToStandardTangent", &_WrapConvertToStandardTangent,
-        (arg("widthIn"),
-         arg("slopeOrHeightIn"),
-         arg("convertHeightToSlope")=false,
-         arg("divideValuesByThree")=false,
-         arg("negateHeight")=false));
+    m.def("ConvertToStandardTangent", &_WrapConvertToStandardTangent,
+          nb::arg("widthIn"),
+          nb::arg("slopeOrHeightIn"),
+          nb::arg("convertHeightToSlope") = false,
+          nb::arg("divideValuesByThree") = false,
+          nb::arg("negateHeight") = false);
 
-    def("ConvertFromStandardTangent", &_WrapConvertFromStandardTangent,
-        (arg("widthIn"),
-         arg("slopeIn"),
-         arg("convertSlopeToHeight")=false,
-         arg("multiplyValuesByThree")=false,
-         arg("negateHeight")=false));
+    m.def("ConvertFromStandardTangent", &_WrapConvertFromStandardTangent,
+          nb::arg("widthIn"),
+          nb::arg("slopeIn"),
+          nb::arg("convertSlopeToHeight") = false,
+          nb::arg("multiplyValuesByThree") = false,
+          nb::arg("negateHeight") = false);
 }

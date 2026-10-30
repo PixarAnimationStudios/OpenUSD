@@ -103,11 +103,6 @@ endif()
 # a heuristic, but upon the tool set we have specified in our build.
 _add_define("BOOST_ALL_NO_LIB")
 
-if(${PXR_USE_DEBUG_PYTHON})
-    _add_define("BOOST_DEBUG_PYTHON")
-    _add_define("BOOST_LINKING_PYTHON")
-endif()
-
 # Need half::_toFloat and half::_eLut.
 _add_define("OPENEXR_DLL")
 

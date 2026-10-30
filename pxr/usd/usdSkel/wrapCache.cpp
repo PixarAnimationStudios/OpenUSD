@@ -6,6 +6,7 @@
 //
 #include "pxr/usd/usdSkel/cache.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -20,17 +21,14 @@
 #include "pxr/usd/usdSkel/skeletonQuery.h"
 #include "pxr/usd/usdSkel/skinningQuery.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
 namespace {
-
 
 std::vector<UsdSkelBinding>
 _ComputeSkelBindings(const UsdSkelCache& self,  
@@ -41,7 +39,6 @@ _ComputeSkelBindings(const UsdSkelCache& self,
     self.ComputeSkelBindings(skelRoot, &bindings, predicate);
     return bindings;
 }
-
 
 UsdSkelBinding
 _ComputeSkelBinding(const UsdSkelCache& self,
@@ -56,17 +53,17 @@ _ComputeSkelBinding(const UsdSkelCache& self,
 
 } // namespace
 
-
-void wrapUsdSkelCache()
+void wrapUsdSkelCache(nb::module_ &m)
 {
     using This = UsdSkelCache;
 
-    class_<This>("Cache", init<>())
+    nb::class_<This>(m, "Cache")
+        .def(nb::init<>())
 
         .def("Clear", &This::Clear)
 
         .def("Populate", &This::Populate,
-             (arg("skelRoot"), arg("predicate")))
+             nb::arg("skelRoot"), nb::arg("predicate"))
 
         .def("GetSkelQuery", &This::GetSkelQuery)
         
@@ -75,18 +72,18 @@ void wrapUsdSkelCache()
         .def("GetAnimQuery",
              (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdPrim&) const)
              &This::GetAnimQuery,
-             (arg("prim")))
+             nb::arg("prim"))
 
         .def("GetAnimQuery",
              (UsdSkelAnimQuery (UsdSkelCache::*)(const UsdSkelAnimation&) const)
              &This::GetAnimQuery,
-             (arg("anim")))
+             nb::arg("anim"))
 
         .def("ComputeSkelBindings", &_ComputeSkelBindings,
-             return_value_policy<TfPySequenceToList>(),
-             (arg("skelRoot"), arg("predicate")))
+             nb::arg("skelRoot"), nb::arg("predicate"))
 
         .def("ComputeSkelBinding", &_ComputeSkelBinding,
-             (arg("skelRoot"), arg("skel"), arg("predicate")))
+             nb::arg("skelRoot"), nb::arg("skel"), nb::arg("predicate"))
         ;
-}            
+
+}

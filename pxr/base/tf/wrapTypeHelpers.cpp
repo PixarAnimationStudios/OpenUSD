@@ -9,30 +9,27 @@
 
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"      // for len()
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 using namespace std;
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
 TfType
-TfType_DefinePythonTypeAndBases( const pxr_boost::python::object & classObj )
+TfType_DefinePythonTypeAndBases( const nanobind::object & classObj )
 {
-    string moduleName = extract<string>(classObj.attr("__module__"));
-    string className = extract<string>(classObj.attr("__name__"));
+    string moduleName = nanobind::cast<string>(classObj.attr("__module__"));
+    string className = nanobind::cast<string>(classObj.attr("__name__"));
     string typeName = moduleName + "." + className;
 
     // Extract the bases, and declare them if they have not yet been declared.
-    object basesObj = classObj.attr("__bases__");
+    nanobind::object basesObj = classObj.attr("__bases__");
     vector<TfType> baseTypes;
-    for (pxr_boost::python::ssize_t i=0; i < pxr_boost::python::len(basesObj); ++i)
+    for (size_t i = 0; i < nanobind::len(basesObj); ++i)
     {
-        pxr_boost::python::object baseClass = basesObj[i];
+        nanobind::object baseClass = basesObj[i];
 
-        TfType baseType = TfType::FindByPythonClass(baseClass);
+        TfType baseType = TfType::FindByPythonClass(TfPyObjWrapper(baseClass));
 
         if (baseType.IsUnknown())
             baseType = TfType_DefinePythonTypeAndBases(baseClass);
@@ -43,7 +40,7 @@ TfType_DefinePythonTypeAndBases( const pxr_boost::python::object & classObj )
     // Declare the new type w/ bases
     TfType newType = TfType::Declare( typeName, baseTypes );
 
-    newType.DefinePythonClass( classObj );
+    newType.DefinePythonClass( TfPyObjWrapper(classObj) );
 
     return newType;
 }

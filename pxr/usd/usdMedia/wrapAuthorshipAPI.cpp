@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,77 +41,77 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateSoftwarePackageAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSoftwarePackageAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateSoftwareVersionAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSoftwareVersionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDigitalSourceTypeAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDigitalSourceTypeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCreatorAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCreatorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDescriptionAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDescriptionAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInputsAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInputsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCreatedAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCreatedAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInstanceIDAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInstanceIDAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateUsageTermsAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateUsageTermsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
         
 static UsdAttribute
 _CreateCopyrightOwnerAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCopyrightOwnerAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateContactAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateContactAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
@@ -143,144 +149,136 @@ _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 
 } // anonymous namespace
 
-void wrapUsdMediaAuthorshipAPI()
+void wrapUsdMediaAuthorshipAPI(nb::module_ &m)
 {
     typedef UsdMediaAuthorshipAPI This;
 
-    UsdMediaAuthorshipAPI_CanApplyResult::Wrap<UsdMediaAuthorshipAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdMediaAuthorshipAPI_CanApplyResult::WrapNb<UsdMediaAuthorshipAPI_CanApplyResult>(
+        m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("AuthorshipAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "AuthorshipAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
         .def(TfTypePythonClass())
 
-        .def("Get",
+        .def_static("Get",
             (UsdMediaAuthorshipAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             (UsdMediaAuthorshipAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
-        .staticmethod("Get")
+            nb::arg("prim"), nb::arg("name"))
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<UsdMediaAuthorshipAPI>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+            nb::rv_policy::copy)
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetSoftwarePackageAttr",
              &This::GetSoftwarePackageAttr)
         .def("CreateSoftwarePackageAttr",
              &_CreateSoftwarePackageAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetSoftwareVersionAttr",
              &This::GetSoftwareVersionAttr)
         .def("CreateSoftwareVersionAttr",
              &_CreateSoftwareVersionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetDigitalSourceTypeAttr",
              &This::GetDigitalSourceTypeAttr)
         .def("CreateDigitalSourceTypeAttr",
              &_CreateDigitalSourceTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetCreatorAttr",
              &This::GetCreatorAttr)
         .def("CreateCreatorAttr",
              &_CreateCreatorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetDescriptionAttr",
              &This::GetDescriptionAttr)
         .def("CreateDescriptionAttr",
              &_CreateDescriptionAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetInputsAttr",
              &This::GetInputsAttr)
         .def("CreateInputsAttr",
              &_CreateInputsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetCreatedAttr",
              &This::GetCreatedAttr)
         .def("CreateCreatedAttr",
              &_CreateCreatedAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetInstanceIDAttr",
              &This::GetInstanceIDAttr)
         .def("CreateInstanceIDAttr",
              &_CreateInstanceIDAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetUsageTermsAttr",
              &This::GetUsageTermsAttr)
         .def("CreateUsageTermsAttr",
              &_CreateUsageTermsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetCopyrightOwnerAttr",
              &This::GetCopyrightOwnerAttr)
         .def("CreateCopyrightOwnerAttr",
              &_CreateCopyrightOwnerAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetContactAttr",
              &This::GetContactAttr)
         .def("CreateContactAttr",
              &_CreateContactAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
-        .def("IsAuthorshipAPIPath", _WrapIsAuthorshipAPIPath)
-            .staticmethod("IsAuthorshipAPIPath")
+        .def_static("IsAuthorshipAPIPath", _WrapIsAuthorshipAPIPath)
         .def("__repr__", ::_Repr)
     ;
 
@@ -314,38 +312,22 @@ WRAP_CUSTOM {
     _class
         .def("GetName", &This::GetName)
 
-        .def("GetAllOnStage", &This::GetAllOnStage, arg("stage"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllOnStage")
+        .def_static("GetAllOnStage", &This::GetAllOnStage, nb::arg("stage"))
 
-        .def("ComputeAccumulatedRecords", &This::ComputeAccumulatedRecords,
-             arg("prim"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("ComputeAccumulatedRecords")
+        .def_static("ComputeAccumulatedRecords", &This::ComputeAccumulatedRecords,
+             nb::arg("prim"))
 
-        .def("GetAllUnder", &This::GetAllUnder, arg("prim"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllUnder")
+        .def_static("GetAllUnder", &This::GetAllUnder, nb::arg("prim"))
 
-        .def("GetShadowed", &This::GetShadowed, arg("prim"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetShadowed")
+        .def_static("GetShadowed", &This::GetShadowed, nb::arg("prim"))
 
-        .def("GetDuplicates", &This::GetDuplicates, arg("prim"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetDuplicates")
+        .def_static("GetDuplicates", &This::GetDuplicates, nb::arg("prim"))
 
-        .def("GetAllShadowed", &This::GetAllShadowed, arg("stage"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllShadowed")
+        .def_static("GetAllShadowed", &This::GetAllShadowed, nb::arg("stage"))
 
-        .def("GetAllDuplicates", &This::GetAllDuplicates, arg("stage"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllDuplicates")
+        .def_static("GetAllDuplicates", &This::GetAllDuplicates, nb::arg("stage"))
 
-        .def("GetAllInLayer", &This::GetAllInLayer, arg("layer"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllInLayer")
+        .def_static("GetAllInLayer", &This::GetAllInLayer, nb::arg("layer"))
         ;
 }
 

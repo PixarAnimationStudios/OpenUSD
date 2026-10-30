@@ -14,7 +14,6 @@
 
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyObjWrapper.h"
-#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/arch/demangle.h"
@@ -25,21 +24,14 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
-#include "pxr/external/boost/python/converter/registered.hpp"
-#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/refcount.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/to_python_converter.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/base/tf/pySafePython.h"
+#include <nanobind/nanobind.h>
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_API nanobind::module_ TfPyGetCurrentNanobindModule();
 
 /// \class Tf_PyEnum
 ///
@@ -67,68 +59,24 @@ class Tf_PyEnumRegistry {
     }
     
     TF_API
-    void RegisterValue(TfEnum const &e, pxr_boost::python::object const &obj);
+    void RegisterValue(TfEnum const &e, nanobind::handle obj);
+
+    TF_API
+    PyObject *GetPyObject(TfEnum const &e) {
+        return _ConvertEnumToPython(e);
+    }
+
+    TF_API
+    bool FindEnum(PyObject *obj, TfEnum *out) const;
 
     template <typename T>
     void RegisterEnumConversions() {
-        // Register conversions to and from python.
-        pxr_boost::python::to_python_converter<T, _EnumToPython<T> >();
-        _EnumFromPython<T>();
     }
 
   private:
 
     TF_API
     PyObject *_ConvertEnumToPython(TfEnum const &e);
-
-    template <typename T>
-    struct _EnumFromPython {
-        _EnumFromPython() {
-            pxr_boost::python::converter::registry::insert
-                (&convertible, &construct, pxr_boost::python::type_id<T>());
-        }
-        static void *convertible(PyObject *obj) {
-            TfHashMap<PyObject *, TfEnum, _ObjectHash> const &o2e =
-                Tf_PyEnumRegistry::GetInstance()._objectsToEnums;
-            TfHashMap<PyObject *, TfEnum, _ObjectHash>::const_iterator
-                i = o2e.find(obj);
-            // In the case of producing a TfEnum or an integer, any
-            // registered enum type is fine.  In all other cases, the
-            // enum types must match.
-            if (std::is_same<T, TfEnum>::value ||
-                (std::is_integral<T>::value && !std::is_enum<T>::value))
-                return i != o2e.end() ? obj : 0;
-            else
-                return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;
-        }
-        static void construct(PyObject *src, pxr_boost::python::converter::
-                              rvalue_from_python_stage1_data *data) {
-            void *storage =
-                ((pxr_boost::python::converter::
-                  rvalue_from_python_storage<T> *)data)->storage.bytes;
-            new (storage) T(_GetEnumValue(src, (T *)0));
-            data->convertible = storage;
-        }
-    private:
-        // Overloads to explicitly allow conversion of the TfEnum integer
-        // value to other enum/integral types.
-        template <typename U>
-        static U _GetEnumValue(PyObject *src, U *) {
-            return U(Tf_PyEnumRegistry::GetInstance()._objectsToEnums[src].
-                GetValueAsInt());
-        }
-        static TfEnum _GetEnumValue(PyObject *src, TfEnum *) {
-            return Tf_PyEnumRegistry::GetInstance()._objectsToEnums[src];
-        }
-    };
-
-    template <class T>
-    struct _EnumToPython {
-        static PyObject *convert(T t) {
-            return Tf_PyEnumRegistry
-                ::GetInstance()._ConvertEnumToPython(TfEnum(t));
-        }
-    };
 
     // Since our enum objects live as long as the registry does, we can use the
     // pointer values for a hash.
@@ -147,7 +95,7 @@ TF_API_TEMPLATE_CLASS(TfSingleton<Tf_PyEnumRegistry>);
 
 // Private function used for __repr__ of wrapped enum types.
 TF_API
-std::string Tf_PyEnumRepr(pxr_boost::python::object const &self);
+std::string Tf_PyEnumRepr(nanobind::handle self);
 
 // Private base class for types which are instantiated and exposed to python
 // for each registered enum type.
@@ -230,7 +178,7 @@ struct Tf_PyEnumWrapper : public Tf_PyEnum
                           lhs.value.GetValueAsInt() |
                           rhs.value.GetValueAsInt());
         }
-        TfPyThrowTypeError("Enum type mismatch");
+        throw nanobind::type_error("Enum type mismatch");
         return TfEnum();
     }
     friend TfEnum operator |(Tf_PyEnumWrapper const &lhs, long rhs) {
@@ -247,7 +195,7 @@ struct Tf_PyEnumWrapper : public Tf_PyEnum
                           lhs.value.GetValueAsInt() &
                           rhs.value.GetValueAsInt());
         }
-        TfPyThrowTypeError("Enum type mismatch");
+        throw nanobind::type_error("Enum type mismatch");
         return TfEnum();
     }
     friend TfEnum operator &(Tf_PyEnumWrapper const &lhs, long rhs) {
@@ -264,7 +212,7 @@ struct Tf_PyEnumWrapper : public Tf_PyEnum
                           lhs.value.GetValueAsInt() ^
                           rhs.value.GetValueAsInt());
         }
-        TfPyThrowTypeError("Enum type mismatch");
+        throw nanobind::type_error("Enum type mismatch");
         return TfEnum();
     }
     friend TfEnum operator ^(Tf_PyEnumWrapper const &lhs, long rhs) {
@@ -289,12 +237,14 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
     Tf_TypedPyEnumWrapper(std::string const &n, TfEnum const &val) :
         Tf_PyEnumWrapper(n, val) {}
 
-    static pxr_boost::python::object GetValueFromName(const std::string& name) {
+    static nanobind::object GetValueFromName(const std::string& name) {
         bool found = false;
         const TfEnum value = TfEnum::GetValueFromName<T>(name, &found);
-        return found
-            ? pxr_boost::python::object(value)
-            : pxr_boost::python::object();
+        if (!found) {
+            return nanobind::none();
+        }
+        return nanobind::steal(
+            Tf_PyEnumRegistry::GetInstance().GetPyObject(value));
     }
 };
 
@@ -311,51 +261,9 @@ std::string Tf_PyCleanEnumName(std::string name,
 // Adds attribute of given name with given value to given scope.
 // Issues a coding error if attribute by that name already existed.
 TF_API
-void Tf_PyEnumAddAttribute(pxr_boost::python::scope &s,
+void Tf_PyEnumAddAttribute(nanobind::handle s,
                            const std::string &name,
-                           const pxr_boost::python::object &value);
-
-/// \class TfPyWrapEnum
-///
-/// Used to wrap enum types for script.
-///
-/// TfPyWrapEnum provides a way to wrap enums for python, tying in with the \a
-/// TfEnum system, and potentially providing automatic wrapping by using names
-/// registered with the \a TfEnum system and by making some assumptions about
-/// the way we structure our code.  Enums that are not registered with TfEnum
-/// may be manually wrapped using pxr_boost::python::enum_ instead.
-///
-/// Example usage.  For an enum that looks like this:
-/// \code
-/// enum FooChoices {
-///    FooFirst,
-///    FooSecond,
-///    FooThird
-/// };
-/// \endcode
-///
-/// Which has been registered in the \a TfEnum system and has names provided for
-/// all values, it may be wrapped like this:
-/// \code
-/// TfPyWrapEnum<FooChoices>();
-/// \endcode
-///
-/// The enum will appear in script as Foo.Choices.{First, Second, Third} and
-/// the values will also appear as Foo.{First, Second, Third}.
-///
-/// An enum may be given an explicit name by passing a string to
-/// TfPyWrapEnum's constructor.
-///
-/// If the enum is a C++11 scoped enum (aka enum class), the values will appear
-/// as Foo.Choices.{First, Second, Third} in the following example:
-/// \code
-/// enum class FooChoices {
-///    First,
-///    Second,
-///    Third
-/// };
-/// \endcode
-///
+                           nanobind::handle value);
 
 // Detect scoped enums by using that the C++ standard does not allow them to
 // be converted to int implicitly.
@@ -363,9 +271,8 @@ template <typename T, bool IsScopedEnum = !std::is_convertible<T, int>::value>
 struct TfPyWrapEnum {
 
 private:
-    typedef pxr_boost::python::class_<
-        Tf_TypedPyEnumWrapper<T>, pxr_boost::python::bases<Tf_PyEnumWrapper> >
-    _EnumPyClassType;
+    typedef nanobind::class_<Tf_TypedPyEnumWrapper<T>, Tf_PyEnumWrapper>
+        _EnumPyClassType;
 
 public:
 
@@ -373,10 +280,14 @@ public:
     /// If \a name is provided, it is used as the name of the enum.  Otherwise
     /// the type name of \a T is used, with a leading MFB package name
     /// stripped.
-    explicit TfPyWrapEnum( std::string const &name = std::string())
+    explicit TfPyWrapEnum(std::string const &name = std::string())
+        : TfPyWrapEnum(TfPyGetCurrentNanobindModule(), name)
     {
-        using namespace pxr_boost::python;
+    }
 
+    TfPyWrapEnum(nanobind::handle scope,
+                 std::string const &name = std::string())
+    {
         const bool explicitName = !name.empty();
 
         // First, take either the given name, or the demangled type name.
@@ -416,29 +327,26 @@ public:
         }
 
         // Make a python type for T.
-        _EnumPyClassType enumClass(enumName.c_str(), no_init);
-        enumClass.def("GetValueFromName", &Tf_TypedPyEnumWrapper<T>::GetValueFromName, arg("name"));
-        enumClass.staticmethod("GetValueFromName");
-        enumClass.setattr("_baseName", baseName);
+        _EnumPyClassType enumClass(scope, enumName.c_str());
+        enumClass.def_static("GetValueFromName",
+                             &Tf_TypedPyEnumWrapper<T>::GetValueFromName,
+                             nanobind::arg("name"));
+        enumClass.attr("_baseName") = baseName;
 
         // Register conversions for it.
         Tf_PyEnumRegistry::GetInstance().RegisterEnumConversions<T>();
 
         // Export values.
-        //
-        // Only strip the package name from top-level enum values.
-        // For example, if an enum named "Foo" is declared at top-level
-        // scope in Tf with values "TfBar" and "TfBaz", we want to strip
-        // off Tf so that the values in Python will be Tf.Bar and Tf.Baz.
         const bool stripPackageName = baseName.empty();
-        _ExportValues(stripPackageName, enumClass);
+        _ExportValues(stripPackageName, scope, enumClass);
 
         // Register with Tf so that python clients of a TfType
         // that represents an enum are able to get to the equivalent 
         // python class with .pythonclass
         const TfType &type = TfType::Find<T>();
-        if (!type.IsUnknown())
+        if (!type.IsUnknown()) {
             type.DefinePythonClass(enumClass);
+        }
     }
     
   private:
@@ -446,8 +354,10 @@ public:
     /// Export all values in this enum to the enclosing scope.
     /// If no explicit names have been registered, this will export the TfEnum
     /// registered names and values (if any).
-    void _ExportValues(bool stripPackageName, _EnumPyClassType &enumClass) {
-        pxr_boost::python::list valueList;
+    void _ExportValues(bool stripPackageName,
+                       nanobind::handle enclosingScope,
+                       _EnumPyClassType &enumClass) {
+        nanobind::list valueList;
 
         for (const std::string& name : TfEnum::GetAllNames<T>()) {
             bool success = false;
@@ -461,7 +371,7 @@ public:
 
             // convert value to python.
             Tf_TypedPyEnumWrapper<T> wrappedValue(cleanedName, enumValue);
-            pxr_boost::python::object pyValue(wrappedValue);
+            nanobind::object pyValue = nanobind::cast(wrappedValue);
 
             // register it as the python object for this value.
             Tf_PyEnumRegistry::GetInstance().RegisterValue(enumValue, pyValue);
@@ -470,23 +380,23 @@ public:
             std::string valueName = wrappedValue.GetName();
             if (IsScopedEnum) {
                 // If scoped enum, enum values appear on the enumClass ...
-                pxr_boost::python::scope s(enumClass);
-                Tf_PyEnumAddAttribute(s, valueName, pyValue);
+                Tf_PyEnumAddAttribute(enumClass, valueName, pyValue);
             } else {
                 // ... otherwise, enum values appear on the enclosing scope.
-                pxr_boost::python::scope s;
-                Tf_PyEnumAddAttribute(s, valueName, pyValue);
+                Tf_PyEnumAddAttribute(enclosingScope, valueName, pyValue);
             }
 
             valueList.append(pyValue);
         }
 
         // Add a tuple of all the values to the enum class.
-        enumClass.setattr("allValues", pxr_boost::python::tuple(valueList));
+        enumClass.attr("allValues") = nanobind::tuple(valueList);
     }
 
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#include "pxr/base/tf/pyUtils.h"
 
 #endif // PXR_BASE_TF_PY_ENUM_H

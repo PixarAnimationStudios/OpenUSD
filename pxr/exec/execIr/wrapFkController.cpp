@@ -13,15 +13,18 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,91 +37,91 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateParentInSpaceAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateParentInSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateParentInDefaultSpaceAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateParentInDefaultSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOutSpaceAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOutSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOutDefaultSpaceAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOutDefaultSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInDefaultSpaceAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInDefaultSpaceAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Matrix4d), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInTxAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInTxAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInTyAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInTyAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInTzAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInTzAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInRxAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInRxAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInRyAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInRyAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInRzAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInRzAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInRspinAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInRspinAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
 }
         
 static UsdAttribute
 _CreateInRotationOrderAttr(ExecIrFkController &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateInRotationOrderAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
@@ -134,127 +137,122 @@ _Repr(const ExecIrFkController &self)
 
 } // anonymous namespace
 
-void wrapExecIrFkController()
+void wrapExecIrFkController(nb::module_ &m)
 {
     typedef ExecIrFkController This;
 
-    class_<This, bases<ExecIrController> >
-        cls("FkController");
+    nb::class_<This, ExecIrController> cls(m, "FkController");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetParentInSpaceAttr",
              &This::GetParentInSpaceAttr)
         .def("CreateParentInSpaceAttr",
              &_CreateParentInSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetParentInDefaultSpaceAttr",
              &This::GetParentInDefaultSpaceAttr)
         .def("CreateParentInDefaultSpaceAttr",
              &_CreateParentInDefaultSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOutSpaceAttr",
              &This::GetOutSpaceAttr)
         .def("CreateOutSpaceAttr",
              &_CreateOutSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOutDefaultSpaceAttr",
              &This::GetOutDefaultSpaceAttr)
         .def("CreateOutDefaultSpaceAttr",
              &_CreateOutDefaultSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInDefaultSpaceAttr",
              &This::GetInDefaultSpaceAttr)
         .def("CreateInDefaultSpaceAttr",
              &_CreateInDefaultSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInTxAttr",
              &This::GetInTxAttr)
         .def("CreateInTxAttr",
              &_CreateInTxAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInTyAttr",
              &This::GetInTyAttr)
         .def("CreateInTyAttr",
              &_CreateInTyAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInTzAttr",
              &This::GetInTzAttr)
         .def("CreateInTzAttr",
              &_CreateInTzAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInRxAttr",
              &This::GetInRxAttr)
         .def("CreateInRxAttr",
              &_CreateInRxAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInRyAttr",
              &This::GetInRyAttr)
         .def("CreateInRyAttr",
              &_CreateInRyAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInRzAttr",
              &This::GetInRzAttr)
         .def("CreateInRzAttr",
              &_CreateInRzAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInRspinAttr",
              &This::GetInRspinAttr)
         .def("CreateInRspinAttr",
              &_CreateInRspinAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetInRotationOrderAttr",
              &This::GetInRotationOrderAttr)
         .def("CreateInRotationOrderAttr",
              &_CreateInRotationOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

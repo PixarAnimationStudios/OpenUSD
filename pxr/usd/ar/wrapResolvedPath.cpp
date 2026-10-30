@@ -11,14 +11,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static std::string
 _Repr(const ArResolvedPath& p)
@@ -35,38 +28,38 @@ _IsValid(const ArResolvedPath& p)
     return static_cast<bool>(p);
 }
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+
 void
-wrapResolvedPath()
+wrapResolvedPath(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = ArResolvedPath;
 
-    class_<This>("ResolvedPath")
-        .def(init<>())
-        .def(init<const std::string&>())
+    nb::class_<This>(m, "ResolvedPath")
+        .def(nb::init<>())
+        .def(nb::init<const std::string&>())
 
-        .def(self == self)
-        .def(self != self)
-        .def(self < self)
-        .def(self > self)
-        .def(self <= self)
-        .def(self >= self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def(nb::self < nb::self)
+        .def(nb::self > nb::self)
+        .def(nb::self <= nb::self)
+        .def(nb::self >= nb::self)
 
-        .def(self == std::string())
-        .def(self != std::string())
-        .def(self < std::string())
-        .def(self > std::string())
-        .def(self <= std::string())
-        .def(self >= std::string())
+        .def(nb::self == std::string())
+        .def(nb::self != std::string())
+        .def(nb::self < std::string())
+        .def(nb::self > std::string())
+        .def(nb::self <= std::string())
+        .def(nb::self >= std::string())
 
         .def("__bool__", _IsValid)
         .def("__hash__", &This::GetHash)
         .def("__repr__", &_Repr)
-        .def("__str__", &This::GetPathString,
-             return_value_policy<return_by_value>())
+        .def("__str__", &This::GetPathString)
 
-        .def("GetPathString", &This::GetPathString,
-             return_value_policy<return_by_value>())
+        .def("GetPathString", &This::GetPathString)
         ;
 
-    implicitly_convertible<This, std::string>();
 }

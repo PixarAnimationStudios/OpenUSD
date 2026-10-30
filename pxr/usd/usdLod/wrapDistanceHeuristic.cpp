@@ -13,15 +13,14 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -34,21 +33,21 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateCenterAttr(UsdLodDistanceHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateCenterAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateThresholdsAttr(UsdLodDistanceHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateThresholdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlendThresholdsAttr(UsdLodDistanceHeuristic &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBlendThresholdsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
@@ -64,57 +63,52 @@ _Repr(const UsdLodDistanceHeuristic &self)
 
 } // anonymous namespace
 
-void wrapUsdLodDistanceHeuristic()
+void wrapUsdLodDistanceHeuristic(nb::module_ &m)
 {
     typedef UsdLodDistanceHeuristic This;
 
-    class_<This, bases<UsdLodHeuristic> >
-        cls("DistanceHeuristic");
+    nb::class_<This, UsdLodHeuristic> cls(m, "DistanceHeuristic");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetCenterAttr",
              &This::GetCenterAttr)
         .def("CreateCenterAttr",
              &_CreateCenterAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetThresholdsAttr",
              &This::GetThresholdsAttr)
         .def("CreateThresholdsAttr",
              &_CreateThresholdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
         
         .def("GetBlendThresholdsAttr",
              &This::GetBlendThresholdsAttr)
         .def("CreateBlendThresholdsAttr",
              &_CreateBlendThresholdsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+             nb::arg("writeSparsely")=false)
 
         
         .def("GetBoundingVolumeRel",
@@ -195,7 +189,7 @@ _WrapComputeLOD2(
 }
 
 static
-pxr_boost::python::tuple
+nb::tuple
 _WrapComputeLOD3(const UsdLodDistanceHeuristic& heuristic,
                  const GfVec3d& viewpoint,
                  const GfMatrix4d& transform,
@@ -207,7 +201,7 @@ _WrapComputeLOD3(const UsdLodDistanceHeuristic& heuristic,
     double lod = heuristic.ComputeLOD(viewpoint, transform,
                                       prevDistance, hysteresis,
                                       &distanceOut);
-    return pxr_boost::python::make_tuple(lod, distanceOut);
+    return nb::make_tuple(lod, distanceOut);
 }
 
 WRAP_CUSTOM {
@@ -216,32 +210,32 @@ WRAP_CUSTOM {
     _class
         .def("CreateDistanceHeuristicQuery",
              &This::CreateDistanceHeuristicQuery,
-             arg("time") = UsdTimeCode::Default())
+             nb::arg("time") = UsdTimeCode::Default())
 
         .def("ComputeDistance", _WrapComputeDistance1,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeDistance", _WrapComputeDistance2,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("prevDistance") = 0.0,
-              arg("hysteresis") = 0.0,
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("prevDistance") = 0.0,
+             nb::arg("hysteresis") = 0.0,
+             nb::arg("time") = UsdTimeCode::Default())
 
         .def("ComputeLOD", &_WrapComputeLOD1,
-             (arg("distance"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("distance"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeLOD", &_WrapComputeLOD2,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("time") = UsdTimeCode::Default())
         .def("ComputeLOD", &_WrapComputeLOD3,
-             (arg("viewpoint"),
-              arg("transform"),
-              arg("prevDistance"),
-              arg("hysteresis"),
-              arg("time") = UsdTimeCode::Default()))
+             nb::arg("viewpoint"),
+             nb::arg("transform"),
+             nb::arg("prevDistance"),
+             nb::arg("hysteresis"),
+             nb::arg("time") = UsdTimeCode::Default())
         ;
 }
 

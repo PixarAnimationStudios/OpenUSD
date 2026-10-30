@@ -12,27 +12,21 @@
 {% for S in SCALARS %}
 #include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
+#include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -42,130 +36,88 @@ static string __repr__({{ QUAT }} const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
-static {{ QUAT }} __truediv__(const {{ QUAT }} &self, {{ SCL }} value)
-{
-    return self / value;
-}
-
-static {{ QUAT }}& __itruediv__({{ QUAT }} &self, {{ SCL }} value)
-{
-    return self /= value;
-}
-
 static size_t __hash__({{ QUAT }} const &self) {
     return TfHash()(self);
 }
 
-// Zero-initialized default ctor for python.
-static {{ QUAT }} *__init__() { return new {{ QUAT }}(0); }
-
 } // anonymous namespace 
 
-void wrapQuat{{ SUFFIX }}()
-{    
-    object getImaginary =
-        make_function(&{{ QUAT }}::GetImaginary,
-                      return_value_policy<return_by_value>());
-
-    object setImaginaryVec =
-        make_function((void ({{ QUAT }}::*)(const GfVec3{{ SUFFIX }} &))
-                      &{{ QUAT }}::SetImaginary);
-
-    object setImaginaryScl =
-        make_function((void ({{ QUAT }}::*)({{ SCL }}, {{ SCL }}, {{ SCL }}))
-                      &{{ QUAT }}::SetImaginary,
-                      default_call_policies(),
-                      (arg("i"), arg("j"), arg("k")));
-
-    def("Slerp",
+void wrapQuat{{ SUFFIX }}(nanobind::module_ &m)
+{
+    m.def("Slerp",
         ({{ QUAT }} (*)(double, const {{ QUAT }}&, const {{ QUAT }}&))
         GfSlerp);
 
-    def("Dot",
+    m.def("Dot",
         ({{ SCL }} (*)(const {{ QUAT }}&, const {{ QUAT }}&))
         GfDot);
-    
-    class_<{{ QUAT }}> cls("Quat{{ SUFFIX }}", no_init);
+
+    nanobind::class_<{{ QUAT }}> cls(m, "Quat{{ SUFFIX }}");
     cls
-        .def("__init__", make_constructor(__init__))
-                          
+        .def("__init__", []({{ QUAT }} *self) { new (self) {{ QUAT }}(0); })
+
         .def(TfTypePythonClass())
 
-        .def(init<GfQuat{{ SUFFIX }}>())
-        .def(init<{{ SCL }}>(arg("real")))
-        .def(init<{{ SCL }}, const GfVec3{{ SUFFIX }} &>(
-                 (arg("real"), arg("imaginary"))))
-        .def(init<{{ SCL }}, {{ SCL }}, {{ SCL }}, {{ SCL }}>(
-                 (arg("real"), arg("i"), arg("j"), arg("k"))))
-{% for S in SCALARS if S != SCL and not ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-        .def(init<const GfQuat{{ SCALAR_SUFFIX(S) }} & >())
+        .def(nanobind::init<GfQuat{{ SUFFIX }}>())
+{% for S in SCALARS if S != SCL %}
+{% if ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
+        .def(nanobind::init_implicit<const GfQuat{{ SCALAR_SUFFIX(S) }} &>())
+{% else %}
+        .def(nanobind::init<const GfQuat{{ SCALAR_SUFFIX(S) }} &>())
+{% endif %}
 {% endfor %}
+        .def(nanobind::init<{{ SCL }}>(), nanobind::arg("real"))
+        .def(nanobind::init<{{ SCL }}, const GfVec3{{ SUFFIX }} &>(),
+             nanobind::arg("real"), nanobind::arg("imaginary"))
+        .def(nanobind::init<{{ SCL }}, {{ SCL }}, {{ SCL }}, {{ SCL }}>(),
+             nanobind::arg("real"), nanobind::arg("i"),
+             nanobind::arg("j"), nanobind::arg("k"))
 
-        .def("GetZero", &{{ QUAT }}::GetZero)
-        .staticmethod("GetZero")
-
-        .def("GetIdentity", &{{ QUAT }}::GetIdentity)
-        .staticmethod("GetIdentity")
+        .def_static("GetZero", &{{ QUAT }}::GetZero)
+        .def_static("GetIdentity", &{{ QUAT }}::GetIdentity)
 
         .def("GetReal", &{{ QUAT }}::GetReal)
         .def("SetReal", &{{ QUAT }}::SetReal)
-        .add_property("real", &{{ QUAT }}::GetReal, &{{ QUAT }}::SetReal)
+        .def_prop_rw("real", &{{ QUAT }}::GetReal, &{{ QUAT }}::SetReal)
 
-        .def("GetImaginary", getImaginary)
-        .def("SetImaginary", setImaginaryVec)
-        .def("SetImaginary", setImaginaryScl)
-        .add_property("imaginary", getImaginary, setImaginaryVec)
+        .def("GetImaginary", &{{ QUAT }}::GetImaginary, nanobind::rv_policy::copy)
+        .def("SetImaginary", (void ({{ QUAT }}::*)(const GfVec3{{ SUFFIX }} &))&{{ QUAT }}::SetImaginary)
+        .def("SetImaginary", (void ({{ QUAT }}::*)({{ SCL }}, {{ SCL }}, {{ SCL }}))&{{ QUAT }}::SetImaginary,
+             nanobind::arg("i"), nanobind::arg("j"), nanobind::arg("k"))
+        .def_prop_rw("imaginary", &{{ QUAT }}::GetImaginary,
+                     (void ({{ QUAT }}::*)(const GfVec3{{ SUFFIX }} &))&{{ QUAT }}::SetImaginary,
+                     nanobind::rv_policy::copy)
 
         .def("GetLength", &{{ QUAT }}::GetLength)
 
         .def("GetNormalized", &{{ QUAT }}::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
-        .def("Normalize", &{{ QUAT }}::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH)
+        .def("Normalize", []({{ QUAT }} &self, {{ SCL }} eps) -> {{ QUAT }} & {
+            self.Normalize(eps);
+            return self;
+        }, nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH, nanobind::rv_policy::reference)
 
         .def("GetConjugate", &{{ QUAT }}::GetConjugate)
         .def("GetInverse", &{{ QUAT }}::GetInverse)
 
         .def("Transform", &{{ QUAT }}::Transform)
 
-        .def(str(self))
-        .def(-self)
-        .def(self == self)
-        .def(self != self)
-        .def(self *= self)
-        .def(self *= {{ SCL }}())
-        .def(self /= {{ SCL }}())
-        .def(self += self)
-        .def(self -= self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self * {{ SCL }}())
-        .def({{ SCL }}() * self)
-        .def(self / {{ SCL }}())
+        .def("__str__", [](const {{ QUAT }} &self) { return TfStringify(self); })
+        .def(-nanobind::self)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self *= {{ SCL }}())
+        .def(nanobind::self /= {{ SCL }}())
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self * {{ SCL }}())
+        .def({{ SCL }}() * nanobind::self)
+        .def(nanobind::self / {{ SCL }}())
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-
-{% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}
-    implicitly_convertible<{{ QUATNAME(S) }}, {{ QUAT }}>();
-{% endfor %}
-
-    to_python_converter<std::vector<{{ QUAT }}>,
-        TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 }

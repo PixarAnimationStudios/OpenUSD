@@ -11,15 +11,17 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -53,24 +55,21 @@ __repr__(const UsdRelationship &self)
 
 } // anonymous namespace 
 
-void wrapUsdRelationship()
+void wrapUsdRelationship(nb::module_ &m)
 {
-    class_<UsdRelationship, bases<UsdProperty> >("Relationship")
+    nb::class_<UsdRelationship, UsdProperty>(m, "Relationship")
+        .def(nb::init<>())
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
         .def("AddTarget", &UsdRelationship::AddTarget,
-             (arg("target"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("RemoveTarget", &UsdRelationship::RemoveTarget, arg("target"))
-        .def("SetTargets", &UsdRelationship::SetTargets, arg("targets"))
-        .def("ClearTargets", &UsdRelationship::ClearTargets, arg("removeSpec"))
-        .def("GetTargets", _GetTargets,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetForwardedTargets", _GetForwardedTargets,
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("target"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("RemoveTarget", &UsdRelationship::RemoveTarget, nb::arg("target"))
+        .def("SetTargets", &UsdRelationship::SetTargets, nb::arg("targets"))
+        .def("ClearTargets", &UsdRelationship::ClearTargets, nb::arg("removeSpec"))
+        .def("GetTargets", _GetTargets)
+        .def("GetForwardedTargets", _GetForwardedTargets)
         .def("HasAuthoredTargets", &UsdRelationship::HasAuthoredTargets)
         ;
     TfPyRegisterStlSequencesFromPython<UsdRelationship>();
-    to_python_converter<std::vector<UsdRelationship>,
-                        TfPySequenceToPython<std::vector<UsdRelationship>>>();
 }

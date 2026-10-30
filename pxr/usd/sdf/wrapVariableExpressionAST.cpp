@@ -9,47 +9,67 @@
 #include "pxr/usd/sdf/variableExpression.h"
 #include "pxr/usd/sdf/variableExpressionAST.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/bases.hpp"
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/ptr.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace std {
+template <>
+struct is_copy_constructible<PXR_NS::SdfVariableExpressionASTNodes::NodeList>
+    : std::false_type {};
+template <>
+struct is_move_constructible<PXR_NS::SdfVariableExpressionASTNodes::NodeList>
+    : std::false_type {};
+template <>
+struct is_copy_constructible<PXR_NS::SdfVariableExpressionASTNodes::ListNode>
+    : std::false_type {};
+template <>
+struct is_move_constructible<PXR_NS::SdfVariableExpressionASTNodes::ListNode>
+    : std::false_type {};
+template <>
+struct is_copy_constructible<
+    PXR_NS::SdfVariableExpressionASTNodes::FunctionNode> : std::false_type {};
+template <>
+struct is_move_constructible<
+    PXR_NS::SdfVariableExpressionASTNodes::FunctionNode> : std::false_type {};
+}  // namespace std
+
+namespace nb = nanobind;
 
 class Sdf_VariableExpressionASTNodesNS
 {
 };
 
 static void
-wrapVariableExpressionASTNodes()
+wrapVariableExpressionASTNodes(nanobind::module_& m)
 {
     using namespace SdfVariableExpressionASTNodes;
 
-    scope s = class_<Sdf_VariableExpressionASTNodesNS>
-        ("VariableExpressionASTNodes", no_init);
+    nb::class_<Sdf_VariableExpressionASTNodesNS> s(
+        m, "VariableExpressionASTNodes");
 
     {
         using This = Node;
-        class_<This, noncopyable>("Node", no_init)
+        nb::class_<This>(s, "Node")
             .def("GetExpression", &This::GetExpression)
             ;
     }
 
     {
         using This = NodeList;
-        class_<This, noncopyable>("NodeList", no_init)
+        nb::class_<This>(s, "NodeList")
             // XXX: Nodes in list need to have custodian_and_ward policy?
             .def("GetNodes", 
-                +[](const This& l) {
-                    list nodes;
-                    for (const auto& n : l.GetNodes()) {
-                        nodes.append(ptr(n));
+                [](This& l) {
+                    nb::list nodes;
+                    for (auto* n : l.GetNodes()) {
+                        nodes.append(nb::cast(n, nb::rv_policy::reference));
                     }
                     return nodes;
                 })
@@ -64,25 +84,24 @@ wrapVariableExpressionASTNodes()
 
     {
         using This = LiteralNode;
-        auto c = class_<This, bases<Node>, noncopyable>
-            ("LiteralNode", no_init)
+        nb::class_<This, Node>(s, "LiteralNode")
             .def("GetValue", 
-                +[](const This& n) {
+                [](const This& n) -> nb::object {
                     return std::visit(
-                        [](auto&& arg) { 
+                        [](auto&& arg) -> nb::object { 
                             using T = std::decay_t<decltype(arg)>;
                             if constexpr (std::is_same_v<T, std::monostate>) {
-                                return object();
+                                return nb::none();
                             }
                             else {
-                                return object(arg);
+                                return nb::cast(arg);
                             }
                         }, 
                         n.GetValue());
                     })
 
             .def("SetValue",
-                +[](This& n, const VtValue& v) {
+                [](This& n, const VtValue& v) {
                     if (v.IsEmpty()) {
                         n.SetValue({});
                     }
@@ -108,14 +127,12 @@ wrapVariableExpressionASTNodes()
 
     {
         using This = VariableNode;
-        class_<This, bases<Node>, noncopyable>
-            ("VariableNode", no_init)
-            .def("GetName", &This::GetName,
-                return_value_policy<return_by_value>())
+        nb::class_<This, Node>(s, "VariableNode")
+            .def("GetName", &This::GetName)
             .def("SetName", &This::SetName)
             .def("GetFallbackValue",
                 +[](This& n) { return n.GetFallbackValue(); },
-                return_internal_reference<>())
+                nb::rv_policy::reference_internal)
             .def("SetFallbackValue", &This::SetFallbackValue)
             .def("ClearFallbackValue", &This::ClearFallbackValue)
             ;
@@ -123,48 +140,45 @@ wrapVariableExpressionASTNodes()
 
     {
         using This = ListNode;
-        class_<This, bases<Node>, noncopyable>
-            ("ListNode", no_init)
+        nb::class_<This, Node>(s, "ListNode")
             .def("GetElements",
-                +[](This& n) -> NodeList& { return n.GetElements(); },
-                return_internal_reference<>())
+                [](This& n) -> NodeList& { return n.GetElements(); },
+                nb::rv_policy::reference_internal)
             ;
     }
 
     {
         using This = FunctionNode;
-        class_<This, bases<Node>, noncopyable>
-            ("FunctionNode", no_init)
-            .def("GetName", &This::GetName,
-                return_value_policy<return_by_value>())
+        nb::class_<This, Node>(s, "FunctionNode")
+            .def("GetName", &This::GetName)
             .def("SetName", &This::SetName)
             .def("GetArguments", 
-                +[](This& fn) -> NodeList& { return fn.GetArguments(); },
-                return_internal_reference<>())
+                [](This& fn) -> NodeList& { return fn.GetArguments(); },
+                nb::rv_policy::reference_internal)
             ;
     }
 }
 
 void
-wrapVariableExpressionAST()
+wrapVariableExpressionAST(nanobind::module_& m)
 {
-    wrapVariableExpressionASTNodes();
+    wrapVariableExpressionASTNodes(m);
 
     using This = SdfVariableExpressionAST;
-    class_<This, noncopyable>("VariableExpressionAST")
-        .def(init<>())
-        .def(init<const This&>()) // deep copy
-        .def(init<const std::string&>(arg("expression")))
-        .def(init<const SdfVariableExpression&>(arg("expression")))
+    nb::class_<This>(m, "VariableExpressionAST")
+        .def(nb::init<>())
+        .def(nb::init<const This&>()) // deep copy
+        .def(nb::init<const std::string&>(), nb::arg("expression"))
+        .def(nb::init<const SdfVariableExpression&>(), nb::arg("expression"))
 
         .def("__bool__", &This::operator bool)
 
-        .def("GetErrors", &This::GetErrors,
-            return_value_policy<TfPySequenceToList>())
+        .def("GetErrors", &This::GetErrors)
 
-        .def("GetRoot", +[](This& ast) { return ast.GetRoot(); },
-            return_internal_reference<>())
+        .def("GetRoot", [](This& ast) { return ast.GetRoot(); },
+            nb::rv_policy::reference_internal)
 
         .def("GetExpression", &This::GetExpression)
         ;
+
 }

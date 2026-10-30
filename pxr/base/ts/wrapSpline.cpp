@@ -10,31 +10,20 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
+#include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/valueFromPython.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
-static TsSpline* _WrapInit(
-    const std::string &typeName)
-{
-    const TfType tfType = Ts_GetTypeFromTypeName(typeName);
-    if (!tfType)
-    {
-        TF_CODING_ERROR("Invalid spline type name '%s'", typeName.c_str());
-        return nullptr;
-    }
-
-    return new TsSpline(tfType);
-}
+namespace nb = nanobind;
 
 static std::string _WrapStr(
     const TsSpline &spline)
@@ -56,18 +45,6 @@ static GfInterval _WrapSetKnot(
     return affectedInterval;
 }
 
-static object _WrapGetKnot(
-    const TsSpline &spline, const TsTime time)
-{
-    TsKnot knot;
-    if (spline.GetKnot(time, &knot))
-    {
-        return object(knot);
-    }
-
-    return object();
-}
-
 static TsKnotMap _WrapGetKnots(
     const TsSpline &spline)
 {
@@ -85,24 +62,6 @@ static void _WrapRemoveKnot(
     TsSpline &spline, const TsTime time)
 {
     spline.RemoveKnot(time);
-}
-
-static object _WrapBreakdown(
-    TsSpline& spline, const TsTime time)
-{
-    // The C++ version returns a bool and populates a pointed-to GfInterval
-    // object. The python version returns a Gf.Interval or None. The GfInterval
-    // object evaluates to True in a boolean context so it can be used the
-    // same way as the C++ version:
-    //    if spline.Breakdown(time):
-    //        ...
-    GfInterval affectedInterval;
-    bool status = spline.Breakdown(time, &affectedInterval);
-    if (status) {
-        return object(affectedInterval);
-    } else {
-        return object();
-    }
 }
 
 struct _CanBreakdownResult: public TfPyAnnotatedBoolResult<std::string>
@@ -123,12 +82,12 @@ _WrapCanBreakdown(
 }
 
 #define WRAP_EVAL(method)                                   \
-    static object _Wrap##method(                            \
+    static nb::object _Wrap##method(                        \
         const TsSpline &spline, const TsTime time)          \
     {                                                       \
         double val = 0;                                     \
         const bool haveValue = spline.method(time, &val);   \
-        return (haveValue ? object(val) : object());        \
+        return (haveValue ? nb::cast(val) : nb::none());    \
     }
 
 WRAP_EVAL(Eval);
@@ -138,7 +97,7 @@ WRAP_EVAL(EvalPreDerivative);
 WRAP_EVAL(EvalHeld);
 WRAP_EVAL(EvalPreValueHeld);
 
-static object _WrapSample(
+static nb::object _WrapSample(
     const TsSpline &spline,
     const GfInterval& timeInterval,
     double timeScale,
@@ -155,7 +114,7 @@ static object _WrapSample(
                           tolerance,
                           &samplesWithSources))
         {
-            return object(samplesWithSources);
+            return nb::cast(samplesWithSources);
         }
     } else {
         TsSplineSamples<GfVec2d> samples;
@@ -166,11 +125,11 @@ static object _WrapSample(
                           tolerance,
                           &samples))
         {
-            return object(samples);
+            return nb::cast(samples);
         }
     }
 
-    return object();
+    return nb::none();
 }
 
 static GfInterval _WrapDiff(
@@ -181,7 +140,7 @@ static GfInterval _WrapDiff(
     return self.Diff(other, compareInterval);
 }
 
-void wrapSpline()
+void wrapSpline(nanobind::module_& m)
 {
     using This = TsSpline;
 
@@ -189,17 +148,26 @@ void wrapSpline()
     // methods
     ARCH_PRAGMA_PUSH
     ARCH_PRAGMA_DEPRECATED
-    class_<This>("Spline", no_init)
+    nb::class_<This>(m, "Spline")
 
         .def("__init__",
-            make_constructor(
-                &_WrapInit,
-                default_call_policies(),
-                (arg("typeName") = "double")))
-        .def(init<const TsSpline &>())
+             [](This* self, const std::string& typeName) {
+                 TfErrorMark mark;
+                 const TfType tfType = Ts_GetTypeFromTypeName(typeName);
+                 if (!tfType) {
+                     TF_CODING_ERROR("Invalid spline type name '%s'",
+                                     typeName.c_str());
+                     if (TfPyConvertTfErrorsToPythonException(mark)) {
+                         throw nb::python_error();
+                     }
+                 }
+                 new (self) This(tfType);
+             },
+             nb::arg("typeName") = "double")
+        .def(nb::init<const TsSpline &>())
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__str__", &_WrapStr)
 
@@ -222,19 +190,29 @@ void wrapSpline()
         .def("SetKnot", &_WrapSetKnot)
         .def("GetKnots", &_WrapGetKnots)
         .def("GetKnots", &_WrapGetKnots_WithInterval)
-        .def("GetKnot", &_WrapGetKnot)
+        .def("GetKnot", [](const TsSpline& spline, TsTime time) -> nb::object {
+            TsKnot knot;
+            if (spline.GetKnot(time, &knot)) {
+                return nb::cast(knot);
+            }
+            return nb::none();
+        })
 
-        .def("Breakdown", &_WrapBreakdown,
-             arg("time"))
+        .def("Breakdown", [](TsSpline& spline, TsTime time) -> nb::object {
+            GfInterval affectedInterval;
+            if (spline.Breakdown(time, &affectedInterval)) {
+                return nb::cast(affectedInterval);
+            }
+            return nb::none();
+        }, nb::arg("time"))
         .def("CanBreakdown", &_WrapCanBreakdown,
-             arg("time"))
+             nb::arg("time"))
 
         .def("ClearKnots", &This::ClearKnots)
         .def("RemoveKnot", &_WrapRemoveKnot)
 
-        .def("GetAntiRegressionAuthoringMode",
+        .def_static("GetAntiRegressionAuthoringMode",
             &This::GetAntiRegressionAuthoringMode)
-        .staticmethod("GetAntiRegressionAuthoringMode")
         .def("HasRegressiveTangents", &This::HasRegressiveTangents)
         .def("AdjustRegressiveTangents", &This::AdjustRegressiveTangents)
 
@@ -246,21 +224,21 @@ void wrapSpline()
         .def("EvalPreValueHeld", &_WrapEvalPreValueHeld)
 
         .def("Sample", &_WrapSample,
-             (arg("timeInterval"),
-              arg("timeScale"),
-              arg("valueScale"),
-              arg("tolerance"),
-              arg("withSources") = false))
+             nb::arg("timeInterval"),
+             nb::arg("timeScale"),
+             nb::arg("valueScale"),
+             nb::arg("tolerance"),
+             nb::arg("withSources") = false)
 
         .def("Diff", &_WrapDiff,
-             (arg("other"),
-              arg("compareInterval") = GfInterval::GetFullInterval()))
+             nb::arg("other"),
+             nb::arg("compareInterval") = GfInterval::GetFullInterval())
 
         .def("BakeInnerLoops", &This::BakeInnerLoops)
         .def("GetKnotsWithInnerLoopsBaked", &This::GetKnotsWithInnerLoopsBaked)
 
         .def("GetKnotsWithLoopsBaked", &This::GetKnotsWithLoopsBaked,
-             arg("interval"))
+             nb::arg("interval"))
 
         .def("DoSidesDiffer", &This::DoSidesDiffer)
 
@@ -274,21 +252,19 @@ void wrapSpline()
 
         .def("HasValueBlockAtTime", &This::HasValueBlockAtTime)
 
-        .def("IsSupportedValueType",
+        .def_static("IsSupportedValueType",
             &This::IsSupportedValueType)
-        .staticmethod("IsSupportedValueType")
 
         .def("GetTruncated",
              &This::GetTruncated)
         .def("GetTimeScaled",
              &This::GetTimeScaled)
-        .def("Concatenate",
+        .def_static("Concatenate",
              &This::Concatenate)
-        .staticmethod("Concatenate")
         ;
     ARCH_PRAGMA_POP
 
-    _CanBreakdownResult::Wrap<_CanBreakdownResult>("_CanBreakdownResult",
-                                                   "reason");
+    _CanBreakdownResult::WrapNb<_CanBreakdownResult>(m, "_CanBreakdownResult",
+                                                     "reason");
     VtValueFromPython<TsSpline>();
 }

@@ -13,23 +13,20 @@
 #include "pxr/usd/pcp/pyUtils.h"
 #include "pxr/usd/pcp/types.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python.hpp"
 #include <memory>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _ComputeLayerStack( PcpCache &cache, 
                     const PcpLayerStackIdentifier &identifier ) 
 {
@@ -37,100 +34,61 @@ _ComputeLayerStack( PcpCache &cache,
     PcpLayerStackRefPtr result = 
         cache.ComputeLayerStack(identifier, &errors);
 
-    typedef Tf_MakePyConstructor::RefPtrFactory<>::
-        apply<PcpLayerStackRefPtr>::type RefPtrFactory;
-    
-    return pxr_boost::python::make_tuple(
-        pxr_boost::python::object(
-            pxr_boost::python::handle<>(RefPtrFactory()(result))), 
-        errors);
+    return nanobind::make_tuple(result, errors);
 }
 
-static const PcpPrimIndex&
-_WrapPrimIndex(PcpCache&, const PcpPrimIndex& primIndex)
+static nanobind::tuple
+_ComputePrimIndex( nanobind::handle self, const SdfPath & path )
 {
-    return primIndex;
-}
-
-static pxr_boost::python::tuple
-_ComputePrimIndex( PcpCache& cache, const SdfPath & path )
-{
+    PcpCache &cache = nanobind::cast<PcpCache &>(self);
     // Compute the prim index.
     PcpErrorVector errors;
     const PcpPrimIndex& primIndex = cache.ComputePrimIndex(path, &errors);
 
-    // Wrap the prim index to python as an internal reference on cache.
-    // The return_internal_reference<> says that the result is owned
-    // by the first argument, the PcpCache, and shouldn't be destroyed
-    // by Python.  The ref() around the arguments ensure that
-    // boost python will not make temporary copies of them.
-    object pyWrapPrimIndex =
-        make_function(_WrapPrimIndex, return_internal_reference<>());
-    object pyPrimIndex(pyWrapPrimIndex(ref(cache),
-                                       ref(primIndex)));
+    nanobind::object pyPrimIndex = nanobind::cast(
+        &primIndex, nanobind::rv_policy::reference_internal, self);
 
     // Return the prim index and errors to python.
-    return pxr_boost::python::make_tuple(pyPrimIndex, errors);
+    return nanobind::make_tuple(pyPrimIndex, errors);
 }
 
-static pxr_boost::python::object
-_FindPrimIndex( PcpCache& cache, const SdfPath & path )
+static nanobind::object
+_FindPrimIndex( nanobind::handle self, const SdfPath & path )
 {
+    PcpCache &cache = nanobind::cast<PcpCache &>(self);
     if (const PcpPrimIndex* primIndex = cache.FindPrimIndex(path)) {
-        // Wrap the prim index to python as an internal reference on cache.
-        // The return_internal_reference<> says that the result is owned
-        // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The ref() around the arguments ensure that
-        // boost python will not make temporary copies of them.
-        object pyWrapPrimIndex =
-            make_function(_WrapPrimIndex, return_internal_reference<>());
-        object pyPrimIndex(pyWrapPrimIndex(ref(cache),
-                                           ref(*primIndex)));
-        return pyPrimIndex;
+        return nanobind::cast(
+            primIndex, nanobind::rv_policy::reference_internal, self);
     }
-    return pxr_boost::python::object();
+    return nanobind::none();
 }
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _ComputePropertyIndex( PcpCache &cache, const SdfPath &path )
 {
     PcpErrorVector errors;
     const PcpPropertyIndex &result = cache.ComputePropertyIndex(path, &errors);
-    return_by_value::apply<PcpPropertyIndex>::type converter;
-    return pxr_boost::python::make_tuple(
-        pxr_boost::python::object(pxr_boost::python::handle<>(converter(result))), 
+    return nanobind::make_tuple(
+        nanobind::cast(result, nanobind::rv_policy::copy), 
         errors);
 }
 
-static const PcpPropertyIndex&
-_WrapPropertyIndex(PcpCache&, const PcpPropertyIndex& propertyIndex)
+static nanobind::object
+_FindPropertyIndex( nanobind::handle self, const SdfPath & path )
 {
-    return propertyIndex;
-}
-
-static pxr_boost::python::object
-_FindPropertyIndex( PcpCache& cache, const SdfPath & path )
-{
+    PcpCache &cache = nanobind::cast<PcpCache &>(self);
     if (const PcpPropertyIndex* propIndex = cache.FindPropertyIndex(path)) {
-        // Wrap the index to python as an internal reference on cache.
-        // The return_internal_reference<> says that the result is owned
-        // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The ref() around the arguments ensure that
-        // boost python will not make temporary copies of them.
-        object pyWrapPropertyIndex =
-            make_function(_WrapPropertyIndex, return_internal_reference<>());
-        object pyPropertyIndex(pyWrapPropertyIndex(ref(cache),
-                                           ref(*propIndex)));
-        return pyPropertyIndex;
+        return nanobind::cast(
+            propIndex, nanobind::rv_policy::reference_internal, self);
     }
-    return pxr_boost::python::object();
+    return nanobind::none();
 }
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path, 
                                  bool localOnly,
-                                  const SdfSpecHandle & stopProperty,
-                                  bool includeStopProperty )
+                                 const SdfSpecHandle & stopProperty,
+                                 bool includeStopProperty )
 {
     PcpErrorVector errors;
     SdfPathVector result;
@@ -139,10 +97,10 @@ _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path,
                                          stopProperty, includeStopProperty,
                                          &deletedPaths,
                                          &errors);
-    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
+    return nanobind::make_tuple(result, deletedPaths, errors);
 }
 
-static pxr_boost::python::tuple
+static nanobind::tuple
 _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path, 
                                   bool localOnly,
                                   const SdfSpecHandle & stopProperty,
@@ -155,11 +113,11 @@ _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path,
                                           stopProperty, includeStopProperty,
                                           &deletedPaths,
                                           &errors);
-    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
+    return nanobind::make_tuple(result, deletedPaths, errors);
 }
 
 static void
-_SetVariantFallbacks(PcpCache & cache, const dict& d)
+_SetVariantFallbacks(PcpCache & cache, const nanobind::dict& d)
 {
     PcpVariantFallbackMap fallbacks;
     if (PcpVariantFallbackMapFromPython(d, &fallbacks)) {
@@ -187,17 +145,26 @@ _RequestLayerMuting( PcpCache & cache,
 
 static PcpDependencyVector
 _FindSiteDependencies(const PcpCache& cache,
-                    const PcpLayerStackPtr& layerStack,
-                    const SdfPath& path,
-                    PcpDependencyFlags depMask,
-                    bool recurseOnSite,
-                    bool recurseOnIndex,
-                    bool filterForExistingCachesOnly)
+                      const PcpLayerStackPtr& layerStack,
+                      const SdfPath& path,
+                      nanobind::handle depMaskObj,
+                      bool recurseOnSite,
+                      bool recurseOnIndex,
+                      bool filterForExistingCachesOnly)
 {
+    PcpDependencyFlags depMask = 0;
+    TfEnum tfEnum;
+    if (Tf_PyEnumRegistry::GetInstance().FindEnum(depMaskObj.ptr(), &tfEnum) &&
+        tfEnum.IsA<PcpDependencyType>()) {
+        depMask = tfEnum.GetValueAsInt();
+    } else if (!nanobind::try_cast<PcpDependencyFlags>(depMaskObj, depMask, false)) {
+        throw nanobind::type_error(
+            "Expected Pcp.DependencyType or int for dependencyType");
+    }
     return cache.FindSiteDependencies(layerStack, path, depMask,
-                                    recurseOnSite,
-                                    recurseOnIndex,
-                                    filterForExistingCachesOnly);
+                                      recurseOnSite,
+                                      recurseOnIndex,
+                                      filterForExistingCachesOnly);
 }
 
 static void
@@ -211,44 +178,45 @@ _Reload( PcpCache & cache )
 } // anonymous namespace 
 
 void 
-wrapCache()
+wrapCache(nanobind::module_ &m)
 {
-    class_<PcpCache, noncopyable> 
-        ("Cache", 
-         init<const PcpLayerStackIdentifier&,
-              const std::string&, 
-              bool>(
-              (arg("layerStackIdentifier"),
-               arg("fileFormatTarget") = std::string(),
-               arg("usd") = false)))
+    namespace nb = nanobind;
+
+    nb::class_<PcpCache>(m, "Cache")
+        .def(nb::init<const PcpLayerStackIdentifier&,
+                      const std::string&, 
+                      bool>(),
+             nb::arg("layerStackIdentifier"),
+             nb::arg("fileFormatTarget") = std::string(),
+             nb::arg("usd") = false)
 
         // Note: The following parameters are not wrapped as a properties
         // because setting them may require returning additional out-
         // parameters representing the resulting cache invalidation.
         .def("GetLayerStackIdentifier", &PcpCache::GetLayerStackIdentifier,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("SetVariantFallbacks", &_SetVariantFallbacks)
         .def("GetVariantFallbacks", &PcpCache::GetVariantFallbacks,
-             return_value_policy<TfPyMapToDictionary>())
-        .def("GetUsedLayers", &PcpCache::GetUsedLayers,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
+        .def("GetUsedLayers", [](const PcpCache &self) {
+            return TfNbSequenceToList(self.GetUsedLayers());
+        })
         .def("GetUsedLayersRevision", &PcpCache::GetUsedLayersRevision)
         .def("IsPayloadIncluded", &PcpCache::IsPayloadIncluded)
         .def("RequestPayloads", &_RequestPayloads)
         .def("RequestLayerMuting", &_RequestLayerMuting,
-             (args("layersToMute"),
-              args("layersToUnmute")))
+             nb::arg("layersToMute"),
+             nb::arg("layersToUnmute"))
         .def("GetMutedLayers", &PcpCache::GetMutedLayers,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
         .def("IsLayerMuted", 
              (bool(PcpCache::*)(const std::string&) const)
                 &PcpCache::IsLayerMuted,
-             (args("layerIdentifier")))
+             nb::arg("layerIdentifier"))
 
-        .add_property("layerStack", &PcpCache::GetLayerStack)
-        .add_property("fileFormatTarget", 
-                      make_function(&PcpCache::GetFileFormatTarget,
-                                    return_value_policy<return_by_value>()))
+        .def_prop_ro("layerStack", &PcpCache::GetLayerStack)
+        .def_prop_ro("fileFormatTarget", &PcpCache::GetFileFormatTarget,
+                     nb::rv_policy::copy)
 
         .def("ComputeLayerStack", &_ComputeLayerStack)
         .def("HasRootLayerStack",
@@ -262,29 +230,28 @@ wrapCache()
 
         .def("ComputeRelationshipTargetPaths", 
              &_ComputeRelationshipTargetPaths,
-             (args("relPath"),
-              args("localOnly") = false,
-              args("stopProperty") = SdfSpecHandle(),
-              args("includeStopProperty") = false))
+             nb::arg("relPath"),
+             nb::arg("localOnly") = false,
+             nb::arg("stopProperty") = SdfSpecHandle(),
+             nb::arg("includeStopProperty") = false)
         .def("ComputeAttributeConnectionPaths", 
              &_ComputeAttributeConnectionPaths,
-             (args("relPath"),
-              args("localOnly") = false,
-              args("stopProperty") = SdfSpecHandle(),
-              args("includeStopProperty") = false))
+             nb::arg("relPath"),
+             nb::arg("localOnly") = false,
+             nb::arg("stopProperty") = SdfSpecHandle(),
+             nb::arg("includeStopProperty") = false)
 
         .def("FindSiteDependencies",
              &_FindSiteDependencies,
-             (args("siteLayerStack"),
-              args("sitePath"),
-              args("dependencyType") = PcpDependencyTypeAnyNonVirtual,
-              args("recurseOnSite") = false,
-              args("recurseOnIndex") = false,
-              args("filterForExistingCachesOnly") = false),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("siteLayerStack"),
+             nb::arg("sitePath"),
+             nb::arg("dependencyType") = TfEnum(PcpDependencyTypeAnyNonVirtual),
+             nb::arg("recurseOnSite") = false,
+             nb::arg("recurseOnIndex") = false,
+             nb::arg("filterForExistingCachesOnly") = false)
         .def("FindAllLayerStacksUsingLayer",
              &PcpCache::FindAllLayerStacksUsingLayer,
-             return_value_policy<TfPySequenceToList>())
+             nb::rv_policy::copy)
 
         .def("IsInvalidAssetPath", &PcpCache::IsInvalidAssetPath)
         .def("IsInvalidSublayerIdentifier", 
@@ -300,18 +267,23 @@ wrapCache()
              &PcpCache::IsPossibleDynamicFileFormatArgumentAttribute)
         .def("GetDynamicFileFormatArgumentDependencyData", 
              &PcpCache::GetDynamicFileFormatArgumentDependencyData,
-             return_value_policy<reference_existing_object>())
+             nb::rv_policy::reference)
 
         .def("GetPrimsUsingExpressionVariablesFromLayerStack",
              &PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack,
-             (args("layerStack")),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("layerStack"),
+             nb::rv_policy::copy)
         .def("GetExpressionVariablesFromLayerStackUsedByPrim",
-             &PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim,
-             (args("layerStack"), args("primIndexPath")),
-             return_value_policy<TfPySequenceToList>())
+             [](const PcpCache &self, const SdfPath &primIndexPath,
+                const PcpLayerStackPtr &layerStack) {
+                 return TfNbSequenceToList(
+                     self.GetExpressionVariablesFromLayerStackUsedByPrim(
+                         primIndexPath, layerStack));
+             },
+             nb::arg("layerStack"), nb::arg("primIndexPath"))
 
         .def("PrintStatistics", &PcpCache::PrintStatistics)
         .def("Reload", &_Reload)
         ;
+
 }

@@ -9,36 +9,31 @@
 #include "pxr/base/ts/tsTest_Museum.h"
 
 #include "pxr/base/tf/pyEnum.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
-#include "pxr/external/boost/python/class.hpp"
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 using This = TsTest_Museum;
 
-
-void wrapTsTest_Museum()
+void wrapTsTest_Museum(nb::module_ &m)
 {
-    // First the class object, so we can create a scope for it...
-    class_<This> classObj("TsTest_Museum", no_init);
-    scope classScope(classObj);
+    nb::class_<This> classObj(m, "TsTest_Museum");
 
-    // ...then the nested type wrappings, which require the scope...
-    TfPyWrapEnum<This::DataId>();
+    TfNbWrapEnum<This::DataId>(classObj);
 
-    // ...then the defs, which must occur after the nested type wrappings.
     classObj
+        .def_static("GetAllNames", &This::GetAllNames,
+            nb::rv_policy::copy)
 
-        .def("GetAllNames", &This::GetAllNames,
-            return_value_policy<TfPySequenceToList>())
+        .def_static("GetSpline", &This::GetSpline,
+            nb::arg("id"), nb::arg("valueType") = Ts_GetType<double>())
 
-        .def("GetSpline", &This::GetSpline,
-            (arg("id"), arg("valueType") = Ts_GetType<double>()))
-
-        .def("GetSplineByName", &This::GetSplineByName,
-            (arg("name"), arg("valueType") = Ts_GetType<double>()))
+        .def_static("GetSplineByName", &This::GetSplineByName,
+            nb::arg("name"), nb::arg("valueType") = Ts_GetType<double>())
         ;
 }

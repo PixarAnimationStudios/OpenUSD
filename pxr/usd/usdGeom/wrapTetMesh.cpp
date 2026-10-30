@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,14 +40,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateTetVertexIndicesAttr(UsdGeomTetMesh &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateTetVertexIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int4Array), writeSparsely);
 }
         
 static UsdAttribute
 _CreateSurfaceFaceVertexIndicesAttr(UsdGeomTetMesh &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSurfaceFaceVertexIndicesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int3Array), writeSparsely);
 }
@@ -57,50 +63,45 @@ _Repr(const UsdGeomTetMesh &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomTetMesh()
+void wrapUsdGeomTetMesh(nb::module_ &m)
 {
     typedef UsdGeomTetMesh This;
 
-    class_<This, bases<UsdGeomPointBased> >
-        cls("TetMesh");
+    nb::class_<This, UsdGeomPointBased> cls(m, "TetMesh");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetTetVertexIndicesAttr",
              &This::GetTetVertexIndicesAttr)
         .def("CreateTetVertexIndicesAttr",
              &_CreateTetVertexIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetSurfaceFaceVertexIndicesAttr",
              &This::GetSurfaceFaceVertexIndicesAttr)
         .def("CreateSurfaceFaceVertexIndicesAttr",
              &_CreateSurfaceFaceVertexIndicesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -129,32 +130,30 @@ void wrapUsdGeomTetMesh()
 
 namespace {
   
-    static object
+    static VtVec3iArray
     _ComputeSurfaceFacesHelper(const UsdGeomTetMesh &tetMesh, 
                                const UsdTimeCode timeCode = UsdTimeCode::Default())
     {           
         VtVec3iArray surfaceFacesArray; 
         UsdGeomTetMesh::ComputeSurfaceFaces(tetMesh, &surfaceFacesArray, timeCode);  
-        return object(surfaceFacesArray);      
+        return surfaceFacesArray;      
     }
 
-    static object
+    static VtIntArray
     _FindInvertedElementsHelper(const UsdGeomTetMesh &tetMesh, 
                                 const UsdTimeCode timeCode = UsdTimeCode::Default())
     {           
         VtIntArray invertedElements; 
         UsdGeomTetMesh::FindInvertedElements(tetMesh, &invertedElements, timeCode);  
-        return object(invertedElements);      
+        return invertedElements;      
     }
 
 WRAP_CUSTOM {
-     scope s = _class
-         .def("ComputeSurfaceFaces", _ComputeSurfaceFacesHelper, 
-             (arg("tetMesh"), arg("timeCode")=UsdTimeCode::Default()))
-         .staticmethod("ComputeSurfaceFaces")
-         .def("FindInvertedElements", _FindInvertedElementsHelper, 
-             (arg("tetMesh"), arg("timeCode")=UsdTimeCode::Default()))
-         .staticmethod("FindInvertedElements")
+    _class
+         .def_static("ComputeSurfaceFaces", _ComputeSurfaceFacesHelper, 
+             nb::arg("tetMesh"), nb::arg("timeCode")=UsdTimeCode::Default())
+         .def_static("FindInvertedElements", _FindInvertedElementsHelper, 
+             nb::arg("tetMesh"), nb::arg("timeCode")=UsdTimeCode::Default())
      ;
 }
 

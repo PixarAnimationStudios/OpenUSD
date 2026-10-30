@@ -14,14 +14,6 @@ using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using namespace pxr_boost::python;
-
-TfPyNoticeWrapperBase::~TfPyNoticeWrapperBase()
-{
-}
-
-
-
 Tf_PyNoticeObjectGenerator::MakeObjectFunc
 Tf_PyNoticeObjectGenerator::_Lookup(TfNotice const &n)
 {
@@ -33,12 +25,12 @@ Tf_PyNoticeObjectGenerator::_Lookup(TfNotice const &n)
 }
 
 
-object
+nanobind::object
 Tf_PyNoticeObjectGenerator::Invoke(TfNotice const &n)
 {
     TfPyLock lock;  // Take python lock since generators call to python.
     MakeObjectFunc func = _Lookup(n);
-    return func ? func(n) : object();
+    return func ? func(n) : nanobind::object();
 }
 
 TfStaticData<map<string, Tf_PyNoticeObjectGenerator::MakeObjectFunc> >

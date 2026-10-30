@@ -26,7 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// elements, which may be a subrange of the logical vector size.
 ///
 template <typename TYPE>
-class VDF_API_TYPE Vdf_VectorImplContiguous final
+class VDF_API Vdf_VectorImplContiguous final
     : public Vdf_VectorDataTyped<TYPE>
 {
     static_assert(
@@ -334,7 +334,7 @@ private:
 };
 
 #define VDF_DECLARE_EXTERN_VECTOR_IMPL_CONTIGUOUS(type)         \
-    extern template class VDF_API_TYPE Vdf_VectorImplContiguous<type>;
+    extern template class VDF_API Vdf_VectorImplContiguous<type>;
 VDF_FOR_EACH_COMMON_TYPE(VDF_DECLARE_EXTERN_VECTOR_IMPL_CONTIGUOUS)
 #undef VDF_DECLARE_EXTERN_VECTOR_IMPL_CONTIGUOUS
 

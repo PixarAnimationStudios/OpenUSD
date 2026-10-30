@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,49 +41,49 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreatePosAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreatePosAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateStackingOrderAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateStackingOrderAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDisplayColorAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDisplayColorAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Color3f), writeSparsely);
 }
         
 static UsdAttribute
 _CreateIconAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateIconAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
         
 static UsdAttribute
 _CreateExpansionStateAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateExpansionStateAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateSizeAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateSizeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateDocURIAttr(UsdUINodeGraphNodeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateDocURIAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->String), writeSparsely);
 }
@@ -108,91 +114,84 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdUINodeGraphNodeAPI()
+void wrapUsdUINodeGraphNodeAPI(nb::module_ &m)
 {
     typedef UsdUINodeGraphNodeAPI This;
 
-    UsdUINodeGraphNodeAPI_CanApplyResult::Wrap<UsdUINodeGraphNodeAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdUINodeGraphNodeAPI_CanApplyResult::WrapNb<UsdUINodeGraphNodeAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("NodeGraphNodeAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "NodeGraphNodeAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetPosAttr",
              &This::GetPosAttr)
         .def("CreatePosAttr",
              &_CreatePosAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetStackingOrderAttr",
              &This::GetStackingOrderAttr)
         .def("CreateStackingOrderAttr",
              &_CreateStackingOrderAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDisplayColorAttr",
              &This::GetDisplayColorAttr)
         .def("CreateDisplayColorAttr",
              &_CreateDisplayColorAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetIconAttr",
              &This::GetIconAttr)
         .def("CreateIconAttr",
              &_CreateIconAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetExpansionStateAttr",
              &This::GetExpansionStateAttr)
         .def("CreateExpansionStateAttr",
              &_CreateExpansionStateAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetSizeAttr",
              &This::GetSizeAttr)
         .def("CreateSizeAttr",
              &_CreateSizeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetDocURIAttr",
              &This::GetDocURIAttr)
         .def("CreateDocURIAttr",
              &_CreateDocURIAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

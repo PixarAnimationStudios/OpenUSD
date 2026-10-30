@@ -4,24 +4,21 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/reference_existing_object.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/ar/pyResolverContext.h"
 #include "pxr/base/tf/refPtr.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 class Ar_PyAnnotatedBoolResult
     : public TfPyAnnotatedBoolResult<std::string>
@@ -44,76 +41,74 @@ _CanWriteAssetToPath(
 }
 
 void
-wrapResolver()
+wrapResolver(nanobind::module_& m)
 {
-    Ar_PyAnnotatedBoolResult::Wrap<Ar_PyAnnotatedBoolResult>
-        ("_PyAnnotatedBoolResult", "whyNot");
+    namespace nb = nanobind;
+    Ar_PyAnnotatedBoolResult::WrapNb<Ar_PyAnnotatedBoolResult>
+        (m, "_PyAnnotatedBoolResult", "whyNot");
 
     typedef ArResolver This;
 
-    class_<This, noncopyable>
-        ("Resolver", no_init)
-
+    nb::class_<This>(m, "Resolver")
         .def("CreateDefaultContext", &This::CreateDefaultContext)
-        .def("CreateDefaultContextForAsset", 
+        .def("CreateDefaultContextForAsset",
              &This::CreateDefaultContextForAsset,
-             args("assetPath"))
+             nb::arg("assetPath"))
 
-        .def("CreateContextFromString", 
+        .def("CreateContextFromString",
              (ArResolverContext (This::*)(const std::string&) const)
                  &This::CreateContextFromString,
-             args("contextStr"))
+             nb::arg("contextStr"))
 
-        .def("CreateContextFromString", 
+        .def("CreateContextFromString",
              (ArResolverContext (This::*)
                  (const std::string&, const std::string&) const)
                  &This::CreateContextFromString,
-             (arg("uriScheme"), arg("contextStr")))
+             nb::arg("uriScheme"), nb::arg("contextStr"))
 
         .def("CreateContextFromStrings", &This::CreateContextFromStrings,
-             args("contextStrs"))
+             nb::arg("contextStrs"))
 
         .def("GetCurrentContext", &This::GetCurrentContext)
 
         .def("IsContextDependentPath", &This::IsContextDependentPath,
-             args("assetPath"))
+             nb::arg("assetPath"))
 
         .def("CreateIdentifier", &This::CreateIdentifier,
-             (args("assetPath"), 
-              args("anchorAssetPath") = ArResolvedPath()))
+             nb::arg("assetPath"),
+             nb::arg("anchorAssetPath") = ArResolvedPath())
         .def("CreateIdentifierForNewAsset", &This::CreateIdentifierForNewAsset,
-             (args("assetPath"), 
-              args("anchorAssetPath") = ArResolvedPath()))
+             nb::arg("assetPath"),
+             nb::arg("anchorAssetPath") = ArResolvedPath())
 
         .def("Resolve", &This::Resolve,
-             (args("assetPath")))
+             nb::arg("assetPath"))
         .def("ResolveForNewAsset", &This::ResolveForNewAsset,
-             (args("assetPath")))
+             nb::arg("assetPath"))
 
         .def("GetAssetInfo", &This::GetAssetInfo,
-             (args("assetPath"), args("resolvedPath")))
+             nb::arg("assetPath"), nb::arg("resolvedPath"))
         .def("GetModificationTimestamp", &This::GetModificationTimestamp,
-             (args("assetPath"), args("resolvedPath")))
+             nb::arg("assetPath"), nb::arg("resolvedPath"))
         .def("OpenAsset", &This::OpenAsset,
-             (args("resolvedPath")))
+             nb::arg("resolvedPath"))
         .def("GetExtension", &This::GetExtension,
-             args("assetPath"))
+             nb::arg("assetPath"))
 
         .def("CanWriteAssetToPath", &_CanWriteAssetToPath,
-             args("resolvedPath"))
+             nb::arg("resolvedPath"))
 
         .def("RefreshContext", &This::RefreshContext)
         ;
 
-    def("GetResolver", ArGetResolver,
-        return_value_policy<reference_existing_object>());
+    m.def("GetResolver", ArGetResolver,
+          nb::rv_policy::reference);
 
-    def("GetRegisteredURISchemes", ArGetRegisteredURISchemes,
-        return_value_policy<TfPySequenceToList>());
+    m.def("GetRegisteredURISchemes", ArGetRegisteredURISchemes);
 
-    def("SetPreferredResolver", ArSetPreferredResolver,
-        arg("resolverTypeName"));
+    m.def("SetPreferredResolver", ArSetPreferredResolver,
+          nb::arg("resolverTypeName"));
 
-    def("GetUnderlyingResolver", ArGetUnderlyingResolver,
-        return_value_policy<reference_existing_object>());
+    m.def("GetUnderlyingResolver", ArGetUnderlyingResolver,
+          nb::rv_policy::reference);
 }

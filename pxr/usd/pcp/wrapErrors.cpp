@@ -8,32 +8,40 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
 #include "pxr/base/tf/pyEnum.h"
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/shared_ptr.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace {
 
 // Wrap this with a function so that add_property does not
 // try to return an lvalue (and fail)
-static TfEnum _GetErrorType(PcpErrorBasePtr const& err)
+static TfEnum _GetErrorType(PcpErrorBase const& err)
 {
-    return err->errorType;
+    return err.errorType;
 }
 
-static PcpSite _GetRootSite(PcpErrorBasePtr const& err)
+static PcpSite _GetRootSite(PcpErrorBase const& err)
 {
-    return err->rootSite;
+    return err.rootSite;
 }
+
+} // anonymous namespace
 
 void 
-wrapErrors()
+wrapErrors(nanobind::module_ &m)
 {    
-    TfPyWrapEnum<PcpErrorType>("ErrorType");
+    namespace nb = nanobind;
+
+    TfNbWrapEnum<PcpErrorType>(m, "ErrorType");
 
     // NOTE: Do not allow construction of these objects from Python.
     //       Boost Python's shared_ptr_from_python will attach a custom
@@ -42,171 +50,133 @@ wrapErrors()
     //       without holding the GIL.  That's impractical so we just
     //       ensure that we don't create error objects in Python.
 
-    class_<PcpErrorBase, noncopyable, PcpErrorBasePtr>
-        ("ErrorBase", "", no_init)
-        .add_property("errorType", _GetErrorType)
-        .add_property("rootSite", _GetRootSite)
+    nb::class_<PcpErrorBase>(m, "ErrorBase", "")
+        .def_prop_ro("errorType", _GetErrorType)
+        .def_prop_ro("rootSite", _GetRootSite)
         .def("__str__", &PcpErrorBase::ToString)
         ;
 
-    class_<PcpErrorTargetPathBase, noncopyable,
-        bases<PcpErrorBase>, PcpErrorTargetPathBasePtr >
-        ("ErrorTargetPathBase", "", no_init)
+    nb::class_<PcpErrorTargetPathBase, PcpErrorBase>(
+        m, "ErrorTargetPathBase", "")
         ;
 
-    class_<PcpErrorRelocationBase, noncopyable,
-        bases<PcpErrorBase>, PcpErrorRelocationBasePtr >
-        ("ErrorRelocationBase", "", no_init)
+    nb::class_<PcpErrorRelocationBase, PcpErrorBase>(
+        m, "ErrorRelocationBase", "")
         ;
 
-    class_<PcpErrorArcCycle, bases<PcpErrorBase>, PcpErrorArcCyclePtr >
-        ("ErrorArcCycle", "", no_init)
+    nb::class_<PcpErrorArcCycle, PcpErrorBase>(
+        m, "ErrorArcCycle", "")
         ;
 
-    class_<PcpErrorArcPermissionDenied, bases<PcpErrorBase>,
-        PcpErrorArcPermissionDeniedPtr>
-        ("ErrorArcPermissionDenied", "", no_init)
+    nb::class_<PcpErrorArcPermissionDenied, PcpErrorBase>(
+        m, "ErrorArcPermissionDenied", "")
         ;
 
-    class_<PcpErrorArcToProhibitedChild, bases<PcpErrorBase>,
-        PcpErrorArcToProhibitedChildPtr>
-        ("ErrorArcToProhibitedChild", "", no_init)
+    nb::class_<PcpErrorArcToProhibitedChild, PcpErrorBase>(
+        m, "ErrorArcToProhibitedChild", "")
         ;
 
-    class_<PcpErrorCapacityExceeded, bases<PcpErrorBase>,
-        PcpErrorCapacityExceededPtr >
-        ("ErrorCapacityExceeded", "", no_init)
+    nb::class_<PcpErrorCapacityExceeded, PcpErrorBase>(
+        m, "ErrorCapacityExceeded", "")
         ;
 
-    class_<PcpErrorInconsistentPropertyType, bases<PcpErrorBase>,
-        PcpErrorInconsistentPropertyTypePtr>
-        ("ErrorInconsistentPropertyType", "", no_init)
+    nb::class_<PcpErrorInconsistentPropertyType, PcpErrorBase>(
+        m, "ErrorInconsistentPropertyType", "")
         ;
 
-    class_<PcpErrorInconsistentAttributeType, bases<PcpErrorBase>,
-        PcpErrorInconsistentAttributeTypePtr>
-        ("ErrorInconsistentAttributeType", "", no_init)
+    nb::class_<PcpErrorInconsistentAttributeType, PcpErrorBase>(
+        m, "ErrorInconsistentAttributeType", "")
         ;
 
-    class_<PcpErrorInconsistentAttributeVariability, bases<PcpErrorBase>,
-        PcpErrorInconsistentAttributeVariabilityPtr>
-        ("ErrorInconsistentAttributeVariability", "", no_init)
+    nb::class_<PcpErrorInconsistentAttributeVariability, PcpErrorBase>(
+        m, "ErrorInconsistentAttributeVariability", "")
         ;
 
-    class_<PcpErrorInvalidPrimPath, bases<PcpErrorBase>,
-        PcpErrorInvalidPrimPathPtr>
-        ("ErrorInvalidPrimPath", "", no_init)
+    nb::class_<PcpErrorInvalidPrimPath, PcpErrorBase>(
+        m, "ErrorInvalidPrimPath", "")
         ;
 
-    class_<PcpErrorInvalidAssetPathBase, noncopyable, 
-        bases<PcpErrorBase>, PcpErrorInvalidAssetPathBasePtr>
-        ("ErrorInvalidAssetPathBase", "", no_init)
+    nb::class_<PcpErrorInvalidAssetPathBase, PcpErrorBase>(
+        m, "ErrorInvalidAssetPathBase", "")
         ;
 
-    class_<PcpErrorInvalidAssetPath, bases<PcpErrorInvalidAssetPathBase>,
-        PcpErrorInvalidAssetPathPtr>
-        ("ErrorInvalidAssetPath", "", no_init)
+    nb::class_<PcpErrorInvalidAssetPath, PcpErrorInvalidAssetPathBase>(
+        m, "ErrorInvalidAssetPath", "")
         ;
 
-    class_<PcpErrorMutedAssetPath, bases<PcpErrorInvalidAssetPathBase>,
-        PcpErrorMutedAssetPathPtr>
-        ("ErrorMutedAssetPath", "", no_init)
+    nb::class_<PcpErrorMutedAssetPath, PcpErrorInvalidAssetPathBase>(
+        m, "ErrorMutedAssetPath", "")
         ;
 
-    class_<PcpErrorInvalidInstanceTargetPath, bases<PcpErrorTargetPathBase>,
-        PcpErrorInvalidInstanceTargetPathPtr>
-        ("ErrorInvalidInstanceTargetPath", "", no_init)
+    nb::class_<PcpErrorInvalidInstanceTargetPath, PcpErrorTargetPathBase>(
+        m, "ErrorInvalidInstanceTargetPath", "")
         ;
 
-    class_<PcpErrorInvalidExternalTargetPath, bases<PcpErrorTargetPathBase>,
-        PcpErrorInvalidExternalTargetPathPtr>
-        ("ErrorInvalidExternalTargetPath", "", no_init)
+    nb::class_<PcpErrorInvalidExternalTargetPath, PcpErrorTargetPathBase>(
+        m, "ErrorInvalidExternalTargetPath", "")
         ;
 
-    class_<PcpErrorInvalidTargetPath, bases<PcpErrorTargetPathBase>,
-        PcpErrorInvalidTargetPathPtr>
-        ("ErrorInvalidTargetPath", "", no_init)
+    nb::class_<PcpErrorInvalidTargetPath, PcpErrorTargetPathBase>(
+        m, "ErrorInvalidTargetPath", "")
         ;
 
-    class_<PcpErrorInvalidSublayerOffset, bases<PcpErrorBase>,
-        PcpErrorInvalidSublayerOffsetPtr>
-        ("ErrorInvalidSublayerOffset", "", no_init)
+    nb::class_<PcpErrorInvalidSublayerOffset, PcpErrorBase>(
+        m, "ErrorInvalidSublayerOffset", "")
         ;
 
-    class_<PcpErrorInvalidSublayerAndOffsetCount, bases<PcpErrorBase>,
-        PcpErrorInvalidSublayerAndOffsetCountPtr>
-        ("ErrorInvalidSublayerAndOffsetCount", "", no_init)
+    nb::class_<PcpErrorInvalidSublayerAndOffsetCount, PcpErrorBase>(
+        m, "ErrorInvalidSublayerAndOffsetCount", "")
         ;
 
-    class_<PcpErrorInvalidReferenceOffset, bases<PcpErrorBase>,
-        PcpErrorInvalidReferenceOffsetPtr>
-        ("ErrorInvalidReferenceOffset", "", no_init)
+    nb::class_<PcpErrorInvalidReferenceOffset, PcpErrorBase>(
+        m, "ErrorInvalidReferenceOffset", "")
         ;
 
-    class_<PcpErrorInvalidSublayerOwnership, bases<PcpErrorBase>,
-        PcpErrorInvalidSublayerOwnershipPtr>
-        ("ErrorInvalidSublayerOwnership", "", no_init)
+    nb::class_<PcpErrorInvalidSublayerOwnership, PcpErrorBase>(
+        m, "ErrorInvalidSublayerOwnership", "")
         ;
 
-    class_<PcpErrorInvalidSublayerPath, bases<PcpErrorBase>,
-           PcpErrorInvalidSublayerPathPtr>
-        ("ErrorInvalidSublayerPath", "", no_init)
+    nb::class_<PcpErrorInvalidSublayerPath, PcpErrorBase>(
+        m, "ErrorInvalidSublayerPath", "")
         ;
 
-    class_<PcpErrorInvalidAuthoredRelocation, bases<PcpErrorRelocationBase>,
-        PcpErrorInvalidAuthoredRelocationPtr>
-        ("ErrorInvalidAuthoredRelocation", "", no_init)
+    nb::class_<PcpErrorInvalidAuthoredRelocation, PcpErrorRelocationBase>(
+        m, "ErrorInvalidAuthoredRelocation", "")
         ;
 
-    class_<PcpErrorInvalidConflictingRelocation, bases<PcpErrorRelocationBase>,
-        PcpErrorInvalidConflictingRelocationPtr>
-        ("ErrorInvalidConflictingRelocation", "", no_init)
+    nb::class_<PcpErrorInvalidConflictingRelocation, PcpErrorRelocationBase>(
+        m, "ErrorInvalidConflictingRelocation", "")
         ;
 
-    class_<PcpErrorInvalidSameTargetRelocations, bases<PcpErrorRelocationBase>,
-        PcpErrorInvalidSameTargetRelocationsPtr>
-        ("ErrorInvalidSameTargetRelocations", "", no_init)
+    nb::class_<PcpErrorInvalidSameTargetRelocations, PcpErrorRelocationBase>(
+        m, "ErrorInvalidSameTargetRelocations", "")
         ;
 
-    class_<PcpErrorOpinionAtRelocationSource, bases<PcpErrorBase>, 
-           PcpErrorOpinionAtRelocationSourcePtr>
-        ("ErrorOpinionAtRelocationSource", "", no_init)
+    nb::class_<PcpErrorOpinionAtRelocationSource, PcpErrorBase>(
+        m, "ErrorOpinionAtRelocationSource", "")
         ;
     
-    class_<PcpErrorPrimPermissionDenied, bases<PcpErrorBase>,
-        PcpErrorPrimPermissionDeniedPtr>
-        ("ErrorPrimPermissionDenied", "", no_init)
+    nb::class_<PcpErrorPrimPermissionDenied, PcpErrorBase>(
+        m, "ErrorPrimPermissionDenied", "")
         ;
 
-    class_<PcpErrorPropertyPermissionDenied, bases<PcpErrorBase>,
-        PcpErrorPropertyPermissionDeniedPtr>
-        ("ErrorPropertyPermissionDenied", "", no_init)
+    nb::class_<PcpErrorPropertyPermissionDenied, PcpErrorBase>(
+        m, "ErrorPropertyPermissionDenied", "")
         ;
 
-    class_<PcpErrorSublayerCycle, bases<PcpErrorBase>, 
-           PcpErrorSublayerCyclePtr>
-        ("ErrorSublayerCycle", "", no_init)
+    nb::class_<PcpErrorSublayerCycle, PcpErrorBase>(
+        m, "ErrorSublayerCycle", "")
         ;
 
-    class_<PcpErrorTargetPermissionDenied, bases<PcpErrorTargetPathBase>,
-        PcpErrorTargetPermissionDeniedPtr>
-        ("ErrorTargetPermissionDenied", "", no_init)
+    nb::class_<PcpErrorTargetPermissionDenied, PcpErrorTargetPathBase>(
+        m, "ErrorTargetPermissionDenied", "")
         ;
 
-    class_<PcpErrorUnresolvedPrimPath, bases<PcpErrorBase>,
-           PcpErrorUnresolvedPrimPathPtr>
-        ("ErrorUnresolvedPrimPath", "", no_init)
+    nb::class_<PcpErrorUnresolvedPrimPath, PcpErrorBase>(
+        m, "ErrorUnresolvedPrimPath", "")
         ;
 
-    class_<PcpErrorVariableExpressionError, bases<PcpErrorBase>,
-           PcpErrorVariableExpressionErrorPtr>
-        ("ErrorVariableExpressionError", "", no_init)
+    nb::class_<PcpErrorVariableExpressionError, PcpErrorBase>(
+        m, "ErrorVariableExpressionError", "")
         ;
-
-    // Register conversion for python list <-> vector<PcpErrorBasePtr>
-    to_python_converter< PcpErrorVector, 
-                         TfPySequenceToPython<PcpErrorVector> >();
-    TfPyContainerConversions::from_python_sequence<
-        PcpErrorVector,
-        TfPyContainerConversions::variable_capacity_policy >();
 }

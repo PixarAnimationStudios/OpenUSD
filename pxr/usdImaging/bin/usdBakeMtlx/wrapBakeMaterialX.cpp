@@ -9,25 +9,21 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/def.hpp"
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdBakeMtlx()
+void wrapUsdBakeMtlx(nb::module_ &m)
 {
-    def("BakeMaterial", UsdBakeMtlxBakeMaterial, 
-        ( arg("mtlxMaterial"),
-          arg("bakedMtlxDir"),
-          arg("textureWidth"),
-          arg("textureHeight"),
-          arg("bakeHdr"),
-          arg("bakeAverage") ));
-    def("ReadFileToStage", UsdBakeMtlxReadDocToStage,
-        ( arg("pathname"), arg("stage") ),
-        return_value_policy<TfPyRefPtrFactory<>>());
-
+    m.def("BakeMaterial", UsdBakeMtlxBakeMaterial, 
+          nb::arg("mtlxMaterial"),
+          nb::arg("bakedMtlxDir"),
+          nb::arg("textureWidth"),
+          nb::arg("textureHeight"),
+          nb::arg("bakeHdr"),
+          nb::arg("bakeAverage"));
+    m.def("ReadFileToStage", UsdBakeMtlxReadDocToStage,
+          nb::arg("pathname"), nb::arg("stage"));
 }

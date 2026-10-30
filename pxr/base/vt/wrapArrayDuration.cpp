@@ -35,28 +35,28 @@ void wrapArrayDuration() {
         .def("__add__",
              +[](VtDurationArray const &a, VtTimeCodeArray const &b) {
                  return a + b;
-             })
+             }, nanobind::is_operator())
         .def("__sub__",
              +[](VtDurationArray const &a, VtTimeCodeArray const &b) {
                  return a - b;
-             })
+             }, nanobind::is_operator())
         // DurationArray op GfTimeCode (cross-type scalar)
         .def("__add__",
              +[](VtDurationArray const &a, GfTimeCode const &tc) {
                  return a + tc;
-             })
+             }, nanobind::is_operator())
         .def("__radd__",
              +[](VtDurationArray const &a, GfTimeCode const &tc) {
                  return tc + a;
-             })
+             }, nanobind::is_operator())
         .def("__sub__",
              +[](VtDurationArray const &a, GfTimeCode const &tc) {
                  return a - tc;
-             })
+             }, nanobind::is_operator())
         .def("__rsub__",
              +[](VtDurationArray const &a, GfTimeCode const &tc) {
                  return tc - a;
-             })
+             }, nanobind::is_operator())
         ;
 
     VtWrapArrayEdit<VtArrayEdit<GfDuration>>();

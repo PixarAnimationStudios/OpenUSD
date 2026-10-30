@@ -15,12 +15,15 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -59,63 +62,42 @@ _SetAssetInfo(SdfPropertySpec const &self,
 
 } // anonymous namespace 
 
-void wrapPropertySpec()
+void wrapPropertySpec(nb::module_& m)
 {
     typedef SdfPropertySpec This;
 
-    // Register python conversions for vector<SdfPropertySpecHandle>
-    to_python_converter<
-        SdfPropertySpecHandleVector,
-        TfPySequenceToPython<SdfPropertySpecHandleVector> >();
+    nb::class_<This, SdfSpec> cls(m, "PropertySpec");
+    cls.def(SdfPyAbstractSpec())
 
-    TfPyContainerConversions::from_python_sequence<
-        SdfPropertySpecHandleVector,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    // Register python conversions for vector<SdfPropertySpecConstHandle>
-    to_python_converter<
-        SdfPropertySpecConstHandleVector,
-        TfPySequenceToPython<SdfPropertySpecConstHandleVector> >();
-
-    TfPyContainerConversions::from_python_sequence<
-        SdfPropertySpecConstHandleVector,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, noncopyable>
-        ("PropertySpec", no_init)
-        .def(SdfPyAbstractSpec())
-
-        .add_property("name",
-            make_function(&This::GetName,
-                          return_value_policy<return_by_value>()),
+        .def_prop_rw("name",
+            [](const This& self) { return self.GetName(); },
             &_WrapSetName,
             "The name of the property.")
 
-        .add_property("comment",
+        .def_prop_rw("comment",
             &This::GetComment,
             &This::SetComment,
             "A comment describing the property.")
 
-        .add_property("documentation",
+        .def_prop_rw("documentation",
             &This::GetDocumentation,
             &This::SetDocumentation,
             "Documentation for the property.")
 
-        .add_property("displayGroup",
+        .def_prop_rw("displayGroup",
             &This::GetDisplayGroup,
             &This::SetDisplayGroup,
             "DisplayGroup for the property.")
-        .add_property("displayName",
+        .def_prop_rw("displayName",
             &This::GetDisplayName,
             &This::SetDisplayName,
             "DisplayName for the property.")
-        .add_property("prefix",
+        .def_prop_rw("prefix",
             &This::GetPrefix,
             &This::SetPrefix,
             "Prefix for the property.")
 
-        .add_property("variability",
+        .def_prop_ro("variability",
             &This::GetVariability,
             "Returns the variability of the property.\n\n"
             "An attribute's variability may be Varying\n"
@@ -136,39 +118,39 @@ void wrapPropertySpec()
             "Prims determine the values of their Computed attributes through\n"
             "Prim-specific computation.  They may not be connected.")
 
-        .add_property("hidden",
+        .def_prop_rw("hidden",
             &This::GetHidden,
             &This::SetHidden,
             "Whether this property will be hidden in browsers.")
 
-        .add_property("permission",
+        .def_prop_rw("permission",
             &This::GetPermission,
             &This::SetPermission,
             "The property's permission restriction.")
 
-        .add_property("custom",
+        .def_prop_rw("custom",
             &This::IsCustom,
             &This::SetCustom,
             "Whether this property spec declares a custom attribute.")
 
-        .add_property("symmetryFunction",
+        .def_prop_rw("symmetryFunction",
             &This::GetSymmetryFunction,
             &This::SetSymmetryFunction,
             "The property's symmetry function.")
 
-        .add_property("symmetryArguments",
+        .def_prop_rw("symmetryArguments",
             &This::GetSymmetryArguments,
             &_SetSymmetryArguments,
             "Dictionary with property symmetry arguments.\n\n"
             "Although this property is marked read-only, you can "
             "modify the contents to add, change, and clear symmetry arguments.")
 
-        .add_property("symmetricPeer",
+        .def_prop_rw("symmetricPeer",
             &This::GetSymmetricPeer,
             &This::SetSymmetricPeer,
             "The property's symmetric peer.")
 
-        .add_property("customData",
+        .def_prop_rw("customData",
             &This::GetCustomData,
             &_SetCustomData,
             "The property's custom data.\n\n"
@@ -181,7 +163,7 @@ void wrapPropertySpec()
             "relationships or as annotations on reference arcs, then custom data\n"
             "is an appropriate choice.")
 
-        .add_property("assetInfo",
+        .def_prop_rw("assetInfo",
             &This::GetAssetInfo,
             &_SetAssetInfo,
             "Returns the asset info dictionary for this property.\n\n"
@@ -194,11 +176,11 @@ void wrapPropertySpec()
             "Note: It is only valid to author assetInfo on attributes that "
             "are of type SdfAssetPath.\n")
 
-        .add_property("owner",
+        .def_prop_ro("owner",
             &This::GetOwner,
             "The owner of this property.  Either a relationship or a prim.")
 
-        .add_property("default",
+        .def_prop_rw("default",
             &This::GetDefaultValue,
             &This::SetDefaultValue,
             "The default value of this property.")
@@ -206,25 +188,25 @@ void wrapPropertySpec()
         .def("HasDefaultValue", &This::HasDefaultValue)
         .def("ClearDefaultValue", &This::ClearDefaultValue)
 
-        .add_property("hasOnlyRequiredFields", &This::HasOnlyRequiredFields,
+        .def_prop_ro("hasOnlyRequiredFields", &This::HasOnlyRequiredFields,
               "Indicates whether this spec has any significant data other \n"
               "than just what is necessary for instantiation.\n\n"
               "This is a less strict version of isInert, returning True if \n"
               "the spec contains as much as the type and name.")
-
-        // static properties
-        .setattr("AssetInfoKey", SdfFieldKeys->AssetInfo)
-        .setattr("CommentKey", SdfFieldKeys->Comment)
-        .setattr("CustomDataKey", SdfFieldKeys->CustomData)
-        .setattr("CustomKey", SdfFieldKeys->Custom)
-        .setattr("DisplayGroupKey", SdfFieldKeys->DisplayGroup)
-        .setattr("DisplayNameKey", SdfFieldKeys->DisplayName)
-        .setattr("DocumentationKey", SdfFieldKeys->Documentation)
-        .setattr("HiddenKey", SdfFieldKeys->Hidden)
-        .setattr("PermissionKey", SdfFieldKeys->Permission)
-        .setattr("PrefixKey", SdfFieldKeys->Prefix)
-        .setattr("SymmetricPeerKey", SdfFieldKeys->SymmetricPeer)
-        .setattr("SymmetryArgumentsKey", SdfFieldKeys->SymmetryArguments)
-        .setattr("SymmetryFunctionKey", SdfFieldKeys->SymmetryFunction)
         ;
+
+    // static properties
+    cls.attr("AssetInfoKey") = nb::cast(SdfFieldKeys->AssetInfo);
+    cls.attr("CommentKey") = nb::cast(SdfFieldKeys->Comment);
+    cls.attr("CustomDataKey") = nb::cast(SdfFieldKeys->CustomData);
+    cls.attr("CustomKey") = nb::cast(SdfFieldKeys->Custom);
+    cls.attr("DisplayGroupKey") = nb::cast(SdfFieldKeys->DisplayGroup);
+    cls.attr("DisplayNameKey") = nb::cast(SdfFieldKeys->DisplayName);
+    cls.attr("DocumentationKey") = nb::cast(SdfFieldKeys->Documentation);
+    cls.attr("HiddenKey") = nb::cast(SdfFieldKeys->Hidden);
+    cls.attr("PermissionKey") = nb::cast(SdfFieldKeys->Permission);
+    cls.attr("PrefixKey") = nb::cast(SdfFieldKeys->Prefix);
+    cls.attr("SymmetricPeerKey") = nb::cast(SdfFieldKeys->SymmetricPeer);
+    cls.attr("SymmetryArgumentsKey") = nb::cast(SdfFieldKeys->SymmetryArguments);
+    cls.attr("SymmetryFunctionKey") = nb::cast(SdfFieldKeys->SymmetryFunction);
 }

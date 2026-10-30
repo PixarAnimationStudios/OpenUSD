@@ -4,6 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/pxr.h"
 #include "pxr/usdValidation/usdValidation/fixer.h"
 #include "pxr/usdValidation/usdValidation/error.h"
@@ -17,14 +21,11 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/object.hpp"
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace
 {
@@ -42,21 +43,24 @@ namespace
 static std::function<bool(const UsdValidationError &,
                           const UsdEditTarget &,
                           const UsdTimeCode &)>
-_WrapFixerFn(object pyFn)
+_WrapFixerFn(nb::object pyFn)
 {
-    return [wrapper = TfPyObjWrapper(pyFn)](
+    TfPyObjWrapper wrapper(pyFn);
+    return [wrapper](
         const UsdValidationError &error,
         const UsdEditTarget &editTarget,
         const UsdTimeCode &timeCode) -> bool {
         TfPyLock lock;
         try {
-            object result = wrapper.Get()(
-                object(error),
-                object(editTarget),
-                object(timeCode));
-            return extract<bool>(result);
+            nb::object fn = wrapper.Get();
+            nb::object result = fn(
+                nb::cast(error),
+                nb::cast(editTarget),
+                nb::cast(timeCode));
+            return nb::cast<bool>(result);
         }
-        catch (error_already_set const &) {
+        catch (nb::python_error &e) {
+            e.restore();
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();
             return false;
@@ -64,78 +68,61 @@ _WrapFixerFn(object pyFn)
     };
 }
 
-// Construct a UsdValidationFixer from Python arguments, wrapping the
-// Python callables into C++ std::functions with GIL safety.
-// Returns a heap-allocated pointer as required by make_constructor.
-UsdValidationFixer *
-_MakeValidationFixer(const TfToken &name,
-                     const std::string &description,
-                     object fixerImplFn,
-                     object canApplyFn,
-                     const TfTokenVector &keywords,
-                     const TfToken &errorName)
-{
-    if (!PyCallable_Check(fixerImplFn.ptr()) ||
-        !PyCallable_Check(canApplyFn.ptr())) {
-        TfPyThrowTypeError("fixerImplFn and canApplyFn must be callable");
-    }
-
-    return new UsdValidationFixer(
-        name, description,
-        _WrapFixerFn(fixerImplFn),
-        _WrapFixerFn(canApplyFn),
-        keywords, errorName);
-}
-
 } // anonymous namespace
 
-void wrapUsdValidationFixer()
+void wrapUsdValidationFixer(nb::module_ &m)
 {
-    class_<UsdValidationFixer>("ValidationFixer", no_init)
+    nb::class_<UsdValidationFixer>(m, "ValidationFixer")
         .def("__init__",
-             make_constructor(
-                 &_MakeValidationFixer,
-                 default_call_policies(),
-                 (arg("name"), arg("description"),
-                  arg("fixerImplFn"), arg("canApplyFn"),
-                  arg("keywords") = TfTokenVector(),
-                  arg("errorName") = TfToken())))
-        .add_property("name",
-            make_function(
-                +[](const UsdValidationFixer &fixer) { 
-                      return fixer.GetName(); 
-                },
-                return_value_policy<return_by_value>()))
-        .add_property("description",
-            make_function(
-                +[](const UsdValidationFixer &fixer) { 
-                    return fixer.GetDescription(); 
-                },
-                return_value_policy<return_by_value>()))
-        .add_property("errorName",
-            make_function(
-                +[](const UsdValidationFixer &fixer) { 
-                    return fixer.GetErrorName(); 
-                },
-                return_value_policy<return_by_value>()))
-        .add_property("keywords",
-            make_function(
-                +[](const UsdValidationFixer &fixer) { 
-                    return fixer.GetKeywords(); 
-                },
-                return_value_policy<TfPySequenceToList>()))
+             [](UsdValidationFixer *self,
+                const TfToken &name,
+                const std::string &description,
+                nb::object fixerImplFn,
+                nb::object canApplyFn,
+                const TfTokenVector &keywords,
+                const TfToken &errorName) {
+                 if (!PyCallable_Check(fixerImplFn.ptr()) ||
+                     !PyCallable_Check(canApplyFn.ptr())) {
+                     TfPyThrowTypeError("fixerImplFn and canApplyFn must be callable");
+                 }
+                 new (self) UsdValidationFixer(
+                     name, description,
+                     _WrapFixerFn(fixerImplFn),
+                     _WrapFixerFn(canApplyFn),
+                     keywords, errorName);
+             },
+             nb::arg("name"), nb::arg("description"),
+             nb::arg("fixerImplFn"), nb::arg("canApplyFn"),
+             nb::arg("keywords") = TfTokenVector(),
+             nb::arg("errorName") = TfToken())
+        .def_prop_ro("name",
+            +[](const UsdValidationFixer &fixer) { 
+                  return fixer.GetName(); 
+            })
+        .def_prop_ro("description",
+            +[](const UsdValidationFixer &fixer) { 
+                return fixer.GetDescription(); 
+            })
+        .def_prop_ro("errorName",
+            +[](const UsdValidationFixer &fixer) { 
+                return fixer.GetErrorName(); 
+            })
+        .def_prop_ro("keywords",
+            +[](const UsdValidationFixer &fixer) { 
+                return fixer.GetKeywords(); 
+            })
         .def("IsAssociatedWithErrorName", 
-             &UsdValidationFixer::IsAssociatedWithErrorName, (arg("errorName")))
+             &UsdValidationFixer::IsAssociatedWithErrorName, nb::arg("errorName"))
         .def("HasKeyword", 
-             &UsdValidationFixer::HasKeyword, (arg("keyword")))
+             &UsdValidationFixer::HasKeyword, nb::arg("keyword"))
         .def("CanApplyFix", 
              &UsdValidationFixer::CanApplyFix,
-             (arg("error"), arg("editTarget"), 
-              arg("timeCode") = UsdTimeCode::Default()))
+             nb::arg("error"), nb::arg("editTarget"), 
+             nb::arg("timeCode") = UsdTimeCode::Default())
         .def("ApplyFix", 
              &UsdValidationFixer::ApplyFix,
-             (arg("error"), arg("editTarget"), 
-              arg("timeCode") = UsdTimeCode::Default()));
+             nb::arg("error"), nb::arg("editTarget"), 
+             nb::arg("timeCode") = UsdTimeCode::Default());
 
     TfPyRegisterStlSequencesFromPython<UsdValidationFixer>();
     TfPyRegisterStlSequencesFromPython<const UsdValidationFixer*>();

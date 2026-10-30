@@ -6,48 +6,55 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/references.h"
+#include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdReferences()
+void wrapUsdReferences(nb::module_ &m)
 {
-    class_<UsdReferences>("References", no_init)
+    nb::class_<UsdReferences>(m, "References")
+        .def("__init__", [](nb::args, nb::kwargs) {
+            TfPyThrowRuntimeError("This class cannot be instantiated from Python");
+        })
         .def("AddReference",
              (bool (UsdReferences::*)(const SdfReference &, UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("ref"),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("ref"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
         .def("AddReference",
              (bool (UsdReferences::*)(const string &, const SdfPath &,
                                       const SdfLayerOffset &, UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("assetPath"), arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("AddReference",(bool (UsdReferences::*)(const string &,
-                                                     const SdfLayerOffset &,
-                                                     UsdListPosition))
+             nb::arg("assetPath"), nb::arg("primPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("AddReference", (bool (UsdReferences::*)(const string &,
+                                                      const SdfLayerOffset &,
+                                                      UsdListPosition))
              &UsdReferences::AddReference,
-             (arg("assetPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("assetPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
         .def("AddInternalReference",
              &UsdReferences::AddInternalReference, 
-             (arg("primPath"),
-              arg("layerOffset")=SdfLayerOffset(),
-              arg("position")=UsdListPositionBackOfPrependList))
+             nb::arg("primPath"),
+             nb::arg("layerOffset")=SdfLayerOffset(),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
 
-        .def("RemoveReference", &UsdReferences::RemoveReference, arg("ref"))
+        .def("RemoveReference", &UsdReferences::RemoveReference, nb::arg("ref"))
         .def("ClearReferences", &UsdReferences::ClearReferences)
         .def("SetReferences", &UsdReferences::SetReferences)
         .def("GetPrim", (UsdPrim (UsdReferences::*)()) &UsdReferences::GetPrim)
-        .def(!self)
+        .def("__bool__", [](UsdReferences &self) { return bool(self); })
         ;
 }

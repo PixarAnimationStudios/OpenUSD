@@ -6,15 +6,18 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdr/shaderNodeQueryUtils.h"
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/return_internal_reference.hpp"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
@@ -24,19 +27,19 @@ class _SdrShaderNodeQueryUtils{};
 
 /// Recursive function to help construct arbitrarily nested Python dicts
 /// from the return value of SdrShaderNodeQueryUtils::GroupQueryResults.
-object
+nb::object
 _GroupQueryResultsHelper(const VtValue& subgroup) {
-    dict ret;
+    nb::dict ret;
     if (subgroup.IsHolding<SdrShaderNodeConstPtrVec>()) {
-        list l;
+        nb::list l;
         for (auto node: subgroup.UncheckedGet<SdrShaderNodeConstPtrVec>()) {
-            l.append(ptr(node));
+            l.append(nb::cast(node, nb::rv_policy::reference));
         }
         return l;
     } else if (subgroup.IsHolding<VtDictionary>()) {
         const VtDictionary& innerDict = subgroup.UncheckedGet<VtDictionary>();
         for (auto& entry : innerDict) {
-            ret[entry.first] = _GroupQueryResultsHelper(entry.second);
+            ret[nb::cast(entry.first)] = _GroupQueryResultsHelper(entry.second);
         }
     } else {
         TF_VERIFY(false, "Invalid VtValue subgroup (%s) from "
@@ -48,7 +51,7 @@ _GroupQueryResultsHelper(const VtValue& subgroup) {
 
 /// Without this wrapper to call `ptr(node)`, Boost Python will attempt to
 /// copy interior SdrShaderNodeConstPtr by-value as a SdrShaderNode.
-object
+nb::object
 _GroupQueryResults(const SdrShaderNodeQueryResult& result) {
     VtDictionary group = SdrShaderNodeQueryUtils::GroupQueryResults(result);
     return _GroupQueryResultsHelper(VtValue(group));
@@ -56,8 +59,8 @@ _GroupQueryResults(const SdrShaderNodeQueryResult& result) {
 
 } // anonymous namespace
 
-void wrapShaderNodeQueryUtils()
+void wrapShaderNodeQueryUtils(nanobind::module_ &m)
 {
-    class_<_SdrShaderNodeQueryUtils>("ShaderNodeQueryUtils", no_init)
-        .def("GroupQueryResults", _GroupQueryResults);
+    nb::class_<_SdrShaderNodeQueryUtils>(m, "ShaderNodeQueryUtils")
+        .def_static("GroupQueryResults", _GroupQueryResults);
 }

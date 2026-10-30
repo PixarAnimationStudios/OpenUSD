@@ -12,28 +12,22 @@
 #include "pxr/base/gf/dualQuatd.h"
 #include "pxr/base/gf/dualQuatf.h"
 #include "pxr/base/gf/dualQuath.h"
+#include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,130 +37,85 @@ static string __repr__(GfDualQuatd const &self) {
         TfPyRepr(self.GetDual()) + ")";
 }
 
-static GfDualQuatd __truediv__(const GfDualQuatd &self, double value)
-{
-    return self / value;
-}
-
-static GfDualQuatd& __itruediv__(GfDualQuatd &self, double value)
-{
-    return self /= value;
-}
-
 static size_t __hash__(GfDualQuatd const &self) {
     return TfHash{}(self);
 }
 
-// Zero-initialized default ctor for python.
-static GfDualQuatd *__init__() {
-    return new GfDualQuatd(GfQuatd(0), GfQuatd(0));
-}
-
 } // anonymous namespace
 
-void wrapDualQuatd()
+void wrapDualQuatd(nanobind::module_ &m)
 {
-    object getReal =
-        make_function(&GfDualQuatd::GetReal,
-                      return_value_policy<return_by_value>());
-    object setReal =
-        make_function((void (GfDualQuatd::*)(const GfQuatd &))
-                      &GfDualQuatd::SetReal);
+    m.def("Dot",
+          (double (*)(const GfDualQuatd &, const GfDualQuatd &))
+          GfDot);
 
-    object getDual =
-        make_function(&GfDualQuatd::GetDual,
-                      return_value_policy<return_by_value>());
-    object setDual =
-        make_function((void (GfDualQuatd::*)(const GfQuatd &))
-                      &GfDualQuatd::SetDual);
-
-    def( "Dot",
-         (double (*)(const GfDualQuatd &, const GfDualQuatd &))
-         GfDot);
-
-    class_<GfDualQuatd> cls("DualQuatd", no_init);
+    nanobind::class_<GfDualQuatd> cls(m, "DualQuatd");
     cls
-        .def("__init__", make_constructor(__init__))
+        .def("__init__", [](GfDualQuatd *self) {
+            new (self) GfDualQuatd(GfQuatd(0), GfQuatd(0));
+        })
 
-        .def( TfTypePythonClass() )
+        .def(TfTypePythonClass())
 
-        .def(init<GfDualQuatd>())
-        .def(init<double>(arg("realVal")))
-        .def(init< const GfQuatd & >(arg("real")))
-        .def(init< const GfQuatd &, const GfQuatd & >(
-                 (arg("real"), arg("dual"))))
-        .def(init< const GfQuatd &, const GfVec3d & >(
-                 (arg("rotation"), arg("translation"))))
+        .def(nanobind::init<GfDualQuatd>())
+        .def(nanobind::init_implicit<const GfDualQuatf &>())
+        .def(nanobind::init_implicit<const GfDualQuath &>())
+        .def(nanobind::init<double>(), nanobind::arg("realVal"))
+        .def(nanobind::init<const GfQuatd &>(), nanobind::arg("real"))
+        .def(nanobind::init<const GfQuatd &, const GfQuatd &>(),
+             nanobind::arg("real"), nanobind::arg("dual"))
+        .def(nanobind::init<const GfQuatd &, const GfVec3d &>(),
+             nanobind::arg("rotation"), nanobind::arg("translation"))
 
-        .def("GetZero", &GfDualQuatd::GetZero)
-        .staticmethod("GetZero")
+        .def_static("GetZero", &GfDualQuatd::GetZero)
+        .def_static("GetIdentity", &GfDualQuatd::GetIdentity)
 
-        .def("GetIdentity", &GfDualQuatd::GetIdentity)
-        .staticmethod("GetIdentity")
+        .def("GetReal", &GfDualQuatd::GetReal, nanobind::rv_policy::copy)
+        .def("SetReal", (void (GfDualQuatd::*)(const GfQuatd &))&GfDualQuatd::SetReal)
+        .def_prop_rw("real", &GfDualQuatd::GetReal,
+                     (void (GfDualQuatd::*)(const GfQuatd &))&GfDualQuatd::SetReal,
+                     nanobind::rv_policy::copy)
 
-        .def("GetReal", getReal)
-        .def("SetReal", setReal)
-        .add_property("real", getReal, setReal)
-
-        .def("GetDual", getDual)
-        .def("SetDual", setDual)
-        .add_property("dual", getDual, setDual)
+        .def("GetDual", &GfDualQuatd::GetDual, nanobind::rv_policy::copy)
+        .def("SetDual", (void (GfDualQuatd::*)(const GfQuatd &))&GfDualQuatd::SetDual)
+        .def_prop_rw("dual", &GfDualQuatd::GetDual,
+                     (void (GfDualQuatd::*)(const GfQuatd &))&GfDualQuatd::SetDual,
+                     nanobind::rv_policy::copy)
 
         .def("GetLength", &GfDualQuatd::GetLength)
 
         .def("GetNormalized", &GfDualQuatd::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
-        .def("Normalize", &GfDualQuatd::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH)
+        .def("Normalize", [](GfDualQuatd &self, double eps) -> GfDualQuatd & {
+            self.Normalize(eps);
+            return self;
+        }, nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH, nanobind::rv_policy::reference)
 
         .def("GetConjugate", &GfDualQuatd::GetConjugate)
         .def("GetInverse", &GfDualQuatd::GetInverse)
         .def("SetTranslation",
-             (void (GfDualQuatd::*)(const GfVec3d &))
-             &GfDualQuatd::SetTranslation)
+             (void (GfDualQuatd::*)(const GfVec3d &))&GfDualQuatd::SetTranslation)
         .def("GetTranslation", &GfDualQuatd::GetTranslation)
 
         .def("Transform",
-             (GfVec3d (GfDualQuatd::*)(const GfVec3d &) const)
-             &GfDualQuatd::Transform)
+             (GfVec3d (GfDualQuatd::*)(const GfVec3d &) const)&GfDualQuatd::Transform)
 
-        .def( str(self) )
-        .def( self == self )
-        .def( self != self )
-        .def( self += self )
-        .def( self -= self )
-        .def( self *= self )
-        .def( self *= double() )
-        .def( self /= double() )
-        .def( self + self )
-        .def( self - self )
-        .def( self * self )
-        .def( self * double() )
-        .def( double() * self )
-        .def( self / double() )
+        .def("__str__", [](const GfDualQuatd &self) { return TfStringify(self); })
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self /= double())
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self * double())
+        .def(double() * nanobind::self)
+        .def(nanobind::self / double())
 
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-
-    implicitly_convertible<GfDualQuatf, GfDualQuatd>();
-    implicitly_convertible<GfDualQuath, GfDualQuatd>();
-
-    to_python_converter<std::vector<GfDualQuatd>,
-        TfPySequenceToPython<std::vector<GfDualQuatd> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 }

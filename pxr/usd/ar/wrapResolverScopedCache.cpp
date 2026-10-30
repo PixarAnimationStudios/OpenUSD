@@ -4,19 +4,15 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/object.hpp"
-
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,9 +39,9 @@ public:
     }
 
     bool Exit(
-        pxr_boost::python::object& /* exc_type */,
-        pxr_boost::python::object& /* exc_val  */,
-        pxr_boost::python::object& /* exc_tb   */)
+        nanobind::handle /* exc_type */,
+        nanobind::handle /* exc_val  */,
+        nanobind::handle /* exc_tb   */)
     {
         _scopedCache.reset(0);
         // Re-raise exceptions.
@@ -59,13 +55,15 @@ private:
 } // anonymous namespace 
 
 void
-wrapResolverScopedCache()
+wrapResolverScopedCache(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     typedef _PyResolverScopedCache This;
 
-    class_<This, noncopyable>
-        ("ResolverScopedCache")
+    nb::class_<This>(m, "ResolverScopedCache")
+        .def(nb::init<>())
         .def("__enter__", &This::Enter)
-        .def("__exit__", &This::Exit)
+        .def("__exit__", &This::Exit,
+             nb::arg().none(), nb::arg().none(), nb::arg().none())
         ;
 }

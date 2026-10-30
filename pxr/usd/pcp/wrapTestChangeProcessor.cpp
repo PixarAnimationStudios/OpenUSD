@@ -12,13 +12,11 @@
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/notice.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/weakBase.h"
-#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -43,7 +41,7 @@ public:
             &Pcp_PyTestChangeProcessor::_HandleLayerDidChange);
     }
 
-    void Exit(const object&, const object&, const object&)
+    void Exit(nanobind::args)
     {
         TfNotice::Revoke(_layerChangedNoticeKey);
         _changes = PcpChanges();
@@ -101,24 +99,25 @@ private:
 } // anonymous namespace 
 
 void
-wrapTestChangeProcessor()
+wrapTestChangeProcessor(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef Pcp_PyTestChangeProcessor This;
-    typedef TfWeakPtr<Pcp_PyTestChangeProcessor> ThisPtr;
 
-    class_<This, ThisPtr, noncopyable>
-        ("_TestChangeProcessor", init<PcpCache*>())
-        .def("__enter__", &This::Enter, return_self<>())
+    nb::class_<This> cls(
+        m, "_TestChangeProcessor", nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbWeakPtr(cls);
+    cls
+        .def(TfTypePythonClass())
+        .def(nb::init<PcpCache*>())
+        .def("__enter__", [](This &self) -> This & {
+            self.Enter();
+            return self;
+        }, nb::rv_policy::reference)
         .def("__exit__", &This::Exit)
 
-        .def("GetSignificantChanges", 
-            &This::GetSignificantChanges,
-            return_value_policy<TfPySequenceToList>())
-        .def("GetSpecChanges", 
-            &This::GetSpecChanges,
-            return_value_policy<TfPySequenceToList>())
-        .def("GetPrimChanges", 
-            &This::GetPrimChanges,
-            return_value_policy<TfPySequenceToList>())
+        .def("GetSignificantChanges", &This::GetSignificantChanges)
+        .def("GetSpecChanges", &This::GetSpecChanges)
+        .def("GetPrimChanges", &This::GetPrimChanges)
         ;
 }

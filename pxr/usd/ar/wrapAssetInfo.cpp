@@ -8,12 +8,7 @@
 
 #include "pxr/usd/ar/assetInfo.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 static VtValue
 _GetResolverInfo(const ArAssetInfo& info)
@@ -33,26 +28,26 @@ _GetHash(const ArAssetInfo& info)
     return hash_value(info);
 }
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/ar/pyResolverContext.h"
+#include "pxr/base/vt/valueFromPython.h"
+
 void
-wrapAssetInfo()
+wrapAssetInfo(nanobind::module_& m)
 {
+    namespace nb = nanobind;
     using This = ArAssetInfo;
 
-    class_<This>("AssetInfo")
-        .def(init<>())
+    nb::class_<This>(m, "AssetInfo")
+        .def(nb::init<>())
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("__hash__", &_GetHash)
 
-        .def_readwrite("version", &This::version)
-        .def_readwrite("assetName", &This::assetName)
-
-        // Using .def_readwrite for resolverInfo gives this error on access:
-        // "No python class registered for C++ class VtValue"
-        //
-        // Using .add_property works as expected.
-        .add_property("resolverInfo", &_GetResolverInfo, &_SetResolverInfo)
+        .def_rw("version", &This::version)
+        .def_rw("assetName", &This::assetName)
+        .def_prop_rw("resolverInfo", &_GetResolverInfo, &_SetResolverInfo)
         ;
 }

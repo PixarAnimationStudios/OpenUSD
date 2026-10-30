@@ -13,15 +13,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -34,7 +40,7 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateTangentsAttr(UsdGeomHermiteCurves &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateTangentsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Vector3fArray), writeSparsely);
 }
@@ -50,43 +56,38 @@ _Repr(const UsdGeomHermiteCurves &self)
 
 } // anonymous namespace
 
-void wrapUsdGeomHermiteCurves()
+void wrapUsdGeomHermiteCurves(nb::module_ &m)
 {
     typedef UsdGeomHermiteCurves This;
 
-    class_<This, bases<UsdGeomCurves> >
-        cls("HermiteCurves");
+    nb::class_<This, UsdGeomCurves> cls(m, "HermiteCurves");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("Define", &This::Define, (arg("stage"), arg("path")))
-        .staticmethod("Define")
+        .def_static("Define", &This::Define, nb::arg("stage"), nb::arg("path"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetTangentsAttr",
              &This::GetTangentsAttr)
         .def("CreateTangentsAttr",
              &_CreateTangentsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;
@@ -126,21 +127,20 @@ WRAP_CUSTOM {
     typedef UsdGeomHermiteCurves This;
     {
         typedef UsdGeomHermiteCurves::PointAndTangentArrays ThisStruct;
-        scope obj = _class;
-        class_<ThisStruct>("PointAndTangentArrays", init<>())
-            .def(init<const VtVec3fArray&,const VtVec3fArray&>())
+        nb::class_<ThisStruct>(_class, "PointAndTangentArrays")
+            .def(nb::init<>())
+            .def(nb::init<const VtVec3fArray&,const VtVec3fArray&>())
             .def("GetPoints", &ThisStruct::GetPoints,
-                 return_value_policy<copy_const_reference>())
+                 nb::rv_policy::copy)
             .def("GetTangents", &ThisStruct::GetTangents,
-                 return_value_policy<copy_const_reference>())
+                 nb::rv_policy::copy)
             .def("IsEmpty", &ThisStruct::IsEmpty)
             .def("Interleave", &ThisStruct::Interleave)
-            .def("Separate", &ThisStruct::Separate)
-            .staticmethod("Separate")
+            .def_static("Separate", &ThisStruct::Separate)
             .def("__repr__", &::_PointAndTangentsRepr)
-            .def(!self)
-            .def(self == self)
-            .def(self != self);
+            .def("__bool__", [](const ThisStruct &self) { return bool(self); })
+            .def("__eq__", [](ThisStruct &self, const ThisStruct &rhs) { return self == rhs; }, nb::is_operator())
+            .def("__ne__", [](ThisStruct &self, const ThisStruct &rhs) { return self != rhs; }, nb::is_operator());
     }
 }
 

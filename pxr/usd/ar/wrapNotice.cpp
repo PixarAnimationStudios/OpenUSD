@@ -5,38 +5,26 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/pyResolverContext.h"
 
 #include "pxr/usd/ar/notice.h"
 
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-#include "pxr/external/boost/python/scope.hpp"
-#include "pxr/external/boost/python/class.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-namespace
-{
-
-TF_INSTANTIATE_NOTICE_WRAPPER(
-    ArNotice::ResolverNotice, TfNotice);
-TF_INSTANTIATE_NOTICE_WRAPPER(
-    ArNotice::ResolverChanged, ArNotice::ResolverNotice);
-
-} // end anonymous namespace
-
 void
-wrapNotice()
+wrapNotice(nanobind::module_ &m)
 {
-    scope s = class_<ArNotice>("Notice", no_init);
-    
-    TfPyNoticeWrapper<ArNotice::ResolverNotice, TfNotice>::Wrap();
+    nanobind::class_<ArNotice> s(m, "Notice");
 
-    TfPyNoticeWrapper<
-        ArNotice::ResolverChanged, ArNotice::ResolverNotice>::Wrap()
+    TfNbNoticeWrapper<ArNotice::ResolverNotice, TfNotice>::Wrap(s);
+
+    TfNbNoticeWrapper<
+        ArNotice::ResolverChanged, ArNotice::ResolverNotice>::Wrap(s)
         .def("AffectsContext", &ArNotice::ResolverChanged::AffectsContext,
-             args("context"))
+             nanobind::arg("context"))
         ;
 }

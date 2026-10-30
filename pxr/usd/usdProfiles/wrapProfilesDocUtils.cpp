@@ -6,38 +6,16 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdProfiles/profilesDocUtils.h"
-
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/dict.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/list.hpp"
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/stl_iterator.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include <map>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
-
-std::map<std::string, std::string>
-_DictToMap(const dict& d)
-{
-    std::map<std::string, std::string> out;
-    list keys = d.keys();
-    const ssize_t n = len(keys);
-    for (ssize_t i = 0; i < n; ++i) {
-        object k = keys[i];
-        object v = d[k];
-        std::string ks = extract<std::string>(k);
-        std::string vs = extract<std::string>(v);
-        out.emplace(std::move(ks), std::move(vs));
-    }
-    return out;
-}
 
 std::string
 _MarkdownNoArgs()
@@ -46,15 +24,15 @@ _MarkdownNoArgs()
 }
 
 std::string
-_MarkdownWithStyles(const dict& styles)
+_MarkdownWithStyles(const std::map<std::string, std::string>& styles)
 {
-    return UsdProfilesMarkdown(_DictToMap(styles));
+    return UsdProfilesMarkdown(styles);
 }
 
 std::string
-_Mermaid(const dict& styles)
+_Mermaid(const std::map<std::string, std::string>& styles)
 {
-    return UsdProfilesMermaid(_DictToMap(styles));
+    return UsdProfilesMermaid(styles);
 }
 
 std::string
@@ -65,10 +43,10 @@ _Dot()
 
 } // anonymous namespace
 
-void wrapUsdProfilesDocUtils()
+void wrapUsdProfilesDocUtils(nb::module_ &m)
 {
-    def("ProfilesMarkdown", &_MarkdownNoArgs);
-    def("ProfilesMarkdown", &_MarkdownWithStyles, (arg("styles")));
-    def("ProfilesMermaid",  &_Mermaid,            (arg("styles")));
-    def("ProfilesDot",      &_Dot);
+    m.def("ProfilesMarkdown", &_MarkdownNoArgs);
+    m.def("ProfilesMarkdown", &_MarkdownWithStyles, nb::arg("styles"));
+    m.def("ProfilesMermaid",  &_Mermaid,            nb::arg("styles"));
+    m.def("ProfilesDot",      &_Dot);
 }

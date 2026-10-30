@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,49 +41,49 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateNameAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
 _CreateRedChromaAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateRedChromaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateGreenChromaAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateGreenChromaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateBlueChromaAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateBlueChromaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateWhitePointAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateWhitePointAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float2), writeSparsely);
 }
         
 static UsdAttribute
 _CreateGammaAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateGammaAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
         
 static UsdAttribute
 _CreateLinearBiasAttr(UsdColorSpaceDefinitionAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateLinearBiasAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
@@ -115,116 +121,107 @@ _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 
 } // anonymous namespace
 
-void wrapUsdColorSpaceDefinitionAPI()
+void wrapUsdColorSpaceDefinitionAPI(nb::module_ &m)
 {
     typedef UsdColorSpaceDefinitionAPI This;
 
-    UsdColorSpaceDefinitionAPI_CanApplyResult::Wrap<UsdColorSpaceDefinitionAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdColorSpaceDefinitionAPI_CanApplyResult::WrapNb<UsdColorSpaceDefinitionAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ColorSpaceDefinitionAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ColorSpaceDefinitionAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
         .def(TfTypePythonClass())
 
-        .def("Get",
+        .def_static("Get",
             (UsdColorSpaceDefinitionAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             (UsdColorSpaceDefinitionAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
-        .staticmethod("Get")
+            nb::arg("prim"), nb::arg("name"))
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<UsdColorSpaceDefinitionAPI>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+             nb::rv_policy::copy)
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetNameAttr",
              &This::GetNameAttr)
         .def("CreateNameAttr",
              &_CreateNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetRedChromaAttr",
              &This::GetRedChromaAttr)
         .def("CreateRedChromaAttr",
              &_CreateRedChromaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetGreenChromaAttr",
              &This::GetGreenChromaAttr)
         .def("CreateGreenChromaAttr",
              &_CreateGreenChromaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetBlueChromaAttr",
              &This::GetBlueChromaAttr)
         .def("CreateBlueChromaAttr",
              &_CreateBlueChromaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetWhitePointAttr",
              &This::GetWhitePointAttr)
         .def("CreateWhitePointAttr",
              &_CreateWhitePointAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetGammaAttr",
              &This::GetGammaAttr)
         .def("CreateGammaAttr",
              &_CreateGammaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetLinearBiasAttr",
              &This::GetLinearBiasAttr)
         .def("CreateLinearBiasAttr",
              &_CreateLinearBiasAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
-        .def("IsColorSpaceDefinitionAPIPath", _WrapIsColorSpaceDefinitionAPIPath)
-            .staticmethod("IsColorSpaceDefinitionAPIPath")
+        .def_static("IsColorSpaceDefinitionAPIPath", _WrapIsColorSpaceDefinitionAPIPath)
         .def("__repr__", ::_Repr)
     ;
 
@@ -256,11 +253,11 @@ WRAP_CUSTOM {
     _class
         .def("CreateColorSpaceAttrsWithChroma",
              &UsdColorSpaceDefinitionAPI::CreateColorSpaceAttrsWithChroma,
-             (arg("redChroma"), arg("greenChroma"), arg("blueChroma"),
-              arg("whitePoint"), arg("gamma"), arg("linearBias")))
+             nb::arg("redChroma"), nb::arg("greenChroma"), nb::arg("blueChroma"),
+              nb::arg("whitePoint"), nb::arg("gamma"), nb::arg("linearBias"))
         .def("CreateColorSpaceAttrsWithMatrix",
              &UsdColorSpaceDefinitionAPI::CreateColorSpaceAttrsWithMatrix,
-             (arg("rgbToXYZ"), arg("gamma"), arg("linearBias")))
+             nb::arg("rgbToXYZ"), nb::arg("gamma"), nb::arg("linearBias"))
         .def("ComputeColorSpaceFromDefinitionAttributes",
              &UsdColorSpaceDefinitionAPI::ComputeColorSpaceFromDefinitionAttributes)
     ;

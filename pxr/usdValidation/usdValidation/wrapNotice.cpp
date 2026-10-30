@@ -8,40 +8,31 @@
 #include "pxr/pxr.h"
 #include "pxr/usdValidation/usdValidation/notice.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-namespace {
-
-TF_INSTANTIATE_NOTICE_WRAPPER(
-    UsdValidationNotice::DidRegisterValidator, TfNotice);
-TF_INSTANTIATE_NOTICE_WRAPPER(
-    UsdValidationNotice::DidRegisterValidatorSuite, TfNotice);
-
-} // anonymous namespace
-
 void
-wrapUsdValidationNotice()
+wrapUsdValidationNotice(nanobind::module_ &m)
 {
-    scope noticeScope = class_<UsdValidationNotice>("Notice", no_init);
+    namespace nb = nanobind;
+    nb::class_<UsdValidationNotice> noticeScope(m, "Notice");
 
-    TfPyNoticeWrapper<
-        UsdValidationNotice::DidRegisterValidator, TfNotice>::Wrap()
+    TfNbNoticeWrapper<
+        UsdValidationNotice::DidRegisterValidator, TfNotice>::Wrap(noticeScope)
         .def("GetValidator",
              &UsdValidationNotice::DidRegisterValidator::GetValidator,
-             return_value_policy<reference_existing_object>())
+             nb::rv_policy::reference)
         ;
 
-    TfPyNoticeWrapper<
-        UsdValidationNotice::DidRegisterValidatorSuite, TfNotice>::Wrap()
+    TfNbNoticeWrapper<
+        UsdValidationNotice::DidRegisterValidatorSuite, TfNotice>::Wrap(
+            noticeScope)
         .def("GetValidatorSuite",
              &UsdValidationNotice::DidRegisterValidatorSuite::GetValidatorSuite,
-             return_value_policy<reference_existing_object>())
+             nb::rv_policy::reference)
         ;
 }

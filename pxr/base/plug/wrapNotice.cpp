@@ -7,34 +7,25 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/notice.h"
-#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/plug/plugin.h"
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/scope.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-namespace {
-
-TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::Base, TfNotice);
-TF_INSTANTIATE_NOTICE_WRAPPER(PlugNotice::DidRegisterPlugins, PlugNotice::Base);
-
-} // anonymous namespace 
-
 void
-wrapNotice()
+wrapNotice(nanobind::module_ &m)
 {
-    scope noticeScope = class_<PlugNotice>("Notice", no_init);
+    nanobind::class_<PlugNotice> noticeScope(m, "Notice");
 
-    TfPyNoticeWrapper<PlugNotice::Base, TfNotice>::Wrap()
+    TfNbNoticeWrapper<PlugNotice::Base, TfNotice>::Wrap(noticeScope)
         ;
 
-    TfPyNoticeWrapper<PlugNotice::DidRegisterPlugins, PlugNotice::Base>::Wrap()
-        .def("GetNewPlugins", 
-             make_function(&PlugNotice::DidRegisterPlugins::GetNewPlugins,
-                           return_value_policy<TfPySequenceToList>()))
+    TfNbNoticeWrapper<
+        PlugNotice::DidRegisterPlugins, PlugNotice::Base>::Wrap(noticeScope)
+        .def("GetNewPlugins", &PlugNotice::DidRegisterPlugins::GetNewPlugins,
+             nanobind::rv_policy::copy)
         ;
 }

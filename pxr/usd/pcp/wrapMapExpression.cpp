@@ -4,18 +4,15 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python.hpp"
-
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -28,38 +25,37 @@ _Str(const PcpMapExpression& e)
 } // anonymous namespace 
 
 void
-wrapMapExpression()
+wrapMapExpression(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     typedef PcpMapExpression This;
 
-    class_<This>("MapExpression")
+    nb::class_<This>(m, "MapExpression")
+        .def(nb::init<>())
         .def("__str__", _Str)
 
         .def("Evaluate", &This::Evaluate,
-             return_value_policy<return_by_value>())
-        .def("Identity", &This::Identity,
-             return_value_policy<return_by_value>())
-        .staticmethod("Identity")
-        .def("Constant", &This::Constant,
-             return_value_policy<return_by_value>())
-        .staticmethod("Constant")
-        .def("ImpliedClass", &This::ImpliedClass)
-        .staticmethod("ImpliedClass")
+             nb::rv_policy::copy)
+        .def_static("Identity", &This::Identity,
+                    nb::rv_policy::copy)
+        .def_static("Constant", &This::Constant,
+                    nb::rv_policy::copy)
+        .def_static("ImpliedClass", &This::ImpliedClass)
         .def("Inverse", &This::Inverse,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("AddRootIdentity", &This::AddRootIdentity,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("Compose", &This::Compose,
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("MapSourceToTarget", &This::MapSourceToTarget,
-            (arg("path")))
+             nb::arg("path"))
         .def("MapTargetToSource", &This::MapTargetToSource,
-            (arg("path")))
+             nb::arg("path"))
 
-        .add_property("timeOffset",
-            make_function(&This::GetTimeOffset,
-                          return_value_policy<return_by_value>()) )
-        .add_property("isIdentity", &This::IsIdentity)
-        .add_property("isNull", &This::IsNull)
+        .def_prop_ro("timeOffset", &This::GetTimeOffset,
+                     nb::rv_policy::copy)
+        .def_prop_ro("isIdentity", &This::IsIdentity)
+        .def_prop_ro("isNull", &This::IsNull)
         ;
+
 }

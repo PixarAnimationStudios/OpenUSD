@@ -6,19 +6,20 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/resolveTarget.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdResolveTarget()
+void wrapUsdResolveTarget(nb::module_ &m)
 {
-    class_<UsdResolveTarget>("ResolveTarget")
-        .def(init<>())
+    nb::class_<UsdResolveTarget>(m, "ResolveTarget")
+        .def(nb::init<>())
         .def("GetPrimIndex", &UsdResolveTarget::GetPrimIndex, 
-             return_value_policy<return_by_value>())
+             nb::rv_policy::copy)
         .def("GetStartNode", &UsdResolveTarget::GetStartNode)
         .def("GetStartLayer", &UsdResolveTarget::GetStartLayer)
         .def("GetStopNode", &UsdResolveTarget::GetStopNode)

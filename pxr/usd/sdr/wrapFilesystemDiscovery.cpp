@@ -10,18 +10,21 @@
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/discoveryPlugin.h"
 #include "pxr/usd/sdr/filesystemDiscovery.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 using namespace TfPyContainerConversions;
+namespace nb = nanobind;
 
 namespace {
 
@@ -34,10 +37,21 @@ static _SdrFilesystemDiscoveryPluginRefPtr New()
 
 static
 _SdrFilesystemDiscoveryPluginRefPtr
-NewWithFilter(_SdrFilesystemDiscoveryPlugin::Filter filter)
+NewWithFilter(nb::callable filter)
 {
     return TfCreateRefPtr(
-        new _SdrFilesystemDiscoveryPlugin(std::move(filter))
+        new _SdrFilesystemDiscoveryPlugin(
+            [filter](SdrShaderNodeDiscoveryResult& result) -> bool {
+                TfPyLock lock;
+                try {
+                    return nb::cast<bool>(
+                        filter(nb::cast(&result, nb::rv_policy::reference)));
+                } catch (nb::python_error &e) {
+                    e.restore();
+                    TfPyConvertPythonExceptionToTfErrors();
+                    return false;
+                }
+            })
     );
 }
 
@@ -59,40 +73,38 @@ public:
     }
 };
 
-void wrapFilesystemDiscoveryContext()
+void wrapFilesystemDiscoveryContext(nb::handle scope)
 {
     typedef _SdrContext This;
-    typedef TfWeakPtr<_SdrContext> ThisPtr;
 
-    class_<This, ThisPtr, bases<SdrDiscoveryPluginContext>, noncopyable>(
-        "Context", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(This::New))
+    nb::class_<This, SdrDiscoveryPluginContext> cls(
+        scope, "Context",
+        nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbRefAndWeakPtr(cls);
+    cls.def(TfNbMakePyConstructor(This::New))
         ;
 }
 
 }
 
-void wrapFilesystemDiscovery()
+void wrapFilesystemDiscovery(nanobind::module_ &m)
 {
     typedef _SdrFilesystemDiscoveryPlugin This;
     typedef _SdrFilesystemDiscoveryPluginPtr ThisPtr;
 
-    return_value_policy<copy_const_reference> copyRefPolicy;
     from_python_sequence<std::vector<ThisPtr>, variable_capacity_policy>();
 
     TfPyFunctionFromPython<bool(SdrShaderNodeDiscoveryResult&)>();
 
-    scope s =
-    class_<This, ThisPtr, bases<SdrDiscoveryPlugin>, noncopyable>(
-        "_FilesystemDiscoveryPlugin", no_init)
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(New))
-        .def(TfMakePyConstructor(NewWithFilter))
-        .def("DiscoverShaderNodes", &This::DiscoverShaderNodes,
-            return_value_policy<TfPySequenceToList>())
-        .def("GetSearchURIs", &This::GetSearchURIs, copyRefPolicy)
+    nb::class_<This, SdrDiscoveryPlugin> cls(
+        m, "_FilesystemDiscoveryPlugin",
+        nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbRefAndWeakPtr(cls);
+    cls.def(TfNbMakePyConstructor(New))
+        .def(TfNbMakePyConstructor(NewWithFilter))
+        .def("DiscoverShaderNodes", &This::DiscoverShaderNodes)
+        .def("GetSearchURIs", &This::GetSearchURIs)
         ;
 
-    wrapFilesystemDiscoveryContext();
+    wrapFilesystemDiscoveryContext(cls);
 }

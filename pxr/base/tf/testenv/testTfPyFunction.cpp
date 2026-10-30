@@ -10,16 +10,16 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/dict.hpp"
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/import.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include <functional>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+using nanobind::object;
+using nanobind::dict;
 
 static const char VoidFuncSource[] = "def VoidFunc(): pass\n";
 static const char BoolFuncSource[] = "def BoolFunc(): return True\n";
@@ -32,9 +32,13 @@ template <typename T>
 static void
 AssertCallResult(object callable, T const &expected)
 {
-    extract<std::function<T()>> stdFunc(callable);
-    TF_AXIOM(stdFunc.check());
-    TF_AXIOM(stdFunc()() == expected);
+    std::function<T()> stdFunc;
+    TF_AXIOM(nanobind::try_cast<std::function<T()>>(callable, stdFunc));
+    if constexpr (std::is_same_v<T, object>) {
+        TF_AXIOM(stdFunc().is(expected));
+    } else {
+        TF_AXIOM(stdFunc() == expected);
+    }
 }
 
 static void
@@ -42,16 +46,16 @@ AssertCallVoid(object callable)
 {
     // As there's no result to check, all we care about is that calling the
     // function does not throw.
-    extract<std::function<void()>> stdFunc(callable);
-    TF_AXIOM(stdFunc.check());
-    stdFunc()();
+    std::function<void()> stdFunc;
+    TF_AXIOM(nanobind::try_cast<std::function<void()>>(callable, stdFunc));
+    stdFunc();
 }
 
 static object
 DefineFunc(const char *funcName, const char *funcSource, dict testEnv)
 {
     TfPyRunString(funcSource, Py_single_input, testEnv);
-    return testEnv[funcName];
+    return nanobind::borrow<object>(testEnv[funcName]);
 }
 
 int
@@ -63,13 +67,13 @@ main(int argc, char **argv)
 
     // Import Tf to make sure that we get the function wrappings defined in
     // wrapFunction.cpp.
-    object tfModule = import("pxr.Tf");
+    object tfModule = nanobind::module_::import_("pxr.Tf");
     TF_AXIOM(!tfModule.is_none());
 
     // Store our test functions in this dictionary rather than the main module.
     dict testEnv;
 
-    testEnv.update(import("builtins").attr("__dict__"));
+    PyDict_Update(testEnv.ptr(), nanobind::module_::import_("builtins").attr("__dict__").ptr());
 
     // Expected results of calling functions
     const bool expectedBool = true;

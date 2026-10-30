@@ -4,7 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
+
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/fixer.h"
@@ -14,97 +20,88 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 namespace {
 
-    list
+    nb::list
     _GetFixers(const UsdValidationError &error) {
-        list result;
+        nb::list result;
         for (const auto *fixer : error.GetFixers()) {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 
-    list
+    nb::list
     _GetFixersByErrorName(const UsdValidationError &error) {
-        list result;
+        nb::list result;
         for (const auto *fixer : error.GetFixersByErrorName()) {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 
-    list
+    nb::list
     _GetFixersByKeywords(const UsdValidationError &error, 
                          const TfTokenVector &keywords) {
-        list result;
+        nb::list result;
         for (const auto *fixer : error.GetFixersByKeywords(keywords)) {
-            result.append(pointer_wrapper(fixer));
+            result.append(nb::cast(fixer, nb::rv_policy::reference));
         }
         return result;
     }
 } // anonymous namespace
 
-void wrapUsdValidationError()
+void wrapUsdValidationError(nb::module_ &m)
 {
-    TfPyWrapEnum<UsdValidationErrorType>("ValidationErrorType");
+    TfNbWrapEnum<UsdValidationErrorType>(m, "ValidationErrorType");
 
-    class_<UsdValidationErrorSite>("ValidationErrorSite")
-        .def(init<>())
-        .def(init<const SdfLayerHandle &, const SdfPath &>(
-            args("layer", "objectPath")))
-        .def(init<const UsdStagePtr &, const SdfPath &, const SdfLayerHandle &>(
-            (arg("stage"), arg("objectPath"), arg("layer") = SdfLayerHandle{})))
+    nb::class_<UsdValidationErrorSite>(m, "ValidationErrorSite")
+        .def(nb::init<>())
+        .def(nb::init<const SdfLayerHandle &, const SdfPath &>(),
+             nb::arg("layer"), nb::arg("objectPath"))
+        .def(nb::init<const UsdStagePtr &, const SdfPath &, const SdfLayerHandle &>(),
+             nb::arg("stage"), nb::arg("objectPath"), nb::arg("layer") = SdfLayerHandle{})
         .def("IsValid", &UsdValidationErrorSite::IsValid)
         .def("IsValidSpecInLayer", &UsdValidationErrorSite::IsValidSpecInLayer)
         .def("IsPrim", &UsdValidationErrorSite::IsPrim)
         .def("IsProperty", &UsdValidationErrorSite::IsProperty)
         .def("GetPropertySpec", &UsdValidationErrorSite::GetPropertySpec)
         .def("GetPrimSpec", &UsdValidationErrorSite::GetPrimSpec)
-        .def("GetLayer", &UsdValidationErrorSite::GetLayer, 
-             return_value_policy<return_by_value>())
-        .def("GetStage", &UsdValidationErrorSite::GetStage, 
-             return_value_policy<return_by_value>())
+        .def("GetLayer", &UsdValidationErrorSite::GetLayer)
+        .def("GetStage", &UsdValidationErrorSite::GetStage)
         .def("GetPrim", &UsdValidationErrorSite::GetPrim)
         .def("GetProperty", &UsdValidationErrorSite::GetProperty)
-        .def(self == self)
-        .def(self != self);
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self);
 
     TfPyRegisterStlSequencesFromPython<UsdValidationErrorSite>();
-    class_<UsdValidationError>("ValidationError")
-        .def(init<>())
-        .def(init<const TfToken &, const UsdValidationErrorType &, 
-             const UsdValidationErrorSites &, const std::string &>(
-             args("name", "errorType", "errorSites", "errorMessage")))
+    nb::class_<UsdValidationError>(m, "ValidationError")
+        .def(nb::init<>())
+        .def(nb::init<const TfToken &, const UsdValidationErrorType &, 
+             const UsdValidationErrorSites &, const std::string &>(),
+             nb::arg("name"), nb::arg("errorType"), nb::arg("errorSites"), nb::arg("errorMessage"))
         .def("GetName", 
              +[](const UsdValidationError &validationError) {
                  return validationError.GetName();
-             }, 
-             return_value_policy<return_by_value>())
-        .def("GetIdentifier", &UsdValidationError::GetIdentifier, 
-             return_value_policy<return_by_value>())
+             })
+        .def("GetIdentifier", &UsdValidationError::GetIdentifier)
         .def("GetType", &UsdValidationError::GetType)
         .def("GetSites", 
              +[](const UsdValidationError &validationError) {
                 return validationError.GetSites();
-             }, 
-            return_value_policy<TfPySequenceToList>())
-        .def("GetMessage", &UsdValidationError::GetMessage, 
-             return_value_policy<return_by_value>())
+             })
+        .def("GetMessage", &UsdValidationError::GetMessage)
         .def("GetErrorAsString", &UsdValidationError::GetErrorAsString)
-        .def("GetValidator", &UsdValidationError::GetValidator, return_value_policy<reference_existing_object>())
+        .def("GetValidator", &UsdValidationError::GetValidator, nb::rv_policy::reference)
         .def("HasNoError", &UsdValidationError::HasNoError)
         .def("GetData", 
              +[](const UsdValidationError &validationError) {
                  return validationError.GetData();
-             }, 
-             return_value_policy<return_by_value>())
+             })
         .def("GetFixers", _GetFixers)
         .def("GetFixerByName", 
              +[](const UsdValidationError &validationError, 
@@ -112,8 +109,8 @@ void wrapUsdValidationError()
                  -> const UsdValidationFixer* {
                  return validationError.GetFixerByName(name);
              },
-             return_value_policy<reference_existing_object>(),
-             (arg("name")))
+             nb::rv_policy::reference,
+             nb::arg("name"))
         .def("GetFixersByErrorName", _GetFixersByErrorName)
         .def("GetFixerByNameAndErrorName",
              +[](const UsdValidationError &validationError, 
@@ -121,10 +118,10 @@ void wrapUsdValidationError()
                  -> const UsdValidationFixer* {
                  return validationError.GetFixerByNameAndErrorName(name);
              },
-             return_value_policy<reference_existing_object>(),
-             (arg("name")))
+             nb::rv_policy::reference,
+             nb::arg("name"))
         .def("GetFixersByKeywords", _GetFixersByKeywords,
-             (arg("keywords")))
-        .def(self == self)
-        .def(self != self);
+             nb::arg("keywords"))
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self);
 }

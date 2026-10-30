@@ -13,10 +13,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP( Collector );
-    TF_WRAP( AggregateNode );
-    TF_WRAP( AggregateTree );
-    TF_WRAP( Reporter );
+    TF_WRAP_NB( Collector );
+    TF_WRAP_NB( AggregateNode );
+    TF_WRAP_NB( AggregateTree );
+    TF_WRAP_NB( Reporter );
 
-    TF_WRAP( TestTrace );
+    TF_WRAP_NB( TestTrace );
 }

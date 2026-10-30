@@ -31,22 +31,16 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python/slice.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -67,7 +61,7 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
         return -1;
     }
 
-    GfVec4h &vec = extract<GfVec4h &>(self);
+    GfVec4h &vec = *nanobind::inst_ptr<GfVec4h>(self);
 
     view->obj = self;
     view->buf = static_cast<void *>(vec.data());
@@ -100,11 +94,9 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
     return 0;
 }
 
-// This structure serves to instantiate a PyBufferProcs instance with pointers
-// to the right buffer protocol functions.
-static PyBufferProcs bufferProcs = {
-    (getbufferproc) getbuffer,
-    (releasebufferproc) 0,
+static const PyType_Slot bufferSlots[] = {
+    { Py_bf_getbuffer, (void *)getbuffer },
+    { 0, nullptr }
 };
 
 // End python buffer protocol support.
@@ -123,24 +115,6 @@ static size_t __hash__(GfVec4h const &self) {
     return TfHash{}(self);
 }
 
-
-PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecGetNormalized_overloads,
-                                       GetNormalized, 0, 1);
-PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecNormalize_overloads, Normalize, 0, 1);
-PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(GetNormalized_overloads,
-                                GfGetNormalized, 1, 2);
-
-static GfHalf
-NormalizeHelper(GfVec4h *vec, GfHalf eps = 0.001)
-{
-    return GfNormalize(vec, eps);
-}
-
-PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(Normalize_overloads, NormalizeHelper, 1, 2);
-
- 
-
- 
 static int
 normalizeIndex(int index) {
     return TfPyNormalizeIndex(index, 4, true /*throw error*/);
@@ -153,113 +127,66 @@ static GfHalf __getitem__(const GfVec4h &self, int index) {
     return self[normalizeIndex(index)];
 }
 
-// Implements __getitem__ for a slice
-static list __getslice__(const GfVec4h &self, slice indices) {
-    list result;
-
-    const GfHalf* begin = self.data();
-    const GfHalf* end = begin + 4;
-
-    slice::range<const GfHalf*> bounds;
-    try {
-        // This appears to be a typo in the boost headers.  The method
-        // name should be "get_indices".
-        //
-        bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument const &) {
-        return result;
-    }
-
-    while (bounds.start != bounds.stop) {
-        result.append(*bounds.start);
-        bounds.start += bounds.step;
-    }
-    // Unlike STL ranges, bounds represents a *closed* interval.  This
-    // means that we must append exactly one more item at the end of
-    // the list.
-    //
-    result.append(*bounds.start);
-
-    return result;
-}
-
 static void __setitem__(GfVec4h &self, int index, GfHalf value) {
     self[normalizeIndex(index)] = value;
 }
 
 // Handles refcounting & extraction for PySequence_GetItem.
 static GfHalf _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
-    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<GfHalf>(pxr_boost::python::object(h));
+    nanobind::object h = nanobind::steal(PySequence_GetItem(seq, i));
+    GfHalf val;
+    if (!nanobind::try_cast<GfHalf>(h, val)) {
+        TfPyThrowTypeError("cannot convert element");
+    }
+    return val;
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
-    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<GfHalf> e((pxr_boost::python::object(h)));
-    return e.check();
+    nanobind::object h = nanobind::steal(PySequence_GetItem(seq, i));
+    GfHalf val;
+    return nanobind::try_cast<GfHalf>(h, val);
 }
 
-static void __setslice__(GfVec4h &self, slice indices, object values) {
-    // Verify our arguments
-    //
+// Implements __getitem__ for a slice
+static nanobind::list __getslice__(const GfVec4h &self, nanobind::slice indices) {
+    nanobind::list result;
+    auto [start, stop, step, sliceLength] = indices.compute(4);
+    for (size_t i = 0; i < sliceLength; ++i) {
+        result.append(self[start]);
+        start += step;
+    }
+    return result;
+}
+
+static void __setslice__(GfVec4h &self, nanobind::slice indices, nanobind::object values) {
     PyObject* valuesObj = values.ptr();
 
     if (!PySequence_Check(valuesObj)) {
         TfPyThrowTypeError("value must be a sequence");
     }
 
-    GfHalf* begin = self.data();
-    GfHalf* end = begin + 4;
+    auto [start, stop, step, sliceLength] = indices.compute(4);
 
-    Py_ssize_t sliceLength = -1;
-
-    slice::range<GfHalf*> bounds;
-
-    // Convince g++ that we're not using uninitialized values.
-    //
-    bounds.start = 0;
-    bounds.stop  = 0;
-    bounds.step  = 0;
-
-    try {
-        // This appears to be a typo in the boost headers.  The method
-        // name should be "get_indices".
-        //
-        bounds = indices.get_indicies<>(begin, end);
-    } catch (std::invalid_argument const &) {
-        sliceLength = 0;
-    }
-
-    // If sliceLength was not set in the exception handling code above,
-    // figure out how long it really is.
-    //
-    if (sliceLength == -1) {
-        sliceLength = ((bounds.stop - bounds.start) / bounds.step) + 1;
-    }
-
-    if (PySequence_Length(valuesObj) != sliceLength) {
+    if (PySequence_Length(valuesObj) != (Py_ssize_t)sliceLength) {
         TfPyThrowValueError(
             TfStringPrintf(
                 "attempt to assign sequence of size %zd to slice of size %zd",
-                PySequence_Length(valuesObj), sliceLength));
+                PySequence_Length(valuesObj), (Py_ssize_t)sliceLength));
     }
 
-    // Short circuit for empty slices
-    //
     if (sliceLength == 0) {
         return;
     }
 
     // Make sure that all items can be extracted before changing the GfVec4h.
-    //
-    for (Py_ssize_t i = 0; i < sliceLength; ++i) {
+    for (size_t i = 0; i < sliceLength; ++i) {
         // This will throw a TypeError if any of the items cannot be converted.
         _SequenceGetItem(valuesObj, i);
     }
 
-    for (Py_ssize_t i = 0; i < sliceLength; ++i) {
-        *bounds.start = _SequenceGetItem(valuesObj, i);
-        bounds.start += bounds.step;
+    for (size_t i = 0; i < sliceLength; ++i) {
+        self[start] = _SequenceGetItem(valuesObj, i);
+        start += step;
     }
 }
 
@@ -271,31 +198,7 @@ static bool __contains__(const GfVec4h &self, GfHalf value) {
     return false;
 }
 
-static GfVec4h __truediv__(const GfVec4h &self, GfHalf value)
-{
-    return self / value;
-}
-
-static GfVec4h& __itruediv__(GfVec4h &self, GfHalf value)
-{
-    return self /= value;
-}
-
-template <class V>
-static V *__init__() {
-    // Default contstructor zero-initializes from python.
-    return new V(0);
-}
-
 struct FromPythonTuple {
-    FromPythonTuple() {
-        converter::registry::
-            push_back(&_convertible, &_construct,
-                      pxr_boost::python::type_id<GfVec4h>());
-    }
-
-  private:
-    
     static void *_convertible(PyObject *obj_ptr) {
         // If this object is a GfVec already, disregard.
         if (PyObject_HasAttrString(obj_ptr, "__isGfVec"))
@@ -315,35 +218,11 @@ struct FromPythonTuple {
         }
         return 0;
     }
-
-    static void _construct(PyObject *obj_ptr, converter::
-                           rvalue_from_python_stage1_data *data) {
-        typedef GfHalf Scalar;
-        void *storage = ((converter::rvalue_from_python_storage<GfVec4h>*)data)
-	    ->storage.bytes;
-        new (storage)
-	    GfVec4h(
-                _SequenceGetItem(obj_ptr, 0),
-                _SequenceGetItem(obj_ptr, 1),
-                _SequenceGetItem(obj_ptr, 2),
-                _SequenceGetItem(obj_ptr, 3));
-        data->convertible = storage;
-    }
-};
-
-// This adds support for python's builtin pickling library
-// This is used by our Shake plugins which need to pickle entire classes
-// (including code), which we don't support in pxml.
-struct PickleSuite : pxr_boost::python::pickle_suite
-{
-    static pxr_boost::python::tuple getinitargs(const GfVec4h &v) {
-        return pxr_boost::python::make_tuple(v[0], v[1], v[2], v[3]);
-    }
 };
 
 } // anonymous namespace 
 
-void wrapVec4h()
+void wrapVec4h(nanobind::module_ &m)
 {
     typedef GfVec4h Vec;
     typedef GfHalf Scalar;
@@ -351,40 +230,57 @@ void wrapVec4h()
     static const size_t _dimension = 4;
     static const bool _true = true;
     
-    def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
+    m.def("Dot", (Scalar (*)( const Vec &, const Vec &))GfDot);
     
-    def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
-    def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
-    def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
-    def("GetNormalized", (Vec (*)(const Vec &v, Scalar eps))
-        GfGetNormalized, GetNormalized_overloads());
-    def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
+    m.def("CompDiv", (Vec (*)(const Vec &v1, const Vec&v2))GfCompDiv);
+    m.def("CompMult", (Vec (*)(const Vec &v1, const Vec&v2))GfCompMult);
+    m.def("GetLength", (Scalar (*)(const Vec &v))GfGetLength);
+    m.def("GetNormalized", [](const Vec &v, Scalar eps) {
+        return GfGetNormalized(v, eps);
+    }, nanobind::arg("v"), nanobind::arg("eps") = 0.001);
+    m.def("GetProjection", (Vec (*)(const Vec &a, const Vec &b))
         GfGetProjection);
-    def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
+    m.def("GetComplement", (Vec (*)(const Vec &a, const Vec &b))
         GfGetComplement);
-    def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
+    m.def("IsClose", (bool (*)(const Vec &v1, const Vec &v2, double))
         GfIsClose);
-    def("Normalize", NormalizeHelper, Normalize_overloads());
+    m.def("Normalize", [](Vec *vec, Scalar eps) {
+        return GfNormalize(vec, eps);
+    }, nanobind::arg("vec"), nanobind::arg("eps") = 0.001);
         
 
  
-    class_<GfVec4h> cls("Vec4h", no_init);
+    nanobind::class_<GfVec4h> cls(m, "Vec4h", nanobind::type_slots(bufferSlots));
     cls
-        .def("__init__", make_constructor(__init__<Vec>))
+        .def("__init__", [](Vec *self) { new (self) Vec(0); })
 
         // A tag indicating that this is a GfVec class, for internal use.
-        .def_readonly("__isGfVec", _true)
+        .def_ro_static("__isGfVec", &_true)
 
-        .def_pickle(PickleSuite())
+        .def("__getinitargs__", [](const Vec &v) {
+            return nanobind::make_tuple(v[0], v[1], v[2], v[3]);
+        })
 
         // Conversion from other vec types.
-        .def(init<GfVec4d>())
-        .def(init<GfVec4f>())
-        .def(init<GfVec4i>())
+        .def(nanobind::init<GfVec4d>())
+        .def(nanobind::init<GfVec4f>())
+        .def(nanobind::init<GfVec4i>())
         
-        .def(init<Vec>())
-        .def(init<Scalar>())
-        .def(init<Scalar, Scalar, Scalar, Scalar>())
+        .def(nanobind::init<Vec>())
+        .def(nanobind::init<Scalar>())
+        .def(nanobind::init<Scalar, Scalar, Scalar, Scalar>())
+        .def("__init__", [](Vec *self, nanobind::tuple obj) {
+            if (!FromPythonTuple::_convertible(obj.ptr())) {
+                throw nanobind::type_error("Invalid tuple for Vec4h");
+            }
+            new (self) Vec(_SequenceGetItem(obj.ptr(), 0), _SequenceGetItem(obj.ptr(), 1), _SequenceGetItem(obj.ptr(), 2), _SequenceGetItem(obj.ptr(), 3));
+        })
+        .def("__init__", [](Vec *self, nanobind::list obj) {
+            if (!FromPythonTuple::_convertible(obj.ptr())) {
+                throw nanobind::type_error("Invalid list for Vec4h");
+            }
+            new (self) Vec(_SequenceGetItem(obj.ptr(), 0), _SequenceGetItem(obj.ptr(), 1), _SequenceGetItem(obj.ptr(), 2), _SequenceGetItem(obj.ptr(), 3));
+        })
 
         .def(TfTypePythonClass())
 
@@ -395,41 +291,45 @@ void wrapVec4h()
         .def("__setitem__", __setslice__ )
         .def("__contains__", __contains__ )
 
-        .def_readonly("dimension", _dimension)
+        .def_ro_static("dimension", &_dimension)
         
         // Comparison to other vec types.
-        .def( self == GfVec4i() )
-        .def( self != GfVec4i() )
+        .def( nanobind::self == GfVec4i() )
+        .def( nanobind::self != GfVec4i() )
 
-        .def(self == self)
-        .def(self != self)
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self * double())
-        .def(double() * self)
-        .def(self /= GfHalf())
-        .def(self / GfHalf())
-        .def(-self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(str(self))
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self * double())
+        .def(double() * nanobind::self)
+        .def(nanobind::self /= GfHalf())
+        .def(nanobind::self / GfHalf())
+        .def(-nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def("__str__", [](const Vec &self) { return TfStringify(self); })
 
-        .def("Axis", &Vec::Axis).staticmethod("Axis")
+        .def_static("Axis", &Vec::Axis)
 
-        .def("XAxis", &Vec::XAxis).staticmethod("XAxis")
-        .def("YAxis", &Vec::YAxis).staticmethod("YAxis")
-        .def("ZAxis", &Vec::ZAxis).staticmethod("ZAxis")
-        .def("WAxis", &Vec::WAxis).staticmethod("WAxis")
+        .def_static("XAxis", &Vec::XAxis)
+        .def_static("YAxis", &Vec::YAxis)
+        .def_static("ZAxis", &Vec::ZAxis)
+        .def_static("WAxis", &Vec::WAxis)
 
         .def("GetDot", (Scalar (*)(const Vec &, const Vec &))GfDot)
         
         .def("GetComplement", &Vec::GetComplement)
         .def("GetLength", &Vec::GetLength)
-        .def("GetNormalized", &Vec::GetNormalized, VecGetNormalized_overloads())
+        .def("GetNormalized", [](const Vec &self, Scalar eps) {
+            return self.GetNormalized(eps);
+        }, nanobind::arg("eps") = 0.001)
         .def("GetProjection", &Vec::GetProjection)
-        .def("Normalize", &Vec::Normalize, VecNormalize_overloads())
+        .def("Normalize", [](Vec &self, Scalar eps) {
+            return self.Normalize(eps);
+        }, nanobind::arg("eps") = 0.001)
 
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
@@ -442,16 +342,16 @@ void wrapVec4h()
         // has none -- it converts to and from a Python float by value, see
         // wrapHalf.cpp -- so no reference can be formed.  By value also matches
         // __getitem__, so v.x and v[0] yield the same Python type.
-        .add_property("x",
+        .def_prop_rw("x",
             +[](Vec const &self) { return self.x; },
             +[](Vec &self, Scalar value) { self.x = value; })
-        .add_property("y",
+        .def_prop_rw("y",
             +[](Vec const &self) { return self.y; },
             +[](Vec &self, Scalar value) { self.y = value; })
-        .add_property("z",
+        .def_prop_rw("z",
             +[](Vec const &self) { return self.z; },
             +[](Vec &self, Scalar value) { self.z = value; })
-        .add_property("w",
+        .def_prop_rw("w",
             +[](Vec const &self) { return self.w; },
             +[](Vec &self, Scalar value) { self.w = value; })
 
@@ -460,247 +360,247 @@ void wrapVec4h()
         // read-only, Python permits assigning through them -- 'v.xy = a', and
         // 'v.xy += a' too, since Python rewrites that as a get followed by a
         // set.  No proxy is involved either way; values are copied in and out.
-        .add_property("xy",
+        .def_prop_rw("xy",
             +[](Vec const &self) { return self.xy(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.x = in[0];
                 self.y = in[1];
             })
-        .add_property("xz",
+        .def_prop_rw("xz",
             +[](Vec const &self) { return self.xz(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.x = in[0];
                 self.z = in[1];
             })
-        .add_property("xw",
+        .def_prop_rw("xw",
             +[](Vec const &self) { return self.xw(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.x = in[0];
                 self.w = in[1];
             })
-        .add_property("yx",
+        .def_prop_rw("yx",
             +[](Vec const &self) { return self.yx(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.y = in[0];
                 self.x = in[1];
             })
-        .add_property("yz",
+        .def_prop_rw("yz",
             +[](Vec const &self) { return self.yz(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.y = in[0];
                 self.z = in[1];
             })
-        .add_property("yw",
+        .def_prop_rw("yw",
             +[](Vec const &self) { return self.yw(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.y = in[0];
                 self.w = in[1];
             })
-        .add_property("zx",
+        .def_prop_rw("zx",
             +[](Vec const &self) { return self.zx(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.z = in[0];
                 self.x = in[1];
             })
-        .add_property("zy",
+        .def_prop_rw("zy",
             +[](Vec const &self) { return self.zy(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.z = in[0];
                 self.y = in[1];
             })
-        .add_property("zw",
+        .def_prop_rw("zw",
             +[](Vec const &self) { return self.zw(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.z = in[0];
                 self.w = in[1];
             })
-        .add_property("wx",
+        .def_prop_rw("wx",
             +[](Vec const &self) { return self.wx(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.w = in[0];
                 self.x = in[1];
             })
-        .add_property("wy",
+        .def_prop_rw("wy",
             +[](Vec const &self) { return self.wy(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.w = in[0];
                 self.y = in[1];
             })
-        .add_property("wz",
+        .def_prop_rw("wz",
             +[](Vec const &self) { return self.wz(); },
             +[](Vec &self, GfVec2h const &in) {
                 self.w = in[0];
                 self.z = in[1];
             })
-        .add_property("xyz",
+        .def_prop_rw("xyz",
             +[](Vec const &self) { return self.xyz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.y = in[1];
                 self.z = in[2];
             })
-        .add_property("xyw",
+        .def_prop_rw("xyw",
             +[](Vec const &self) { return self.xyw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.y = in[1];
                 self.w = in[2];
             })
-        .add_property("xzy",
+        .def_prop_rw("xzy",
             +[](Vec const &self) { return self.xzy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.z = in[1];
                 self.y = in[2];
             })
-        .add_property("xzw",
+        .def_prop_rw("xzw",
             +[](Vec const &self) { return self.xzw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.z = in[1];
                 self.w = in[2];
             })
-        .add_property("xwy",
+        .def_prop_rw("xwy",
             +[](Vec const &self) { return self.xwy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.w = in[1];
                 self.y = in[2];
             })
-        .add_property("xwz",
+        .def_prop_rw("xwz",
             +[](Vec const &self) { return self.xwz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.x = in[0];
                 self.w = in[1];
                 self.z = in[2];
             })
-        .add_property("yxz",
+        .def_prop_rw("yxz",
             +[](Vec const &self) { return self.yxz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.x = in[1];
                 self.z = in[2];
             })
-        .add_property("yxw",
+        .def_prop_rw("yxw",
             +[](Vec const &self) { return self.yxw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.x = in[1];
                 self.w = in[2];
             })
-        .add_property("yzx",
+        .def_prop_rw("yzx",
             +[](Vec const &self) { return self.yzx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.z = in[1];
                 self.x = in[2];
             })
-        .add_property("yzw",
+        .def_prop_rw("yzw",
             +[](Vec const &self) { return self.yzw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.z = in[1];
                 self.w = in[2];
             })
-        .add_property("ywx",
+        .def_prop_rw("ywx",
             +[](Vec const &self) { return self.ywx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.w = in[1];
                 self.x = in[2];
             })
-        .add_property("ywz",
+        .def_prop_rw("ywz",
             +[](Vec const &self) { return self.ywz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.y = in[0];
                 self.w = in[1];
                 self.z = in[2];
             })
-        .add_property("zxy",
+        .def_prop_rw("zxy",
             +[](Vec const &self) { return self.zxy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.x = in[1];
                 self.y = in[2];
             })
-        .add_property("zxw",
+        .def_prop_rw("zxw",
             +[](Vec const &self) { return self.zxw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.x = in[1];
                 self.w = in[2];
             })
-        .add_property("zyx",
+        .def_prop_rw("zyx",
             +[](Vec const &self) { return self.zyx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.y = in[1];
                 self.x = in[2];
             })
-        .add_property("zyw",
+        .def_prop_rw("zyw",
             +[](Vec const &self) { return self.zyw(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.y = in[1];
                 self.w = in[2];
             })
-        .add_property("zwx",
+        .def_prop_rw("zwx",
             +[](Vec const &self) { return self.zwx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.w = in[1];
                 self.x = in[2];
             })
-        .add_property("zwy",
+        .def_prop_rw("zwy",
             +[](Vec const &self) { return self.zwy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.z = in[0];
                 self.w = in[1];
                 self.y = in[2];
             })
-        .add_property("wxy",
+        .def_prop_rw("wxy",
             +[](Vec const &self) { return self.wxy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.x = in[1];
                 self.y = in[2];
             })
-        .add_property("wxz",
+        .def_prop_rw("wxz",
             +[](Vec const &self) { return self.wxz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.x = in[1];
                 self.z = in[2];
             })
-        .add_property("wyx",
+        .def_prop_rw("wyx",
             +[](Vec const &self) { return self.wyx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.y = in[1];
                 self.x = in[2];
             })
-        .add_property("wyz",
+        .def_prop_rw("wyz",
             +[](Vec const &self) { return self.wyz(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.y = in[1];
                 self.z = in[2];
             })
-        .add_property("wzx",
+        .def_prop_rw("wzx",
             +[](Vec const &self) { return self.wzx(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.z = in[1];
                 self.x = in[2];
             })
-        .add_property("wzy",
+        .def_prop_rw("wzy",
             +[](Vec const &self) { return self.wzy(); },
             +[](Vec &self, GfVec3h const &in) {
                 self.w = in[0];
                 self.z = in[1];
                 self.y = in[2];
             })
-        .add_property("xyzw",
+        .def_prop_rw("xyzw",
             +[](Vec const &self) { return self.xyzw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -708,7 +608,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.w = in[3];
             })
-        .add_property("xywz",
+        .def_prop_rw("xywz",
             +[](Vec const &self) { return self.xywz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -716,7 +616,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.z = in[3];
             })
-        .add_property("xzyw",
+        .def_prop_rw("xzyw",
             +[](Vec const &self) { return self.xzyw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -724,7 +624,7 @@ void wrapVec4h()
                 self.y = in[2];
                 self.w = in[3];
             })
-        .add_property("xzwy",
+        .def_prop_rw("xzwy",
             +[](Vec const &self) { return self.xzwy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -732,7 +632,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.y = in[3];
             })
-        .add_property("xwyz",
+        .def_prop_rw("xwyz",
             +[](Vec const &self) { return self.xwyz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -740,7 +640,7 @@ void wrapVec4h()
                 self.y = in[2];
                 self.z = in[3];
             })
-        .add_property("xwzy",
+        .def_prop_rw("xwzy",
             +[](Vec const &self) { return self.xwzy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.x = in[0];
@@ -748,7 +648,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.y = in[3];
             })
-        .add_property("yxzw",
+        .def_prop_rw("yxzw",
             +[](Vec const &self) { return self.yxzw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -756,7 +656,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.w = in[3];
             })
-        .add_property("yxwz",
+        .def_prop_rw("yxwz",
             +[](Vec const &self) { return self.yxwz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -764,7 +664,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.z = in[3];
             })
-        .add_property("yzxw",
+        .def_prop_rw("yzxw",
             +[](Vec const &self) { return self.yzxw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -772,7 +672,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.w = in[3];
             })
-        .add_property("yzwx",
+        .def_prop_rw("yzwx",
             +[](Vec const &self) { return self.yzwx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -780,7 +680,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.x = in[3];
             })
-        .add_property("ywxz",
+        .def_prop_rw("ywxz",
             +[](Vec const &self) { return self.ywxz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -788,7 +688,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.z = in[3];
             })
-        .add_property("ywzx",
+        .def_prop_rw("ywzx",
             +[](Vec const &self) { return self.ywzx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.y = in[0];
@@ -796,7 +696,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.x = in[3];
             })
-        .add_property("zxyw",
+        .def_prop_rw("zxyw",
             +[](Vec const &self) { return self.zxyw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -804,7 +704,7 @@ void wrapVec4h()
                 self.y = in[2];
                 self.w = in[3];
             })
-        .add_property("zxwy",
+        .def_prop_rw("zxwy",
             +[](Vec const &self) { return self.zxwy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -812,7 +712,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.y = in[3];
             })
-        .add_property("zyxw",
+        .def_prop_rw("zyxw",
             +[](Vec const &self) { return self.zyxw(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -820,7 +720,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.w = in[3];
             })
-        .add_property("zywx",
+        .def_prop_rw("zywx",
             +[](Vec const &self) { return self.zywx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -828,7 +728,7 @@ void wrapVec4h()
                 self.w = in[2];
                 self.x = in[3];
             })
-        .add_property("zwxy",
+        .def_prop_rw("zwxy",
             +[](Vec const &self) { return self.zwxy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -836,7 +736,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.y = in[3];
             })
-        .add_property("zwyx",
+        .def_prop_rw("zwyx",
             +[](Vec const &self) { return self.zwyx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.z = in[0];
@@ -844,7 +744,7 @@ void wrapVec4h()
                 self.y = in[2];
                 self.x = in[3];
             })
-        .add_property("wxyz",
+        .def_prop_rw("wxyz",
             +[](Vec const &self) { return self.wxyz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -852,7 +752,7 @@ void wrapVec4h()
                 self.y = in[2];
                 self.z = in[3];
             })
-        .add_property("wxzy",
+        .def_prop_rw("wxzy",
             +[](Vec const &self) { return self.wxzy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -860,7 +760,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.y = in[3];
             })
-        .add_property("wyxz",
+        .def_prop_rw("wyxz",
             +[](Vec const &self) { return self.wyxz(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -868,7 +768,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.z = in[3];
             })
-        .add_property("wyzx",
+        .def_prop_rw("wyzx",
             +[](Vec const &self) { return self.wyzx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -876,7 +776,7 @@ void wrapVec4h()
                 self.z = in[2];
                 self.x = in[3];
             })
-        .add_property("wzxy",
+        .def_prop_rw("wzxy",
             +[](Vec const &self) { return self.wzxy(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -884,7 +784,7 @@ void wrapVec4h()
                 self.x = in[2];
                 self.y = in[3];
             })
-        .add_property("wzyx",
+        .def_prop_rw("wzyx",
             +[](Vec const &self) { return self.wzyx(); },
             +[](Vec &self, GfVec4h const &in) {
                 self.w = in[0];
@@ -894,35 +794,14 @@ void wrapVec4h()
             })
 
         ;
-    to_python_converter<std::vector<GfVec4h>,
-        TfPySequenceToPython<std::vector<GfVec4h> > >();
-
-    // Install buffer protocol: set the tp_as_buffer slot to point to a
-    // structure of function pointers that implement the buffer protocol for
-    // this type.
-    auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
-    typeObj->tp_as_buffer = &bufferProcs;
 
     // Allow appropriate tuples to be passed where Vecs are expected.
-    FromPythonTuple();
-
-    // Allow conversion of lists of GfVec4h to std::vector<GfVec4h>
-    TfPyContainerConversions::from_python_sequence<
-        std::vector<GfVec4h>,
-        TfPyContainerConversions::variable_capacity_policy >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>{});
-    }
+    NB_CALL(implicitly_convertible)(
+        NB_CTX,
+        &typeid(Vec),
+        (void *)+[](PyTypeObject *, PyObject *src,
+                    nanobind::detail::cleanup_list *) noexcept -> bool {
+            return FromPythonTuple::_convertible(src) != nullptr;
+        },
+        true);
 }

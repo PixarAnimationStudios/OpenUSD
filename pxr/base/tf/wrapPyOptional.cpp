@@ -10,12 +10,14 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyOptional.h"
 
+#include <nanobind/nanobind.h>
+
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-void wrapPyOptional() {
+void wrapPyOptional(nanobind::module_ &) {
     TfPyOptional::python_optional<std::string>();
     TfPyOptional::python_optional<std::vector<std::string> >();
     TfPyOptional::python_optional<double>();

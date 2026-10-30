@@ -10,12 +10,9 @@
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/path.h"
-
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,11 +32,13 @@ TranslatePathFromRootToNode(const PcpNodeRef& destNode,
 
 } // anonymous namespace 
 
-void wrapPathTranslation()
+void wrapPathTranslation(nanobind::module_ &m)
 {
-    def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
-        arg("sourceNode"), arg("pathInNodeNamespace"));
+    namespace nb = nanobind;
 
-    def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
-        arg("destNode"), arg("pathInRootNamespace"));
+    m.def("TranslatePathFromNodeToRoot", TranslatePathFromNodeToRoot,
+          nb::arg("sourceNode"), nb::arg("pathInNodeNamespace"));
+
+    m.def("TranslatePathFromRootToNode", TranslatePathFromRootToNode,
+          nb::arg("destNode"), nb::arg("pathInRootNamespace"));
 }

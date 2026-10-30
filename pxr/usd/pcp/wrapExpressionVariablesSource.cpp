@@ -10,48 +10,44 @@
 #include "pxr/usd/pcp/expressionVariablesSource.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 void
-wrapExpressionVariablesSource()
+wrapExpressionVariablesSource(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     using This = PcpExpressionVariablesSource;
 
-    class_<This>("ExpressionVariablesSource")
-        .def(init<>())
-        .def(init<
+    nb::class_<This>(m, "ExpressionVariablesSource")
+        .def(nb::init<>())
+        .def(nb::init<
                 const PcpLayerStackIdentifier&,
-                const PcpLayerStackIdentifier&>(
-                (args("layerStackId"), args("rootLayerStackId"))))
+                const PcpLayerStackIdentifier&>(),
+             nb::arg("layerStackId"), nb::arg("rootLayerStackId"))
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
         .def("IsRootLayerStack", &This::IsRootLayerStack)
         .def("GetLayerStackIdentifier", 
-            +[](const This& s) { 
+            +[](const This& s) -> nb::object { 
                 const PcpLayerStackIdentifier* id = s.GetLayerStackIdentifier();
-                return id ? object(*id) : object();
+                return id ? nb::cast(*id) : nb::none();
             })
         .def("ResolveLayerStackIdentifier",
             (const PcpLayerStackIdentifier& (This::*)(
                 const PcpLayerStackIdentifier&) const)
                 &This::ResolveLayerStackIdentifier,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
 
         .def("ResolveLayerStackIdentifier",
             (const PcpLayerStackIdentifier& (This::*)(const PcpCache&) const)
                 &This::ResolveLayerStackIdentifier,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
 
         .def("__repr__",
             +[](const PcpExpressionVariablesSource &s) {
@@ -62,4 +58,5 @@ wrapExpressionVariablesSource()
                     "" : TfPyRepr(*s.GetLayerStackIdentifier()).c_str());
             })
         ;
+
 }

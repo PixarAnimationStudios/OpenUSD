@@ -12,27 +12,21 @@
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/pyBufferUtils.h"
 
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/implicit.hpp"
-#include "pxr/external/boost/python/make_constructor.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/overloads.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -42,126 +36,83 @@ static string __repr__(GfQuath const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
-static GfQuath __truediv__(const GfQuath &self, GfHalf value)
-{
-    return self / value;
-}
-
-static GfQuath& __itruediv__(GfQuath &self, GfHalf value)
-{
-    return self /= value;
-}
-
 static size_t __hash__(GfQuath const &self) {
     return TfHash()(self);
 }
 
-// Zero-initialized default ctor for python.
-static GfQuath *__init__() { return new GfQuath(0); }
-
 } // anonymous namespace 
 
-void wrapQuath()
-{    
-    object getImaginary =
-        make_function(&GfQuath::GetImaginary,
-                      return_value_policy<return_by_value>());
-
-    object setImaginaryVec =
-        make_function((void (GfQuath::*)(const GfVec3h &))
-                      &GfQuath::SetImaginary);
-
-    object setImaginaryScl =
-        make_function((void (GfQuath::*)(GfHalf, GfHalf, GfHalf))
-                      &GfQuath::SetImaginary,
-                      default_call_policies(),
-                      (arg("i"), arg("j"), arg("k")));
-
-    def("Slerp",
+void wrapQuath(nanobind::module_ &m)
+{
+    m.def("Slerp",
         (GfQuath (*)(double, const GfQuath&, const GfQuath&))
         GfSlerp);
 
-    def("Dot",
+    m.def("Dot",
         (GfHalf (*)(const GfQuath&, const GfQuath&))
         GfDot);
-    
-    class_<GfQuath> cls("Quath", no_init);
+
+    nanobind::class_<GfQuath> cls(m, "Quath");
     cls
-        .def("__init__", make_constructor(__init__))
-                          
+        .def("__init__", [](GfQuath *self) { new (self) GfQuath(0); })
+
         .def(TfTypePythonClass())
 
-        .def(init<GfQuath>())
-        .def(init<GfHalf>(arg("real")))
-        .def(init<GfHalf, const GfVec3h &>(
-                 (arg("real"), arg("imaginary"))))
-        .def(init<GfHalf, GfHalf, GfHalf, GfHalf>(
-                 (arg("real"), arg("i"), arg("j"), arg("k"))))
-        .def(init<const GfQuatd & >())
-        .def(init<const GfQuatf & >())
+        .def(nanobind::init<GfQuath>())
+        .def(nanobind::init<const GfQuatd &>())
+        .def(nanobind::init<const GfQuatf &>())
+        .def(nanobind::init<GfHalf>(), nanobind::arg("real"))
+        .def(nanobind::init<GfHalf, const GfVec3h &>(),
+             nanobind::arg("real"), nanobind::arg("imaginary"))
+        .def(nanobind::init<GfHalf, GfHalf, GfHalf, GfHalf>(),
+             nanobind::arg("real"), nanobind::arg("i"),
+             nanobind::arg("j"), nanobind::arg("k"))
 
-        .def("GetZero", &GfQuath::GetZero)
-        .staticmethod("GetZero")
-
-        .def("GetIdentity", &GfQuath::GetIdentity)
-        .staticmethod("GetIdentity")
+        .def_static("GetZero", &GfQuath::GetZero)
+        .def_static("GetIdentity", &GfQuath::GetIdentity)
 
         .def("GetReal", &GfQuath::GetReal)
         .def("SetReal", &GfQuath::SetReal)
-        .add_property("real", &GfQuath::GetReal, &GfQuath::SetReal)
+        .def_prop_rw("real", &GfQuath::GetReal, &GfQuath::SetReal)
 
-        .def("GetImaginary", getImaginary)
-        .def("SetImaginary", setImaginaryVec)
-        .def("SetImaginary", setImaginaryScl)
-        .add_property("imaginary", getImaginary, setImaginaryVec)
+        .def("GetImaginary", &GfQuath::GetImaginary, nanobind::rv_policy::copy)
+        .def("SetImaginary", (void (GfQuath::*)(const GfVec3h &))&GfQuath::SetImaginary)
+        .def("SetImaginary", (void (GfQuath::*)(GfHalf, GfHalf, GfHalf))&GfQuath::SetImaginary,
+             nanobind::arg("i"), nanobind::arg("j"), nanobind::arg("k"))
+        .def_prop_rw("imaginary", &GfQuath::GetImaginary,
+                     (void (GfQuath::*)(const GfVec3h &))&GfQuath::SetImaginary,
+                     nanobind::rv_policy::copy)
 
         .def("GetLength", &GfQuath::GetLength)
 
         .def("GetNormalized", &GfQuath::GetNormalized,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH))
-        .def("Normalize", &GfQuath::Normalize,
-             (arg("eps")=GF_MIN_VECTOR_LENGTH), return_self<>())
+             nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH)
+        .def("Normalize", [](GfQuath &self, GfHalf eps) -> GfQuath & {
+            self.Normalize(eps);
+            return self;
+        }, nanobind::arg("eps") = GF_MIN_VECTOR_LENGTH, nanobind::rv_policy::reference)
 
         .def("GetConjugate", &GfQuath::GetConjugate)
         .def("GetInverse", &GfQuath::GetInverse)
 
         .def("Transform", &GfQuath::Transform)
 
-        .def(str(self))
-        .def(-self)
-        .def(self == self)
-        .def(self != self)
-        .def(self *= self)
-        .def(self *= GfHalf())
-        .def(self /= GfHalf())
-        .def(self += self)
-        .def(self -= self)
-        .def(self + self)
-        .def(self - self)
-        .def(self * self)
-        .def(self * GfHalf())
-        .def(GfHalf() * self)
-        .def(self / GfHalf())
+        .def("__str__", [](const GfQuath &self) { return TfStringify(self); })
+        .def(-nanobind::self)
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
+        .def(nanobind::self *= nanobind::self)
+        .def(nanobind::self *= GfHalf())
+        .def(nanobind::self /= GfHalf())
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(nanobind::self * nanobind::self)
+        .def(nanobind::self * GfHalf())
+        .def(GfHalf() * nanobind::self)
+        .def(nanobind::self / GfHalf())
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
         ;
-
-
-    to_python_converter<std::vector<GfQuath>,
-        TfPySequenceToPython<std::vector<GfQuath> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / GfHalf() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= GfHalf() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 }

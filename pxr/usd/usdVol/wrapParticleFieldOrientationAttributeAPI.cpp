@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -35,14 +41,14 @@ WRAP_CUSTOM;
         
 static UsdAttribute
 _CreateOrientationsAttr(UsdVolParticleFieldOrientationAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrientationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute
 _CreateOrientationshAttr(UsdVolParticleFieldOrientationAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
+                                      nb::handle defaultVal, bool writeSparsely) {
     return self.CreateOrientationshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuathArray), writeSparsely);
 }
@@ -73,56 +79,49 @@ _WrapCanApply(const UsdPrim& prim)
 
 } // anonymous namespace
 
-void wrapUsdVolParticleFieldOrientationAttributeAPI()
+void wrapUsdVolParticleFieldOrientationAttributeAPI(nb::module_ &m)
 {
     typedef UsdVolParticleFieldOrientationAttributeAPI This;
 
-    UsdVolParticleFieldOrientationAttributeAPI_CanApplyResult::Wrap<UsdVolParticleFieldOrientationAttributeAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdVolParticleFieldOrientationAttributeAPI_CanApplyResult::WrapNb<UsdVolParticleFieldOrientationAttributeAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("ParticleFieldOrientationAttributeAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "ParticleFieldOrientationAttributeAPI");
 
     cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(nb::init<UsdPrim>(), nb::arg("prim")=UsdPrim())
+        .def(nb::init<UsdSchemaBase const&>(), nb::arg("schemaObj"))
         .def(TfTypePythonClass())
 
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
+        .def_static("Get", &This::Get, nb::arg("stage"), nb::arg("path"))
 
-        .def("CanApply", &_WrapCanApply, (arg("prim")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"))
 
-        .def("Apply", &This::Apply, (arg("prim")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetOrientationsAttr",
              &This::GetOrientationsAttr)
         .def("CreateOrientationsAttr",
              &_CreateOrientationsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
         
         .def("GetOrientationshAttr",
              &This::GetOrientationshAttr)
         .def("CreateOrientationshAttr",
              &_CreateOrientationshAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
+             nb::arg("defaultValue").none()=nb::none(),
+              nb::arg("writeSparsely")=false)
 
         .def("__repr__", ::_Repr)
     ;

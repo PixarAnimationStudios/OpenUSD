@@ -14,15 +14,21 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/tuple.h>
 
-#include "pxr/external/boost/python.hpp"
+namespace nb = nanobind;
 
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -31,7 +37,6 @@ namespace {
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 static bool _WrapIsCoordSysAPIPath(const SdfPath &path) {
     TfToken collectionName;
@@ -66,72 +71,62 @@ _WrapCanApply(const UsdPrim& prim, const TfToken& name)
 
 } // anonymous namespace
 
-void wrapUsdShadeCoordSysAPI()
+void wrapUsdShadeCoordSysAPI(nb::module_ &m)
 {
     typedef UsdShadeCoordSysAPI This;
 
-    UsdShadeCoordSysAPI_CanApplyResult::Wrap<UsdShadeCoordSysAPI_CanApplyResult>(
-        "_CanApplyResult", "whyNot");
+    UsdShadeCoordSysAPI_CanApplyResult::WrapNb<UsdShadeCoordSysAPI_CanApplyResult>(m, "_CanApplyResult", "whyNot");
 
-    class_<This, bases<UsdAPISchemaBase> >
-        cls("CoordSysAPI");
+    nb::class_<This, UsdAPISchemaBase> cls(m, "CoordSysAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
+        .def(nb::init<UsdPrim, TfToken>(), nb::arg("prim")=UsdPrim(), nb::arg("name")=TfToken())
+        .def(nb::init<UsdSchemaBase const&, TfToken>(), nb::arg("schemaObj"), nb::arg("name"))
         .def(TfTypePythonClass())
 
-        .def("Get",
+        .def_static("Get",
             (UsdShadeCoordSysAPI(*)(const UsdStagePtr &stage, 
                                        const SdfPath &path))
                &This::Get,
-            (arg("stage"), arg("path")))
-        .def("Get",
+            nb::arg("stage"), nb::arg("path"))
+        .def_static("Get",
             (UsdShadeCoordSysAPI(*)(const UsdPrim &prim,
                                        const TfToken &name))
                &This::Get,
-            (arg("prim"), arg("name")))
-        .staticmethod("Get")
+            nb::arg("prim"), nb::arg("name"))
 
-        .def("GetAll",
+        .def_static("GetAll",
             (std::vector<UsdShadeCoordSysAPI>(*)(const UsdPrim &prim))
                 &This::GetAll,
-            arg("prim"),
-            return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAll")
+            nb::arg("prim"),
+             nb::rv_policy::copy)
 
-        .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
-        .staticmethod("CanApply")
+        .def_static("CanApply", &_WrapCanApply, nb::arg("prim"), nb::arg("name"))
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
-        .staticmethod("Apply")
+        .def_static("Apply", &This::Apply, nb::arg("prim"), nb::arg("name"))
 
-        .def("GetSchemaAttributeNames",
+        .def_static("GetSchemaAttributeNames",
              (const TfTokenVector &(*)(bool))&This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetSchemaAttributeNames",
+             nb::arg("includeInherited")=true,
+             nb::rv_policy::copy)
+        .def_static("GetSchemaAttributeNames",
              (TfTokenVector(*)(bool, const TfToken &))
                 &This::GetSchemaAttributeNames,
-             arg("includeInherited"),
-             arg("instanceName"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
+             nb::arg("includeInherited"),
+             nb::arg("instanceName"),
+             nb::rv_policy::copy)
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
+        .def_static("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             nb::rv_policy::copy)
 
-        .def(!self)
-
+        .def("__bool__", [](const This &self) { return bool(self); })
 
         
         .def("GetBindingRel",
              &This::GetBindingRel)
         .def("CreateBindingRel",
              &This::CreateBindingRel)
-        .def("IsCoordSysAPIPath", _WrapIsCoordSysAPIPath)
-            .staticmethod("IsCoordSysAPIPath")
+        .def_static("IsCoordSysAPIPath", _WrapIsCoordSysAPIPath)
         .def("__repr__", ::_Repr)
     ;
 
@@ -157,90 +152,87 @@ void wrapUsdShadeCoordSysAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-namespace {
+namespace nanobind::detail {
 
-struct _BindingToTuple {
-    static PyObject*
-    convert(UsdShadeCoordSysAPI::Binding const& b) {
-        pxr_boost::python::tuple result = pxr_boost::python::make_tuple(
-            b.name, b.bindingRelPath, b.coordSysPrimPath );
-        return pxr_boost::python::incref(result.ptr());
+template <>
+struct type_caster<PXR_NS::UsdShadeCoordSysAPI::Binding> {
+    NB_TYPE_CASTER(PXR_NS::UsdShadeCoordSysAPI::Binding, const_name("tuple"))
+
+    static handle from_cpp(PXR_NS::UsdShadeCoordSysAPI::Binding const &b,
+                           rv_policy, cleanup_list *) noexcept {
+        return make_tuple(
+            b.name, b.bindingRelPath, b.coordSysPrimPath).release();
     }
 };
+
+} // namespace nanobind::detail
+
+namespace {
 
 WRAP_CUSTOM {
     using This = UsdShadeCoordSysAPI;
 
     _class
         .def("HasLocalBindings", &This::HasLocalBindings) //deprecated
-        .def("HasLocalBindingsForPrim", &This::HasLocalBindingsForPrim,
-            (args("prim")))
-        .staticmethod("HasLocalBindingsForPrim")
+        .def_static("HasLocalBindingsForPrim", &This::HasLocalBindingsForPrim,
+            nb::arg("prim"))
 
         .def("GetLocalBindings",
              &This::GetLocalBindings,
-             return_value_policy<TfPySequenceToList>()) //deprecated
-        .def("GetLocalBindingsForPrim",
+             nb::rv_policy::copy) //deprecated
+        .def_static("GetLocalBindingsForPrim",
              &This::GetLocalBindingsForPrim,
-             (args("prim")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetLocalBindingsForPrim")
+             nb::arg("prim"),
+             nb::rv_policy::copy)
         .def("GetLocalBinding",
              &This::GetLocalBinding)
 
         .def("FindBindingsWithInheritance",
              &This::FindBindingsWithInheritance,
-             return_value_policy<TfPySequenceToList>()) //deprecated
-        .def("FindBindingsWithInheritanceForPrim",
+             nb::rv_policy::copy) //deprecated
+        .def_static("FindBindingsWithInheritanceForPrim",
              &This::FindBindingsWithInheritanceForPrim,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("FindBindingsWithInheritanceForPrim")
+             nb::rv_policy::copy)
         .def("FindBindingWithInheritance",
              &This::FindBindingWithInheritance)
 
         .def("Bind", 
             (bool(This::*)(const TfToken&, const SdfPath&) const)
             &This::Bind,
-            (args("name"), args("path"))) //deprecated
+            nb::arg("name"), nb::arg("path")) //deprecated
         .def("ApplyAndBind",
             (bool(This::*)(const TfToken&, const SdfPath&) const)
             &This::Bind,
-            (args("name"), args("path"))) //deprecated
+            nb::arg("name"), nb::arg("path")) //deprecated
         .def("Bind",
             (bool(This::*)(const SdfPath&) const)
             &This::Bind,
-            (args("path")))
+            nb::arg("path"))
 
         .def("ClearBinding", 
             (bool(This::*)(const TfToken&, bool) const)
             &This::ClearBinding,
-            (args("name"), arg("removeSpec"))) //deprecated
+            nb::arg("name"), nb::arg("removeSpec")) //deprecated
         .def("ClearBinding",
             (bool(This::*)(bool) const)
             &This::ClearBinding,
-            (args("removeSpec")))
+            nb::arg("removeSpec"))
 
         .def("BlockBinding", 
             (bool(This::*)(const TfToken&) const)
             &This::BlockBinding,
-            (args("name"))) //deprecated
+            nb::arg("name")) //deprecated
         .def("BlockBinding",
             (bool(This::*)() const)
             &This::BlockBinding)
 
-        .def("GetCoordSysRelationshipName",
+        .def_static("GetCoordSysRelationshipName",
             &This::GetCoordSysRelationshipName,
-            arg("coordSysName"))
-        .staticmethod("GetCoordSysRelationshipName") //deprecated
+            nb::arg("coordSysName")) //deprecated
 
-        .def("CanContainPropertyName", 
-            &This::CanContainPropertyName, arg("name"))
-        .staticmethod("CanContainPropertyName")
+        .def_static("CanContainPropertyName", 
+            &This::CanContainPropertyName, nb::arg("name"))
         ;
-
-     // Register to and from python conversion for parameter pairs
-     to_python_converter<This::Binding,
-         _BindingToTuple>();
 }
 
 }

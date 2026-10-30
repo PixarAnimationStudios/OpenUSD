@@ -17,18 +17,15 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/operators.h>
 
 #include <string>
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -39,114 +36,61 @@ static string _Repr(GfRange3f const &self) {
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
 
-static GfRange3f __truediv__(const GfRange3f &self, double value)
-{
-    return self / value;
-}
-
-static GfRange3f& __itruediv__(GfRange3f &self, double value)
-{
-    return self /= value;
-}
-
 static size_t __hash__(GfRange3f const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 
-void wrapRange3f()
-{    
-    object getMin = make_function(&GfRange3f::GetMin,
-                                  return_value_policy<return_by_value>());
-
-    object getMax = make_function(&GfRange3f::GetMax,
-                                  return_value_policy<return_by_value>());
-
-    class_<GfRange3f> cls("Range3f", init<>());
+void wrapRange3f(nanobind::module_ &m)
+{
+    nanobind::class_<GfRange3f> cls(m, "Range3f");
     cls
-        .def(init<GfRange3f>())
-        .def(init<const GfVec3f &, const GfVec3f &>())
-
-        .def(init<GfRange3d>())
-        
+        .def(nanobind::init<>())
+        .def(nanobind::init<GfRange3f>())
+        .def(nanobind::init<const GfVec3f &, const GfVec3f &>())
+        .def(nanobind::init<GfRange3d>())
         .def(TfTypePythonClass())
-
-        .def_readonly("dimension", _dimension)
-        
-        .add_property("min", getMin, &GfRange3f::SetMin)
-        .add_property("max", getMax, &GfRange3f::SetMax)
-
-        .def("GetMin", getMin)
-        .def("GetMax", getMax)
-
+        .def_ro_static("dimension", &_dimension)
+        .def_prop_rw("min", &GfRange3f::GetMin, &GfRange3f::SetMin,
+                     nanobind::rv_policy::copy)
+        .def_prop_rw("max", &GfRange3f::GetMax, &GfRange3f::SetMax,
+                     nanobind::rv_policy::copy)
+        .def("GetMin", &GfRange3f::GetMin, nanobind::rv_policy::copy)
+        .def("GetMax", &GfRange3f::GetMax, nanobind::rv_policy::copy)
         .def("GetSize", &GfRange3f::GetSize)
         .def("GetMidpoint", &GfRange3f::GetMidpoint)
-    
         .def("SetMin", &GfRange3f::SetMin)
         .def("SetMax", &GfRange3f::SetMax)
-    
         .def("IsEmpty", &GfRange3f::IsEmpty)
-    
         .def("SetEmpty", &GfRange3f::SetEmpty)
-
-        .def("Contains", (bool (GfRange3f::*)(const GfVec3f &) const)
-             &GfRange3f::Contains)
-        .def("Contains", (bool (GfRange3f::*)(const GfRange3f &) const)
-             &GfRange3f::Contains)
-    
-        .def("GetUnion", &GfRange3f::GetUnion)
-        .staticmethod("GetUnion")
-    
-        .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfVec3f &))
-             &GfRange3f::UnionWith, return_self<>())
-        .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))
-             &GfRange3f::UnionWith, return_self<>())
-    
-        .def("GetIntersection", &GfRange3f::GetIntersection)
-        .staticmethod("GetIntersection")
-    
-        .def("IntersectWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))
-             &GfRange3f::IntersectWith, return_self<>())
-    
+        .def("Contains", (bool (GfRange3f::*)(const GfVec3f &) const)&GfRange3f::Contains)
+        .def("Contains", (bool (GfRange3f::*)(const GfRange3f &) const)&GfRange3f::Contains)
+        .def_static("GetUnion", &GfRange3f::GetUnion)
+        .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfVec3f &))&GfRange3f::UnionWith,
+             nanobind::rv_policy::reference)
+        .def("UnionWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))&GfRange3f::UnionWith,
+             nanobind::rv_policy::reference)
+        .def_static("GetIntersection", &GfRange3f::GetIntersection)
+        .def("IntersectWith", (const GfRange3f & (GfRange3f::*)(const GfRange3f &))&GfRange3f::IntersectWith,
+             nanobind::rv_policy::reference)
         .def("GetDistanceSquared", &GfRange3f::GetDistanceSquared)
-    
-        .def(str(self))
-        .def(self += self)
-        .def(self -= self)
-        .def(self *= double())
-        .def(self /= double())
-        .def(self + self)
-        .def(self - self)
-        .def(double() * self)
-        .def(self * double())
-        .def(self / double())
-        .def(self == GfRange3d())
-        .def(self != GfRange3d())
-        .def(self == self)
-        .def(self != self)
+        .def("__str__", [](const GfRange3f &self) { return TfStringify(self); })
+        .def(nanobind::self += nanobind::self)
+        .def(nanobind::self -= nanobind::self)
+        .def(nanobind::self *= double())
+        .def(nanobind::self /= double())
+        .def(nanobind::self + nanobind::self)
+        .def(nanobind::self - nanobind::self)
+        .def(double() * nanobind::self)
+        .def(nanobind::self * double())
+        .def(nanobind::self / double())
+        .def(nanobind::self == GfRange3d())
+        .def(nanobind::self != GfRange3d())
+        .def(nanobind::self == nanobind::self)
+        .def(nanobind::self != nanobind::self)
         .def("__repr__", _Repr)
         .def("__hash__", __hash__)
-
         .def("GetCorner", &GfRange3f::GetCorner)
         .def("GetOctant", &GfRange3f::GetOctant)
-        .def_readonly("unitCube", &GfRange3f::UnitCube)
-        
+        .def_ro_static("unitCube", &GfRange3f::UnitCube)
         ;
-    to_python_converter<std::vector<GfRange3f>,
-        TfPySequenceToPython<std::vector<GfRange3f> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
-
 }

@@ -6,17 +6,19 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdr/discoveryPlugin.h"
 #include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static SdrShaderNodeDiscoveryResultVec
 _WrapFsHelpersDiscoverShaderNodes(
@@ -31,37 +33,37 @@ _WrapFsHelpersDiscoverShaderNodes(
                                            get_pointer(context));
 }
 
-static object
+static nb::object
 _WrapFsHelpersSplitShaderIdentifier(const TfToken &identifier)
 {
     TfToken function, name;
     SdrVersion version;
     if (SdrFsHelpersSplitShaderIdentifier(identifier,
             &function, &name, &version)) {
-        return pxr_boost::python::make_tuple(function, name, version);
+        return nb::make_tuple(function, name, version);
     } else {
-        return object();
+        return nb::none();
     }
 }
 
-void wrapFilesystemDiscoveryHelpers()
+void wrapFilesystemDiscoveryHelpers(nanobind::module_ &m)
 {
-    class_<SdrDiscoveryUri>("DiscoveryUri")
-        .def(init<SdrDiscoveryUri>())
-        .def_readwrite("uri", &SdrDiscoveryUri::uri)
-        .def_readwrite("resolvedUri", &SdrDiscoveryUri::resolvedUri)
+    nb::class_<SdrDiscoveryUri>(m, "DiscoveryUri")
+        .def(nb::init<>())
+        .def(nb::init<const SdrDiscoveryUri&>())
+        .def_rw("uri", &SdrDiscoveryUri::uri)
+        .def_rw("resolvedUri", &SdrDiscoveryUri::resolvedUri)
     ;
 
-    def("FsHelpersSplitShaderIdentifier", _WrapFsHelpersSplitShaderIdentifier,
-        arg("identifier"));
-    def("FsHelpersDiscoverShaderNodes", _WrapFsHelpersDiscoverShaderNodes,
-        (args("searchPaths"),
-        args("allowedExtensions"),
-        args("followSymlinks") = true,
-        args("context") = TfWeakPtr<SdrDiscoveryPluginContext>()));
-    def("FsHelpersDiscoverFiles", SdrFsHelpersDiscoverFiles,
-        (args("searchPaths"),
-        args("allowedExtensions"),
-        args("followSymlinks") = true),
-        return_value_policy<TfPySequenceToList>());
+    m.def("FsHelpersSplitShaderIdentifier", _WrapFsHelpersSplitShaderIdentifier,
+        nb::arg("identifier"));
+    m.def("FsHelpersDiscoverShaderNodes", _WrapFsHelpersDiscoverShaderNodes,
+        nb::arg("searchPaths"),
+        nb::arg("allowedExtensions"),
+        nb::arg("followSymlinks") = true,
+        nb::arg("context") = TfWeakPtr<SdrDiscoveryPluginContext>());
+    m.def("FsHelpersDiscoverFiles", SdrFsHelpersDiscoverFiles,
+        nb::arg("searchPaths"),
+        nb::arg("allowedExtensions"),
+        nb::arg("followSymlinks") = true);
 }

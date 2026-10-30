@@ -14,9 +14,11 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <string>
 #include <vector>
@@ -24,9 +26,9 @@
 using std::string;
 using std::vector;
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace nb = nanobind;
 
-using namespace pxr_boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -60,16 +62,16 @@ _GetUnionedTimeSamplesInInterval(const vector<UsdAttribute> &attrs,
     return result;
 }
 
-static object
+static nb::object
 _GetBracketingTimeSamples(const UsdAttribute &self, double desiredTime) {
     double lower = 0.0, upper = 0.0;
     bool hasTimeSamples = false;
 
     if (self.GetBracketingTimeSamples(
             desiredTime, &lower, &upper, &hasTimeSamples)) {
-        return hasTimeSamples ? make_tuple(lower, upper) : make_tuple();
+        return hasTimeSamples ? nb::make_tuple(lower, upper) : nb::make_tuple();
     }
-    return object();
+    return nb::none();
 }
 
 static TfPyObjWrapper
@@ -88,7 +90,7 @@ _GetFallbackValue(const UsdAttribute &self)
 }
 
 static bool
-_Set(const UsdAttribute &self, object val, const UsdTimeCode &time) {
+_Set(const UsdAttribute &self, nb::handle val, const UsdTimeCode &time) {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
 }
 
@@ -110,18 +112,19 @@ __repr__(const UsdAttribute &self) {
 
 } // anonymous namespace 
 
-void wrapUsdAttribute()
+void wrapUsdAttribute(nb::module_ &m)
 {
-    class_<UsdAttribute, bases<UsdProperty> >("Attribute")
+    nb::class_<UsdAttribute, UsdProperty>(m, "Attribute")
+        .def(nb::init<>())
         .def(Usd_ObjectSubclass())
         .def("__repr__", __repr__)
 
         .def("GetVariability", &UsdAttribute::GetVariability)
         .def("SetVariability", &UsdAttribute::SetVariability,
-             arg("variability"))
+             nb::arg("variability"))
 
         .def("GetTypeName", &UsdAttribute::GetTypeName)
-        .def("SetTypeName", &UsdAttribute::SetTypeName, arg("typeName"))
+        .def("SetTypeName", &UsdAttribute::SetTypeName, nb::arg("typeName"))
 
         .def("GetRoleName", &UsdAttribute::GetRoleName)
 
@@ -152,29 +155,23 @@ void wrapUsdAttribute()
         .def("ClearArraySizeConstraint",
              &UsdAttribute::ClearArraySizeConstraint)
 
-        .def("GetTimeSamples", _GetTimeSamples,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetTimeSamples", _GetTimeSamples)
 
         .def("GetTimeSamplesInInterval", _GetTimeSamplesInInterval,
-             arg("interval"),
-             return_value_policy<TfPySequenceToList>())
+             nb::arg("interval"))
 
-        .def("GetUnionedTimeSamples", 
+        .def_static("GetUnionedTimeSamples", 
              _GetUnionedTimeSamples,
-             arg("attrs"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetUnionedTimeSamples")
+             nb::arg("attrs"))
 
-        .def("GetUnionedTimeSamplesInInterval", 
+        .def_static("GetUnionedTimeSamplesInInterval", 
              _GetUnionedTimeSamplesInInterval,
-             (arg("attrs"), arg("interval")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetUnionedTimeSamplesInInterval")
+             nb::arg("attrs"), nb::arg("interval"))
 
         .def("GetNumTimeSamples", &UsdAttribute::GetNumTimeSamples)
 
         .def("GetBracketingTimeSamples", _GetBracketingTimeSamples,
-             arg("desiredTime"))
+             nb::arg("desiredTime"))
 
         .def("HasValue", &UsdAttribute::HasValue)
         .def("HasAuthoredValueOpinion", &UsdAttribute::HasAuthoredValueOpinion)
@@ -184,8 +181,8 @@ void wrapUsdAttribute()
 
         .def("ValueMightBeTimeVarying", &UsdAttribute::ValueMightBeTimeVarying)
 
-        .def("Get", _Get, arg("time")=UsdTimeCode::Default())
-        .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
+        .def("Get", _Get, nb::arg("time")=UsdTimeCode::Default())
+        .def("Set", _Set, nb::arg("value"), nb::arg("time")=UsdTimeCode::Default())
 
         .def("HasSpline", &UsdAttribute::HasSpline)
         .def("GetSpline", &UsdAttribute::GetSpline)
@@ -194,30 +191,27 @@ void wrapUsdAttribute()
         .def("GetResolveInfo", 
              (UsdResolveInfo (UsdAttribute::*)(UsdTimeCode) const) 
                  &UsdAttribute::GetResolveInfo,
-             arg("time"))
+             nb::arg("time"))
         .def("GetResolveInfo", 
              (UsdResolveInfo (UsdAttribute::*)() const) 
                  &UsdAttribute::GetResolveInfo)
 
         .def("Clear", &UsdAttribute::Clear)
-        .def("ClearAtTime", &UsdAttribute::ClearAtTime, arg("time"))
+        .def("ClearAtTime", &UsdAttribute::ClearAtTime, nb::arg("time"))
         .def("ClearDefault", &UsdAttribute::ClearDefault)
 
         .def("Block", &UsdAttribute::Block)
         .def("BlockAnimation", &UsdAttribute::BlockAnimation)
 
         .def("AddConnection", &UsdAttribute::AddConnection,
-             (arg("source"),
-              arg("position")=UsdListPositionBackOfPrependList))
-        .def("RemoveConnection", &UsdAttribute::RemoveConnection, arg("source"))
-        .def("SetConnections", &UsdAttribute::SetConnections, arg("sources"))
+             nb::arg("source"),
+             nb::arg("position")=UsdListPositionBackOfPrependList)
+        .def("RemoveConnection", &UsdAttribute::RemoveConnection, nb::arg("source"))
+        .def("SetConnections", &UsdAttribute::SetConnections, nb::arg("sources"))
         .def("ClearConnections", &UsdAttribute::ClearConnections)
-        .def("GetConnections", _GetConnections,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetConnections", _GetConnections)
         .def("HasAuthoredConnections", &UsdAttribute::HasAuthoredConnections)
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdAttribute>();
-    to_python_converter<std::vector<UsdAttribute>,
-                        TfPySequenceToPython<std::vector<UsdAttribute>>>();
 }

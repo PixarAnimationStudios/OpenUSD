@@ -17,12 +17,12 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyCall.h"
+#include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyLock.h"
+#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/external/boost/python/object/class_detail.hpp"
-#include "pxr/external/boost/python/wrapper.hpp"
-#include "pxr/external/boost/python/has_back_reference.hpp"
+#include <nanobind/nanobind.h>
 
 #include <functional>
 #include <type_traits>
@@ -33,8 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 template <typename Derived>
 struct TfPyPolymorphic :
-    public TfType::PyPolymorphicBase,
-    public pxr_boost::python::wrapper<Derived>
+    public TfType::PyPolymorphicBase
 {
     typedef TfPyPolymorphic<Derived> This;
     typedef TfPyOverride Override;
@@ -42,66 +41,62 @@ struct TfPyPolymorphic :
     Override GetOverride(char const *func) const {
         TfPyLock pyLock;
 
-        using namespace pxr_boost::python;
-
-        // don't use pxr_boost::python::wrapper::get_override(), as it can return
-        // the wrong result. instead, implement our own version which does
-        // better
-
-        PyObject * m_self = detail::wrapper_base_::get_owner(*this);
+        PyObject *m_self = nullptr;
+        if constexpr (TF_SUPPORTS_WEAKPTR(Derived)) {
+            m_self = Tf_PyGetPythonIdentity(
+                TfCreateWeakPtr(const_cast<Derived *>(
+                    dynamic_cast<Derived const *>(this))));
+        }
+        nanobind::object selfHolder = nanobind::steal<nanobind::object>(m_self);
         if (m_self) {
 
             // using pythons mro, get the attribute string that represents
             // the named function. this will return something valid if it exists
             // in this or any ancestor class
-            if (handle<> m = handle<>(
-                    allow_null(
-                        PyObject_GetAttrString(
-                            m_self, const_cast<char*>(func))))
-            )
+            if (nanobind::object m = nanobind::steal<nanobind::object>(
+                    PyObject_GetAttrString(
+                        m_self, const_cast<char*>(func))))
             {
                 // now get the typehandle to the class. we will use this to
                 // determine if this method exists on the derived class
-                type_handle typeHandle =
-                    objects::registered_class_object(
-                        typeid(Derived));
-                PyTypeObject* class_object = typeHandle.get();
+                PyTypeObject* class_object =
+                    reinterpret_cast<PyTypeObject*>(
+                        TfPyGetClassObject<Derived>().ptr());
 
                 PyObject* func_object = 0;
 
                 if (
-                    PyMethod_Check(m.get())
-                    && ((PyMethodObject*)m.get())->im_self == m_self
-                    && class_object->tp_dict != 0
+                    PyMethod_Check(m.ptr())
+                    && ((PyMethodObject*)m.ptr())->im_self == m_self
+                    && class_object && class_object->tp_dict != 0
                 )
                 {
                     // look for the method on the class object.
-                    handle<> borrowed_f(
-                        allow_null(
-                            PyObject_GetAttrString(
-                                (PyObject *)class_object,
-                                const_cast<char*>(func))));
+                    nanobind::object borrowed_f = nanobind::steal<nanobind::object>(
+                        PyObject_GetAttrString(
+                            (PyObject *)class_object,
+                            const_cast<char*>(func)));
 
                     // Don't leave an exception if there's no base class method
                     PyErr_Clear();
 
                     // do the appropriate conversion, if possible
-                    if (borrowed_f && PyCallable_Check(borrowed_f.get())) {
-                        func_object = borrowed_f.get();
+                    if (borrowed_f.ptr() && PyCallable_Check(borrowed_f.ptr())) {
+                        func_object = borrowed_f.ptr();
                     }
-                }
 
-                // now, func_object is either NULL, or pointing at the method
-                // on the class or one of it's ancestors. m is holding the
-                // actual method that pythons mro would find. if that thing
-                // is not the same, it must be an override
-                if (func_object != ((PyMethodObject*)m.get())->im_func)
-                    return Override(m);
+                    // now, func_object is either NULL, or pointing at the method
+                    // on the class or one of it's ancestors. m is holding the
+                    // actual method that pythons mro would find. if that thing
+                    // is not the same, it must be an override
+                    if (func_object != ((PyMethodObject*)m.ptr())->im_func)
+                        return Override(m);
+                }
             }
         }
         PyErr_Clear();  // Don't leave an exception if there's no override.
 
-        return Override(handle<>(detail::none()));
+        return Override(nanobind::none());
     }
     
     Override GetPureOverride(char const *func) const {
@@ -208,18 +203,6 @@ TfPyPolymorphic<Derived>::CallVirtual(
     return _BindMemFn<Ret, Cls const, Args...>(
         defaultImpl, static_cast<Cls const *>(this));
 }
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-// Specialize has_back_reference<> so that boost.python will pass
-// PyObject* as the 1st argument to TfPyPolymorphic's ctor.
-namespace PXR_BOOST_NAMESPACE { namespace python {
-    template <typename T>
-    struct has_back_reference< PXR_NS::TfPyPolymorphic<T> >
-        : std::true_type {};
-}}
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 // Base case for internal Tf_PyMemberFunctionPointerUpcast.
 template <typename Base, typename Fn>

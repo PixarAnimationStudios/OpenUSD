@@ -9,16 +9,16 @@
 #include "pxr/base/ts/tsTest_TsEvaluator.h"
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/tsTest_SampleTimes.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
-
-#include "pxr/external/boost/python/class.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-static object
+static nb::object
 _wrapSample(const TsTest_TsEvaluator& evaluator,
             const TsSpline& spline,
             const GfInterval& timeInterval,
@@ -32,39 +32,38 @@ _wrapSample(const TsTest_TsEvaluator& evaluator,
         if (evaluator.Sample(spline, timeInterval,
                              timeScale, valueScale, tolerance,
                              &samples)) {
-            return object(samples);
+            return nb::cast(samples);
         }
     } else {
         TsSplineSamples<GfVec2d> samples;
         if (evaluator.Sample(spline, timeInterval,
                              timeScale, valueScale, tolerance,
                              &samples)) {
-            return object(samples);
+            return nb::cast(samples);
         }
     }
 
-    return object();
+    return nb::none();
 }
 
-void wrapTsTest_TsEvaluator()
+void wrapTsTest_TsEvaluator(nb::module_ &m)
 {
     using This = TsTest_TsEvaluator;
 
-    class_<This>("TsTest_TsEvaluator")
-        // Default init is not suppressed, so automatically created.
+    nb::class_<This>(m, "TsTest_TsEvaluator")
+        .def(nb::init<>())
 
         .def("Eval", &This::Eval,
-            (arg("spline"),
-             arg("sampleTimes")),
-            return_value_policy<TfPySequenceToList>())
+            nb::arg("spline"),
+            nb::arg("sampleTimes"))
 
         .def("Sample", &_wrapSample,
-            (arg("spline"),
-             arg("timeInterval"),
-             arg("timeScale"),
-             arg("valueScale"),
-             arg("tolerance"),
-             arg("withSources") = false))
+            nb::arg("spline"),
+            nb::arg("timeInterval"),
+            nb::arg("timeScale"),
+            nb::arg("valueScale"),
+            nb::arg("tolerance"),
+            nb::arg("withSources") = false)
 
         /*
         .def("BakeInnerLoops", &This::BakeInnerLoops,

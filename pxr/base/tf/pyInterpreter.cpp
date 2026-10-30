@@ -20,8 +20,6 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/threads.h"
 
-#include "pxr/external/boost/python.hpp"
-#include "pxr/external/boost/python/detail/api_placeholder.hpp"
 #include <atomic>
 #include <mutex>
 #include <string>
@@ -31,8 +29,6 @@
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 void
 TfPyInitialize()
@@ -133,63 +129,63 @@ TfPyRunSimpleString(const std::string & cmd)
     return PyRun_SimpleString(cmd.c_str());
 }
 
-pxr_boost::python::handle<>
+nanobind::object
 TfPyRunString(const std::string &cmd , int start,
-              object const &globals, object const &locals)
+              nanobind::object const &globals, nanobind::object const &locals)
 {
     TfPyInitialize();
     TfPyLock pyLock;
-    try {
-        handle<> mainModule(borrowed(PyImport_AddModule("__main__")));
-        handle<> 
-            defaultGlobalsHandle(borrowed(PyModule_GetDict(mainModule.get())));
+    PyObject *mainModule = PyImport_AddModule("__main__");
+    PyObject *defaultGlobals =
+        mainModule ? PyModule_GetDict(mainModule) : nullptr;
 
-        PyObject *pyGlobals =
-            TfPyIsNone(globals) ? defaultGlobalsHandle.get() : globals.ptr();
-        PyObject *pyLocals =
-            TfPyIsNone(locals) ? pyGlobals : locals.ptr();
+    PyObject *pyGlobals =
+        TfPyIsNone(globals) ? defaultGlobals : globals.ptr();
+    PyObject *pyLocals =
+        TfPyIsNone(locals) ? pyGlobals : locals.ptr();
 
-        // used passed-in objects for globals and locals, or default
-        // to globals from main module if no locals/globals passed in.
-        return handle<>(PyRun_String(cmd.c_str(), start, pyGlobals, pyLocals));
-    } catch (error_already_set const &) {
+    // used passed-in objects for globals and locals, or default
+    // to globals from main module if no locals/globals passed in.
+    PyObject *res = PyRun_String(cmd.c_str(), start, pyGlobals, pyLocals);
+    if (!res) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
+        return nanobind::object();
     }
-    return handle<>();
+    return nanobind::steal<nanobind::object>(res);
 }
 
-pxr_boost::python::handle<>
+nanobind::object
 TfPyRunFile(const std::string &filename, int start,
-            object const &globals, object const &locals)
+            nanobind::object const &globals, nanobind::object const &locals)
 {
     FILE *f = ArchOpenFile(filename.c_str(), "r");
     if (!f) {
         TF_CODING_ERROR("Could not open file '%s'!", filename.c_str());
-        return handle<>();
+        return nanobind::object();
     }
         
     TfPyInitialize();
     TfPyLock pyLock;
-    try {
-        handle<> mainModule(borrowed(PyImport_AddModule("__main__")));
-        handle<>
-            defaultGlobalsHandle(borrowed(PyModule_GetDict(mainModule.get())));
+    PyObject *mainModule = PyImport_AddModule("__main__");
+    PyObject *defaultGlobals =
+        mainModule ? PyModule_GetDict(mainModule) : nullptr;
 
-        // used passed-in objects for globals and locals, or default
-        // to globals from main module if no locals/globals passed in.
-        PyObject *pyGlobals =
-            TfPyIsNone(globals) ? defaultGlobalsHandle.get() : globals.ptr();
-        PyObject *pyLocals =
-            TfPyIsNone(locals) ? pyGlobals : locals.ptr();
-        
-        return handle<>(PyRun_FileEx(f, filename.c_str(), start,
-                                     pyGlobals, pyLocals, 1 /* close file */));
-    } catch (error_already_set const &) {
+    // used passed-in objects for globals and locals, or default
+    // to globals from main module if no locals/globals passed in.
+    PyObject *pyGlobals =
+        TfPyIsNone(globals) ? defaultGlobals : globals.ptr();
+    PyObject *pyLocals =
+        TfPyIsNone(locals) ? pyGlobals : locals.ptr();
+    
+    PyObject *res = PyRun_FileEx(
+        f, filename.c_str(), start, pyGlobals, pyLocals, 1 /* close file */);
+    if (!res) {
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
+        return nanobind::object();
     }
-    return handle<>();
+    return nanobind::steal<nanobind::object>(res);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

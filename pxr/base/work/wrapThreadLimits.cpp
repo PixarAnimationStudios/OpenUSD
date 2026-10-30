@@ -8,19 +8,18 @@
 #include "pxr/pxr.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/nanobind.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapThreadLimits()
+void wrapThreadLimits(nanobind::module_ &m)
 {
-    def("GetConcurrencyLimit", &WorkGetConcurrencyLimit);
-    def("HasConcurrency", &WorkHasConcurrency);
-    def("GetPhysicalConcurrencyLimit", &WorkGetPhysicalConcurrencyLimit);
+    m.def("GetConcurrencyLimit", &WorkGetConcurrencyLimit);
+    m.def("HasConcurrency", &WorkHasConcurrency);
+    m.def("GetPhysicalConcurrencyLimit", &WorkGetPhysicalConcurrencyLimit);
 
-    def("SetConcurrencyLimit", &WorkSetConcurrencyLimit);
-    def("SetConcurrencyLimitArgument", &WorkSetConcurrencyLimitArgument);
-    def("SetMaximumConcurrencyLimit", &WorkSetMaximumConcurrencyLimit);
+    m.def("SetConcurrencyLimit", &WorkSetConcurrencyLimit);
+    m.def("SetConcurrencyLimitArgument", &WorkSetConcurrencyLimitArgument);
+    m.def("SetMaximumConcurrencyLimit", &WorkSetMaximumConcurrencyLimit);
 }

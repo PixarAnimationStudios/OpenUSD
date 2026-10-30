@@ -6,17 +6,15 @@
 //
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyUtils.h"
-
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/copy_const_reference.hpp"
-#include "pxr/external/boost/python/operators.hpp"
 
 #include <sstream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 static std::string
 _ReprMeshTopology(
@@ -33,7 +31,7 @@ _ReprMeshTopology(
     return repr.str();
 }
 
-void wrapMeshTopology()
+void wrapMeshTopology(nb::module_& m)
 {
     using This = PxOsdMeshTopology;
 
@@ -41,31 +39,30 @@ void wrapMeshTopology()
     const PxOsdSubdivTags& (This::*getSubdivTags)() const =
         &This::GetSubdivTags;
 
-    class_<This>("MeshTopology",
-                 init<TfToken, TfToken, VtIntArray, VtIntArray>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray, PxOsdSubdivTags>())
-        .def(init<TfToken, TfToken, VtIntArray, VtIntArray, PxOsdSubdivTags>())
-        .def(init<>())
+    nb::class_<This>(m, "MeshTopology")
+        .def(nb::init<TfToken, TfToken, VtIntArray, VtIntArray>())
+        .def(nb::init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray>())
+        .def(nb::init<TfToken, TfToken, VtIntArray, VtIntArray, VtIntArray, PxOsdSubdivTags>())
+        .def(nb::init<TfToken, TfToken, VtIntArray, VtIntArray, PxOsdSubdivTags>())
+        .def(nb::init<>())
         .def("__repr__", &::_ReprMeshTopology)
-        .def(self == self)
-        .def(self != self)
-        .def(str(self))
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
+        .def("__str__", [](const This& self) {
+            std::ostringstream s;
+            s << self;
+            return s.str();
+        })
 
         .def("GetScheme", &This::GetScheme)
         .def("WithScheme", &This::WithScheme)
-        .def("GetFaceVertexCounts", &This::GetFaceVertexCounts,
-             return_value_policy<copy_const_reference>())
-        .def("GetFaceVertexIndices", &This::GetFaceVertexIndices,
-             return_value_policy<copy_const_reference>())
-        .def("GetOrientation", &This::GetOrientation,
-             return_value_policy<copy_const_reference>())
+        .def("GetFaceVertexCounts", &This::GetFaceVertexCounts)
+        .def("GetFaceVertexIndices", &This::GetFaceVertexIndices)
+        .def("GetOrientation", &This::GetOrientation)
         .def("WithOrientation", &This::WithOrientation)
-        .def("GetHoleIndices", &This::GetHoleIndices,
-             return_value_policy<copy_const_reference>())
+        .def("GetHoleIndices", &This::GetHoleIndices)
         .def("WithHoleIndices", &This::WithHoleIndices)
-        .def("GetSubdivTags", getSubdivTags,
-             return_value_policy<copy_const_reference>())
+        .def("GetSubdivTags", getSubdivTags)
         .def("WithSubdivTags", &This::WithSubdivTags)
         .def("ComputeHash", &This::ComputeHash)
         .def("Validate", &This::Validate)

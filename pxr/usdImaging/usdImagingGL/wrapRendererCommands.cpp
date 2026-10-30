@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
-#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/vector.h>
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
@@ -15,44 +15,39 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 using UsdImagingGLRendererCommandArgDescriptor = HdCommandArgDescriptor;
 
 using UsdImagingGLRendererCommandDescriptor = HdCommandDescriptor;
 
 void 
-wrapRendererCommands()
+wrapRendererCommands(nb::module_ &m)
 {
     // Wrap the UsdImagingGLRendererCommandArgDescriptor struct.
     // Accessible as UsdImagingGL.RendererCommandArgDescriptor
-    class_<UsdImagingGLRendererCommandArgDescriptor>(
-            "RendererCommandArgDescriptor",
-            "Renderer Command Argument Metadata", no_init)
-        .add_property("argName", 
-                make_getter(
-                    &UsdImagingGLRendererCommandArgDescriptor::argName,
-                    return_value_policy<return_by_value>()))
+    nb::class_<UsdImagingGLRendererCommandArgDescriptor>(
+            m, "RendererCommandArgDescriptor",
+            "Renderer Command Argument Metadata")
+        .def_ro("argName", 
+                &UsdImagingGLRendererCommandArgDescriptor::argName)
 
-        .def_readonly("defaultValue",
-                  &UsdImagingGLRendererCommandArgDescriptor::defaultValue)
+        .def_ro("defaultValue",
+                &UsdImagingGLRendererCommandArgDescriptor::defaultValue)
         ;
-
-
 
     // Wrap the UsdImagingGLRendererCommandDescriptor struct.
     // Accessible as UsdImagingGL.RendererCommandDescriptor
-    class_<UsdImagingGLRendererCommandDescriptor>("RendererCommandDescriptor",
-            "Renderer Command Metadata", no_init)
-        .add_property("commandName", 
-                make_getter(
-                    &UsdImagingGLRendererCommandDescriptor::commandName,
-                    return_value_policy<return_by_value>()))
+    nb::class_<UsdImagingGLRendererCommandDescriptor>(
+            m, "RendererCommandDescriptor",
+            "Renderer Command Metadata")
+        .def_ro("commandName", 
+                &UsdImagingGLRendererCommandDescriptor::commandName)
 
-        .def_readonly("commandDescription",
-                  &UsdImagingGLRendererCommandDescriptor::commandDescription)
+        .def_ro("commandDescription",
+                &UsdImagingGLRendererCommandDescriptor::commandDescription)
 
-        .def_readonly("commandArgs",
-                  &UsdImagingGLRendererCommandDescriptor::commandArgs)
+        .def_ro("commandArgs",
+                &UsdImagingGLRendererCommandDescriptor::commandArgs)
         ;
 }

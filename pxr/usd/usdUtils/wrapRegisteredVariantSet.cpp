@@ -5,34 +5,35 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
+
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/usdUtils/registeredVariantSet.h"
 
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyEnum.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapRegisteredVariantSet()
+void wrapRegisteredVariantSet(nanobind::module_ &m)
 {
-    scope registeredVariantSet =
-        class_<UsdUtilsRegisteredVariantSet>(
-                        "RegisteredVariantSet", 
-                        "Info for registered variant set",
-                        no_init)
-            .def_readonly("name", &UsdUtilsRegisteredVariantSet::name)
-            .def_readonly("selectionExportPolicy", &UsdUtilsRegisteredVariantSet::selectionExportPolicy)
+    nb::class_<UsdUtilsRegisteredVariantSet> registeredVariantSet(
+                    m,
+                    "RegisteredVariantSet", 
+                    "Info for registered variant set");
+    registeredVariantSet
+        .def_ro("name", &UsdUtilsRegisteredVariantSet::name)
+        .def_ro("selectionExportPolicy", &UsdUtilsRegisteredVariantSet::selectionExportPolicy)
     ;
     
     typedef UsdUtilsRegisteredVariantSet::SelectionExportPolicy SelectionExportPolicy;
-    enum_<SelectionExportPolicy>("SelectionExportPolicy")
+    nb::enum_<SelectionExportPolicy>(registeredVariantSet, "SelectionExportPolicy")
         .value("IfAuthored", SelectionExportPolicy::IfAuthored)
         .value("Always", SelectionExportPolicy::Always)
         .value("Never", SelectionExportPolicy::Never)
+        .export_values()
     ;
     
 }

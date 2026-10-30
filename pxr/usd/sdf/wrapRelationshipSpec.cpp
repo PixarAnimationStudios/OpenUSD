@@ -8,48 +8,48 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapRelationshipSpec()
+void wrapRelationshipSpec(nb::module_& m)
 {
-    def("CreateRelationshipInLayer", SdfCreateRelationshipInLayer,
-        (arg("layer"), arg("relPath"),
-         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
-    def("JustCreateRelationshipInLayer", SdfJustCreateRelationshipInLayer,
-        (arg("layer"), arg("relPath"),
-         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
+    m.def("CreateRelationshipInLayer", SdfCreateRelationshipInLayer,
+        nb::arg("layer"), nb::arg("relPath"),
+        nb::arg("variability")=SdfVariabilityVarying, nb::arg("isCustom")=false);
+    m.def("JustCreateRelationshipInLayer", SdfJustCreateRelationshipInLayer,
+        nb::arg("layer"), nb::arg("relPath"),
+        nb::arg("variability")=SdfVariabilityVarying, nb::arg("isCustom")=false);
 
     typedef SdfRelationshipSpec This;
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, noncopyable>
-        ("RelationshipSpec", no_init)
-        
+    nb::class_<This, SdfPropertySpec> cls(m, "RelationshipSpec");
+    cls
         .def(SdfPySpec())
 
-        .def("__unused__", 
-            SdfMakePySpecConstructor(&This::New,
+        .def(SdfMakePySpecConstructor(&This::New,
                 "__init__(ownerPrimSpec, name, custom = True, variability = "
                 "Sdf.VariabilityUniform)\n"
                 "ownerPrimSpec: PrimSpec\n"
                 "name : string\n"
                 "custom : bool\n"
                 "variability : Sdf.Variability\n"),
-                (arg("ownerPrimSpec"),
-                 arg("name"),
-                 arg("custom") = true,
-                 arg("variability") = SdfVariabilityUniform))
+             nb::arg("ownerPrimSpec"),
+             nb::arg("name"),
+             nb::arg("custom") = true,
+             nb::arg("variability") = SdfVariabilityUniform)
 
-        .add_property("targetPathList",
+        .def_prop_ro("targetPathList",
             &This::GetTargetPathList,
             "A PathListEditor for the relationship's target paths.\n\n"
             "The list of the target paths for this relationship may be\n"
@@ -58,7 +58,7 @@ void wrapRelationshipSpec()
             "value or as a set of list editing operations.  See PathListEditor \n"
             "for more information.")
 
-        .add_property("noLoadHint",
+        .def_prop_rw("noLoadHint",
             &This::GetNoLoadHint,
             &This::SetNoLoadHint,
             "whether the target must be loaded to load the prim this\n"
@@ -66,10 +66,9 @@ void wrapRelationshipSpec()
 
         .def("ReplaceTargetPath", &This::ReplaceTargetPath)
         .def("RemoveTargetPath", &This::RemoveTargetPath,
-             (arg("preserveTargetOrder") = false))
-
-        // property keys
-        .setattr("TargetsKey", SdfFieldKeys->TargetPaths)
+             nb::arg("path"), nb::arg("preserveTargetOrder") = false)
         ;
 
+    // property keys
+    cls.attr("TargetsKey") = nb::cast(SdfFieldKeys->TargetPaths);
 }

@@ -7,46 +7,42 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/testPlugBase.h"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/args.hpp"
-#include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
-#include "pxr/base/tf/pyContainerConversions.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
 template <class T>
-void wrap_TestPlugBase(const std::string & name)
+void wrap_TestPlugBase(nanobind::module_ &m, const std::string &name)
 {
+    namespace nb = nanobind;
     typedef T This;
-    typedef TfWeakPtr<T> ThisPtr;
-    class_<This, ThisPtr, noncopyable> ( name.c_str(), no_init )
-        .def(TfPyRefAndWeakPtr())
-        .def(TfMakePyConstructor(&This::New))
+    nb::class_<This>(m, name.c_str(),
+                     nb::is_weak_referenceable(), nb::dynamic_attr())
+        .def(TfNbRefAndWeakPtr())
+        .def(TfNbMakePyConstructor(&This::New))
 
         // Expose Manufacture as another initializer.
-        .def(TfMakePyConstructor(&This::Manufacture))
+        .def(TfNbMakePyConstructor(&This::Manufacture))
 
         .def("GetTypeName", &This::GetTypeName)
 
         .def("TestAcceptPluginSequence", &This::TestAcceptPluginSequence,
-             (arg("plugins")));
-
+             nb::arg("plugins"))
         ;
 }
 
 } // anonymous namespace 
 
-void wrap_TestPlugBase()
+void wrap_TestPlugBase(nanobind::module_ &m)
 {
-    wrap_TestPlugBase<_TestPlugBase1>("_TestPlugBase1");
-    wrap_TestPlugBase<_TestPlugBase2>("_TestPlugBase2");
-    wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
-    wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
+    wrap_TestPlugBase<_TestPlugBase1>(m, "_TestPlugBase1");
+    wrap_TestPlugBase<_TestPlugBase2>(m, "_TestPlugBase2");
+    wrap_TestPlugBase<_TestPlugBase3>(m, "_TestPlugBase3");
+    wrap_TestPlugBase<_TestPlugBase4>(m, "_TestPlugBase4");
 }

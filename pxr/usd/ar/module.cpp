@@ -12,19 +12,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Asset);
-    TF_WRAP(AssetInfo);
-    TF_WRAP(ResolvedPath);
-    TF_WRAP(Timestamp);
+    TF_WRAP_NB(Asset);
+    TF_WRAP_NB(AssetInfo);
+    TF_WRAP_NB(ResolvedPath);
+    TF_WRAP_NB(Timestamp);
 
-    TF_WRAP(Resolver);
-    TF_WRAP(ResolverContext);
-    TF_WRAP(ResolverContextBinder);
-    TF_WRAP(ResolverScopedCache);
+    TF_WRAP_NB(Resolver);
+    TF_WRAP_NB(ResolverContext);
+    TF_WRAP_NB(ResolverContextBinder);
+    TF_WRAP_NB(ResolverScopedCache);
 
-    TF_WRAP(DefaultResolver);
-    TF_WRAP(DefaultResolverContext);
+    TF_WRAP_NB(DefaultResolver);
+    TF_WRAP_NB(DefaultResolverContext);
 
-    TF_WRAP(PackageUtils);
-    TF_WRAP(Notice);
+    TF_WRAP_NB(PackageUtils);
+    TF_WRAP_NB(Notice);
 }

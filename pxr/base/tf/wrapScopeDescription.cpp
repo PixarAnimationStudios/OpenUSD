@@ -10,10 +10,6 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_arg.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include <memory>
 #include <string>
@@ -23,7 +19,6 @@ using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -58,7 +53,7 @@ public:
     }
 
     // Exit destroys the scope description, popping from the stack.
-    void __exit__(object, object, object) {
+    void __exit__() {
         _descriptionHolder.reset();
     }
 
@@ -77,17 +72,26 @@ private:
 
 } // anonymous namespace 
 
-void wrapScopeDescription()
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+void wrapScopeDescription(nanobind::module_& m)
 {
-    def("GetCurrentScopeDescriptionStack",
-        TfGetCurrentScopeDescriptionStack,
-        return_value_policy<TfPySequenceToList>());
+    namespace nb = nanobind;
+    m.def("GetCurrentScopeDescriptionStack", TfGetCurrentScopeDescriptionStack);
 
     typedef Tf_PyScopeDescription This;
 
-    class_<This, noncopyable>("_ScopeDescription", init<string>())
-        .def("__enter__", &This::__enter__, return_self<>())
-        .def("__exit__", &This::__exit__)
+    nb::class_<This>(m, "_ScopeDescription")
+        .def(nb::init<string>())
+        .def("__enter__", [](nb::object self) {
+            nb::cast<This&>(self).__enter__();
+            return self;
+        })
+        .def("__exit__", [](This& self, nb::args) {
+            self.__exit__();
+        })
         .def("SetDescription", &This::SetDescription)
         ;
 }

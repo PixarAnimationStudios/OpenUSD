@@ -16,22 +16,21 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/manage_new_object.hpp"
-#include "pxr/external/boost/python/scope.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -174,7 +173,7 @@ public:
         return *_ctrl;
     }
 
-    void __exit__(object, object, object) {
+    void __exit__(nanobind::handle, nanobind::handle, nanobind::handle) {
         _ctrl->Unpause();
     }
 private:
@@ -184,57 +183,46 @@ private:
 
 } // anonymous namespace 
 
-void wrapMallocTag()
+void wrapMallocTag(nanobind::module_& m)
 {
     typedef TfMallocTag This;
-
-    return_value_policy<manage_new_object> mngNewObj;
+    namespace nb = nanobind;
     
-    scope mallocTag = class_<This>("MallocTag", no_init)
-
-        .def("Initialize",    _Initialize)        .staticmethod("Initialize")
-        .def("IsInitialized", This::IsInitialized).staticmethod("IsInitialized")
-        .def("Shutdown",      This::Shutdown)     .staticmethod("Shutdown")
-        .def("Clear",         This::Clear)        .staticmethod("Clear")
-        
-        .def("PauseThisThread", +[]() {
+    nb::class_<This> mallocTag(m, "MallocTag");
+    mallocTag
+        .def_static("Initialize", _Initialize)
+        .def_static("IsInitialized", This::IsInitialized)
+        .def_static("Shutdown", This::Shutdown)
+        .def_static("Clear", This::Clear)
+        .def_static("PauseThisThread", +[]() {
             return new Tf_PyMallocTagPauseControl([]() {
                 return TfMallocTag::PauseThisThread();
             });
-        }, mngNewObj).staticmethod("PauseThisThread")
-        .def("PauseAllThreads", +[]() {
+        }, nb::rv_policy::take_ownership)
+        .def_static("PauseAllThreads", +[]() {
             return new Tf_PyMallocTagPauseControl([]() {
                 return TfMallocTag::PauseAllThreads();
             });
-        }, mngNewObj).staticmethod("PauseAllThreads")
-        .def("DeferredPause", +[]() {
+        }, nb::rv_policy::take_ownership)
+        .def_static("DeferredPause", +[]() {
             return new Tf_PyMallocTagPauseControl([]() {
                 return TfMallocTag::DeferredPause();
             });
-        }, mngNewObj).staticmethod("DeferredPause")
-
-        .def("GetTotalBytes", This::GetTotalBytes).staticmethod("GetTotalBytes")
-        .def("GetMaxTotalBytes", This::GetMaxTotalBytes)
-        .staticmethod("GetMaxTotalBytes")
-        .def("GetCallTree", _GetCallTree, (arg("skipRepeated")=true))
-        .staticmethod("GetCallTree")
-        .def("GetPerfStats", This::GetPerfStats, arg("includePerThread")=false)
-        .staticmethod("GetPerfStats")
-
-        .def("SetCapturedMallocStacksMatchList",
+        }, nb::rv_policy::take_ownership)
+        .def_static("GetTotalBytes", This::GetTotalBytes)
+        .def_static("GetMaxTotalBytes", This::GetMaxTotalBytes)
+        .def_static("GetCallTree", _GetCallTree, nb::arg("skipRepeated")=true)
+        .def_static("GetPerfStats", This::GetPerfStats,
+                    nb::arg("includePerThread")=false)
+        .def_static("SetCapturedMallocStacksMatchList",
              This::SetCapturedMallocStacksMatchList)
-            .staticmethod("SetCapturedMallocStacksMatchList")
-        .def("GetCallStacks", _GetCallStacks,
-             return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetCallStacks")
-        
-        .def("SetDebugMatchList", This::SetDebugMatchList)
-            .staticmethod("SetDebugMatchList")
+        .def_static("GetCallStacks", _GetCallStacks)
+        .def_static("SetDebugMatchList", This::SetDebugMatchList)
         ;
 
     {
         using This = TfMallocTag::PauseControl;
-        class_<This, noncopyable>("_PauseCtrlCtx", no_init)
+        nb::class_<This>(mallocTag, "_PauseCtrlCtx")
             .def("PauseThisThread", &This::PauseThisThread)
             .def("PauseAllThreads", &This::PauseAllThreads)
             .def("Unpause",         &This::Unpause)
@@ -243,39 +231,39 @@ void wrapMallocTag()
     }
     {
         using This = Tf_PyMallocTagPauseControl;
-        class_<This, noncopyable>("PauseControl", no_init)
-            .def("__enter__", &This::__enter__, return_internal_reference<>())
+        nb::class_<This>(mallocTag, "PauseControl")
+            .def("__enter__", &This::__enter__, nb::rv_policy::reference_internal)
             .def("__exit__",  &This::__exit__)
             ;
     }
     {
-        scope callTree = class_<This::CallTree>("CallTree")
+        nb::class_<This::CallTree> callTree(mallocTag, "CallTree");
+        callTree
+            .def(nb::init<>())
             .def("GetPrettyPrintString", _GetPrettyPrintString)
-            .def("GetCallSites", _GetCallSites,
-                 return_value_policy<TfPySequenceToList>())
-            .def("GetRoot",    _GetRoot)
-            .def("Report",     _Report,       (arg("rootName")=std::string()))
-            .def("Report",     _ReportToFile, (arg("fileName"),
-                                               arg("rootName")=std::string()))
-            .def("LoadReport", _LoadReport,   (arg("fileName")))
-            .def("LogReport",  _LogReport,    (arg("rootName")=std::string()))
+            .def("GetCallSites", _GetCallSites)
+            .def("GetRoot", _GetRoot)
+            .def("Report", _Report,
+                nb::arg("rootName")=std::string())
+            .def("Report", _ReportToFile,
+                 nb::arg("fileName"), nb::arg("rootName")=std::string())
+            .def("LoadReport", _LoadReport,
+                 nb::arg("fileName"))
+            .def("LogReport", _LogReport,
+                 nb::arg("rootName")=std::string())
             ;
-        
-        class_<This::CallTree::PathNode>("PathNode", no_init)
-            .def_readonly("nBytes", &This::CallTree::PathNode::nBytes)
-            .def_readonly("nBytesDirect",
-                          &This::CallTree::PathNode::nBytesDirect)
-            .def_readonly("nAllocations",
-                          &This::CallTree::PathNode::nAllocations)
-            .def_readonly("siteName", &This::CallTree::PathNode::siteName)
-            .def("GetChildren", _GetChildren,
-                 return_value_policy<TfPySequenceToList>())
+
+        nb::class_<This::CallTree::PathNode>(callTree, "PathNode")
+            .def_ro("nBytes", &This::CallTree::PathNode::nBytes)
+            .def_ro("nBytesDirect", &This::CallTree::PathNode::nBytesDirect)
+            .def_ro("nAllocations", &This::CallTree::PathNode::nAllocations)
+            .def_ro("siteName", &This::CallTree::PathNode::siteName)
+            .def("GetChildren", _GetChildren)
             ;
-        
-        class_<This::CallTree::CallSite>("CallSite", no_init)
-            .def_readonly("name", &This::CallTree::CallSite::name)
-            .def_readonly("nBytes", &This::CallTree::CallSite::nBytes)
+
+        nb::class_<This::CallTree::CallSite>(callTree, "CallSite")
+            .def_ro("name", &This::CallTree::CallSite::name)
+            .def_ro("nBytes", &This::CallTree::CallSite::nBytes)
             ;
     }
-    
 }

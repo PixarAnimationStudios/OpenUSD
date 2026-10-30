@@ -5,18 +5,20 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pySafePython.h"
 
-#include "pxr/external/boost/python/def.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
 #include "pxr/usd/plugin/usdAbc/alembicTest.h"
 
+namespace nb = nanobind;
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdAbcAlembicTest()
+void wrapUsdAbcAlembicTest(nb::module_ &m)
 {
-    def("_TestAlembic", UsdAbc_TestAlembic, arg("pathname"));
-    def("_WriteAlembic", UsdAbc_WriteAlembic,
-        (arg("srcPathname"), arg("dstPathname")));
+    m.def("_TestAlembic", UsdAbc_TestAlembic, nb::arg("pathname"));
+    m.def("_WriteAlembic", UsdAbc_WriteAlembic,
+          nb::arg("srcPathname"), nb::arg("dstPathname"));
 }

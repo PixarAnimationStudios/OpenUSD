@@ -7,53 +7,49 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/expressionVariables.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/operators.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 void
-wrapExpressionVariables()
+wrapExpressionVariables(nanobind::module_ &m)
 {
+    namespace nb = nanobind;
     using This = PcpExpressionVariables;
 
-    class_<This>("ExpressionVariables")
-        .def(init<>())
-        .def(init<
+    nb::class_<This>(m, "ExpressionVariables")
+        .def(nb::init<>())
+        .def(nb::init<
             const PcpExpressionVariablesSource&, 
             const VtDictionary&>())
 
-        .def(self == self)
-        .def(self != self)
+        .def(nb::self == nb::self)
+        .def(nb::self != nb::self)
 
-        .def("Compute",
+        .def_static("Compute",
             +[](const PcpLayerStackIdentifier& sourceId,
                 const PcpLayerStackIdentifier& rootId) {
                 return PcpExpressionVariables::Compute(sourceId, rootId);
             },
-            (arg("sourceLayerStackId"), arg("rootLayerStackId")))
-        .def("Compute",
+            nb::arg("sourceLayerStackId"), nb::arg("rootLayerStackId"))
+        .def_static("Compute",
             +[](const PcpLayerStackIdentifier& sourceId,
                 const PcpLayerStackIdentifier& rootId,
                 const PcpExpressionVariables& overrides) {
                 return PcpExpressionVariables::Compute(
                     sourceId, rootId, &overrides);
             },
-            (arg("sourceLayerStackId"), arg("rootLayerStackId"),
-             arg("overrideExpressionVars")))
-        .staticmethod("Compute")
+            nb::arg("sourceLayerStackId"), nb::arg("rootLayerStackId"),
+            nb::arg("overrideExpressionVars"))
 
         .def("GetSource", 
             &This::GetSource,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
         .def("GetVariables", &This::GetVariables,
-            return_value_policy<return_by_value>())
+            nb::rv_policy::copy)
 
         .def("__repr__",
             +[](const This& s) {
@@ -68,4 +64,5 @@ wrapExpressionVariables()
                     TfPyRepr(s.GetVariables()).c_str());
             })
         ;
+
 }

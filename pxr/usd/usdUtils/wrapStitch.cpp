@@ -7,23 +7,28 @@
 /// \file wrapStitch.cpp
 
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/def.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/usd/sdf/pySpec.h"
+#include "pxr/base/vt/valueFromPython.h"
 
+#include <nanobind/nanobind.h>
+
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/stitch.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
 void 
-wrapStitch()
+wrapStitch(nanobind::module_ &m)
 {
-    def("StitchLayers", 
+    m.def("StitchLayers", 
         (void(*)(const SdfLayerHandle&, const SdfLayerHandle&))
             &UsdUtilsStitchLayers,
-        (arg("strongLayer"), arg("weakLayer")));
-    def("StitchInfo", 
+        nb::arg("strongLayer"), nb::arg("weakLayer"));
+    m.def("StitchInfo", 
         (void(*)(const SdfSpecHandle&, const SdfSpecHandle&))
             &UsdUtilsStitchInfo, 
-        (arg("strongObj"), arg("weakObj")));
+        nb::arg("strongObj"), nb::arg("weakObj"));
 }

@@ -9,15 +9,11 @@
 
 #include "pxr/base/tf/pyErrorInternal.h"
 #include "pxr/base/tf/pyLock.h"
-
-#include "pxr/external/boost/python/object.hpp"
-#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using namespace pxr_boost::python;
 
 TfPyExceptionState::TfPyExceptionState(TfPyExceptionState const &other)
 {
@@ -51,9 +47,9 @@ TfPyExceptionState::Fetch() {
     PyObject *excType, *excValue, *excTrace;
     PyErr_Fetch(&excType, &excValue, &excTrace);
     return TfPyExceptionState {
-        handle<>(allow_null(excType)),
-        handle<>(allow_null(excValue)),
-        handle<>(allow_null(excTrace))
+        nanobind::steal<nanobind::object>(excType),
+        nanobind::steal<nanobind::object>(excValue),
+        nanobind::steal<nanobind::object>(excTrace)
     };
 }
 
@@ -63,7 +59,8 @@ TfPyExceptionState::Restore()
     TfPyLock lock;
     // We have to call release() here since PyErr_Restore() "steals" our
     // reference count.
-    PyErr_Restore(_type.release(), _value.release(), _trace.release());
+    PyErr_Restore(_type.release().ptr(), _value.release().ptr(),
+                  _trace.release().ptr());
 }
 
 string 
@@ -75,15 +72,20 @@ TfPyExceptionState::GetExceptionString() const
     // string should not affect the exception state.
     TfPyExceptionStateScope exceptionStateScope;
     try {
-        object tbModule(handle<>(PyImport_ImportModule("traceback")));
-        object exception =
-            tbModule.attr("format_exception")(_type, _value, _trace);
-        pxr_boost::python::ssize_t size = len(exception);
-        for (pxr_boost::python::ssize_t i = 0; i != size; ++i) {
-            s += extract<string>(exception[i]);
+        nanobind::object tbModule = nanobind::module_::import_("traceback");
+        nanobind::object exception =
+            tbModule.attr("format_exception")(
+                _type.is_valid() ? _type : nanobind::none(),
+                _value.is_valid() ? _value : nanobind::none(),
+                _trace.is_valid() ? _trace : nanobind::none());
+        Py_ssize_t size = nanobind::len(exception);
+        for (Py_ssize_t i = 0; i != size; ++i) {
+            s += nanobind::cast<string>(exception[i]);
         }
-    } catch (pxr_boost::python::error_already_set const &) {
+    } catch (nanobind::python_error const &) {
         // Just ignore the exception.
+    } catch (std::exception const &) {
+        PyErr_Clear();
     }
     return s;
 }

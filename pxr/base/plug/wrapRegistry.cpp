@@ -8,13 +8,13 @@
 #include "pxr/pxr.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
-#include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
-#include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pySingleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <algorithm>
 #include <atomic>
@@ -27,8 +27,6 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -181,44 +179,49 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
 
 } // anonymous namespace 
 
-void wrapRegistry()
+void wrapRegistry(nanobind::module_& m)
 {
-
+    namespace nb = nanobind;
     typedef PlugRegistry This;
 
-    class_<This, TfWeakPtr<This>, noncopyable>
-        ("Registry", no_init)
-        .def(TfPySingleton())
-        .def("RegisterPlugins", &_RegisterPlugins,
-            return_value_policy<TfPySequenceToList>())
-        .def("RegisterPlugins", &_RegisterPluginsList,
-            return_value_policy<TfPySequenceToList>())
+    nb::class_<This> cls(m, "Registry",
+                         nb::is_weak_referenceable(), nb::dynamic_attr());
+    TfNbSingleton(cls);
+    cls.def("RegisterPlugins", &_RegisterPlugins)
+        .def("RegisterPlugins", &_RegisterPluginsList)
         .def("GetStringFromPluginMetaData", &_GetStringFromPluginMetaData)
         .def("GetPluginWithName", &This::GetPluginWithName)
         .def("GetPluginForType", &_GetPluginForType)
-        .def("GetAllPlugins", &This::GetAllPlugins,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetAllPlugins", &This::GetAllPlugins)
 
-        .def("FindTypeByName", This::FindTypeByName,
-             return_value_policy<return_by_value>())
-        .staticmethod("FindTypeByName")
+        .def_static("FindTypeByName", &This::FindTypeByName)
 
-        .def("FindDerivedTypeByName", (TfType (*)(TfType, std::string const &))
-             This::FindDerivedTypeByName)
-        .staticmethod("FindDerivedTypeByName")
+        .def_static("FindDerivedTypeByName",
+                    (TfType (*)(TfType, std::string const &))
+                    &This::FindDerivedTypeByName)
 
-        .def("GetDirectlyDerivedTypes", This::GetDirectlyDerivedTypes,
-             return_value_policy<TfPySequenceToTuple>())
-        .staticmethod("GetDirectlyDerivedTypes")
+        .def_static("GetDirectlyDerivedTypes", [](TfType baseType) {
+            auto v = This::GetDirectlyDerivedTypes(baseType);
+            nb::tuple res = nb::steal<nb::tuple>(PyTuple_New(v.size()));
+            for (size_t i = 0; i < v.size(); ++i) {
+                PyTuple_SET_ITEM(res.ptr(), i, nb::cast(v[i]).release().ptr());
+            }
+            return res;
+        })
 
-        .def("GetAllDerivedTypes", _GetAllDerivedTypes,
-             return_value_policy<TfPySequenceToTuple>())
-        .staticmethod("GetAllDerivedTypes")
-
+        .def_static("GetAllDerivedTypes", [](TfType const &type) {
+            auto v = _GetAllDerivedTypes(type);
+            nb::tuple res = nb::steal<nb::tuple>(PyTuple_New(v.size()));
+            for (size_t i = 0; i < v.size(); ++i) {
+                PyTuple_SET_ITEM(res.ptr(), i, nb::cast(v[i]).release().ptr());
+            }
+            return res;
+        })
         ;
 
-    TfPyFunctionFromPython<PluginPredicateSig>();
-    def("_LoadPluginsConcurrently",
-        _LoadPluginsConcurrently,
-        (arg("predicate"), arg("numThreads")=0, arg("verbose")=false));
+    m.def("_LoadPluginsConcurrently",
+          &_LoadPluginsConcurrently,
+          nb::arg("predicate"),
+          nb::arg("numThreads") = 0,
+          nb::arg("verbose") = false);
 }

@@ -8,12 +8,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 
-#include "pxr/external/boost/python/def.hpp"
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-using namespace pxr_boost::python;
 
 namespace {
 
@@ -32,10 +29,10 @@ _TestAnnotatedBoolResult(
 
 } // anonymous namespace 
 
-void wrapTf_TestPyAnnotatedBoolResult()
+void wrapTf_TestPyAnnotatedBoolResult(nanobind::module_& m)
 {
-    def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
+    m.def("_TestAnnotatedBoolResult", &_TestAnnotatedBoolResult);
 
-    Tf_TestAnnotatedBoolResult::Wrap<Tf_TestAnnotatedBoolResult>(
-        "Tf_TestAnnotatedBoolResult", "annotation");
+    Tf_TestAnnotatedBoolResult::WrapNb<Tf_TestAnnotatedBoolResult>(
+        m, "Tf_TestAnnotatedBoolResult", "annotation");
 }

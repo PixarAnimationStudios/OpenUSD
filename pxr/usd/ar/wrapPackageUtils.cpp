@@ -7,39 +7,52 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/packageUtils.h"
+#include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include "pxr/external/boost/python/def.hpp"
-#include "pxr/external/boost/python/return_value_policy.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+
+#include "pxr/base/tf/pyNanobindBridge.h"
 
 void
-wrapPackageUtils()
+wrapPackageUtils(nanobind::module_& m)
 {
-    def("IsPackageRelativePath", 
-        &ArIsPackageRelativePath, arg("path"));
+    namespace nb = nanobind;
+    m.def("IsPackageRelativePath",
+          &ArIsPackageRelativePath, nb::arg("path"));
+    m.def("IsPackageRelativePath",
+          [](const ArResolvedPath& path) {
+              return ArIsPackageRelativePath(path);
+          }, nb::arg("path"));
 
-    def("JoinPackageRelativePath", 
-        (std::string(*)(const std::vector<std::string>&))
-            &ArJoinPackageRelativePath, 
-        arg("paths"));
+    m.def("JoinPackageRelativePath",
+          (std::string(*)(const std::vector<std::string>&))
+              &ArJoinPackageRelativePath,
+          nb::arg("paths"));
 
-    def("JoinPackageRelativePath", 
-        (std::string(*)(const std::pair<std::string, std::string>&))
-            &ArJoinPackageRelativePath, 
-        arg("paths"));
+    m.def("JoinPackageRelativePath",
+          (std::string(*)(const std::pair<std::string, std::string>&))
+              &ArJoinPackageRelativePath,
+          nb::arg("paths"));
 
-    def("JoinPackageRelativePath", 
-        (std::string(*)(const std::string&, const std::string&))
-            &ArJoinPackageRelativePath, 
-        (arg("packagePath"), arg("packagedPath")));
+    m.def("JoinPackageRelativePath",
+          (std::string(*)(const std::string&, const std::string&))
+              &ArJoinPackageRelativePath,
+          nb::arg("packagePath"), nb::arg("packagedPath"));
 
-    def("SplitPackageRelativePathOuter", 
-        &ArSplitPackageRelativePathOuter, arg("path"));
+    m.def("SplitPackageRelativePathOuter",
+          &ArSplitPackageRelativePathOuter, nb::arg("path"));
+    m.def("SplitPackageRelativePathOuter",
+          [](const ArResolvedPath& path) {
+              return ArSplitPackageRelativePathOuter(path);
+          }, nb::arg("path"));
 
-    def("SplitPackageRelativePathInner", 
-        &ArSplitPackageRelativePathInner, arg("path"));
+    m.def("SplitPackageRelativePathInner",
+          &ArSplitPackageRelativePathInner, nb::arg("path"));
+    m.def("SplitPackageRelativePathInner",
+          [](const ArResolvedPath& path) {
+              return ArSplitPackageRelativePathInner(path);
+          }, nb::arg("path"));
 }

@@ -11,12 +11,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(Tokens);
-    TF_WRAP(CapsuleMeshGenerator);
-    TF_WRAP(ConeMeshGenerator);
-    TF_WRAP(CuboidMeshGenerator);
-    TF_WRAP(CylinderMeshGenerator);
-    TF_WRAP(DiskMeshGenerator);
-    TF_WRAP(PlaneMeshGenerator);
-    TF_WRAP(SphereMeshGenerator);
+    TF_WRAP_NB(Tokens);
+    TF_WRAP_NB(CapsuleMeshGenerator);
+    TF_WRAP_NB(ConeMeshGenerator);
+    TF_WRAP_NB(CuboidMeshGenerator);
+    TF_WRAP_NB(CylinderMeshGenerator);
+    TF_WRAP_NB(DiskMeshGenerator);
+    TF_WRAP_NB(PlaneMeshGenerator);
+    TF_WRAP_NB(SphereMeshGenerator);
 }

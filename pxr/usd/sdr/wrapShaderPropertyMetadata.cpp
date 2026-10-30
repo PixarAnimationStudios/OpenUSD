@@ -6,35 +6,43 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyStaticTokens.h"
 #include "pxr/usd/sdr/shaderPropertyMetadata.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/unordered_map.h>
+#include <nanobind/stl/vector.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapShaderPropertyMetadata()
+void wrapShaderPropertyMetadata(nanobind::module_ &m)
 {
     typedef SdrShaderPropertyMetadata This;
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "PropertyMetadata", SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m, "PropertyMetadata", SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS
     );
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
+    TF_NB_WRAP_PUBLIC_TOKENS(
+        m,
         "PropertyRole",
         SdrPropertyRole,
         SDR_PROPERTY_ROLE_TOKENS
     );
 
-    class_<This>("ShaderPropertyMetadata", no_init)
+    nb::class_<This>(m, "ShaderPropertyMetadata")
         .def("HasItem", &This::HasItem)
         .def("GetItemValue", &This::GetItemValue)
         .def("GetItems",
-             +[](const SdrShaderPropertyMetadata& metadata) {
+             [](const SdrShaderPropertyMetadata& metadata) {
                 return metadata.GetItems();
-             }, return_value_policy<return_by_value>())
+             })
         .def("HasLabel", &This::HasLabel)
         .def("GetLabel", &This::GetLabel)
         .def("HasHelp", &This::HasHelp)
@@ -67,4 +75,5 @@ void wrapShaderPropertyMetadata()
         .def("GetDefaultInput", &This::GetDefaultInput)
         .def("HasColorspace", &This::HasColorspace)
         .def("GetColorspace", &This::GetColorspace);
+
 }

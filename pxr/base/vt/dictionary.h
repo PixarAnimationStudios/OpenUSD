@@ -689,4 +689,15 @@ struct VtDictionaryHash {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+VT_API bool VtDictionaryFromPythonObject(PyObject *obj, VtDictionary *out);
+VT_API PyObject *VtDictionaryToPythonObject(VtDictionary const &dict);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_PYTHON_SUPPORT_ENABLED
+
 #endif /* PXR_BASE_VT_DICTIONARY_H */

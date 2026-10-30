@@ -60,6 +60,4 @@ namespace PXR_NS {
 #define PXR_ARCH_SUPPORT_MALLOC_HOOKS
 #endif
 
-#define PXR_USE_INTERNAL_BOOST_PYTHON
-
 #endif //PXR_H

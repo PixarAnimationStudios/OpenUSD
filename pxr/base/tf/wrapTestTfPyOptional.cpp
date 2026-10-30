@@ -9,11 +9,12 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyOptional.h"
 
-#include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/tuple.hpp"
+#include <nanobind/nanobind.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -22,28 +23,24 @@ using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 namespace {
 
 // ////////////////////////////////
 // // optional
 
 template <template <typename> typename Optional>
-static tuple
+static nanobind::tuple
 _TakesOptional(
     const Optional<string>& optString,
     const Optional<vector<string> >& optStrvec)
 {
-    object strObj;
-    if (optString) {
-        strObj = object(*optString);
-    }
-    object vecObj;
-    if (optStrvec) {
-        vecObj = object(TfPyCopySequenceToList(*optStrvec));
-    }
-    return make_tuple(strObj, vecObj);
+    nanobind::object strObj = optString
+        ? nanobind::cast(*optString)
+        : nanobind::none();
+    nanobind::object vecObj = optStrvec
+        ? nanobind::object(TfNbSequenceToList(*optStrvec))
+        : nanobind::none();
+    return nanobind::make_tuple(strObj, vecObj);
 }
 
 template <template <typename> typename Optional, typename T>
@@ -60,49 +57,38 @@ struct Tf_TestPyOptionalStd { };
 
 } // anonymous namespace 
 
-void wrapTf_TestTfPyOptional()
+void wrapTf_TestTfPyOptional(nanobind::module_ &m)
 {
-    class_<Tf_TestPyOptionalStd, noncopyable>("Tf_TestPyOptionalStd")
-        .def("TakesOptional", _TakesOptional<std::optional>,
-            ( arg("optString") = std::optional<string>(),
-              arg("optStrvec") = std::optional<vector<string> >() ))
-        .staticmethod("TakesOptional")
+    namespace nb = nanobind;
 
-        .def("TestOptionalStringVector",
+    nb::class_<Tf_TestPyOptionalStd>(m, "Tf_TestPyOptionalStd")
+        .def_static("TakesOptional", _TakesOptional<std::optional>,
+            nb::arg("optString") = std::optional<string>(),
+            nb::arg("optStrvec") = std::optional<vector<string> >())
+
+        .def_static("TestOptionalStringVector",
             _TestOptional<std::optional, std::vector<std::string> >)
-        .staticmethod("TestOptionalStringVector")
-        .def("TestOptionalString",
+        .def_static("TestOptionalString",
             _TestOptional<std::optional, std::string>)
-        .staticmethod("TestOptionalString")
-        .def("TestOptionalDouble",
+        .def_static("TestOptionalDouble",
             _TestOptional<std::optional, double>)
-        .staticmethod("TestOptionalDouble")
-        .def("TestOptionalFloat",
+        .def_static("TestOptionalFloat",
             _TestOptional<std::optional, float>)
-        .staticmethod("TestOptionalFloat")
-        .def("TestOptionalLong",
+        .def_static("TestOptionalLong",
             _TestOptional<std::optional, long>)
-        .staticmethod("TestOptionalLong")
-        .def("TestOptionalULong",
+        .def_static("TestOptionalULong",
             _TestOptional<std::optional, unsigned long>)
-        .staticmethod("TestOptionalULong")
-        .def("TestOptionalInt",
+        .def_static("TestOptionalInt",
             _TestOptional<std::optional, int>)
-        .staticmethod("TestOptionalInt")
-        .def("TestOptionalUInt",
+        .def_static("TestOptionalUInt",
             _TestOptional<std::optional, unsigned int>)
-        .staticmethod("TestOptionalUInt")
-        .def("TestOptionalShort",
+        .def_static("TestOptionalShort",
             _TestOptional<std::optional, short>)
-        .staticmethod("TestOptionalShort")
-        .def("TestOptionalUShort",
+        .def_static("TestOptionalUShort",
             _TestOptional<std::optional, unsigned short>)
-        .staticmethod("TestOptionalUShort")
-        .def("TestOptionalChar",
+        .def_static("TestOptionalChar",
             _TestOptional<std::optional, char>)
-        .staticmethod("TestOptionalChar")
-        .def("TestOptionalUChar",
+        .def_static("TestOptionalUChar",
             _TestOptional<std::optional, unsigned char>)
-        .staticmethod("TestOptionalUChar")
         ;
 }

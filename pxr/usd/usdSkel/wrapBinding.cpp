@@ -6,6 +6,7 @@
 //
 #include "pxr/usd/usdSkel/binding.h"
 
+#include "pxr/base/tf/pyNanobindBridge.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -17,45 +18,45 @@
 #include "pxr/usd/usdSkel/cache.h"
 #include "pxr/usd/usdSkel/root.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
 
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-
 namespace {
 
-
-UsdSkelBinding*
-_New(const UsdSkelSkeleton& skel, const pxr_boost::python::list& skinningQueries)
+VtArray<UsdSkelSkinningQuery>
+_ConvertSkinningQueries(const nb::sequence& skinningQueries)
 {
-    const size_t numQueries = len(skinningQueries);
+    const size_t numQueries = nb::len(skinningQueries);
     VtArray<UsdSkelSkinningQuery> skinningQueriesArray(numQueries);
     for (size_t i = 0; i < numQueries; ++i) {
         skinningQueriesArray[i] =
-            extract<const UsdSkelSkinningQuery&>(skinningQueries[i]);
+            nb::cast<const UsdSkelSkinningQuery&>(skinningQueries[i]);
     }
-    return new UsdSkelBinding(skel, skinningQueriesArray);
+    return skinningQueriesArray;
 }
-
 
 } // namespace
 
-
-void wrapUsdSkelBinding()
+void wrapUsdSkelBinding(nb::module_ &m)
 {
     using This = UsdSkelBinding;
 
-    class_<This>("Binding", init<>())
+    nb::class_<This>(m, "Binding")
+        .def(nb::init<>())
 
-        .def("__init__", make_constructor(&_New))
+        .def("__init__", [](This* self, const UsdSkelSkeleton& skel,
+                            const nb::sequence& skinningQueries) {
+            new (self) This(skel, _ConvertSkinningQueries(skinningQueries));
+        })
 
-        .def("GetSkeleton", &This::GetSkeleton,
-             return_value_policy<return_by_value>())
+        .def("GetSkeleton", &This::GetSkeleton, nb::rv_policy::copy)
 
-        .def("GetSkinningTargets", &This::GetSkinningTargets,
-             return_value_policy<TfPySequenceToList>())
+        .def("GetSkinningTargets", [](const This& self) {
+            return TfNbSequenceToList(self.GetSkinningTargets());
+        })
         ;
+
 }

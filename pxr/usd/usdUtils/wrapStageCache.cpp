@@ -5,37 +5,41 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/external/boost/python/class.hpp"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
+
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/stageCache.h"
-
-#include "pxr/base/tf/pyResultConversions.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
+namespace nb = nanobind;
 
-void wrapStageCache()
+void wrapStageCache(nanobind::module_ &m)
 {
-    class_<UsdUtilsStageCache>("StageCache")
+    nb::class_<UsdUtilsStageCache>(m, "StageCache")
+        .def(nb::init<>())
 
-        .def("Get", &UsdUtilsStageCache::Get,
-             return_value_policy<reference_existing_object>())
-        .staticmethod("Get")
+        .def_static("Get", &UsdUtilsStageCache::Get,
+             nb::rv_policy::reference)
 
-        .def<SdfLayerRefPtr (*)(
-            const TfToken& name,
-            const std::vector<std::pair<std::string, std::string>>&)>(
+        .def_static(
             "GetSessionLayerForVariantSelections",
-            &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
-            (arg("modelName"), arg("variantSelections"))
-            )
-        .def<SdfLayerRefPtr (*)(
-            const SdfPath& primPath,
-            const std::vector<std::pair<std::string, std::string>>&)>(
+            (SdfLayerRefPtr (*)(
+                const TfToken& name,
+                const std::vector<std::pair<std::string, std::string>>&))
+                &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
+            nb::arg("modelName"), nb::arg("variantSelections"))
+        .def_static(
             "GetSessionLayerForVariantSelections",
-            &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
-            (arg("primPath"), arg("variantSelections")))
-        .staticmethod("GetSessionLayerForVariantSelections")
+            (SdfLayerRefPtr (*)(
+                const SdfPath& primPath,
+                const std::vector<std::pair<std::string, std::string>>&))
+                &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
+            nb::arg("primPath"), nb::arg("variantSelections"))
         ;
 }

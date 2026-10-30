@@ -9,21 +9,20 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/pseudoRootSpec.h"
 #include "pxr/usd/sdf/pySpec.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python.hpp"
+#include <nanobind/nanobind.h>
+
+namespace nb = nanobind;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
 void
-wrapPseudoRootSpec()
+wrapPseudoRootSpec(nb::module_& m)
 {
     typedef SdfPseudoRootSpec This;
 
-    class_<This, SdfHandle<This>, 
-           bases<SdfPrimSpec>, noncopyable>
-        ("PseudoRootSpec", no_init)
+    nb::class_<This, SdfPrimSpec>(m, "PseudoRootSpec")
         .def(SdfPySpec())
         ;
 }

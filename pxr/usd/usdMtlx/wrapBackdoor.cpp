@@ -8,20 +8,18 @@
 
 #include "pxr/usd/usdMtlx/backdoor.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/base/tf/makePyConstructor.h"
+#include "pxr/base/tf/pyNanobindBridge.h"
 
-#include "pxr/external/boost/python/def.hpp"
+#include <nanobind/nanobind.h>
+#include <nanobind/stl/string.h>
 
+namespace nb = nanobind;
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace pxr_boost::python;
-
-void wrapUsdMtlxBackdoor()
+void wrapUsdMtlxBackdoor(nanobind::module_ &m)
 {
-    def("_TestString", UsdMtlx_TestString,
-        (arg("buffer"), arg("nodeGraphs") = false),
-        return_value_policy<TfPyRefPtrFactory<>>());
-    def("_TestFile", UsdMtlx_TestFile,
-        (arg("pathname"), arg("nodeGraphs") = false),
-        return_value_policy<TfPyRefPtrFactory<>>());
+    m.def("_TestString", UsdMtlx_TestString,
+          nb::arg("buffer"), nb::arg("nodeGraphs") = false);
+    m.def("_TestFile", UsdMtlx_TestFile,
+          nb::arg("pathname"), nb::arg("nodeGraphs") = false);
 }
