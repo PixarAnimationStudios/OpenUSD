@@ -6,13 +6,17 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdShade/material.h"
@@ -464,6 +468,63 @@ TestUsdShadeMaterialBindingAPIAppliedValidator()
 
     // Verify the errors are fixed
     TF_AXIOM(errors.empty());
+}
+
+void
+TestUsdShadeMaterialBindingAPIAppliedFixer()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->materialBindingApiAppliedValidator);
+    TF_AXIOM(validator);
+
+    // The binding is authored to the root layer, which is the stage's edit
+    // target. The fix is applied to a sublayer instead.
+    SdfLayerRefPtr subLayer =
+        SdfLayer::CreateNew("materialBindingApiAppliedFixerSub.usda");
+    UsdStageRefPtr usdStage =
+        UsdStage::CreateNew("materialBindingApiAppliedFixer.usda");
+    const SdfLayerHandle rootLayer = usdStage->GetRootLayer();
+    rootLayer->InsertSubLayerPath(subLayer->GetIdentifier());
+
+    const UsdPrim usdPrim = usdStage->DefinePrim(SdfPath("/Test"));
+    UsdShadeMaterial material
+        = UsdShadeMaterial::Define(usdStage, SdfPath("/Test/Material"));
+    usdPrim.CreateRelationship(TfToken("material:binding"))
+        .AddTarget(material.GetPath());
+
+    const UsdValidationErrorVector errors = validator->Validate(usdPrim);
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetFixers().size() == 1u);
+    const UsdValidationFixer *fixer = errors[0].GetFixers()[0];
+
+    // An edit target for a layer outside the stage's local layer stack can't
+    // be used, and is rejected without posting errors.
+    {
+        TfErrorMark mark;
+        const SdfLayerRefPtr otherLayer = SdfLayer::CreateAnonymous();
+        const UsdEditTarget otherTarget(otherLayer);
+        TF_AXIOM(otherTarget.IsValid());
+        TF_AXIOM(!fixer->CanApplyFix(errors[0], otherTarget));
+        TF_AXIOM(!fixer->ApplyFix(errors[0], otherTarget));
+        TF_AXIOM(mark.IsClean());
+        TF_AXIOM(!usdPrim.HasAPI<UsdShadeMaterialBindingAPI>());
+    }
+
+    const UsdEditTarget subLayerTarget(subLayer);
+    TF_AXIOM(fixer->CanApplyFix(errors[0], subLayerTarget));
+    TF_AXIOM(fixer->ApplyFix(errors[0], subLayerTarget));
+    TF_AXIOM(usdPrim.HasAPI<UsdShadeMaterialBindingAPI>());
+    TF_AXIOM(validator->Validate(usdPrim).empty());
+
+    // The fix was authored to the sublayer, not the root layer, and the
+    // stage's edit target is unchanged.
+    const SdfPrimSpecHandle subLayerSpec =
+        subLayer->GetPrimAtPath(usdPrim.GetPath());
+    TF_AXIOM(subLayerSpec && subLayerSpec->HasInfo(UsdTokens->apiSchemas));
+    TF_AXIOM(!rootLayer->GetPrimAtPath(usdPrim.GetPath())->HasInfo(
+        UsdTokens->apiSchemas));
+    TF_AXIOM(usdStage->GetEditTarget().GetLayer() == rootLayer);
 }
 
 void
@@ -931,6 +992,7 @@ main()
 {
     TestUsdShadeValidators();
     TestUsdShadeMaterialBindingAPIAppliedValidator();
+    TestUsdShadeMaterialBindingAPIAppliedFixer();
     TestUsdShadeMaterialBindingRelationships();
     TestUsdShadeMaterialBindingCollections();
     TestUsdShadeNormalMapTextureValidator();

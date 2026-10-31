@@ -10,11 +10,13 @@
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/editTarget.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -883,6 +885,19 @@ _NormalMapTextureValidator(const UsdPrim& usdPrim,
     return errors;
 }
 
+// Returns true if editTarget can be made the current edit target of stage.
+// This mirrors the check in UsdStage::SetEditTarget(), which requires an edit
+// target with an identity mapping to refer to a layer in the stage's local
+// layer stack.
+static bool
+_IsValidEditTargetForStage(
+    const UsdEditTarget &editTarget, const UsdStageWeakPtr &stage)
+{
+    return editTarget.IsValid() && stage &&
+        (!editTarget.GetMapFunction().IsIdentity() ||
+         stage->HasLocalLayer(editTarget.GetLayer()));
+}
+
 const std::vector<UsdValidationFixer>
 _MaterialBindingApiAppliedValidatorFixers() {
     std::vector<UsdValidationFixer> fixers;
@@ -902,7 +917,8 @@ _MaterialBindingApiAppliedValidatorFixers() {
                 return false;
             }
             UsdPrim prim = site.GetPrim();
-            return UsdShadeMaterialBindingAPI::CanApply(prim);
+            return _IsValidEditTargetForStage(editTarget, prim.GetStage())
+                && UsdShadeMaterialBindingAPI::CanApply(prim);
         };
 
     FixerImplFn fixerImplFn = 
@@ -920,6 +936,12 @@ _MaterialBindingApiAppliedValidatorFixers() {
                 return false;
             }
             UsdPrim prim = site.GetPrim();
+            if (!_IsValidEditTargetForStage(editTarget, prim.GetStage())) {
+                return false;
+            }
+            // Author the fix to the given edit target, which need not be the
+            // stage's current edit target.
+            UsdEditContext editContext(prim.GetStage(), editTarget);
             UsdShadeMaterialBindingAPI::Apply(prim);
             return true;
         };
