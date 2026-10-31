@@ -70,12 +70,12 @@ public:
         using difference_type = std::ptrdiff_t;
 
         /// Returns the UsdTimeCode referenced by this iterator.
-        reference operator*() {
+        reference operator*() const {
             return _currTimeCode;
         }
 
         /// Returns a pointer to the UsdTimeCode referenced by this iterator.
-        pointer operator->() {
+        pointer operator->() const {
             return &_currTimeCode;
         }
 
