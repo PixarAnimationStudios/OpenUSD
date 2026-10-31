@@ -140,6 +140,7 @@ Linear Rec.2020: lin_rec2020_scene
 Linear AdobeRGB: lin_adobergb_scene
 CIE XYZ-D65 - Scene-referred: lin_ciexyzd65_scene
 sRGB Encoded Rec.709 (sRGB): srgb_rec709_scene
+sRGB Encoded Rec.709 (sRGB) - Display-referred: srgb_rec709_display
 Gamma 2.2 Encoded Rec.709: g22_rec709_scene
 Gamma 1.8 Encoded Rec.709: g18_rec709_scene
 sRGB Encoded AP1: srgb_ap1_scene
