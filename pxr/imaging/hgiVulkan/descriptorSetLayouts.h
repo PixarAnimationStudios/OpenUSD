@@ -32,6 +32,14 @@ using HgiVulkanDescriptorSetInfoVector =
 
 using VkDescriptorSetLayoutVector = std::vector<VkDescriptorSetLayout>;
 
+/// Binding index of the first texture in a descriptor set.
+///
+/// Vulkan has one binding space per descriptor set, so textures are offset way
+/// above buffers. Using a constant value keeps the index reassignment simple,
+/// with the caveat taht client buffer binding indices must stay below this
+/// value.
+constexpr uint32_t HgiVulkanTextureBindIndexBase = 128;
+
 /// Given all of the DescriptorSetInfos of all of the shader modules in a
 /// shader program, this function merges them and creates the descriptorSet
 /// layouts needed during pipeline layout creation.
