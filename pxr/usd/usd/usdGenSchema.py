@@ -1560,7 +1560,10 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
     #
     Print('Loading Templates from {0}'.format(templatePath))
     try:
-        plugInfoTemplate = env.get_template('plugInfo.json')
+        # Prefer the .jinja filename, but support the old name for custom
+        # template directories.
+        plugInfoTemplate = env.select_template(
+            ['plugInfo.json.jinja', 'plugInfo.json'])
     except TemplateNotFound as tnf:
         raise RuntimeError("Template not found: {0}".format(str(tnf)))
     except TemplateSyntaxError as tse:
