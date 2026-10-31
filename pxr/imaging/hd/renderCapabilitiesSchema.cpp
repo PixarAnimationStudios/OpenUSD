@@ -39,20 +39,33 @@ HdRenderCapabilitiesSchema::GetMotionBlur() const
         HdRenderCapabilitiesSchemaTokens->motionBlur);
 }
 
+HdBoolDataSourceHandle
+HdRenderCapabilitiesSchema::GetConsumeExtGpuBuffer() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdRenderCapabilitiesSchemaTokens->consumeExtGpuBuffer);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderCapabilitiesSchema::BuildRetained(
-        const HdBoolDataSourceHandle &motionBlur
+        const HdBoolDataSourceHandle &motionBlur,
+        const HdBoolDataSourceHandle &consumeExtGpuBuffer
 )
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
 
     if (motionBlur) {
         _names[_count] = HdRenderCapabilitiesSchemaTokens->motionBlur;
         _values[_count++] = motionBlur;
+    }
+
+    if (consumeExtGpuBuffer) {
+        _names[_count] = HdRenderCapabilitiesSchemaTokens->consumeExtGpuBuffer;
+        _values[_count++] = consumeExtGpuBuffer;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -65,11 +78,20 @@ HdRenderCapabilitiesSchema::Builder::SetMotionBlur(
     return *this;
 }
 
+HdRenderCapabilitiesSchema::Builder &
+HdRenderCapabilitiesSchema::Builder::SetConsumeExtGpuBuffer(
+    const HdBoolDataSourceHandle &consumeExtGpuBuffer)
+{
+    _consumeExtGpuBuffer = consumeExtGpuBuffer;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderCapabilitiesSchema::Builder::Build()
 {
     return HdRenderCapabilitiesSchema::BuildRetained(
-        _motionBlur
+        _motionBlur,
+        _consumeExtGpuBuffer
     );
 } 
 

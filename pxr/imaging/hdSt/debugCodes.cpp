@@ -42,6 +42,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_DUMP_SHADER_SOURCEFILE,
         "Write out generated shader source code to files");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_EXT_GPU_BUFFER,
+        "Report, per range, whether external GPU buffers are bound directly "
+        "or copied, and why direct binding was refused.");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_LOG_COMPUTE_SHADER_PROGRAM_HITS,
         "Log compute shader program hits in the resource registry.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_LOG_COMPUTE_SHADER_PROGRAM_MISSES,

@@ -265,9 +265,14 @@ HgiVulkanGraphicsCmds::BindVertexBuffers(
         std::vector<VkDeviceSize> bufferOffsets;
 
         for (HgiVertexBufferBinding const &binding : bindings) {
-            HgiVulkanBuffer* buf =
-                static_cast<HgiVulkanBuffer*>(binding.buffer.Get());
-            VkBuffer vkBuf = buf->GetVulkanBuffer();
+            // Use GetRawResource() instead of static_cast<HgiVulkanBuffer*> +
+            // GetVulkanBuffer(). GetRawResource() is virtual on HgiBuffer and
+            // returns the native handle (VkBuffer for HgiVulkanBuffer, the
+            // raw handle for HdStExtGpuBuffer wrappers). This avoids undefined
+            // behavior when the buffer is not an HgiVulkanBuffer (e.g., an
+            // HdStExtGpuBuffer wrapping an external Vulkan buffer handle).
+            uint64_t raw = binding.buffer->GetRawResource();
+            VkBuffer vkBuf = reinterpret_cast<VkBuffer>(static_cast<uintptr_t>(raw));
             if (vkBuf) {
                 buffers.push_back(vkBuf);
                 bufferOffsets.push_back(binding.byteOffset);

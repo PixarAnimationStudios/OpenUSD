@@ -28,6 +28,8 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXCore/Library.h>
