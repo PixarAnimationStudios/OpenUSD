@@ -94,7 +94,7 @@ _Repr(const UsdColorSpaceDefinitionAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "Usd.ColorSpaceDefinitionAPI(%s, '%s')",
+        "Usd.ColorSpaceDefinitionAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
