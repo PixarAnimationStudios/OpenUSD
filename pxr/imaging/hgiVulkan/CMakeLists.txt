@@ -109,4 +109,10 @@ pxr_register_test(testHgiVulkanCommand
         HGIVULKAN_DEBUG_VERBOSE=1
 )
 
+
+pxr_register_hgi_backend_tests(Vulkan
+    HGI_ENABLE_VULKAN=1
+    HGIVULKAN_DEBUG=1
+)
+
 endif() # BUILD_SHARED_LIBS

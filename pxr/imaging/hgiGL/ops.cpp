@@ -123,15 +123,19 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
 
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
+        const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+        const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+        const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
         glGetTextureSubImage(
             srcTexture->GetTextureId(),
             copyOp.mipLevel,
             copyOp.sourceTexelOffset[0], // x offset
             copyOp.sourceTexelOffset[1], // y offset
             copyOp.sourceTexelOffset[2], // z offset (depth or layer)
-            texDesc.dimensions[0], // width
-            texDesc.dimensions[1], // height
-            texDesc.dimensions[2], // layerCnt or depth
+            width,
+            height,
+            depth, // layerCnt or depth
             glFormat,
             glPixelType,
             copyOp.destinationBufferByteSize,
@@ -159,6 +163,10 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
         GfVec3i const& offsets = copyOp.destinationTexelOffset;
         GfVec3i const& dimensions = desc.dimensions;
 
+        const int mipWidth = std::max(dimensions[0] >> copyOp.mipLevel, 1);
+        const int mipHeight = std::max(dimensions[1] >> copyOp.mipLevel, 1);
+        const int mipDepth = std::max(dimensions[2] >> copyOp.mipLevel, 1);
+
         HgiGLTexture* dstTexture = static_cast<HgiGLTexture*>(
             copyOp.gpuDestinationTexture.Get());
 
@@ -171,7 +179,7 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1],
-                    dimensions[0], dimensions[1],
+                    mipWidth, mipHeight,
                     format,
                     copyOp.bufferByteSize,
                     copyOp.cpuSourceBuffer);
@@ -180,7 +188,7 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1],
-                    dimensions[0], dimensions[1],
+                    mipWidth, mipHeight,
                     format,
                     type,
                     copyOp.cpuSourceBuffer);
@@ -192,7 +200,7 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1], offsets[2],
-                    dimensions[0], dimensions[1], dimensions[2],
+                    mipWidth, mipHeight, mipDepth,
                     format,
                     copyOp.bufferByteSize,
                     copyOp.cpuSourceBuffer);
@@ -201,7 +209,7 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1], offsets[2],
-                    dimensions[0], dimensions[1], dimensions[2],
+                    mipWidth, mipHeight, mipDepth,
                     format,
                     type,
                     copyOp.cpuSourceBuffer);
@@ -430,6 +438,10 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
         GfVec3i const& offsets = copyOp.destinationTexelOffset;
         GfVec3i const& dimensions = texDesc.dimensions;
 
+        const int mipWidth = std::max(dimensions[0] >> copyOp.mipLevel, 1);
+        const int mipHeight = std::max(dimensions[1] >> copyOp.mipLevel, 1);
+        const int mipDepth = std::max(dimensions[2] >> copyOp.mipLevel, 1);
+
         // In a PBO transfer the pixels argument of glTextureSubImage*() and
         // glCompressedTextureSubImage*() is interpreted as the PBO byte offset.
         void* byteOffset = (void*)copyOp.sourceByteOffset;
@@ -444,7 +456,7 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1],
-                    dimensions[0], dimensions[1],
+                    mipWidth, mipHeight,
                     format,
                     copyOp.byteSize,
                     byteOffset);
@@ -453,7 +465,7 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1],
-                    dimensions[0], dimensions[1],
+                    mipWidth, mipHeight,
                     format,
                     type,
                     byteOffset);
@@ -465,7 +477,7 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1], offsets[2],
-                    dimensions[0], dimensions[1], dimensions[2],
+                    mipWidth, mipHeight, mipDepth,
                     format,
                     copyOp.byteSize,
                     byteOffset);
@@ -474,7 +486,7 @@ HgiGLOps::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
                     dstTexture->GetTextureId(),
                     copyOp.mipLevel,
                     offsets[0], offsets[1], offsets[2],
-                    dimensions[0], dimensions[1], dimensions[2],
+                    mipWidth, mipHeight, mipDepth,
                     format,
                     type,
                     byteOffset);
