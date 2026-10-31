@@ -178,7 +178,6 @@ HdStReadBuffer(HgiBufferHandle const& buffer,
     copyOp.sourceByteOffset = offset;
 
     HgiBlitCmds* blitCmds = resourceRegistry->GetGlobalBlitCmds();
-    blitCmds->InsertMemoryBarrier(HgiMemoryBarrierBits::HgiMemoryBarrierAll);
     blitCmds->CopyBufferGpuToCpu(copyOp);
     resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
     
@@ -205,8 +204,7 @@ HdStBufferRelocator::Commit(HgiBlitCmds* blitCmds)
     HgiBufferGpuToGpuOp blitOp;
     blitOp.gpuSourceBuffer = _srcBuffer;
     blitOp.gpuDestinationBuffer = _dstBuffer;
-
-    blitCmds->InsertMemoryBarrier(HgiMemoryBarrierBits::HgiMemoryBarrierAll);
+    
     TF_FOR_ALL (it, _queue) {
         blitOp.sourceByteOffset = it->readOffset;
         blitOp.byteSize = it->copySize;

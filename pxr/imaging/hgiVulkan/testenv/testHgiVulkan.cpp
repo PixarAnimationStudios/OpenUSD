@@ -590,18 +590,20 @@ TestVulkanBuffer(HgiVulkan& hgiVulkan)
 
     // Test another CPU to GPU copy, this time with different src and dst
     // offsets.
-
-    // Write new data into CPU staging area
     stagingBlob[8] = 789;
     stagingBlob[9] = 789;
     stagingBlob[10] = 789;
     stagingBlob[11] = 789;
-    memcpy(cpuAddress, stagingBlob.data() + 8, 8 * sizeof(blob[0]));
 
-    // Schedule copy from staging area to GPU device-local buffer.
+    // We're not using cpuAddress to stage here because with UMA/ReBAR that's
+    // the buffer itself.
+    const std::vector<uint32_t> sourceBlob(
+        stagingBlob.begin() + 8, stagingBlob.end());
+
+    // Schedule copy from CPU memory to GPU device-local buffer.
     HgiBufferCpuToGpuOp transferOp2;
     transferOp2.byteSize = 8 * sizeof(blob[0]);
-    transferOp2.cpuSourceBuffer = cpuAddress;
+    transferOp2.cpuSourceBuffer = sourceBlob.data();
     transferOp2.sourceByteOffset = 0;
     transferOp2.destinationByteOffset = 8 * sizeof(blob[0]);
     transferOp2.gpuDestinationBuffer = buffer;

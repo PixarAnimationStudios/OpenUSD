@@ -339,6 +339,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     vulkan13Features.shaderDemoteToHelperInvocation =
         _capabilities->vkVulkan13Features.shaderDemoteToHelperInvocation;
+    vulkan13Features.synchronization2 =
+        _capabilities->vkVulkan13Features.synchronization2;
     vulkan13Features.pNext = features2.pNext;
     features2.pNext = &vulkan13Features;
 

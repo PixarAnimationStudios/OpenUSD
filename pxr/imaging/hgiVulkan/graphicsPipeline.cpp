@@ -611,11 +611,7 @@ HgiVulkanGraphicsPipeline::_ProcessAttachment(
     //
     // Description
     //
-    // The layout at the end of the render pass.
-    // XXX We don't know previous or next passes so for now we transition back
-    // to our default. This may cause non-ideal image transitions.
-    VkImageLayout layout =
-        HgiVulkanTexture::GetDefaultImageLayout(attachment.usage);
+    const VkImageLayout layout = vkRef->layout;
 
     vkAttachDesc->sType = {VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2};
     vkAttachDesc->pNext = nullptr;

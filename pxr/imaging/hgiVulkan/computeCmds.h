@@ -11,6 +11,7 @@
 #include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/computePipeline.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/resourceTracker.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -85,6 +86,8 @@ private:
     HgiVulkanCommandBuffer* _commandBuffer;
     VkPipelineLayout _pipelineLayout;
     HgiResourceBindingsHandle _resourceBindings;
+    HgiResourceBindingsHandle _trackedResources;
+    HgiVulkanResourceTracker _tracker;
     bool _pushConstantsDirty;
     uint8_t* _pushConstants;
     uint32_t _pushConstantsByteSize;

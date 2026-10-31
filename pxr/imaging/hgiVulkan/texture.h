@@ -11,6 +11,7 @@
 #include "pxr/base/tf/span.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/resourceTracker.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 
@@ -80,6 +81,10 @@ public:
     HGIVULKAN_API
     uint64_t & GetInflightBits();
 
+    /// Returns the texture state use for resource tracking.
+    HGIVULKAN_API
+    HgiVulkanResourceState* GetState();
+
     /// Schedule a copy of texels from the provided buffer into the texture.
     /// If mipLevel is less than one, all mip levels will be copied from buffer.
     HGIVULKAN_API
@@ -95,22 +100,10 @@ public:
     HGIVULKAN_API
     HgiTextureUsage SubmitLayoutChange(HgiTextureUsage newLayout) override;
 
-    /// Transition image from oldLayout to newLayout.
-    /// `producerAccess` of 0 means:
-    ///    Only invalidation barrier, no flush barrier. For read-only resources.
-    ///    Meaning: There are no pending writes.
-    ///    Multiple passes can go back to back which all read the resource.
-    /// If mipLevel is > -1 only that mips level will be transitioned.
+    /// Move the image out of the initial VK_IMAGE_LAYOUT_UNDEFINED into the
+    /// layout inferred by GetDefaultImageLayout().
     HGIVULKAN_API
-    void LayoutBarrier(
-        HgiVulkanCommandBuffer* cb,
-        VkImageLayout oldLayout,
-        VkImageLayout newLayout,
-        VkAccessFlags producerAccess,
-        VkAccessFlags consumerAccess,
-        VkPipelineStageFlags producerStage,
-        VkPipelineStageFlags consumerStage,
-        int32_t mipLevel = -1);
+    void TransitionFromUndefined(HgiVulkanCommandBuffer* cb);
 
     /// Returns the layout for a texture based on its usage flags.
     HGIVULKAN_API
@@ -148,10 +141,10 @@ private:
 
     VkImage _vkImage;
     VkImageView _vkImageView;
-    VkImageLayout _vkImageLayout;
     VmaAllocation _vmaImageAllocation;
     HgiVulkan* _hgi;
     uint64_t _inflightBits;
+    std::shared_ptr<HgiVulkanResourceState> _state;
     std::unique_ptr<HgiVulkanBuffer> _stagingBuffer;
     void* _cpuStagingAddress;
     bool _hasHostImageCopy;

@@ -106,25 +106,26 @@ HgiVulkanBuffer::HgiVulkanBuffer(
             HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
             VkCommandBuffer vkCmdBuf = cb->GetVulkanCommandBuffer();
 
+            HgiVulkanResourceUse copyRead;
+            copyRead.stages = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+            copyRead.access = VK_ACCESS_2_TRANSFER_READ_BIT;
+
+            HgiVulkanResourceUse copyWrite;
+            copyWrite.stages = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT;
+            copyWrite.access = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            copyWrite.write = true;
+
+            HgiVulkanResourceTracker tracker{hgi->GetCapabilities()};
+            tracker.Use(stagingBuffer->GetState(), copyRead);
+            tracker.Use(&_state, copyWrite);
+            tracker.FlushWithoutRestore(vkCmdBuf);
+
             // Copy data from staging buffer to device-local buffer.
             VkBufferCopy copyRegion = {};
             copyRegion.srcOffset = 0;
             copyRegion.dstOffset = 0;
             copyRegion.size = stagingDesc.byteSize;
             vkCmdCopyBuffer(vkCmdBuf, vkStagingBuf, _vkBuffer, 1, &copyRegion);
-
-            VkBufferMemoryBarrier memoryBarrier =
-                 GetBarrier(VK_ACCESS_MEMORY_WRITE_BIT,
-                    VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT);
-
-            vkCmdPipelineBarrier(
-                vkCmdBuf,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                0,
-                0, nullptr,
-                1, &memoryBarrier,
-                0, nullptr);
 
             // We don't know if this buffer is a static (immutable) or
             // dynamic (animated) buffer. We assume that most buffers are
@@ -219,6 +220,12 @@ HgiVulkanBuffer::GetInflightBits()
     return _inflightBits;
 }
 
+HgiVulkanResourceState*
+HgiVulkanBuffer::GetState()
+{
+    return &_state;
+}
+
 HgiVulkanMappedBufferUniquePointer
 HgiVulkanBuffer::Map() const
 {
@@ -227,22 +234,6 @@ HgiVulkanBuffer::Map() const
     void* memory = nullptr;
     HGIVULKAN_VERIFY_VK_RESULT(vmaMapMemory(vma, _vmaAllocation, &memory));
     return HgiVulkanMappedBufferUniquePointer(memory, {vma, _vmaAllocation});
-}
-
-VkBufferMemoryBarrier HgiVulkanBuffer::GetBarrier(
-    VkAccessFlags srcAccess,
-    VkAccessFlags dstAccess) const
-{
-    VkBufferMemoryBarrier bufferBar =
-        { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, nullptr };
-    bufferBar.buffer = GetVulkanBuffer();
-    bufferBar.offset = 0;
-    bufferBar.size = GetByteSizeOfResource();
-    bufferBar.srcAccessMask = srcAccess;
-    bufferBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    bufferBar.dstAccessMask = dstAccess;
-    bufferBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    return bufferBar;
 }
 
 std::unique_ptr<HgiVulkanBuffer>

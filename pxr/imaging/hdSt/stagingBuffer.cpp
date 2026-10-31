@@ -170,7 +170,6 @@ HdStStagingBuffer::Flush()
         blitCmds->CopyBufferCpuToGpu(op);
     }
 
-    blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     for (auto const &copyOp : _gpuCopyOps) {
         blitCmds->CopyBufferGpuToGpu(copyOp);
     }
