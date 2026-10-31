@@ -6,7 +6,9 @@
 //
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dirtyBitsTranslator.h"
+#include "pxr/imaging/hd/field.h"
 
 #include "pxr/base/tf/staticTokens.h"
 
@@ -145,6 +147,76 @@ TestCustomRprimTypes()
     return true;
 }
 
+bool
+TestCustomBprimTypes()
+{
+    // Unknown bprim types with no registered translators fall back to
+    // AllDirty in both directions, just like sprims.
+    HdDataSourceLocatorSet dirtyStuff(HdCameraSchema::GetDefaultLocator());
+
+    if (HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
+            _tokens->burger, dirtyStuff) != HdChangeTracker::AllDirty) {
+        std::cerr << "Expected dirty burger." << std::endl;
+        return false;
+    }
+
+    HdDataSourceLocatorSet burgerSet;
+    HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(
+        _tokens->burger, DirtySalsa, &burgerSet);
+    if (burgerSet != HdDataSourceLocatorSet::UniversalSet()) {
+        std::cerr << "Expected universal locator set for dirty burger."
+                  << std::endl;
+        return false;
+    }
+
+    HdDataSourceLocatorSet cleanBurgerSet;
+    HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(
+        _tokens->burger, HdChangeTracker::Clean, &cleanBurgerSet);
+    if (!cleanBurgerSet.IsEmpty()) {
+        std::cerr << "Expected empty locator set for clean burger."
+                  << std::endl;
+        return false;
+    }
+
+    // Built-in bprim types must be unaffected by the fallback.
+    if (HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
+            HdLegacyPrimTypeTokens->openvdbAsset,
+            HdDataSourceLocatorSet::UniversalSet()) != HdField::DirtyParams) {
+        std::cerr << "Expected DirtyParams for universally dirty openvdbAsset."
+                  << std::endl;
+        return false;
+    }
+
+    // This call would normally go in the type registry for something like a
+    // prim adapter, render delegate or scene delegate (who might care deeply
+    // about the dirtiness of tacos)
+    HdDirtyBitsTranslator::RegisterTranslatorsForCustomBprimType(
+        _tokens->taco,
+        _ConvertLocatorSetToDirtyBitsForTacos,
+        _ConvertDirtyBitsToLocatorSetForTacos);
+
+    // confirm that dirtying an unrelated locator does not dirty a taco
+    if (HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
+            _tokens->taco, dirtyStuff) != HdChangeTracker::Clean) {
+        std::cerr << "Expected clean taco." << std::endl;
+        return false;
+    }
+
+    // test round trip of bits
+    HdDirtyBits bits = DirtyTortilla | DirtyProtein;
+    HdDataSourceLocatorSet set;
+    HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(
+        _tokens->taco, bits, &set);
+
+    if (HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(_tokens->taco, set)
+            != bits) {
+        std::cerr << "Roundtrip of dirty taco doesn't match." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
 
 //-----------------------------------------------------------------------------
 
@@ -162,6 +234,7 @@ int main(int argc, char**argv)
     int i = 0;
     TEST(TestCustomSprimTypes);
     TEST(TestCustomRprimTypes);
+    TEST(TestCustomBprimTypes);
     // ------------------------------------------------------------------------
     std::cout << "DONE testHdDirtyBitsTranslator: SUCCESS" << std::endl;
     return 0;
