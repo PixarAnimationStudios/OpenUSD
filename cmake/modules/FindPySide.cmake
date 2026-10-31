@@ -32,11 +32,13 @@ if (pySideImportResult EQUAL 1 OR PYSIDE_USE_PYSIDE2)
 endif()
 
 # If nothing is found, the result will be <VAR>-NOTFOUND.
-find_program(PYSIDEUICBINARY NAMES ${pySideUIC} HINTS ${PYSIDE_BIN_DIR})
-
+find_program(PYSIDEUICBINARY NAMES ${pySideUIC} uic HINTS ${PYSIDE_BIN_DIR})
 if (pySideImportResult)
     # False if the constant ends in the suffix -NOTFOUND.
     if (PYSIDEUICBINARY)
+        if (PYSIDEUICBINARY STREQUAL uic)
+            set(PYSIDEUICBINARY "uic -g python")
+        endif()
         message(STATUS "Found ${pySideImportResult}: with ${PYTHON_EXECUTABLE}, will use ${PYSIDEUICBINARY} for pyside-uic binary")
         set(PYSIDE_AVAILABLE True)
     else()
