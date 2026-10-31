@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (geometry)                                  \
     (hermite)                                   \
     (hullIndices)                               \
+    (ids)                                       \
     (indices)                                   \
     (isFlipped)                                 \
     (itemsDrawn)                                \

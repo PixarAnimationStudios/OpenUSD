@@ -271,6 +271,11 @@ _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
             HdTokens->angularVelocities,
             UsdGeomTokens->angularVelocities,
             HdPrimvarSchemaTokens->instance
+        },
+        {
+            HdTokens->ids,
+            UsdGeomTokens->ids,
+            HdPrimvarSchemaTokens->instance
         }
     };
 
