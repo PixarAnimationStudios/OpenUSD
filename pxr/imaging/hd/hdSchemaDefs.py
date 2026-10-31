@@ -1470,6 +1470,7 @@
         SCHEMA_TOKEN = 'cube',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
             ('size', T_DOUBLE, {}),
         ],
     ),
@@ -1481,6 +1482,7 @@
         SCHEMA_TOKEN = 'sphere',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
             ('radius', T_DOUBLE, {}),
         ],
     ),
@@ -1492,6 +1494,7 @@
         SCHEMA_TOKEN = 'cone',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
             ('height', T_DOUBLE, {}),
             ('radius', T_DOUBLE, {}),
             ('axis', T_TOKEN, {}),
@@ -1509,6 +1512,7 @@
         SCHEMA_TOKEN = 'cylinder',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
             ('height', T_DOUBLE, {}),
             ('radius', T_DOUBLE,
              dict(DOC = '''
@@ -1532,6 +1536,7 @@
         SCHEMA_TOKEN = 'capsule',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('doubleSided', T_BOOL, {}),
             ('height', T_DOUBLE, {}),
             ('radius', T_DOUBLE,
              dict(DOC = '''
