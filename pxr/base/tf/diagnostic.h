@@ -440,7 +440,9 @@ struct Tf_DiagnosticHelper {
 
     TF_API void IssueError(std::string const &msg) const;
     TF_API void IssueError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    [[noreturn]]
     TF_API void IssueFatalError(std::string const &msg) const;
+    [[noreturn]]
     TF_API void IssueFatalError(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
     TF_API void IssueWarning(std::string const &msg) const;
     TF_API void IssueWarning(char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
