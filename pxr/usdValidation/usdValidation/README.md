@@ -338,8 +338,26 @@ registry.RegisterPluginValidator(validatorName, stageTaskFn, _ValidatorFixers())
 Note that UsdValidationRegistry does not manage fixers directly, and these are
 held by their respective UsdValidationValidator(s).
 
-UsdValidationFixer::ApplyFix() calls `editTarget.GetLayer()->Save()` internally
-on success. The target layer must be file-backed (not anonymous).
+By default, UsdValidationFixer::ApplyFix() calls `editTarget.GetLayer()->Save()`
+internally on success. Anonymous layers have no backing asset, so they are not
+saved and the fix remains an unsaved edit on the layer.
+
+Pass UsdValidationFixerSaveMode::DoNotSave to skip the save, for example when
+applying several fixes to the same layer and saving it once afterwards, or when
+the layer is known not to be saveable. The client is then responsible for
+saving the layer.
+
+```cpp
+for (const UsdValidationError &error : errors) {
+    for (const UsdValidationFixer *fixer : error.GetFixers()) {
+        if (fixer->CanApplyFix(error, editTarget)) {
+            fixer->ApplyFix(error, editTarget, UsdTimeCode::Default(),
+                            UsdValidationFixerSaveMode::DoNotSave);
+        }
+    }
+}
+editTarget.GetLayer()->Save();
+```
 
 ## Listening for Validator Registration  {#listening_for_registration}
 
@@ -825,11 +843,15 @@ stage = Usd.Stage.Open("asset.usda")
 prim = stage.GetPrimAtPath("/MyPrim")
 errors = validator.Validate(prim)
 
+editTarget = Usd.EditTarget(stage.GetRootLayer())
 for error in errors:
     for f in error.GetFixersByErrorName():
-        editTarget = Usd.EditTarget(stage.GetRootLayer())
         if f.CanApplyFix(error, editTarget):
-            f.ApplyFix(error, editTarget)
+            f.ApplyFix(error, editTarget,
+                       saveMode=UsdValidation.ValidationFixerSaveMode.DoNotSave)
+
+# Save once after all fixes have been applied.
+stage.GetRootLayer().Save()
 ```
 
 If `fixerImplFn` or `canApplyFn` raises, Python callers see the original

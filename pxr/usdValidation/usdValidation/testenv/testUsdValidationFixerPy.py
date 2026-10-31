@@ -13,13 +13,14 @@ Exercises:
 2. Passing fixers to explicit validator registration methods.
 3. Retrieving fixers from validators and errors.
 4. Invoking CanApplyFix and ApplyFix with Python-backed fixers.
+5. Saving the edit target's layer after ApplyFix authors a fix.
 """
 
 import os
 import unittest
 from unittest import mock
 
-from pxr import Plug, Sdf, Usd, UsdValidation
+from pxr import Plug, Sdf, Tf, Usd, UsdValidation
 
 
 class TestUsdValidationFixerPy(unittest.TestCase):
@@ -464,6 +465,90 @@ class TestUsdValidationFixerPy(unittest.TestCase):
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
+
+    # ------------------------------------------------------------------
+    # Layer saving tests
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _MakeAuthoringFixer(primName):
+        """Return a fixer that authors a prim named primName to the edit
+        target's layer."""
+        def _ImplFn(error, editTarget, timeCode):
+            return bool(Sdf.CreatePrimInLayer(
+                editTarget.GetLayer(), Sdf.Path("/" + primName)))
+
+        return UsdValidation.ValidationFixer(
+            name=primName + "Fixer",
+            description="Authors " + primName,
+            fixerImplFn=_ImplFn,
+            canApplyFn=TestUsdValidationFixerPy._CanApplyFn,
+        )
+
+    def test_ApplyFixAnonymousLayer(self):
+        """A fix authored to an anonymous layer succeeds and is not saved."""
+        stage = Usd.Stage.CreateInMemory()
+        layer = stage.GetRootLayer()
+        self.assertTrue(layer.anonymous)
+        error = self._StageTask(stage, None)[0]
+        fixer = self._MakeAuthoringFixer("AnonymousFix")
+
+        self.assertTrue(fixer.ApplyFix(error, stage.GetEditTarget()))
+        self.assertTrue(layer.GetPrimAtPath("/AnonymousFix"))
+        self.assertTrue(layer.dirty)
+
+    def test_ApplyFixSavesFileBackedLayer(self):
+        """A fix authored to a file-backed layer is saved by default."""
+        layer = Sdf.Layer.CreateNew("applyFixSaves.usda")
+        error = self._LayerTask(layer)[0]
+        fixer = self._MakeAuthoringFixer("SavedFix")
+
+        self.assertTrue(fixer.ApplyFix(error, Usd.EditTarget(layer)))
+        self.assertFalse(layer.dirty)
+        savedLayer = Sdf.Layer.OpenAsAnonymous("applyFixSaves.usda")
+        self.assertTrue(savedLayer.GetPrimAtPath("/SavedFix"))
+
+    def test_ApplyFixDoNotSave(self):
+        """With DoNotSave, several fixes can be applied and saved once."""
+        layer = Sdf.Layer.CreateNew("applyFixDoNotSave.usda")
+        error = self._LayerTask(layer)[0]
+        editTarget = Usd.EditTarget(layer)
+        doNotSave = UsdValidation.ValidationFixerSaveMode.DoNotSave
+
+        for primName in ("FirstFix", "SecondFix"):
+            fixer = self._MakeAuthoringFixer(primName)
+            self.assertTrue(
+                fixer.ApplyFix(error, editTarget, saveMode=doNotSave))
+
+        self.assertTrue(layer.dirty)
+        onDisk = Sdf.Layer.OpenAsAnonymous("applyFixDoNotSave.usda")
+        self.assertFalse(onDisk.GetPrimAtPath("/FirstFix"))
+        self.assertFalse(onDisk.GetPrimAtPath("/SecondFix"))
+
+        self.assertTrue(layer.Save())
+        onDisk = Sdf.Layer.OpenAsAnonymous("applyFixDoNotSave.usda")
+        self.assertTrue(onDisk.GetPrimAtPath("/FirstFix"))
+        self.assertTrue(onDisk.GetPrimAtPath("/SecondFix"))
+
+    def test_ApplyFixSaveFails(self):
+        """A failed save is reported even though the fix was authored;
+        DoNotSave skips the save."""
+        layer = Sdf.Layer.CreateNew("applyFixSaveFails.usda")
+        layer.SetPermissionToSave(False)
+        error = self._LayerTask(layer)[0]
+        editTarget = Usd.EditTarget(layer)
+
+        fixer = self._MakeAuthoringFixer("SaveFailsFix")
+        with self.assertRaisesRegex(Tf.ErrorException, "saving not allowed"):
+            fixer.ApplyFix(error, editTarget)
+        self.assertTrue(layer.GetPrimAtPath("/SaveFailsFix"))
+
+        fixer = self._MakeAuthoringFixer("NotSavedFix")
+        self.assertTrue(fixer.ApplyFix(
+            error, editTarget,
+            saveMode=UsdValidation.ValidationFixerSaveMode.DoNotSave))
+        self.assertTrue(layer.GetPrimAtPath("/NotSavedFix"))
+        self.assertTrue(layer.dirty)
 
 
 if __name__ == "__main__":
