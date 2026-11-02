@@ -118,8 +118,8 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         self.assertEqual(position1, Gf.Vec3f(0.0, 0.0, 0.0))
         self.assertEqual(orientation1, Gf.Quatf(1.0))
 
-        # An unset side with an authored world-anchor pose returns that pose:
-        # both position and orientation pass through unchanged.
+        # An unset attachment with an authored world-anchor pose returns that
+        # pose: both position and orientation pass through unchanged.
         authored_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
         joint.CreateLocalPos1Attr().Set(Gf.Vec3f(7.0, 8.0, 9.0))
         joint.CreateLocalRot1Attr().Set(authored_rot)
@@ -162,7 +162,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         # A scaled body with a collider under it. The joint's rel points at the
         # collider (not the body), so the authored local pose is rebased into
         # the body frame and the body's scale is baked into the translation,
-        # because physics has no notion of scale.
+        # because rigid body poses carry no scale.
         body = UsdGeom.Xform.Define(self.stage, "/body")
         body.AddScaleOp().Set(Gf.Vec3f(2.0, 2.0, 2.0))
         UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
@@ -289,8 +289,8 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         self.assertEqual(cleared, Gf.Vec3f(10.0, 0.0, 0.0))
 
     def test_get_local_pose_world_owned_preserves_target_frame(self):
-        """A joint side whose target has no enclosing enabled body is owned by
-        the world (a static collider). Its authored pose is
+        """A joint attachment whose target has no enclosing enabled body is
+        owned by the world (a static collider). Its authored pose is
         expressed against the target prim, so it must be rebased into world
         frame: the target's full placement (translation and rotation), not just
         its scale, has to survive or the joint is anchored in the wrong place.
@@ -342,11 +342,11 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         self.assertQuatClose(orientation0, expected_composed)
 
     def test_getters_match_parser(self):
-        """The joint parser and the public getters resolve joint sides through
-        the same functions, so every parsed joint must report the bodies and
-        local poses GetBody0/1 and GetLocalPose0/1 return, with or without an
-        xform cache. A dangling side has no getter pose; the parser reports
-        its authored pose, normalized.
+        """The joint parser and the public getters resolve joint attachments
+        through the same functions, so every parsed joint must report the
+        bodies and local poses GetBody0/1 and GetLocalPose0/1 return, with or
+        without an xform cache. A dangling attachment has no getter pose; the
+        parser reports its authored pose, normalized.
         """
         self.setup_scene()
         stage = self.stage
@@ -422,7 +422,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         cache = UsdGeom.XformCache()
         for joint in joints:
             desc = parsed[joint.GetPath()]
-            sides = [
+            attachments = [
                 (joint.GetBody0Rel(), joint.GetBody0, joint.GetLocalPose0,
                  desc.rel0, desc.body0, desc.localPose0Position,
                  desc.localPose0Orientation, authoredPos),
@@ -431,7 +431,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
                  desc.localPose1Orientation, -authoredPos),
             ]
             for (bodyRel, getBody, getLocalPose, parsedRel, parsedBody,
-                 parsedPos, parsedRot, sideAuthoredPos) in sides:
+                 parsedPos, parsedRot, attachmentAuthoredPos) in attachments:
                 # rel0/rel1 report the authored first target, even when it is
                 # dangling and resolves to no body.
                 targets = bodyRel.GetTargets()
@@ -442,7 +442,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
                                  body.GetPath() if body else Sdf.Path())
                 for pose in (getLocalPose(), getLocalPose(cache)):
                     expectedPos, expectedRot = (
-                        pose if pose else (sideAuthoredPos, authoredRot))
+                        pose if pose else (attachmentAuthoredPos, authoredRot))
                     self.assertTrue(
                         Gf.IsClose(parsedPos, expectedPos, 1e-5),
                         "%s: parsed %s, getter %s"

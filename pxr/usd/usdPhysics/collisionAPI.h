@@ -207,14 +207,10 @@ public:
 
     /// Get the rigid body that owns this collider.
     ///
-    /// A collider belongs to the nearest ancestor (or itself) with an enabled
-    /// UsdPhysicsRigidBodyAPI. A body whose physics:rigidBodyEnabled resolves
-    /// to false takes no part in simulation and is treated as though the API
-    /// were not applied at all, so the search continues past it to the nearest
-    /// enabled body above.
+    /// Searches this prim and its ancestors for the nearest enabled
+    /// UsdPhysicsRigidBodyAPI.
     ///
-    /// \return The enabled rigid body prim that owns this collider, or an
-    /// invalid prim when no enabled rigid body exists in its ancestry.
+    /// \return The owning rigid body prim, or an invalid prim if there is none.
     USDPHYSICS_API
     UsdPrim GetBody() const;
 };

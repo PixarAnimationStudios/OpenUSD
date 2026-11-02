@@ -18,31 +18,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomXformCache;
 
-// UsdPhysicsJoint::GetBody0/1 and GetLocalPose0/1 and the joint parser all
-// resolve a joint side through these two functions, so they report the same
-// bodies and local poses. testUsdPhysicsJoint checks that they agree.
+// The public getters and the parser share these so they resolve the same
+// bodies and local poses.
 
-/// Return the prim the first target of a joint body relationship points at,
-/// or an invalid prim when the relationship is invalid, has no targets, or its
-/// target is not a prim on the stage. If \p targetPath is given, it receives
-/// the first target, or an empty path when there is none; that path is set even
-/// when the target is dangling and the returned prim is invalid.
+/// Return the nearest prim at or above \p prim with an enabled
+/// UsdPhysicsRigidBodyAPI, or an invalid prim when there is none.
+UsdPrim
+UsdPhysics_FindEnclosingRigidBody(const UsdPrim& prim);
+
+/// Return the prim targeted by a joint body relationship, or an invalid prim
+/// when there is no target or it is not on the stage. \p targetPath receives
+/// the target path even when the target is dangling.
 UsdPrim
 UsdPhysics_GetJointBodyTarget(const UsdRelationship& bodyRel,
                               SdfPath* targetPath = nullptr);
 
-/// Resolve one side of a joint whose body relationship targets \p target.
-/// Returns the nearest enclosing enabled rigid body, or an invalid prim when
-/// the side is owned by the world, and writes the joint-local pose for the
-/// authored pose in that body's frame. An invalid \p target (an unset or
-/// dangling relationship) anchors the side to the world at its authored pose.
+/// Return the rigid body a joint attaches to through \p target, or an invalid
+/// prim for the world, and write the authored local pose expressed in that
+/// frame.
 UsdPrim
-UsdPhysics_ResolveJointSide(const UsdPrim& target,
-                            const GfVec3f& authoredPosition,
-                            const GfQuatf& authoredOrientation,
-                            UsdGeomXformCache* xformCache,
-                            GfVec3f* outPosition,
-                            GfQuatf* outOrientation);
+UsdPhysics_ResolveJointAttachment(const UsdPrim& target,
+                                  const GfVec3f& authoredPosition,
+                                  const GfQuatf& authoredOrientation,
+                                  UsdGeomXformCache* xformCache,
+                                  GfVec3f* outPosition,
+                                  GfQuatf* outOrientation);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

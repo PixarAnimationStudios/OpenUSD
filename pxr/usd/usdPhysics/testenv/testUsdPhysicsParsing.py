@@ -657,9 +657,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
 
     def test_joint_dangling_body_rel_passes_authored_pose(self):
-        """A joint side whose body relationship targets a path that does not
-        resolve to a prim on the stage keeps the authored local pose. There is
-        no body to resolve, so body0 is empty, but the authored localPos0 /
+        """A joint attachment whose body relationship targets a path that does
+        not resolve to a prim on the stage keeps the authored local pose. There
+        is no body to resolve, so body0 is empty, but the authored localPos0 /
         localRot0 are passed through unchanged rather than zeroed.
         """
         stage = Usd.Stage.CreateInMemory()
@@ -694,10 +694,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(joint_found)
 
     def test_joint_unset_body_rel_passes_authored_pose(self):
-        """A joint side with no body relationship is anchored to the world at
-        its authored local pose. body0 is empty and the authored localPos0 /
+        """A joint attachment with no body relationship is anchored to the world
+        at its authored local pose. body0 is empty and the authored localPos0 /
         localRot0 are passed through unchanged rather than zeroed, while the
-        other side still resolves to its body.
+        other attachment still resolves to its body.
         """
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)

@@ -710,6 +710,36 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
         self.assertNotIn(disabled.GetPrim().GetPath(), collisionPaths)
         self.assertNotIn(nestedCollider.GetPrim().GetPath(), collisionPaths)
 
+    def test_get_collision_prims_instance_proxy(self):
+        self.setup_scene()
+
+        # Prototype authored outside the rigid-body hierarchy, holding a
+        # collider and a nested rigid body with its own collider.
+        self.stage.OverridePrim("/Prototype_Collisions")
+        cube = UsdGeom.Cube.Define(self.stage, "/Prototype_Collisions/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+        nestedBody = UsdGeom.Xform.Define(
+            self.stage, "/Prototype_Collisions/nestedBody")
+        UsdPhysics.RigidBodyAPI.Apply(nestedBody.GetPrim())
+        nestedCollider = UsdGeom.Cube.Define(
+            self.stage, "/Prototype_Collisions/nestedBody/collider")
+        UsdPhysics.CollisionAPI.Apply(nestedCollider.GetPrim())
+
+        # Reference the prototype under the body and make it instanceable.
+        body = UsdGeom.Xform.Define(self.stage, "/World/Body")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collisions = self.stage.DefinePrim("/World/Body/collisions")
+        collisions.GetReferences().AddInternalReference(
+            "/Prototype_Collisions")
+        collisions.SetInstanceable(True)
+
+        # The collider is found through its instance proxy, and the nested
+        # body's collider is pruned even though it is also an instance proxy.
+        collisionPrims = rigidBodyAPI.GetCollisionPrims()
+        self.assertEqual([p.GetPath() for p in collisionPrims],
+                         [Sdf.Path("/World/Body/collisions/cube")])
+        self.assertTrue(collisionPrims[0].IsInstanceProxy())
+
     def test_collider_get_body(self):
         self.setup_scene()
 

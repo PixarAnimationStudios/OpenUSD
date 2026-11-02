@@ -459,30 +459,20 @@ std::vector<UsdPrim> UsdPhysicsRigidBodyAPI::GetCollisionPrims() const
         return collisionPrims;
     }
 
-    // traverse the subtree belonging to this body and gather its colliders.
-    // Prune the subtree rooted at any enabled nested rigid body (those
-    // colliders belong to a different body), and skip colliders whose
-    // collision is disabled since they take no part in simulation.
     UsdPrimRange range(usdPrim, UsdTraverseInstanceProxies());
     for (auto it = range.begin(); it != range.end(); ++it)
     {
-        UsdPrim collisionPrim = *it;
+        const UsdPrim collisionPrim = *it;
         if (collisionPrim && collisionPrim != usdPrim &&
             collisionPrim.HasAPI<UsdPhysicsRigidBodyAPI>())
         {
-            // A nested rigid body only forms the root of its own subtree
-            // while it is enabled. A disabled body takes no part in
-            // simulation, so it does not own colliders; its subtree still
-            // belongs to this body and must be traversed, otherwise the
-            // colliders below it would belong to no body at all.
             const UsdPhysicsRigidBodyAPI nestedBodyAPI(collisionPrim);
             bool nestedBodyEnabled = true;
             nestedBodyAPI.GetRigidBodyEnabledAttr().Get(&nestedBodyEnabled);
             if (nestedBodyEnabled)
             {
-                it.PruneChildren(); // Skip the subtree rooted at this prim,
-                                    // the colliders belong to a different
-                                    // rigid body
+                // the colliders below belong to the nested rigid body
+                it.PruneChildren();
                 continue;
             }
         }
@@ -497,7 +487,7 @@ std::vector<UsdPrim> UsdPhysicsRigidBodyAPI::GetCollisionPrims() const
                 continue;
             }
 
-            collisionPrims.push_back(std::move(collisionPrim));
+            collisionPrims.push_back(collisionPrim);
         }
     }
 
@@ -536,7 +526,6 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
         std::vector<UsdPhysicsMassProperties> massProps;
         std::vector<GfMatrix4f> massTransf;
 
-        // gather the enabled colliders that belong to this rigid body
         std::vector<UsdPrim> collisionPrims = GetCollisionPrims();
 
         // get materials for all prims

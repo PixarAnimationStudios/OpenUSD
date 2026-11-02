@@ -925,15 +925,16 @@ bool _ParseCollisionGroupDesc(const UsdPhysicsCollisionGroup& collisionGroup,
     return true;
 }
 
-// Resolve one side of a joint from its relationship's target prim, returning
-// the owning body path and rebasing the authored local pose in place.
-SdfPath _FinalizeJointSide(const UsdPrim& target,
-                           UsdGeomXformCache* xformCache,
-                           GfVec3f* localPosition, GfQuatf* localOrientation)
+// Resolve a joint attachment, returning the body path and rebasing the local
+// pose in place
+SdfPath _FinalizeJointAttachment(const UsdPrim& target,
+                                 UsdGeomXformCache* xformCache,
+                                 GfVec3f* localPosition,
+                                 GfQuatf* localOrientation)
 {
     const GfVec3f authoredPosition = *localPosition;
     const GfQuatf authoredOrientation = *localOrientation;
-    const UsdPrim body = UsdPhysics_ResolveJointSide(
+    const UsdPrim body = UsdPhysics_ResolveJointAttachment(
         target, authoredPosition, authoredOrientation, xformCache,
         localPosition, localOrientation);
     return body ? body.GetPrimPath() : SdfPath();
@@ -944,14 +945,12 @@ void _FinalizeJoint(const UsdPhysicsJoint& jointPrim,
                    UsdGeomXformCache* xformCache,
                    UsdPhysicsJointDesc* outJointDesc)
 {
-    // Read each side's target once, then resolve its owning body and the
-    // joint-local anchor pose in that body's frame through the same functions
-    // as UsdPhysicsJoint::GetBody0 / GetLocalPose0 (see bodyResolution.h).
     const UsdPrim target0 = UsdPhysics_GetJointBodyTarget(
         jointPrim.GetBody0Rel(), &outJointDesc->rel0);
     const UsdPrim target1 = UsdPhysics_GetJointBodyTarget(
         jointPrim.GetBody1Rel(), &outJointDesc->rel1);
 
+    // joint bodies anchor point local transforms    
     GfVec3f t0(0.f);
     GfVec3f t1(0.f);
     GfQuatf q0(1.f);
@@ -961,8 +960,10 @@ void _FinalizeJoint(const UsdPhysicsJoint& jointPrim,
     jointPrim.GetLocalPos1Attr().Get(&t1);
     jointPrim.GetLocalRot1Attr().Get(&q1);
 
-    outJointDesc->body0 = _FinalizeJointSide(target0, xformCache, &t0, &q0);
-    outJointDesc->body1 = _FinalizeJointSide(target1, xformCache, &t1, &q1);
+    outJointDesc->body0 =
+        _FinalizeJointAttachment(target0, xformCache, &t0, &q0);
+    outJointDesc->body1 =
+        _FinalizeJointAttachment(target1, xformCache, &t1, &q1);
 
     outJointDesc->localPose0Position = t0;
     outJointDesc->localPose0Orientation = q0;
@@ -2826,8 +2827,7 @@ bool UsdPhysicsLoadStageFromPrimRange(
     _ProcessPhysicsPrims<UsdPhysicsRigidBodyMaterialDesc, UsdPhysicsMaterialAPI>
         (materialPrims, materialDescs, _ParseRigidBodyMaterialDesc);
 
-    // Joints. Each thread keeps one xform cache across all joint types, since
-    // joints commonly share bodies and anchors, and UsdGeomXformCache is not
+    // Joints share an xform cache per thread; UsdGeomXformCache is not
     // thread-safe.
     tbb::enumerable_thread_specific<UsdGeomXformCache> jointXformCaches;
     const auto withXformCache = [&jointXformCaches](auto parseFn) {

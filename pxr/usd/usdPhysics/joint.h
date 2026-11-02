@@ -382,90 +382,42 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Get the rigid body driven by this joint's body0 relationship.
+    /// Get the rigid body that this joint's body0 relationship attaches to.
     ///
-    /// The relationship target need not itself be a rigid body: it may point at
-    /// a collider or other prim, in which case the owning body is the nearest
-    /// ancestor (or the target itself) with an enabled UsdPhysicsRigidBodyAPI.
-    /// A body whose physics:rigidBodyEnabled resolves to false takes no part in
-    /// simulation and is skipped, so the search continues to the nearest
-    /// enabled body above it. When body0 has no target, an invalid prim is
-    /// returned (a joint with an unset body attaches to the simulation world).
+    /// The relationship may target a collider or other prim below the body,
+    /// so the target and its ancestors are searched for the nearest enabled
+    /// UsdPhysicsRigidBodyAPI.
     ///
-    /// \return The enabled rigid body prim resolved from body0, or an invalid
-    /// prim when body0 is unset or no enabled body exists in its ancestry.
+    /// \return The rigid body prim, or an invalid prim when body0 is unset or
+    /// has no enabled rigid body, in which case the joint attaches to the
+    /// world.
     USDPHYSICS_API
     UsdPrim GetBody0() const;
 
-    /// Get the rigid body driven by this joint's body1 relationship.
-    ///
-    /// See GetBody0() for how the relationship target is resolved to an enabled
-    /// rigid body.
-    ///
-    /// \return The enabled rigid body prim resolved from body1, or an invalid
-    /// prim when body1 is unset or no enabled body exists in its ancestry.
+    /// \sa GetBody0()
     USDPHYSICS_API
     UsdPrim GetBody1() const;
 
-    /// Compute this joint's local pose for body0, expressed in the frame of the
-    /// prim the joint attaches to on that side.
+    /// Compute this joint's local pose for body0.
     ///
-    /// This is the physically resolved pose, not simply the authored
-    /// physics:localPos0 / physics:localRot0. It starts from those authored
-    /// values and, when body0's relationship target is not itself the prim the
-    /// joint attaches to (for example the target is a collider under the body,
-    /// or an arbitrary non-body anchor prim used to place the mechanism in the
-    /// world), rebases the pose into that attachment prim's frame.
+    /// The pose is expressed in the frame of GetBody0(), or in world space
+    /// when the joint attaches to the world. The authored physics:localPos0
+    /// and physics:localRot0 are relative to the body0 target, so they are
+    /// rebased when the target is not the body itself. Any xform scale in the
+    /// attachment frame is applied to the position, which is in stage distance
+    /// units.
     ///
-    /// \note The attachment prim resolved here is more permissive than
-    /// GetBody0(): even when there is no enabled rigid body in the target's
-    /// ancestry, the authored pose is mapped through the target prim's world
-    /// transform (this is how a mechanism is placed via a non-body anchor
-    /// root). So a pose is still produced in cases where GetBody0() returns an
-    /// invalid prim.
-    ///
-    /// \note The resolved frame's scale is baked into the returned position.
-    /// Physics simulation has no notion of scale, so any scale on the body (or
-    /// anchor) is folded into the local translation here. This is deliberate
-    /// and means the returned position will not match the authored
-    /// physics:localPos0 attribute whenever a scale is present in that frame.
-    /// The orientation is normalized.
-    ///
-    /// \param position Set to the (scale-baked) local position.
+    /// \param position Set to the local position.
     /// \param orientation Set to the normalized local orientation.
-    /// \param xformCache Optional cache reused for the local-to-world
-    /// computations. Pass one when resolving many joints in a nested mechanism
-    /// so overlapping ancestor transforms are computed once rather than per
-    /// call.
-    /// \return Always fills the outputs. Returns true when a pose is well
-    /// defined, including when body0 has no relationship target: the joint is
-    /// then anchored to the simulation world and the outputs are the authored
-    /// physics:localPos0 / physics:localRot0 (identity when unauthored).
-    /// Returns false only when body0's relationship target is a path that does
-    /// not resolve to a prim on the stage (a dangling relationship / malformed
-    /// authoring); the outputs are still the authored physics:localPos0 /
-    /// physics:localRot0, passed through unchanged since no frame resolved.
+    /// \param xformCache Optional cache to reuse across calls.
+    /// \return false when body0 targets a path with no prim on the stage, in
+    /// which case the outputs are the authored pose without rebasing; true
+    /// otherwise.
     USDPHYSICS_API
     bool GetLocalPose0(GfVec3f* position, GfQuatf* orientation,
                        UsdGeomXformCache* xformCache = nullptr) const;
 
-    /// Compute this joint's local pose for body1, expressed in the frame of the
-    /// prim the joint attaches to on that side.
-    ///
-    /// See GetLocalPose0() for how the pose is resolved and, in particular, for
-    /// the notes that the attachment resolution is more permissive than
-    /// GetBody1(), that the resolved frame's scale is baked into the returned
-    /// position, and that an unset body1 yields the authored world-anchor pose
-    /// (returning true) while a dangling target passes the authored pose
-    /// through and returns false.
-    ///
-    /// \param position Set to the (scale-baked) local position.
-    /// \param orientation Set to the normalized local orientation.
-    /// \param xformCache Optional cache reused for the local-to-world
-    /// computations; see GetLocalPose0().
-    /// \return true if a pose is well defined (including the unset world-anchor
-    /// case); false only when body1's relationship target does not resolve to a
-    /// prim on the stage, in which case the authored pose is passed through.
+    /// \sa GetLocalPose0()
     USDPHYSICS_API
     bool GetLocalPose1(GfVec3f* position, GfQuatf* orientation,
                        UsdGeomXformCache* xformCache = nullptr) const;
