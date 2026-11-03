@@ -592,6 +592,10 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     
               "#define textureQueryLevels(texture) texture.get_num_mip_levels()\n"
 
+              "template <typename T>\n"
+              "vec4 imageLoad(T texture, int2 coords) {\n"
+              "    return vec4(texture.read(uint2(coords.xy), (uint)0));\n"
+              "}\n"
               "template <typename T, typename Tv>\n"
               "void imageStore(T texture, short2 coords, Tv color) {\n"
               "    return texture.write(color, ushort2(coords.x, coords.y));\n"
