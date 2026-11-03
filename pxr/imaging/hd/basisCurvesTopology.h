@@ -129,7 +129,7 @@ public:
 
     /// Returns the hash value of this topology to be used for instancing.
     HD_API
-    virtual ID ComputeHash() const;
+    virtual ID ComputeHash() const override;
 
     /// Equality check between two basisCurves topologies.
     HD_API
