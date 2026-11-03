@@ -337,6 +337,28 @@ pxr_build_test(testUsdImagingStageSceneIndex
     CPPFILES
         testenv/testUsdImagingStageSceneIndex.cpp
 )
+pxr_build_test(testUsdImagingSubdivisionTags
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingSubdivisionTags.cpp
+)
+
+pxr_build_test(testUsdImagingSubdivisionTagsLegacyDelegate
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingSubdivisionTagsLegacyDelegate.cpp
+)
+
 pxr_build_test(testUsdImagingStageSceneIndexContents
     LIBRARIES
         usdImaging
@@ -469,6 +491,14 @@ pxr_register_test(testUsdImagingStageSceneIndex
     TESTENV testenv/testUsdImagingStageSceneIndex
     EXPECTED_RETURN_CODE 0
 )
+pxr_register_test(testUsdImagingSubdivisionTags
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingSubdivisionTags"
+)
+
+pxr_register_test(testUsdImagingSubdivisionTagsLegacyDelegate
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingSubdivisionTagsLegacyDelegate"
+)
+
 pxr_register_test(testUsdImagingStageSceneIndexContents
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
     TESTENV testenv/testUsdImagingStageSceneIndexContents

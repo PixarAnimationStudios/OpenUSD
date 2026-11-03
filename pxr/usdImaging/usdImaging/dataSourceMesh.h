@@ -30,10 +30,12 @@ public:
 
 private:
     UsdImagingDataSourceSubdivisionTags(
+            const SdfPath &sceneIndexPath,
             UsdGeomMesh usdMesh,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
+    const SdfPath _sceneIndexPath;
     UsdGeomMesh _usdMesh;
     const UsdImagingDataSourceStageGlobals & _stageGlobals;
 };
