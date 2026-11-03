@@ -256,19 +256,20 @@ HgiMetalResourceBindings::BindResources(
 
     for (HgiBufferBindDesc const& bufDesc : _descriptor.buffers) {
         if (!TF_VERIFY(bufDesc.buffers.size() == 1)) continue;
-        if (!(bufDesc.stageUsage & HgiShaderStageCompute)) continue;
 
         HgiBufferHandle const& bufHandle = bufDesc.buffers.front();
         HgiMetalBuffer* metalbuffer =
             static_cast<HgiMetalBuffer*>(bufHandle.Get());
         
         id<MTLBuffer> bufferId = metalbuffer->GetBufferId();
-        NSUInteger offset = bufDesc.offsets.front();
-        size_t argBufferOffset = HgiMetalArgumentOffsetBufferCS
-                               + bufDesc.bindingIndex * sizeof(void*);
-        [argEncoderBuffer setArgumentBuffer:argBuffer
-                                     offset:argBufferOffset];
-        [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+        if ((bufDesc.stageUsage & HgiShaderStageCompute)) {
+            NSUInteger offset = bufDesc.offsets.front();
+            size_t argBufferOffset = HgiMetalArgumentOffsetBufferCS
+                                + bufDesc.bindingIndex * sizeof(void*);
+            [argEncoderBuffer setArgumentBuffer:argBuffer
+                                        offset:argBufferOffset];
+            [argEncoderBuffer setBuffer:bufferId offset:offset atIndex:0];
+        }
         MTLResourceUsage usage = MTLResourceUsageRead;
         if (bufDesc.writable) {
             usage |= MTLResourceUsageWrite;
