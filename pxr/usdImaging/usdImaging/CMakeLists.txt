@@ -348,6 +348,17 @@ pxr_build_test(testUsdImagingSubdivisionTags
         testenv/testUsdImagingSubdivisionTags.cpp
 )
 
+pxr_build_test(testUsdImagingSubdivisionTagsLegacyDelegate
+    LIBRARIES
+        usdImaging
+        usdGeom
+        usd
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingSubdivisionTagsLegacyDelegate.cpp
+)
+
 pxr_build_test(testUsdImagingStageSceneIndexContents
     LIBRARIES
         usdImaging
@@ -482,6 +493,10 @@ pxr_register_test(testUsdImagingStageSceneIndex
 )
 pxr_register_test(testUsdImagingSubdivisionTags
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingSubdivisionTags"
+)
+
+pxr_register_test(testUsdImagingSubdivisionTagsLegacyDelegate
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingSubdivisionTagsLegacyDelegate"
 )
 
 pxr_register_test(testUsdImagingStageSceneIndexContents
