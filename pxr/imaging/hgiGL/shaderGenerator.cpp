@@ -208,6 +208,8 @@ HgiGLShaderGenerator::_WriteExtensions(std::ostream &ss)
     const bool builtinBarycentricsEnabled = _hgi->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
+    ss << _GetShaderCodeExtensions() << "\n";
+
     if (bindlessBufferEnabled) {
         ss << "#extension GL_NV_shader_buffer_load : require\n"
            << "#extension GL_NV_gpu_shader5 : require\n";

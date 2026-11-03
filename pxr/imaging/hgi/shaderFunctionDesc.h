@@ -385,6 +385,9 @@ bool operator!=(
 ///   This label can be applied as debug label for gpu debugging.</li>
 /// <li>shaderStage:
 ///   The shader stage this function represents.</li>
+/// <li>shaderCodeExtensions:
+///   Optional ascii shader code containing extension declarations
+///   which need to be emitted before non-macro code.</li>
 /// <li>shaderCodeDeclarations:
 ///   Optional ascii shader code containing defines and type declarations
 ///   which need to be emitted before generated resource bindings.</li>
@@ -425,6 +428,7 @@ struct HgiShaderFunctionDesc
     HgiShaderFunctionDesc();
     std::string debugName;
     HgiShaderStage shaderStage;
+    const char *shaderCodeExtensions;
     const char *shaderCodeDeclarations;
     const char *shaderCode;
     std::string *generatedShaderCodeOut;
