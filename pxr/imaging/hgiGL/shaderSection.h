@@ -51,6 +51,8 @@ public:
     virtual bool VisitGlobalMemberDeclarations(std::ostream &ss);
     HGIGL_API
     virtual bool VisitGlobalFunctionDefinitions(std::ostream &ss);
+    HGIGL_API
+    virtual bool VisitWorkGroupLocalDeclarations(std::ostream &ss);
 
 private:
     HgiGLShaderSection() = delete;
@@ -311,6 +313,32 @@ private:
 
     const std::string _qualifier;
     const HgiGLMemberShaderSectionPtrVector _members;
+};
+
+/// \class HgiGLWorkGroupLocalShaderSection
+///
+/// For writing shared global variables.
+///
+class HgiGLWorkGroupLocalShaderSection final: public HgiGLShaderSection
+{
+public:
+    HGIGL_API
+    explicit HgiGLWorkGroupLocalShaderSection(
+            const std::string &identifier,
+            const std::string &type,
+            const std::string &arraySize);
+
+    HGIGL_API
+    ~HgiGLWorkGroupLocalShaderSection() override;
+
+    HGIGL_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIGL_API
+    bool VisitWorkGroupLocalDeclarations(std::ostream &ss) override;
+
+private:
+    const std::string _type;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -405,6 +405,21 @@ HgiShaderFunctionAddStageInput(
 }
 
 void
+HgiShaderFunctionAddWorkGroupLocalVariable(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &arraySize)
+{
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.arraySize = arraySize;
+
+    desc->stageWorkGroupLocalMembers.push_back(std::move(paramDesc));
+}
+
+void
 HgiShaderFunctionAddGlobalVariable(
    HgiShaderFunctionDesc *desc,
    const std::string &nameInShader,
