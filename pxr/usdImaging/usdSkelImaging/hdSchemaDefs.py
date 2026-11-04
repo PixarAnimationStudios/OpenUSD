@@ -169,7 +169,16 @@
                 Just forwarded from the skelAnim's blendShapeWeights.''')),
             ('blendShapeRanges', T_VEC2IARRAY,
              dict(DOC='''
-                Ranges for concatenated blendShapes/Weights.'''))
+                Ranges for concatenated blendShapes/Weights.''')),
+            ('numAnimationSources', T_INT,
+             dict(DOC='''
+                Number of animation sources used to pose the skeleton. Each
+                animation source contributes one block of numSkeletonJoints
+                transforms to skinningTransforms and one entry to
+                blendShapeRanges.''')),
+            ('numSkeletonJoints', T_INT,
+             dict(DOC='''
+                Number of joints in the skeleton.'''))
         ],
     ),
 ]

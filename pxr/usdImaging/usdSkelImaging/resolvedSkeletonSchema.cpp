@@ -67,6 +67,20 @@ UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeRanges() const
         UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges);
 }
 
+HdIntDataSourceHandle
+UsdSkelImagingResolvedSkeletonSchema::GetNumAnimationSources() const
+{
+    return _GetTypedDataSource<HdIntDataSource>(
+        UsdSkelImagingResolvedSkeletonSchemaTokens->numAnimationSources);
+}
+
+HdIntDataSourceHandle
+UsdSkelImagingResolvedSkeletonSchema::GetNumSkeletonJoints() const
+{
+    return _GetTypedDataSource<HdIntDataSource>(
+        UsdSkelImagingResolvedSkeletonSchemaTokens->numSkeletonJoints);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
@@ -74,11 +88,13 @@ UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
         const HdFloatArrayDataSourceHandle &blendShapeWeights,
-        const HdVec2iArrayDataSourceHandle &blendShapeRanges
+        const HdVec2iArrayDataSourceHandle &blendShapeRanges,
+        const HdIntDataSourceHandle &numAnimationSources,
+        const HdIntDataSourceHandle &numSkeletonJoints
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[7];
+    HdDataSourceBaseHandle _values[7];
 
     size_t _count = 0;
 
@@ -105,6 +121,16 @@ UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
     if (blendShapeRanges) {
         _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges;
         _values[_count++] = blendShapeRanges;
+    }
+
+    if (numAnimationSources) {
+        _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->numAnimationSources;
+        _values[_count++] = numAnimationSources;
+    }
+
+    if (numSkeletonJoints) {
+        _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->numSkeletonJoints;
+        _values[_count++] = numSkeletonJoints;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -149,6 +175,22 @@ UsdSkelImagingResolvedSkeletonSchema::Builder::SetBlendShapeRanges(
     return *this;
 }
 
+UsdSkelImagingResolvedSkeletonSchema::Builder &
+UsdSkelImagingResolvedSkeletonSchema::Builder::SetNumAnimationSources(
+    const HdIntDataSourceHandle &numAnimationSources)
+{
+    _numAnimationSources = numAnimationSources;
+    return *this;
+}
+
+UsdSkelImagingResolvedSkeletonSchema::Builder &
+UsdSkelImagingResolvedSkeletonSchema::Builder::SetNumSkeletonJoints(
+    const HdIntDataSourceHandle &numSkeletonJoints)
+{
+    _numSkeletonJoints = numSkeletonJoints;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::Builder::Build()
 {
@@ -157,7 +199,9 @@ UsdSkelImagingResolvedSkeletonSchema::Builder::Build()
         _skinningTransforms,
         _blendShapes,
         _blendShapeWeights,
-        _blendShapeRanges
+        _blendShapeRanges,
+        _numAnimationSources,
+        _numSkeletonJoints
     );
 }
 
@@ -235,6 +279,26 @@ UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeRangesLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+UsdSkelImagingResolvedSkeletonSchema::GetNumAnimationSourcesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            UsdSkelImagingResolvedSkeletonSchemaTokens->numAnimationSources);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+UsdSkelImagingResolvedSkeletonSchema::GetNumSkeletonJointsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            UsdSkelImagingResolvedSkeletonSchemaTokens->numSkeletonJoints);
     return locator;
 } 
 
