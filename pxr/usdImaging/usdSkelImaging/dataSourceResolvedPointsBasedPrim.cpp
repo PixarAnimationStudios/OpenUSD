@@ -13,7 +13,6 @@
 #include "pxr/usdImaging/usdSkelImaging/dataSourceUtils.h"
 #include "pxr/usdImaging/usdSkelImaging/extComputations.h"
 #include "pxr/usdImaging/usdSkelImaging/jointInfluencesData.h"
-#include "pxr/usdImaging/usdSkelImaging/skeletonSchema.h"
 #include "pxr/usdImaging/usdSkelImaging/tokens.h"
 
 #include "pxr/usd/usdSkel/tokens.h"
@@ -40,6 +39,8 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
+
+#include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -406,10 +407,8 @@ private:
     _SkinningPrimvarsDataSource(
         UsdSkelImagingDataSourceResolvedPointsBasedPrimHandle
             resolvedPrimSource,
-        HdContainerDataSourceHandle skeletonPrimSource,
         bool useInstanceOffset)
      : _resolvedPrimSource(std::move(resolvedPrimSource)),
-       _skeletonPrimSource(std::move(skeletonPrimSource)),
        _useInstanceOffset(useInstanceOffset)
     {
     }
@@ -421,10 +420,17 @@ private:
             // instance animation source override.
             return 0;
         }
-        const UsdSkelImagingSkeletonSchema& schema =
-            UsdSkelImagingSkeletonSchema::GetFromParent(_skeletonPrimSource);
-        return schema? static_cast<int>(
-            schema.GetJoints()->GetValue(0.0f).GetArraySize()) : 0;
+
+        // Return the number of mapped joints if the prim has its own ordering.
+        const UsdSkelAnimMapper &mapper =
+            _resolvedPrimSource->GetJointInfluencesData()->jointMapper;
+        if (!mapper.IsNull()) {
+            return static_cast<int>(mapper.size());
+        }
+
+        return UsdSkelImagingGetTypedValue(
+            _resolvedPrimSource->GetResolvedSkeletonSchema()
+                .GetNumSkeletonJoints());
     }
 
     int _GetNumBlendShapeWeights() const {
@@ -444,7 +450,6 @@ private:
 
     const UsdSkelImagingDataSourceResolvedPointsBasedPrimHandle
         _resolvedPrimSource;
-    const HdContainerDataSourceHandle _skeletonPrimSource;
     const bool _useInstanceOffset;
 };
 
@@ -473,12 +478,11 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::Get(const TfToken &name)
         if (_primPath != _skeletonPath && _skeletonPrimSource) {
             // if we only have a single animation source then we don't need to
             // instance offset the index into skinning primvars.
-            const VtVec2iArray& blendShapeRanges = 
+            const bool useInstanceOffset =
                 UsdSkelImagingGetTypedValue(
-                    _resolvedSkeletonSchema.GetBlendShapeRanges(), 0.0f);
-            const bool useInstanceOffset = blendShapeRanges.size() > 1;
+                    _resolvedSkeletonSchema.GetNumAnimationSources()) > 1;
             return _SkinningPrimvarsDataSource::New(
-                shared_from_this(), _skeletonPrimSource, useInstanceOffset);
+                shared_from_this(), useInstanceOffset);
         }
     }
 
@@ -548,13 +552,57 @@ public:
     GetTypedValue(const HdSampledDataSource::Time shutterOffset) override {
         TRACE_FUNCTION();
 
-        // XXX TODO
-        // we need to chop up and remap the concatenated instance skinning 
-        // transforms here.
+        const VtMatrix4fArray src =
+            _skelSkinningXforms->GetTypedValue(shutterOffset);
+        const UsdSkelAnimMapper &mapper = _jointInfluencesData->jointMapper;
+
+        // The skeleton's skinning transforms hold one block of
+        // numSkelJoints transforms per animation source.
+        const size_t numBlocks = static_cast<size_t>(
+            UsdSkelImagingGetTypedValue(_numAnimationSources));
+        const size_t numSkelJoints = static_cast<size_t>(
+            UsdSkelImagingGetTypedValue(_numSkeletonJoints));
+
+        if (src.size() != numBlocks * numSkelJoints) {
+            TF_WARN("Unexpected number of skinning transforms (%zu), "
+                    "expected %zu animation source(s) with %zu joints each",
+                    src.size(), numBlocks, numSkelJoints);
+            return {};
+        }
+
+        // Remap directly if there is only one block.
+        if (numBlocks <= 1) {
+            VtMatrix4fArray result;
+            mapper.RemapTransforms(src, &result);
+            return result;
+        }
+
+        // Otherwise, remap the skinning transform blocks in parallel.
+        const VtIntArray skelJointIndexMap =
+            _ComputeSkelJointIndexMap(mapper, numSkelJoints);
+        const size_t numJoints = mapper.size();
+
         VtMatrix4fArray result;
-        _jointInfluencesData->jointMapper.RemapTransforms(
-            _skelSkinningXforms->GetTypedValue(shutterOffset),
-            &result);
+        result.resize(
+            numBlocks * numJoints,
+            [&](GfMatrix4f *dstData, GfMatrix4f *) {
+                WorkParallelForN(
+                    numBlocks,
+                    [&](const size_t blockBegin, const size_t blockEnd) {
+                        for (size_t b = blockBegin; b < blockEnd; ++b) {
+                            const GfMatrix4f *blockSrc =
+                                src.cdata() + b * numSkelJoints;
+                            GfMatrix4f *blockDst = dstData + b * numJoints;
+
+                            for (size_t j = 0; j < numJoints; ++j) {
+                                const int s = skelJointIndexMap[j];
+                                new (blockDst + j) GfMatrix4f(
+                                    s >= 0 ? blockSrc[s] : GfMatrix4f(1.0f));
+                            }
+                        }
+                    });
+            });
+
         return result;
     }
 
@@ -572,14 +620,36 @@ public:
 private:
     _SkinningXformsDataSource(
         std::shared_ptr<UsdSkelImagingJointInfluencesData> jointInfluencesData,
-        HdMatrix4fArrayDataSourceHandle skelSkinningXforms)
+        HdMatrix4fArrayDataSourceHandle skelSkinningXforms,
+        HdIntDataSourceHandle numAnimationSources,
+        HdIntDataSourceHandle numSkeletonJoints)
      : _jointInfluencesData(std::move(jointInfluencesData))
      , _skelSkinningXforms(std::move(skelSkinningXforms))
+     , _numAnimationSources(std::move(numAnimationSources))
+     , _numSkeletonJoints(std::move(numSkeletonJoints))
     {
+    }
+
+    /// Builds an array containing the skeleton joint index for each joint in
+    /// the local ordering, or -1.
+    static VtIntArray
+    _ComputeSkelJointIndexMap(
+        const UsdSkelAnimMapper &mapper,
+        const size_t numSkelJoints)
+    {
+        VtIntArray indices(numSkelJoints);
+        std::iota(indices.begin(), indices.end(), 0);
+
+        VtIntArray result;
+        const int unmapped = -1;
+        mapper.Remap(indices, &result, 1, &unmapped);
+        return result;
     }
 
     const std::shared_ptr<UsdSkelImagingJointInfluencesData> _jointInfluencesData;
     const HdMatrix4fArrayDataSourceHandle _skelSkinningXforms;
+    const HdIntDataSourceHandle _numAnimationSources;
+    const HdIntDataSourceHandle _numSkeletonJoints;
 };
 
 // Data source for locator extComputations:inputValues:blendShapeWeights on
@@ -930,7 +1000,10 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::GetSkinningTransforms()
     }
 
     return _SkinningXformsDataSource::New(
-        std::move(jointInfluencesData), std::move(skelSkinningXforms));
+        std::move(jointInfluencesData),
+        std::move(skelSkinningXforms),
+        _resolvedSkeletonSchema.GetNumAnimationSources(),
+        _resolvedSkeletonSchema.GetNumSkeletonJoints());
 }
 
 HdMatrix3fArrayDataSourceHandle
@@ -1364,9 +1437,10 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::_ProcessDirtySkeletonLocators(
         }
     }
 
-    if (dirtyLocators.Intersects(
-            UsdSkelImagingResolvedSkeletonSchema::
-            GetSkinningTransformsLocator())) {
+    static const HdDataSourceLocatorSet skinningTransformsLocators{
+        UsdSkelImagingResolvedSkeletonSchema::GetSkinningTransformsLocator(),
+        UsdSkelImagingResolvedSkeletonSchema::GetNumSkeletonJointsLocator()};
+    if (dirtyLocators.Intersects(skinningTransformsLocators)) {
         if (dirtyLocatorsForComputation) {
             static const HdDataSourceLocatorSet inputLocators{
                 HdExtComputationSchema::GetInputValuesLocator()
