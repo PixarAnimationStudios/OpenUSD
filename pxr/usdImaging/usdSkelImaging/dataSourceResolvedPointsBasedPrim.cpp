@@ -478,10 +478,9 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::Get(const TfToken &name)
         if (_primPath != _skeletonPath && _skeletonPrimSource) {
             // if we only have a single animation source then we don't need to
             // instance offset the index into skinning primvars.
-            const VtVec2iArray& blendShapeRanges = 
+            const bool useInstanceOffset =
                 UsdSkelImagingGetTypedValue(
-                    _resolvedSkeletonSchema.GetBlendShapeRanges(), 0.0f);
-            const bool useInstanceOffset = blendShapeRanges.size() > 1;
+                    _resolvedSkeletonSchema.GetNumAnimationSources()) > 1;
             return _SkinningPrimvarsDataSource::New(
                 shared_from_this(), useInstanceOffset);
         }
