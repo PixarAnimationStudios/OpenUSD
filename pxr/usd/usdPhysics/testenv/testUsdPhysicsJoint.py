@@ -100,7 +100,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         joint.GetBody1Rel().SetTargets([collider.GetPrim().GetPath()])
         self.assertFalse(joint.GetBody1())
 
-    def test_get_local_pose_unset_is_world_anchor(self):
+    def test_compute_local_pose_unset_is_world_anchor(self):
         self.setup_scene()
 
         body0 = UsdGeom.Xform.Define(self.stage, "/body0")
@@ -110,9 +110,9 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         joint.CreateBody0Rel().SetTargets([body0.GetPrim().GetPath()])
 
         # body1 is unset: the joint anchors to the world. This is a well defined
-        # pose (the authored local pose), not a failure. GetLocalPose1
+        # pose (the authored local pose), not a failure. ComputeLocalPose1
         # succeeds and returns the authored values (identity here).
-        pose1 = joint.GetLocalPose1()
+        pose1 = joint.ComputeLocalPose1()
         self.assertTrue(pose1)
         position1, orientation1 = pose1
         self.assertEqual(position1, Gf.Vec3f(0.0, 0.0, 0.0))
@@ -123,7 +123,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         authored_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
         joint.CreateLocalPos1Attr().Set(Gf.Vec3f(7.0, 8.0, 9.0))
         joint.CreateLocalRot1Attr().Set(authored_rot)
-        position1, orientation1 = joint.GetLocalPose1()
+        position1, orientation1 = joint.ComputeLocalPose1()
         self.assertEqual(position1, Gf.Vec3f(7.0, 8.0, 9.0))
         self.assertTrue(Gf.IsClose(
             Gf.Vec4f(orientation1.real, *orientation1.imaginary),
@@ -131,32 +131,33 @@ class TestUsdPhysicsJoint(unittest.TestCase):
 
         # A non-unit authored orientation is normalized on the way out.
         joint.CreateLocalRot1Attr().Set(Gf.Quatf(2.0, Gf.Vec3f(0.0, 0.0, 0.0)))
-        _, orientation1 = joint.GetLocalPose1()
+        _, orientation1 = joint.ComputeLocalPose1()
         self.assertEqual(orientation1, Gf.Quatf(1.0))
 
         # body0 targets the body directly, so the authored pose passes through
         # unchanged (no scale on the body frame).
         joint.CreateLocalPos0Attr().Set(Gf.Vec3f(1.0, 2.0, 3.0))
-        pose0 = joint.GetLocalPose0()
+        pose0 = joint.ComputeLocalPose0()
         self.assertTrue(pose0)
         position0, orientation0 = pose0
         self.assertEqual(position0, Gf.Vec3f(1.0, 2.0, 3.0))
         self.assertEqual(orientation0, Gf.Quatf(1.0))
 
-    def test_get_local_pose_dangling_target_fails(self):
+    def test_compute_local_pose_dangling_target_fails(self):
         self.setup_scene()
 
         joint = UsdPhysics.Joint.Define(self.stage, "/joint")
         # A relationship target that does not resolve to a prim on the stage is
-        # malformed authoring. GetLocalPose reports failure, which the Python
-        # binding surfaces as an empty tuple. (In C++ the authored pose is
-        # still written to the out parameters so a caller can pass it through;
-        # the Python binding returns nothing on failure by convention.)
+        # malformed authoring. ComputeLocalPose reports failure, which the
+        # Python binding surfaces as an empty tuple. (In C++ the authored pose
+        # is still written to the out parameters so a caller can pass it
+        # through; the Python binding returns nothing on failure by
+        # convention.)
         joint.CreateBody0Rel().SetTargets(["/does/not/exist"])
         joint.CreateLocalPos0Attr().Set(Gf.Vec3f(7.0, 8.0, 9.0))
-        self.assertEqual(joint.GetLocalPose0(), ())
+        self.assertEqual(joint.ComputeLocalPose0(), ())
 
-    def test_get_local_pose_bakes_scale(self):
+    def test_compute_local_pose_bakes_scale(self):
         self.setup_scene()
 
         # A scaled body with a collider under it. The joint's rel points at the
@@ -175,7 +176,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
 
         self.assertEqual(joint.GetBody0().GetPath(), body.GetPrim().GetPath())
 
-        pose0 = joint.GetLocalPose0()
+        pose0 = joint.ComputeLocalPose0()
         self.assertTrue(pose0)
         position, _ = pose0
         # The collider sits at the body origin; the authored (1,0,0) is in the
@@ -183,10 +184,10 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         # body's 2x scale is folded into the translation -> (2,0,0).
         self.assertTrue(Gf.IsClose(position, Gf.Vec3f(2.0, 0.0, 0.0), 1e-5))
 
-    def test_get_local_pose_resolution_and_scale(self):
-        """GetLocalPose resolves the attachment frame and bakes its scale: a
-        collider resolves to its owning body; a target with no enclosing body is
-        owned by the world and its pose is rebased into world frame.
+    def test_compute_local_pose_resolution_and_scale(self):
+        """ComputeLocalPose resolves the attachment frame and bakes its scale:
+        a collider resolves to its owning body; a target with no enclosing body
+        is owned by the world and its pose is rebased into world frame.
         """
         stage = Usd.Stage.CreateInMemory()
         UsdPhysics.Scene.Define(stage, "/scene")
@@ -222,8 +223,8 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         self.assertEqual(joint.GetBody0().GetPath(), body.GetPrim().GetPath())
         self.assertFalse(joint.GetBody1())
 
-        pos0, _ = joint.GetLocalPose0()
-        pos1, _ = joint.GetLocalPose1()
+        pos0, _ = joint.ComputeLocalPose0()
+        pos1, _ = joint.ComputeLocalPose1()
         # body0 goes through the body-frame rebasing path; allow for float
         # round-off. body1 has no enclosing body, so its pose is rebased into
         # world frame: the anchor's translation (10) plus the scaled authored
@@ -234,12 +235,12 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         # An optional UsdGeomXformCache does not change the result on an
         # unchanged stage.
         cache = UsdGeom.XformCache()
-        cpos0, _ = joint.GetLocalPose0(cache)
-        cpos1, _ = joint.GetLocalPose1(cache)
+        cpos0, _ = joint.ComputeLocalPose0(cache)
+        cpos1, _ = joint.ComputeLocalPose1(cache)
         self.assertEqual(cpos0, pos0)
         self.assertEqual(cpos1, pos1)
 
-    def test_get_local_pose_uses_xform_cache(self):
+    def test_compute_local_pose_uses_xform_cache(self):
         """A supplied UsdGeomXformCache is actually consulted for the ancestor
         transforms: it memoizes them, so an edit to an ancestor after the cache
         is populated is not reflected until the cache is cleared, whereas an
@@ -267,7 +268,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
 
         # Body world scale is 1 * 2 = 2, so the baked position is (2,0,0).
         cache = UsdGeom.XformCache()
-        cached_before, _ = joint.GetLocalPose0(cache)
+        cached_before, _ = joint.ComputeLocalPose0(cache)
         self.assertEqual(cached_before, Gf.Vec3f(2.0, 0.0, 0.0))
 
         # Scale an ancestor: the body's world scale is now 5 * 2 = 10.
@@ -275,20 +276,20 @@ class TestUsdPhysicsJoint(unittest.TestCase):
 
         # The same (now stale) cache still returns the pre-edit transform,
         # proving the cache was used rather than recomputed.
-        cached_after, _ = joint.GetLocalPose0(cache)
+        cached_after, _ = joint.ComputeLocalPose0(cache)
         self.assertEqual(cached_after, Gf.Vec3f(2.0, 0.0, 0.0))
 
         # An uncached call recomputes and reflects the edit.
-        fresh_after, _ = joint.GetLocalPose0()
+        fresh_after, _ = joint.ComputeLocalPose0()
         self.assertEqual(fresh_after, Gf.Vec3f(10.0, 0.0, 0.0))
 
         # After clearing, the cache recomputes and agrees with the uncached
         # result.
         cache.Clear()
-        cleared, _ = joint.GetLocalPose0(cache)
+        cleared, _ = joint.ComputeLocalPose0(cache)
         self.assertEqual(cleared, Gf.Vec3f(10.0, 0.0, 0.0))
 
-    def test_get_local_pose_world_owned_preserves_target_frame(self):
+    def test_compute_local_pose_world_owned_preserves_target_frame(self):
         """A joint attachment whose target has no enclosing enabled body is
         owned by the world (a static collider). Its authored pose is
         expressed against the target prim, so it must be rebased into world
@@ -317,7 +318,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         # No enclosing enabled body -> world-owned.
         self.assertFalse(joint.GetBody0())
 
-        pose0 = joint.GetLocalPose0()
+        pose0 = joint.ComputeLocalPose0()
         self.assertTrue(pose0)
         position0, orientation0 = pose0
         # The collider's translation (0,0,10) and its 90-degree-about-X rotation
@@ -335,7 +336,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         authored_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 0, 1), 90.0).GetQuat())
         joint.CreateLocalPos0Attr().Set(Gf.Vec3f(0.0, 1.0, 0.0))
         joint.CreateLocalRot0Attr().Set(authored_rot)
-        position0, orientation0 = joint.GetLocalPose0()
+        position0, orientation0 = joint.ComputeLocalPose0()
         self.assertTrue(Gf.IsClose(position0, Gf.Vec3f(0.0, 0.0, 11.0), 1e-5))
         collider_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(1, 0, 0), 90.0).GetQuat())
         expected_composed = collider_rot * authored_rot
@@ -344,9 +345,9 @@ class TestUsdPhysicsJoint(unittest.TestCase):
     def test_getters_match_parser(self):
         """The joint parser and the public getters resolve joint attachments
         through the same functions, so every parsed joint must report the
-        bodies and local poses GetBody0/1 and GetLocalPose0/1 return, with or
-        without an xform cache. A dangling attachment has no getter pose; the
-        parser reports its authored pose, normalized.
+        bodies and local poses GetBody0/1 and ComputeLocalPose0/1 return, with
+        or without an xform cache. A dangling attachment has no getter pose;
+        the parser reports its authored pose, normalized.
         """
         self.setup_scene()
         stage = self.stage
@@ -423,10 +424,10 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         for joint in joints:
             desc = parsed[joint.GetPath()]
             attachments = [
-                (joint.GetBody0Rel(), joint.GetBody0, joint.GetLocalPose0,
+                (joint.GetBody0Rel(), joint.GetBody0, joint.ComputeLocalPose0,
                  desc.rel0, desc.body0, desc.localPose0Position,
                  desc.localPose0Orientation, authoredPos),
-                (joint.GetBody1Rel(), joint.GetBody1, joint.GetLocalPose1,
+                (joint.GetBody1Rel(), joint.GetBody1, joint.ComputeLocalPose1,
                  desc.rel1, desc.body1, desc.localPose1Position,
                  desc.localPose1Orientation, -authoredPos),
             ]

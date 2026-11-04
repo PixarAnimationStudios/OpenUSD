@@ -475,8 +475,8 @@ _ComputeJointLocalPose(const UsdRelationship& bodyRel,
 }
 
 bool
-UsdPhysicsJoint::GetLocalPose0(GfVec3f* position, GfQuatf* orientation,
-                               UsdGeomXformCache* xformCache) const
+UsdPhysicsJoint::ComputeLocalPose0(GfVec3f* position, GfQuatf* orientation,
+                                   UsdGeomXformCache* xformCache) const
 {
     GfVec3f authoredPosition(0.0f);
     GfQuatf authoredOrientation(1.0f);
@@ -488,8 +488,8 @@ UsdPhysicsJoint::GetLocalPose0(GfVec3f* position, GfQuatf* orientation,
 }
 
 bool
-UsdPhysicsJoint::GetLocalPose1(GfVec3f* position, GfQuatf* orientation,
-                               UsdGeomXformCache* xformCache) const
+UsdPhysicsJoint::ComputeLocalPose1(GfVec3f* position, GfQuatf* orientation,
+                                   UsdGeomXformCache* xformCache) const
 {
     GfVec3f authoredPosition(0.0f);
     GfQuatf authoredOrientation(1.0f);

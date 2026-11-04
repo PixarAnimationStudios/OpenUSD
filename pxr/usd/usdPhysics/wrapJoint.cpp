@@ -240,21 +240,21 @@ void wrapUsdPhysicsJoint()
 namespace {
 
 static tuple
-_GetLocalPose0(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+_ComputeLocalPose0(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
 {
     GfVec3f position;
     GfQuatf orientation;
-    return self.GetLocalPose0(&position, &orientation, cache)
+    return self.ComputeLocalPose0(&position, &orientation, cache)
         ? make_tuple(position, orientation)
         : tuple();
 }
 
 static tuple
-_GetLocalPose1(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+_ComputeLocalPose1(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
 {
     GfVec3f position;
     GfQuatf orientation;
-    return self.GetLocalPose1(&position, &orientation, cache)
+    return self.ComputeLocalPose1(&position, &orientation, cache)
         ? make_tuple(position, orientation)
         : tuple();
 }
@@ -263,9 +263,9 @@ WRAP_CUSTOM {
     _class
         .def("GetBody0", &UsdPhysicsJoint::GetBody0)
         .def("GetBody1", &UsdPhysicsJoint::GetBody1)
-        .def("GetLocalPose0", &_GetLocalPose0,
+        .def("ComputeLocalPose0", &_ComputeLocalPose0,
              (arg("xformCache") = object()))
-        .def("GetLocalPose1", &_GetLocalPose1,
+        .def("ComputeLocalPose1", &_ComputeLocalPose1,
              (arg("xformCache") = object()))
     ;
 }

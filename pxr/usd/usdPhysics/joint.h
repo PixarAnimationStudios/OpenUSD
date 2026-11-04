@@ -414,13 +414,13 @@ public:
     /// which case the outputs are the authored pose without rebasing; true
     /// otherwise.
     USDPHYSICS_API
-    bool GetLocalPose0(GfVec3f* position, GfQuatf* orientation,
-                       UsdGeomXformCache* xformCache = nullptr) const;
+    bool ComputeLocalPose0(GfVec3f* position, GfQuatf* orientation,
+                           UsdGeomXformCache* xformCache = nullptr) const;
 
-    /// \sa GetLocalPose0()
+    /// \sa ComputeLocalPose0()
     USDPHYSICS_API
-    bool GetLocalPose1(GfVec3f* position, GfQuatf* orientation,
-                       UsdGeomXformCache* xformCache = nullptr) const;
+    bool ComputeLocalPose1(GfVec3f* position, GfQuatf* orientation,
+                           UsdGeomXformCache* xformCache = nullptr) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
