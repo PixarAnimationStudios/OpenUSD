@@ -207,6 +207,8 @@ private:
         HdContainerDataSourceHandle skeletonPrimSource,
         UsdSkelImagingResolvedSkeletonSchema resolvedSkeletonSchema);
 
+    bool _ComputeHasNormalsExtComputations() const;
+
     bool
     _ProcessDirtyLocators(
         const HdDataSourceLocatorSet &dirtyLocators,
@@ -249,6 +251,7 @@ private:
     const SdfPath _skeletonPath;
     HdContainerDataSourceHandle const _skeletonPrimSource;
     const UsdSkelImagingResolvedSkeletonSchema _resolvedSkeletonSchema;
+    bool _hasNormalsExtComputations = false;
 
     class _BlendShapeDataCache
         : public UsdSkelImagingSharedPtrThunk<UsdSkelImagingBlendShapeData>
