@@ -41,3 +41,10 @@ class TestUsdInstall(unittest.TestCase):
         self.assertIn('Xform', stage.ExportToString())
         self.assertGreater(spherePrim.GetRadiusAttr().Get(), 0)
 
+    def test_wheel_abi_tag(self):
+        '''
+        Test that the installed wheel is tagged with a specific Python ABI
+        rather than "none", so that installers reject it on interpreters
+        with an incompatible ABI, such as free-threaded builds.
+        '''
+        from
