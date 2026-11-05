@@ -47,4 +47,16 @@ class TestUsdInstall(unittest.TestCase):
         rather than "none", so that installers reject it on interpreters
         with an incompatible ABI, such as free-threaded builds.
         '''
-        from
+        from importlib.metadata import distribution
+        wheelMetadata = distribution('usd-core').read_text('WHEEL')
+        self.assertIsNotNone(wheelMetadata,
+                             'usd-core does not appear to be installed from a '
+                             'wheel')
+        tags = [line.split(':', 1)[1].strip()
+                for line in wheelMetadata.splitlines()
+                if line.startswith('Tag:')]
+        self.assertTrue(tags)
+        for tag in tags:
+            interpreter, abi, platform = tag.split('-', 2)
+            self.assertNotEqual(abi, 'none', tag)
+            
