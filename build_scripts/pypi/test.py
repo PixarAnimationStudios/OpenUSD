@@ -59,4 +59,4 @@ class TestUsdInstall(unittest.TestCase):
         for tag in tags:
             interpreter, abi, platform = tag.split('-', 2)
             self.assertNotEqual(abi, 'none', tag)
-            
+
