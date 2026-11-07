@@ -298,6 +298,18 @@ pxr_build_test(testHdStBufferSource
     CPPFILES
         testenv/testHdStBufferSource.cpp
 )
+if (PXR_ENABLE_GL_SUPPORT)
+pxr_build_test(testHdStStagingBuffer
+    LIBRARIES
+        hdSt
+        hd
+        hgi
+        garch
+        tf
+    CPPFILES
+        testenv/testHdStStagingBuffer.cpp
+)
+endif()
 pxr_build_test(testHdStBufferSourceDependency
     LIBRARIES
         hdSt
@@ -626,6 +638,20 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
+if (PXR_ENABLE_GL_SUPPORT AND (X11_FOUND OR APPLE OR WIN32))
+pxr_register_test(testHdStStagingBuffer
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStStagingBuffer"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        HDST_MAX_STAGING_BUFFER_SIZE=4096
+)
+pxr_register_test(testHdStStagingBufferSmallLimit
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStStagingBuffer"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        HDST_MAX_STAGING_BUFFER_SIZE=256
+)
+endif()
 pxr_register_test(testHdStQualifiers
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQualifiers --offscreen --flatQF FlatMember --nopersQF NoPerspectiveMember --centroidQF CentroidMember --sampleQF SampleMember"
     EXPECTED_RETURN_CODE 0
