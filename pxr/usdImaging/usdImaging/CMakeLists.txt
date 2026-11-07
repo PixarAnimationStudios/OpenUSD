@@ -242,7 +242,6 @@ pxr_build_test(testUsdImagingMaterialBinding
         usdShade
         usd
         hd
-        garch
         tf
         gf
         vt
@@ -255,7 +254,6 @@ pxr_build_test(testUsdImagingMaterialAdapter
         usdShade
         usd
         hd
-        garch
         tf
     CPPFILES
         testenv/testUsdImagingMaterialAdapter.cpp
