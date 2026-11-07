@@ -18,6 +18,26 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+
+// The primvar value of an indexed primvar is a flattening data source that
+// is a plain HdSampledDataSource (not an HdTypedSampledDataSource<T>), so
+// we cannot use Cast<> and need to go through the VtValue.
+template<typename T>
+VtArray<T>
+_GetPrimvarArray(const HdPrimvarSchema &primvar)
+{
+    if (HdSampledDataSourceHandle const ds = primvar.GetPrimvarValue()) {
+        const VtValue value = ds->GetValue(0.0f);
+        if (value.IsHolding<VtArray<T>>()) {
+            return value.UncheckedGet<VtArray<T>>();
+        }
+    }
+    return {};
+}
+
+}
+
 UsdSkelImagingJointInfluencesData
 UsdSkelImagingComputeJointInfluencesData(
     HdContainerDataSourceHandle const &primSource,
@@ -41,9 +61,7 @@ UsdSkelImagingComputeJointInfluencesData(
         interpolation == HdPrimvarSchemaTokens->constant;
 
     const VtIntArray jointIndices =
-        UsdSkelImagingGetTypedValue(
-            HdIntArrayDataSource::Cast(
-                jointIndicesPrimvar.GetPrimvarValue()));
+        _GetPrimvarArray<int>(jointIndicesPrimvar);
     if (jointIndices.empty()) {
         return data;
     }
@@ -55,9 +73,7 @@ UsdSkelImagingComputeJointInfluencesData(
             UsdSkelImagingBindingSchemaTokens->jointWeightsPrimvar);
 
     const VtFloatArray jointWeights =
-        UsdSkelImagingGetTypedValue(
-            HdFloatArrayDataSource::Cast(
-                jointWeightsPrimvar.GetPrimvarValue()));
+        _GetPrimvarArray<float>(jointWeightsPrimvar);
     if (jointWeights.empty()) {
         return data;
     }
