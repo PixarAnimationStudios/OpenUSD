@@ -1317,7 +1317,15 @@ SdfZipFileWriter::AddFile(
         h.f.versionForExtract = 45;
     }
 
-    h.f.bits = 0;
+    // Section 4.4.4 of the zip specification states that bit 11 of the general
+    // purpose bit flag indicates that the filename and comment fields are
+    // encoded using UTF-8.
+    static constexpr uint16_t _Utf8Flag = 0x0800;
+    const bool hasNonAscii = std::any_of(
+        zipFilePath.begin(), zipFilePath.end(),
+        [](unsigned char c) { return c > 127; });
+    h.f.bits = hasNonAscii ? _Utf8Flag : 0;
+
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
     h.f.crc32 = _Crc32(mapping);
