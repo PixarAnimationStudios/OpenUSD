@@ -81,23 +81,29 @@ class TestUsdSplines(unittest.TestCase):
         """
         Test serialization of empty splines.
         """
+        # Empty splines must be typed to round-trip cleanly. An untyped spline
+        # that is stored on an attribute becomes typed with the type of the
+        # attribute.
         spline = Ts.Spline()
+        spline.SetValueType('double')
         self._DoSerializationTest("Empty", spline)
 
-        spline = Ts.Spline()
+        spline = Ts.Spline('double')
         spline.SetCurveType(Ts.CurveTypeHermite)
         self._DoSerializationTest("Empty_Hermite", spline)
 
         extrap = Ts.Extrapolation(Ts.ExtrapLinear)
         extrap.slope = 2.0
 
-        spline = Ts.Spline()
+        spline = Ts.Spline(Sdf.ValueTypeNames.Duration.type)
         spline.SetPreExtrapolation(extrap)
-        self._DoSerializationTest("Empty_PreExtrap", spline)
+        self._DoSerializationTest("Empty_PreExtrap", spline,
+                                  Sdf.ValueTypeNames.Duration)
 
-        spline = Ts.Spline()
+        spline = Ts.Spline(Sdf.ValueTypeNames.Float.type)
         spline.SetPostExtrapolation(extrap)
-        self._DoSerializationTest("Empty_PostExtrap", spline)
+        self._DoSerializationTest("Empty_PostExtrap", spline,
+                                  Sdf.ValueTypeNames.Float)
 
         lp = Ts.LoopParams()
         lp.protoStart = 1

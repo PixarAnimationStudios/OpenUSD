@@ -11,6 +11,8 @@
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
+#include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/valueFromPython.h"
 
@@ -18,28 +20,118 @@
 #include "pxr/external/boost/python/make_constructor.hpp"
 #include "pxr/external/boost/python/operators.hpp"
 
+#include <vector>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
-
-static TsSpline* _WrapInit(
-    const std::string &typeName)
+// There are several places where the API takes a type or type name. _ExtractTfType
+// unifies them an makes them consistent.
+//
+// Return true if typeObj is a string or a TfType object. Set resultType to the
+// resulting type (the unknown type if the type is not a supporrted spline value
+// type). If resultType is the unknown type then reason is populated with the
+// reason that the type could not be processed. If typeObj is something else
+// entirely (a float, a Ts.Spline, etc.) then return false and do not modify
+// either resultType or reason.
+static bool _ExtractTfType(const object& typeObj,
+                           TfType* resultType,
+                           std::string* reason)
 {
-    const TfType tfType = Ts_GetTypeFromTypeName(typeName);
-    if (!tfType)
-    {
-        TF_CODING_ERROR("Invalid spline type name '%s'", typeName.c_str());
-        return nullptr;
+    bool looksLikeAType = false;
+    
+    extract<std::string> stringExtractor(typeObj);
+    if (stringExtractor.check()) {
+        looksLikeAType = true;
+        
+        const std::string typeName = stringExtractor();
+        *resultType = Ts_GetTypeFromTypeName(typeName);
+
+        if (!(*resultType)) {
+            *reason = TfStringPrintf("Invalid spline type name '%s'",
+                                     typeName.c_str());
+        }
+    } else {
+        extract<TfType> typeExtractor(typeObj);
+        if (typeExtractor.check()) {
+            looksLikeAType = true;
+            
+            *resultType = typeExtractor();
+
+            if (!TsSpline::IsSupportedValueType(*resultType)) {
+                *reason = TfStringPrintf("Invalid spline type '%s'",
+                                         resultType->GetTypeName().c_str());
+                *resultType = TfType::GetUnknownType();
+            }
+        }
     }
 
-    return new TsSpline(tfType);
+    // Did we find something that looks like a type?
+    return looksLikeAType;
+}
+
+static TsSpline* _WrapInit(
+    const object &initArg)
+{
+    // Constructed with None? (Note that None is the default arg.)
+    if (initArg.is_none()) {
+        return new TsSpline();
+    }
+
+    // Copy constructor?
+    extract<TsSpline> splineExtractor(initArg);
+    if (splineExtractor.check()) {
+        const TsSpline otherSpline = splineExtractor();
+        return new TsSpline(otherSpline);
+    }
+
+    // Called with a type?
+    TfType tfType;
+    std::string reason;
+
+    if (_ExtractTfType(initArg, &tfType, &reason)) {
+        // The argument looked like a type (_ExtractTfType returned true) but is
+        // it a supported type?
+        if (tfType) {
+            // yes
+            return new TsSpline(tfType);
+        }
+        // no, the error message is in reason;
+        TfPyThrowValueError(reason);
+    } else {
+        // The constructor was called with the wrong type!
+        TfPyThrowTypeError("Invalid spline initialization argument. Expected"
+                           " None, type name string, Tf.Type, or Ts.Spline.");
+    }
+
+    return nullptr;
 }
 
 static std::string _WrapStr(
     const TsSpline &spline)
 {
     return TfStringify(spline);
+}
+
+static bool
+_WrapSetValueType(
+    TsSpline& spline, object valueType)
+{
+    TfType tfType;
+    std::string reason;
+
+    if (_ExtractTfType(valueType, &tfType, &reason)) {
+        if (tfType) {
+            return spline.SetValueType(tfType);
+        }
+        // Not a valid valueType, the error message is in reason.
+        TfPyThrowValueError(reason);
+    }
+
+    TfPyThrowTypeError("Invalid argument type for SetValueType."
+                       " A type name or Tf.Type is expected.");
+    return false;
 }
 
 static std::string _WrapGetValueTypeName(
@@ -105,28 +197,61 @@ static object _WrapBreakdown(
     }
 }
 
-struct _CanBreakdownResult: public TfPyAnnotatedBoolResult<std::string>
+// An bool annotated by a string and returned from various Can* methods.
+struct _TestResult: public TfPyAnnotatedBoolResult<std::string>
 {
-    _CanBreakdownResult(bool val, const std::string reason)
+    _TestResult(bool val, const std::string reason)
     : TfPyAnnotatedBoolResult<std::string>(val, reason)
     {}
 };
 
 static
-_CanBreakdownResult
+_TestResult
+_WrapCanSetValueType(
+    TsSpline& spline, object valueType)
+{
+    std::string reason;
+    TfType tfType;
+
+    if (_ExtractTfType(valueType, &tfType, &reason)) {
+        if (tfType) {
+            bool result = spline.CanSetValueType(tfType, &reason);
+            return _TestResult(result, reason);
+        }
+        // reason has been populated by _ExtractTfType
+    } else {
+        // We don't want to raise type errors in a query method. Just say no.
+        reason = "Invalid argument type for valueType. A type name or"
+                 " Tf.Type is expected.";
+    }
+    return _TestResult(false, reason);
+}
+
+static
+_TestResult
+_WrapCanSetKnot(
+    TsSpline& spline, const TsKnot& knot)
+{
+    std::string reason;
+    bool result = spline.CanSetKnot(knot, &reason);
+    return _TestResult(result, reason);
+}
+
+static
+_TestResult
 _WrapCanBreakdown(
     TsSpline& spline, const TsTime time)
 {
     std::string reason;
     bool result = spline.CanBreakdown(time, &reason);
-    return _CanBreakdownResult(result, reason);
+    return _TestResult(result, reason);
 }
 
 #define WRAP_EVAL(method)                                   \
     static object _Wrap##method(                            \
         const TsSpline &spline, const TsTime time)          \
     {                                                       \
-        double val = 0;                                     \
+        VtValue val;                                        \
         const bool haveValue = spline.method(time, &val);   \
         return (haveValue ? object(val) : object());        \
     }
@@ -185,6 +310,11 @@ void wrapSpline()
 {
     using This = TsSpline;
 
+    // Convert a Python sequence of TsSpline objects to a std::vector<TsSpline>
+    TfPyContainerConversions::from_python_sequence<
+        std::vector<TsSpline>,
+        TfPyContainerConversions::variable_capacity_policy >();
+
     // Do not generate compiler warnings for the deprecated inner looping
     // methods
     ARCH_PRAGMA_PUSH
@@ -195,7 +325,7 @@ void wrapSpline()
             make_constructor(
                 &_WrapInit,
                 default_call_policies(),
-                (arg("typeName") = "double")))
+                (arg("typeName") = object())))
         .def(init<const TsSpline &>())
 
         .def(self == self)
@@ -203,7 +333,12 @@ void wrapSpline()
 
         .def("__str__", &_WrapStr)
 
+        .def("CanSetValueType", &_WrapCanSetValueType,
+             arg("valueType"))
+        .def("SetValueType", &_WrapSetValueType,
+             arg("valueType"))
         .def("GetValueTypeName", &_WrapGetValueTypeName)
+        .def("GetValueType", &This::GetValueType)
         .def("IsTimeValued", &This::IsTimeValued)
         .def("SetCurveType", &This::SetCurveType)
         .def("GetCurveType", &This::GetCurveType)
@@ -219,6 +354,8 @@ void wrapSpline()
         .def("GetInnerLoopParams", &This::GetInnerLoopParams)
 
         .def("SetKnots", &This::SetKnots)
+        .def("CanSetKnot", &_WrapCanSetKnot,
+             arg("knot"))
         .def("SetKnot", &_WrapSetKnot)
         .def("GetKnots", &_WrapGetKnots)
         .def("GetKnots", &_WrapGetKnots_WithInterval)
@@ -288,7 +425,6 @@ void wrapSpline()
         ;
     ARCH_PRAGMA_POP
 
-    _CanBreakdownResult::Wrap<_CanBreakdownResult>("_CanBreakdownResult",
-                                                   "reason");
+    _TestResult::Wrap<_TestResult>("_TestResult", "reason");
     VtValueFromPython<TsSpline>();
 }
