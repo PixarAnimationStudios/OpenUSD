@@ -18,9 +18,6 @@ pxr_library(usdRi
     PUBLIC_HEADERS
         api.h
 
-    PRIVATE_CLASSES
-        typeUtils
-
     PYMODULE_CPPFILES
         wrapRmanUtilities.cpp
 

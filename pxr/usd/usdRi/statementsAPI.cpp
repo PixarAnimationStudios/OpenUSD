@@ -110,7 +110,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
-#include "typeUtils.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/envSetting.h"
 #include <string>
@@ -143,6 +142,27 @@ _MakeRiAttrNamespace(const string &nameSpace, const string &attrName)
                    nameSpace + ":" + attrName);
 }
 
+static SdfValueTypeName 
+_GetUsdTypeForRiType(const string &riType)
+{
+    struct Entry { const char* riName; SdfValueTypeName usdType; };
+    static Entry map[] = {
+        { "color",  SdfValueTypeNames->Color3f  },
+        { "vector", SdfValueTypeNames->Vector3d },
+        { "normal", SdfValueTypeNames->Normal3d },
+        { "point",  SdfValueTypeNames->Point3d  },
+        { "matrix", SdfValueTypeNames->Matrix4d }
+    };
+    static const size_t mapLen = sizeof(map)/sizeof(map[0]);
+
+    for (size_t i = 0; i != mapLen; ++i) {
+        if (riType.find(map[i].riName) != string::npos)
+            return map[i].usdType;
+    }
+    // XXX -- Really?
+    return SdfSchema::GetInstance().FindOrCreateType(TfToken(riType));
+}
+
 UsdAttribute
 UsdRiStatementsAPI::CreateRiAttribute(
     const TfToken& name, 
@@ -150,7 +170,7 @@ UsdRiStatementsAPI::CreateRiAttribute(
     const string &nameSpace)
 {
     TfToken fullName = _MakeRiAttrNamespace(nameSpace, name.GetString());
-    SdfValueTypeName usdType = UsdRi_GetUsdType(riType);
+    SdfValueTypeName usdType = _GetUsdTypeForRiType(riType);
     return UsdGeomPrimvarsAPI(GetPrim())
         .CreatePrimvar(fullName, usdType).GetAttr();
 }
