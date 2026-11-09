@@ -7,7 +7,6 @@
 
 # pylint: disable=range-builtin-not-iterating
 
-from __future__ import print_function
 
 from pxr import Usd
 from pxr import UsdGeom

@@ -9,7 +9,6 @@
 
 # Usage: python -m pxr.Trace [-o OUTPUT] [-c "command" | FILE]
 
-from __future__ import print_function
 import argparse, sys
 
 parser = argparse.ArgumentParser(description='Trace script execution.')

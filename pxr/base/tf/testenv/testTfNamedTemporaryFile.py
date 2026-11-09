@@ -10,7 +10,6 @@
 Tests for Tf's NamedTemporaryFile wrapper
 """
 
-from __future__ import print_function
 
 import unittest, os
 from pxr import Tf

@@ -12,7 +12,6 @@ This is mostly focused on dealing with OSL and Args files. This may need to be
 expanded/generalized to accommodate other types in the future.
 """
 
-from __future__ import print_function
 
 from pxr import Sdr
 from pxr.Sdf import ValueTypeNames as SdfTypes

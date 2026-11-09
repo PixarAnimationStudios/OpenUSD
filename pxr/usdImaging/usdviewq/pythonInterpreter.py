@@ -7,7 +7,6 @@
 
 # pylint: disable=dict-keys-not-iterating
 
-from __future__ import print_function
 
 from pxr import Tf
 

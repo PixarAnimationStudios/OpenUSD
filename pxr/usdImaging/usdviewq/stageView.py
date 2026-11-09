@@ -10,8 +10,6 @@
 '''
 Module that provides the StageView class.
 '''
-from __future__ import division
-from __future__ import print_function
 
 from math import tan, floor, ceil, radians as rad, isinf
 import os, sys

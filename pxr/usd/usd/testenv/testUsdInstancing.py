@@ -11,7 +11,6 @@
 # output from run to run. However, the assertions made
 # by this test should always be valid.
 
-from __future__ import print_function
 
 from pxr import Usd, Sdf, Tf
 import unittest

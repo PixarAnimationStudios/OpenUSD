@@ -7,8 +7,6 @@
 
 # pylint: disable=round-builtin
 
-from __future__ import division
-from __future__ import print_function
 
 # Qt Components
 from .qt import QtCore, QtGui, QtWidgets, QtActionWidgets
