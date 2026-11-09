@@ -1232,12 +1232,11 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
         // Look up sprim for binding.
         const HdSprim *sprim = sceneDelegate->GetRenderIndex()
             .GetSprim(HdPrimTypeTokens->coordSys, hdId);
-        // Expect there to be an sprim with this id.
-        if (TF_VERIFY(sprim)) {
-            // Expect it to be an HdPrmanCoordSys.
-            const HdPrmanCoordSys *prmanSprim =
-                dynamic_cast<const HdPrmanCoordSys*>(sprim);
-            if (TF_VERIFY(prmanSprim) && prmanSprim->IsValid()) {
+        // If the sprim does not exist at this path, it may have been
+        // pruned.  We do not treat this condition as a warning or error.
+        if (const HdPrmanCoordSys *prmanSprim =
+            dynamic_cast<const HdPrmanCoordSys*>(sprim)) {
+            if (prmanSprim->IsValid()) {
                 // Use the assigned Riley ID.
                 rileyIdVec.push_back(prmanSprim->GetCoordSysId());
             }
