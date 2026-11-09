@@ -95,6 +95,32 @@ public:
     TS_API
     static bool IsSupportedValueType(TfType valueType);
 
+    /// \brief Check if the spline's value type can be set to valueType
+    ///
+    /// This method returns true if `SetValueType` would succeed if called with
+    /// `valueType`. This the same answer that `CanSetKnot` would return if it
+    /// was called with a knot of type `valueType` but it does not require the
+    /// creation of a `TsKnot` to perform the query.
+    ///
+    /// Returns true if it can be set or false if it cannot. If `reasonOut` is
+    /// not a nullptr then store a reason why the value type cannot be set.
+    ///
+    /// \see TsSpline::CanSetKnot
+    TS_API
+    bool CanSetValueType(
+        TfType valueType,
+        std::string *reasonOut = nullptr) const;
+
+    /// \brief Set the value type of the spline as if a knot of type `valueType`
+    /// had been set.
+    ///
+    /// If the value type of this spline is untyped, update it as if a knot with
+    /// a value type of `valueType` had been set, but without requiring a
+    /// knot. If the value type of this spline is already `valueType`, do
+    /// nothing. If the value type is different, issue a coding error.
+    TS_API
+    bool SetValueType(TfType valueType);
+
     TS_API
     TfType GetValueType() const;
 
@@ -203,13 +229,31 @@ public:
     void SetKnots(
         const TsKnotMap &knots);
 
+    /// \brief Check if the knot can be set on the spline.
+    ///
+    /// If the knot is of the same value type as the spline or if the spline
+    /// is currently untyped, then return true. Otherwise return false.
+    ///
+    /// If false is returned and `reasonOut` is not `nullptr` then the reason
+    /// why the knot cannot be set is stored in `reasonOut`.
+    ///
+    /// \see TsSpline::CanSetValueType
     TS_API
     bool CanSetKnot(
         const TsKnot &knot,
         std::string *reasonOut = nullptr) const;
 
+    /// \brief Set the knot on the spline.
+    ///
+    /// If the spline already has a knot at the same time as `knot`, `knot` will
+    /// replace it. If the spline has a value type, the knot must have the same
+    /// value type. If the spline is untyped, its value type will be changed to
+    /// match the knot.
+    ///
     /// <b>Incompletely implemented</b>; \p affectedIntervalOut is not yet
     /// populated.
+    ///
+    /// \see TsSpline::CanSetKnot
     TS_API
     bool SetKnot(
         const TsKnot &knot,
