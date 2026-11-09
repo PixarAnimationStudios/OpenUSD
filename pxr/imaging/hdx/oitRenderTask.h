@@ -55,6 +55,11 @@ protected:
         return _translucentPassState;
     }
 
+    /// Whether Prepare() determined this task should draw this frame.
+    bool _ShouldDraw() const {
+        return _oitShouldDraw;
+    }
+
 private:
     HdxOitRenderTask() = delete;
     HdxOitRenderTask(const HdxOitRenderTask &) = delete;
