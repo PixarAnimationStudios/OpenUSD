@@ -604,8 +604,8 @@ TsSpline::_Sample(
     // Make sure that splineSamples is empty.
     sampleData.Clear();
 
-    // Do not bother to sample empty data.
-    if (_data || !_data->times.empty()) {
+    // Only sample if there's something there.
+    if (_data && !_data->times.empty()) {
 
         Ts_Sample(_data.get(), timeInterval,
                   timeScale, valueScale, tolerance,
