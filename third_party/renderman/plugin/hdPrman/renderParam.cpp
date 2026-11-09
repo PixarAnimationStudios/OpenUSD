@@ -2083,9 +2083,13 @@ HdPrman_RenderParam::_CreateStatsSession(void)
     // Editor for entering data into the scene index
     HdContainerDataSourceEditor editor;
 
-    // Add serverID to the stats hydra scene index, to be picked up by UI code
+    // Add serverID and port to the stats hydra scene index, to be picked up
+    // by UI code.  The port enables direct connection without a stats broker.
     editor.Set(HdDataSourceLocator(TfToken("liveStatsServerId")),
         HdRetainedTypedSampledDataSource<std::string>::New(serverId));
+    editor.Set(HdDataSourceLocator(TfToken("liveStatsPort")),
+        HdRetainedTypedSampledDataSource<int>::New(
+            _statsSession->GetLiveStatsPort()));
 
     // Finalize addition of scene index information
     _statsSceneIndex->AddPrims({{SdfPath("/globals"), TfToken("globals"),
