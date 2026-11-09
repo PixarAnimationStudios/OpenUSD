@@ -17,6 +17,31 @@
 	Keywords: UsdGeomValidators, UsdGeomSubset
 	SchemaTypes: UsdGeomSubset
 	isSuite: False
+[usdLodValidators:DistanceHeuristicThresholds]:
+	Doc: thresholds must be strictly increasing; blendThresholds (if present) must satisfy thresholds[i] <= blendThresholds[i] <= thresholds[i+1].
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodDistanceHeuristic
+	isSuite: False
+[usdLodValidators:HeuristicLodDomain]:
+	Doc: lod:domain on a UsdLodHeuristic must be non-empty.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodHeuristic
+	isSuite: False
+[usdLodValidators:LodOverrideApiMode]:
+	Doc: lod:override:mode must be one of the allowed tokens; if mode is indexedLOD, lod:override:index must be readable.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodOverrideAPI
+	isSuite: False
+[usdLodValidators:LodRootApiHeuristics]:
+	Doc: lod:heuristics relationship targets must resolve to prims that IsA UsdLodHeuristic.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodRootAPI
+	isSuite: False
+[usdLodValidators:ScreenSizeHeuristicThresholds]:
+	Doc: thresholds must be strictly decreasing; blendThresholds (if present) must satisfy thresholds[i+1] <= blendThresholds[i] <= thresholds[i]; projectionMethod must be a valid token; extent (if present) must be empty or have exactly 2 elements.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodScreenSizeHeuristic
+	isSuite: False
 [usdLuxValidators:EncapsulationRulesValidator]:
 	Doc: Connectable prims in UsdLux (e.g. Light, LightFilters) can only be nested inside other Container-like Connectable prims (UsdShadeNodeGraph, UsdLuxLight or UsdLuxLightFilter).
 	Keywords: UsdLuxValidators
