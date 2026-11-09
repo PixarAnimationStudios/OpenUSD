@@ -532,9 +532,18 @@ bool TsSpline::DoSidesDiffer(
 {
     // Simple implementation.  Could probably be faster.
     double preValue = 0, value = 0;
-    EvalPreValue(time, &preValue);
-    Eval(time, &value);
-    return (value == preValue);
+    bool hasPreValue = EvalPreValue(time, &preValue);
+    bool hasValue = Eval(time, &value);
+    if (hasPreValue != hasValue) {
+        // One side has a value, the other does not. They differ.
+        return true;
+    } else if (hasValue) {
+        // Both sides have a value.
+        return (value != preValue);
+    } else {
+        // Neither side has a value. They do not differ.
+        return false;
+    }
 }
 
 
