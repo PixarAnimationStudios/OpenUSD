@@ -92,12 +92,27 @@ TfFastCompression::DecompressFromBuffer(
     char const *compressed, char *output,
     size_t compressedSize, size_t maxOutputSize)
 {
-    // Check first byte for # chunks.
-    int nChunks = *compressed++;
+    if (compressedSize == 0) {
+        TF_RUNTIME_ERROR("Cannot decompress an empty buffer");
+        return 0;
+    }
+    char const * const end = compressed + compressedSize;
+
+    // Check first byte for # chunks.  Read it unsigned so values above 127 are
+    // not negative where char is signed.
+    unsigned int nChunks = static_cast<unsigned char>(*compressed++);
+
     if (nChunks == 0) {
-        // Just one.
+        // Just one.  LZ4 takes int sizes; no valid chunk is larger than
+        // LZ4_MAX_INPUT_SIZE compressed or uncompressed.
+        if (end - compressed > LZ4_compressBound(LZ4_MAX_INPUT_SIZE)) {
+            TF_RUNTIME_ERROR("Failed to decompress data: compressed size %zu "
+                             "is too large", compressedSize);
+            return 0;
+        }
         int nDecompressed = LZ4_decompress_safe(
-            compressed, output, compressedSize-1, maxOutputSize);
+            compressed, output, end - compressed,
+            std::min<size_t>(LZ4_MAX_INPUT_SIZE, maxOutputSize));
         if (nDecompressed < 0) {
             TF_RUNTIME_ERROR("Failed to decompress data, possibly corrupt? "
                              "LZ4 error code: %d", nDecompressed);
@@ -107,10 +122,22 @@ TfFastCompression::DecompressFromBuffer(
     } else {
         // Do each chunk.
         size_t totalDecompressed = 0;
-        for (int i = 0; i != nChunks; ++i) {
+        for (unsigned int i = 0; i != nChunks; ++i) {
             int32_t chunkSize = 0;
+            if (end - compressed < ptrdiff_t(sizeof(chunkSize))) {
+                TF_RUNTIME_ERROR("Failed to decompress data: chunk %u of %u "
+                                 "truncated", i + 1, nChunks);
+                return 0;
+            }
             std::memcpy(&chunkSize, compressed, sizeof(chunkSize));
             compressed += sizeof(chunkSize);
+            if (chunkSize < 0 || chunkSize > end - compressed) {
+                TF_RUNTIME_ERROR("Failed to decompress data: chunk %u of %u "
+                                 "has invalid size %d with %td bytes "
+                                 "remaining", i + 1, nChunks, chunkSize,
+                                 end - compressed);
+                return 0;
+            }
             int nDecompressed = LZ4_decompress_safe(
                 compressed, output, chunkSize,
                 std::min<size_t>(LZ4_MAX_INPUT_SIZE, maxOutputSize));
@@ -126,7 +153,6 @@ TfFastCompression::DecompressFromBuffer(
         }
         return totalDecompressed;
     }
-    // unreachable.
-}                
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

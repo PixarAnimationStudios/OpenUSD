@@ -19,6 +19,9 @@
 //                                    and tocOffset 88, followed by a TOC
 //                                    section count of 2^64-1
 //
+// The test also writes bad_tokens_chunk.usdc, a copy of baseline.usdc whose
+// compressed tokens claim one chunk but are too short to hold its size.
+//
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -27,11 +30,15 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/crateInfo.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 
+#include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <optional>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -93,6 +100,51 @@ _TestObsolete(char const *layerPath)
     mark->Clear();
 }
 
+// Write a copy of `srcPath` to `dstPath` whose TOKENS section holds a
+// one-byte compressed payload: a chunk count of 1 with no room for the chunk's
+// size.  Then expect opening it to fail with errors.
+static void
+_TestTruncatedTokensChunk(char const *srcPath, char const *dstPath)
+{
+    SdfCrateInfo info = SdfCrateInfo::Open(srcPath);
+    TF_AXIOM(info);
+    int64_t tokensStart = -1;
+    for (SdfCrateInfo::Section const &sec: info.GetSections()) {
+        if (sec.name == "TOKENS") {
+            tokensStart = sec.start;
+        }
+    }
+    TF_AXIOM(tokensStart >= 0);
+
+    FILE *in = fopen(srcPath, "rb");
+    TF_AXIOM(in);
+    std::vector<char> bytes;
+    char buf[4096];
+    for (size_t n; (n = fread(buf, 1, sizeof(buf), in)) != 0; ) {
+        bytes.insert(bytes.end(), buf, buf + n);
+    }
+    fclose(in);
+
+    // TOKENS: numTokens, uncompressedSize, compressedSize (uint64_t each),
+    // then the compressed payload.
+    uint64_t const compressedSize = 1;
+    char const nChunks = 1;
+    TF_AXIOM(tokensStart + 25 <= static_cast<int64_t>(bytes.size()));
+    memcpy(&bytes[tokensStart + 16], &compressedSize, sizeof(compressedSize));
+    bytes[tokensStart + 24] = nChunks;
+
+    FILE *out = fopen(dstPath, "wb");
+    TF_AXIOM(out);
+    TF_AXIOM(fwrite(bytes.data(), 1, bytes.size(), out) == bytes.size());
+    fclose(out);
+
+    TfErrorMark mark;
+    SdfLayerRefPtr layer = SdfLayer::FindOrOpen(dstPath);
+    TF_AXIOM(!layer);
+    TF_AXIOM(!mark.IsClean());
+    mark.Clear();
+}
+
 int
 main()
 {    
@@ -100,6 +152,8 @@ main()
           SdfPath("/Root.zcPoints"), /*error=*/false);
 
     _TestObsolete("bad_obsolete_version.usdc");
+
+    _TestTruncatedTokensChunk("baseline.usdc", "bad_tokens_chunk.usdc");
 
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
     // These tests rely on safety checks that only exist when

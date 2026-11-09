@@ -3834,8 +3834,15 @@ CrateFile::_ReadTokens(Reader reader)
         charsEnd = chars.get() + uncompressedSize;
         RawDataPtr compressed(new char[compressedSize]);
         reader.ReadContiguous(compressed.get(), compressedSize);
-        TfFastCompression::DecompressFromBuffer(
-            compressed.get(), chars.get(), compressedSize, uncompressedSize);
+        // Require exactly uncompressedSize bytes.  Fewer would leave the tail
+        // of chars uninitialized, and valid LZ4 data can decompress to fewer
+        // bytes than claimed without any error.
+        if (TfFastCompression::DecompressFromBuffer(
+                compressed.get(), chars.get(), compressedSize,
+                uncompressedSize) != uncompressedSize) {
+            TF_RUNTIME_ERROR("Corrupt tokens section in crate file");
+            return;
+        }
     }
 
     // Check/ensure that we're null terminated.
