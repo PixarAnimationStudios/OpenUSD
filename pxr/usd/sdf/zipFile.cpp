@@ -99,19 +99,6 @@ static inline int64_t Sdf_GetMaxZipFileSize() {
     return envVal < 0 ? std::numeric_limits<int64_t>::max() : envVal;
 }
 
-// Metafunction that determines if a T instance can be read/written by simple
-// bitwise copy.
-//
-// XXX: This could be std::is_trivially_copyable, but that isn't implemented in
-//      older versions of gcc.
-template <class T>
-struct _IsBitwiseReadWrite {
-    static const bool value =
-        std::is_enum<T>::value ||
-        std::is_arithmetic<T>::value ||
-        std::is_trivial<T>::value;
-};
-
 struct _InputStream {
     _InputStream(const char* buffer, size_t size, size_t offset = 0)
         : _cur(buffer + offset)
@@ -127,7 +114,7 @@ struct _InputStream {
     template <class T>
     void Read(T* dest)
     {
-        static_assert(_IsBitwiseReadWrite<T>::value, 
+        static_assert(std::is_trivially_copyable<T>::value, 
                       "Cannot memcpy to non-trivially-copyable type");
         memcpy(reinterpret_cast<char*>(dest), _cur, sizeof(T));
         _cur += sizeof(T);
@@ -172,7 +159,7 @@ struct _OutputStream
     template <class T>
     inline void Write(const T& value)
     {
-        static_assert(_IsBitwiseReadWrite<T>::value, 
+        static_assert(std::is_trivially_copyable<T>::value, 
                       "Cannot fwrite non-trivially-copyable type");
         fwrite(&value, sizeof(T), 1, _f);
         _CheckLimit();
