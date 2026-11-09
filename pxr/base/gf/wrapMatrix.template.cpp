@@ -181,11 +181,6 @@ static bool __contains__vector( const {{ MAT }} &self, GfVec{{ SUFFIX }} value )
     return false;
 }
 
-static {{ MAT }} __truediv__(const {{ MAT }} &self, {{ MAT }} value)
-{
-    return self / value;
-}
-
 static {{ MAT }} *__init__() {
     // Default constructor produces identity from python.
     return new {{ MAT }}(1);
@@ -336,10 +331,4 @@ void wrapMatrix{{ SUFFIX }}()
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / self ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__ );
-    }
 }

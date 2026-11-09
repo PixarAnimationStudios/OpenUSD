@@ -184,11 +184,6 @@ static bool __contains__vector( const GfMatrix3f &self, GfVec3f value ) {
     return false;
 }
 
-static GfMatrix3f __truediv__(const GfMatrix3f &self, GfMatrix3f value)
-{
-    return self / value;
-}
-
 static GfMatrix3f *__init__() {
     // Default constructor produces identity from python.
     return new GfMatrix3f(1);
@@ -339,10 +334,4 @@ void wrapMatrix3f()
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / self ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__ );
-    }
 }

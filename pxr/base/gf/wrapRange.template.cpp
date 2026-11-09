@@ -41,16 +41,6 @@ static string _Repr({{ RNG }} const &self) {
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
 }
 
-static {{ RNG }} __truediv__(const {{ RNG }} &self, double value)
-{
-    return self / value;
-}
-
-static {{ RNG }}& __itruediv__({{ RNG }} &self, double value)
-{
-    return self /= value;
-}
-
 static size_t __hash__({{ RNG }} const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
@@ -145,20 +135,5 @@ void wrapRange{{ SUFFIX }}()
         ;
     to_python_converter<std::vector<{{ RNG }}>,
         TfPySequenceToPython<std::vector<{{ RNG }}> > >();
-
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 
 }
