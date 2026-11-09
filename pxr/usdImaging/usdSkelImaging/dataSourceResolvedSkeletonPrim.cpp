@@ -233,9 +233,16 @@ private:
                                 UsdSkelImagingGetTypedValue(
                                     _animSchemas[i].GetBlendShapes(), 
                                     shutterOffset);
+                            const int shapesSize = shapes.size();
+                            // Guard against shapes shorter than the range;
+                            // every slot must still be constructed.
                             for (int j = 0; j < ranges[i][1]; ++j) {
-                                new (start + ranges[i][0] + j) 
-                                    TfToken(shapes[j]);
+                                TfToken* const dst = start + ranges[i][0] + j;
+                                if (j < shapesSize) {
+                                    new (dst) TfToken(shapes[j]);
+                                } else {
+                                    new (dst) TfToken();
+                                }
                             }
                         }
                     });
@@ -416,8 +423,10 @@ public:
 
 private:
     _BlendShapeRangesDataSource(
-        const VtArray<UsdSkelImagingAnimationSchema>& animationSchemas)
+        const VtArray<UsdSkelImagingAnimationSchema>& animationSchemas,
+        std::shared_ptr<const std::vector<size_t>> blendShapeCounts)
       : _animSchemas(animationSchemas)
+      , _blendShapeCounts(std::move(blendShapeCounts))
       , _valueAtZero(_Compute(0.0f))
     {
     }
@@ -428,6 +437,12 @@ private:
         if (_animSchemas.empty()) {
             return {};
         }
+
+        // Treat blend shapes as missing if the cached counts are out of sync
+        // with the animation schemas.
+        const bool hasCounts = TF_VERIFY(
+            _blendShapeCounts &&
+            _blendShapeCounts->size() == _animSchemas.size());
 
         // XXX TODO
         // we can't use tbb::parallel_scan() so need to implement our own
@@ -440,8 +455,8 @@ private:
             [&] (GfVec2i* start, GfVec2i* end)
             {   
                 for (size_t i = 0; i < _animSchemas.size(); ++i) {
-                    const size_t numShapes = UsdSkelImagingGetTypedValue(
-                        _animSchemas[i].GetBlendShapes(), shutterOffset).size();
+                    const size_t numShapes =
+                        hasCounts ? (*_blendShapeCounts)[i] : 0;
                     const size_t numWeights = UsdSkelImagingGetTypedValue(
                         _animSchemas[i].GetBlendShapeWeights(),
                         shutterOffset).size();
@@ -455,6 +470,7 @@ private:
     }
 
     const VtArray<UsdSkelImagingAnimationSchema> _animSchemas;
+    const std::shared_ptr<const std::vector<size_t>> _blendShapeCounts;
 
     // XXX
     // pattern copied from _SkinningTransformsDataSource but doesn't feel
@@ -851,6 +867,7 @@ UsdSkelImagingDataSourceResolvedSkeletonPrim(
          : sceneIndex->GetPrim(_animationSource).dataSource))
  , _skelDataCache(sceneIndex, primPath)
  , _skelGuideDataCache(this)
+ , _blendShapeCountsCache(this)
  , _restTransformsDataSource(
      _RestTransformsDataSource::New(
          UsdSkelImagingSkeletonSchema::GetFromParent(primSource)))
@@ -978,7 +995,8 @@ HdVec2iArrayDataSourceHandle
 UsdSkelImagingDataSourceResolvedSkeletonPrim::GetBlendShapeRanges() const
 {
     TRACE_FUNCTION();
-    return _BlendShapeRangesDataSource::New(GetAnimationSchema());
+    return _BlendShapeRangesDataSource::New(
+        GetAnimationSchema(), _blendShapeCountsCache.Get());
 }
 
 const HdDataSourceLocatorSet &
@@ -1119,6 +1137,11 @@ _ProcessSkelAnimationDirtyLocators(
         }
     }
 
+    if (dirtyLocators.Intersects(
+            UsdSkelImagingAnimationSchema::GetBlendShapesLocator())) {
+        _blendShapeCountsCache.Invalidate();
+    }
+
     static const HdDataSourceLocatorSet blendShapeLocators{
         UsdSkelImagingAnimationSchema::GetBlendShapesLocator(),
         UsdSkelImagingAnimationSchema::GetBlendShapeWeightsLocator()};
@@ -1241,6 +1264,34 @@ _SkelGuideDataCache::_Compute()
     return std::make_shared<UsdSkelImagingSkelGuideData>(
         UsdSkelImagingComputeSkelGuideData(
             *_resolvedSkeleton->GetSkelData()));
+}
+
+UsdSkelImagingDataSourceResolvedSkeletonPrim::
+_BlendShapeCountsCache::_BlendShapeCountsCache(
+    UsdSkelImagingDataSourceResolvedSkeletonPrim * const resolvedSkeleton)
+ : _resolvedSkeleton(resolvedSkeleton)
+{
+}
+
+std::shared_ptr<std::vector<size_t>>
+UsdSkelImagingDataSourceResolvedSkeletonPrim::
+_BlendShapeCountsCache::_Compute()
+{
+    TRACE_FUNCTION();
+
+    const VtArray<UsdSkelImagingAnimationSchema> animSchemas =
+        _resolvedSkeleton->GetAnimationSchema();
+
+    auto result = std::make_shared<std::vector<size_t>>(animSchemas.size());
+    WorkParallelForN(
+        animSchemas.size(),
+        [&](size_t begin, size_t end) {
+            for (size_t i = begin; i < end; ++i) {
+                (*result)[i] = UsdSkelImagingGetTypedValue(
+                    animSchemas[i].GetBlendShapes()).size();
+            }
+        });
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
