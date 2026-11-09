@@ -24,14 +24,10 @@ void wrapUsdRiTokens()
     _ADD_TOKEN(cls, interpolation);
     _ADD_TOKEN(cls, linear);
     _ADD_TOKEN(cls, matte);
-    _ADD_TOKEN(cls, outputsRiDisplacement);
-    _ADD_TOKEN(cls, outputsRiSurface);
-    _ADD_TOKEN(cls, outputsRiVolume);
     _ADD_TOKEN(cls, positions);
     _ADD_TOKEN(cls, renderContext);
     _ADD_TOKEN(cls, spline);
     _ADD_TOKEN(cls, values);
-    _ADD_TOKEN(cls, RiMaterialAPI);
     _ADD_TOKEN(cls, RiSplineAPI);
     _ADD_TOKEN(cls, StatementsAPI);
 }

@@ -11,23 +11,6 @@ class "StatementsAPI" (
 {
 }
 
-class "RiMaterialAPI" (
-    customData = {
-        string userDocBrief = "\\deprecated Materials should use UsdShadeMaterial instead."
-    }
-)
-{
-    token outputs:ri:displacement (
-        displayGroup = "Outputs"
-    )
-    token outputs:ri:surface (
-        displayGroup = "Outputs"
-    )
-    token outputs:ri:volume (
-        displayGroup = "Outputs"
-    )
-}
-
 class "RiSplineAPI" (
     customData = {
         string userDocBrief = "\\deprecated This API schema will be removed in a future release."

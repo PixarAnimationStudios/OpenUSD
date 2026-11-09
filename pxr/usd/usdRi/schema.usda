@@ -85,47 +85,6 @@ class "StatementsAPI" (
 ) {
 }
 
-### Material API common to both RSL and RIS ###
-
-class "RiMaterialAPI" (
-    inherits = </APISchemaBase>
-    doc = """
-    \\deprecated Materials should use UsdShadeMaterial instead.
-    This schema will be removed in a future release.
-
-    This API provides outputs that connect a material prim to prman 
-    shaders and RIS objects."""
-    customData = {
-        # We want the class name to be UsdRiMaterialAPI
-        string className = "MaterialAPI"    
-        string extraIncludes = """
-#include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/material.h"
-"""
-    }
-) {
-    token outputs:ri:surface (
-        displayGroup = "Outputs"
-        customData = {
-            string apiName = "surface"
-        }
-    )
-    token outputs:ri:displacement (
-        displayGroup = "Outputs"
-        customData = {
-            string apiName = "displacement"
-        }
-    )
-    token outputs:ri:volume (
-        displayGroup = "Outputs"
-        customData = {
-            string apiName = "volume"
-        }
-    )
-}
-
-
 ########################################################################
 # Lighting API
 

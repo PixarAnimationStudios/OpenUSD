@@ -73,18 +73,6 @@ struct UsdRiTokensType {
     /// 
     ///  UsdRenderPassAPI - This token represents the collection  name to use with UsdCollectionAPI to set the matte attribute on the prims in the collection for the RenderPass. 
     const TfToken matte;
-    /// \brief "outputs:ri:displacement"
-    /// 
-    /// UsdRiMaterialAPI
-    const TfToken outputsRiDisplacement;
-    /// \brief "outputs:ri:surface"
-    /// 
-    /// UsdRiMaterialAPI
-    const TfToken outputsRiSurface;
-    /// \brief "outputs:ri:volume"
-    /// 
-    /// UsdRiMaterialAPI
-    const TfToken outputsRiVolume;
     /// \brief "positions"
     /// 
     /// UsdSplineAPI - Positions attribute name
@@ -101,10 +89,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdSplineAPI - values attribute name
     const TfToken values;
-    /// \brief "RiMaterialAPI"
-    /// 
-    /// Schema identifier and family for UsdRiMaterialAPI
-    const TfToken RiMaterialAPI;
     /// \brief "RiSplineAPI"
     /// 
     /// Schema identifier and family for UsdRiSplineAPI
