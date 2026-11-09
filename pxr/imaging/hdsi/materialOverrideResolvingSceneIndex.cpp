@@ -867,6 +867,85 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    // When prims are removed update our internal bookkeeping.
+    // Cases that are of interest to this scene index are:
+    // - Removal of materials used to generated override materials
+    // - Removal of generated materials
+    // - Removal of prims bound to generated materials
+    // Note that it's possible for an ancestor of one of these cases to be
+    // removed, and to only receive the notification for that prim.
+    //
+    // InvalidateMaps uses prim paths of geometries bound to generated 
+    // materials as inputs, so in each case that's the information being
+    // collected.
+
+    PathSet geomPathsToDelete;
+    for (const HdSceneIndexObserver::RemovedPrimEntry& entry : entries) {
+        bool processed = false;
+
+        // Check if the prim being removed is a material used to generated 
+        // an override material, or an ancestor of such a prim
+        for (const auto& [oldMaterialPath, newMaterialSet] : 
+                _oldToNewMaterialPaths) {
+            if (!oldMaterialPath.HasPrefix(entry.primPath)) {
+                continue;
+            }
+
+            // Collect the paths of geometry bound to materials generated
+            // from this one
+            for (const SdfPath& newMaterialPath : newMaterialSet) {
+                if (auto it = _materialData.find(newMaterialPath);
+                    it != _materialData.end()) {
+                    geomPathsToDelete.insert(it->second.boundPrims.begin(), 
+                        it->second.boundPrims.end());
+                }
+            }
+
+            processed = true;
+
+            // Do not break here, since multiple materials could be affected
+        }
+        if (processed) {
+            continue;
+        }
+
+        // Check if the prim being removed is a generated material, 
+        // or an ancestor of one
+        for (const auto& [newMaterialPath, materialData] : _materialData) {
+            if (!newMaterialPath.HasPrefix(entry.primPath)) {
+                continue;
+            }
+
+            // Collect the paths of geometry bound to this generated material
+            geomPathsToDelete.insert(
+                materialData.boundPrims.begin(), materialData.boundPrims.end());
+            processed = true;
+
+            // Do not break here, since multiple materials could be affected
+        }
+
+        if (processed) {
+            continue;
+        }
+
+        // Check if the prim being removed is a geometry prim bound to a 
+        // generated material, or an ancestor of one
+        for (const auto& [geoPrimPath, _] : _primData) {
+            if (!geoPrimPath.HasPrefix(entry.primPath)) {
+                continue;
+            }
+
+            geomPathsToDelete.insert(geoPrimPath);
+
+            // Do not break here, since multiple prims could be affected
+        }
+    }
+
+    // Update the bookkeeping data
+    for (const SdfPath& geomPathToDelete : geomPathsToDelete) {
+        _InvalidateMaps(geomPathToDelete);
+    }
+
     _SendPrimsRemoved(entries);
 }
 
@@ -1325,6 +1404,9 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
     const HdSceneIndexPrim originalMaterialPrim =
         inputScene->GetPrim(materialIt->second.originalMaterialPath);
     prim.dataSource = HdMakeStaticCopy(originalMaterialPrim.dataSource);
+    if (!prim.dataSource) {
+        return;
+    }
 
     // Get the materialOverride data source from the geom that caused this
     // material to be generated
