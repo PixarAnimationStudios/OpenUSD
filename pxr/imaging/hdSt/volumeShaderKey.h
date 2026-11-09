@@ -25,6 +25,10 @@ struct HdSt_VolumeShaderKey : public HdSt_ShaderKey
     TfToken const *GetVS() const override { return VS; }
     TfToken const *GetFS() const override { return FS; }
 
+    bool UseHardwareClipPlanes() const override {
+        return false;
+    }
+
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override { 
         return HdSt_GeometricShader::PrimitiveType::PRIM_VOLUME;
     }
