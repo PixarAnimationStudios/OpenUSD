@@ -131,7 +131,7 @@ UsdPmcMeshEncoder::Encode(UsdGeomMesh* mesh, const VtDictionary& options,
         return bs;
     }
     try {
-        UsdPmc_EncodeSession pmces = UsdPmc_EncodeSession{UsdGeomMesh(*mesh), options};
+        UsdPmc_EncodeSession pmces{*mesh, &options};
         bs = pmces.encode();
         // resultInfo is currently unused but could be populated in the future
         if (processedAttributes)
