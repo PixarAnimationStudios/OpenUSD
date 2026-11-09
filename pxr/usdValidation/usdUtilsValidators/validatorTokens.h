@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         "UnsupportedFileExtensionInPackage"))                                  \
     ((unresolvableDependency, "UnresolvableDependency"))		                   \
     ((compressionDetected, "CompressionDetected"))                             \
+    ((encryptionDetected, "EncryptionDetected"))                               \
     ((byteMisalignment, "ByteMisalignment"))                                   \
     ((containsPmcFile, "ContainsPmcFile"))
 

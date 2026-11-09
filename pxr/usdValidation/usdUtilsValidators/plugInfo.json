@@ -13,7 +13,7 @@
                         "doc": "The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver."
                     },
                     "PackageEncapsulationValidator": {
-                        "doc": "If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.", 
+                        "doc": "If the root layer is a package, then it's recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.", 
                         "keywords": [
                             "UsdzValidators"
                         ]

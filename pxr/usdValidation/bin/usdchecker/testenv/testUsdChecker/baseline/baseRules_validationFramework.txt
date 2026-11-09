@@ -128,7 +128,7 @@
 	Keywords: UsdUtilsValidators
 	isSuite: False
 [usdUtilsValidators:PackageEncapsulationValidator]:
-	Doc: If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.
+	Doc: If the root layer is a package, then it's recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
 [usdUtilsValidators:UsdzPackageValidator]:

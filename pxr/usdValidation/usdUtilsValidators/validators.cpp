@@ -238,6 +238,21 @@ _GetUsdzPackageErrors(const SdfLayerHandle &rootLayer)
             );
         }
 
+        if (fileInfo.encrypted)
+        {
+            const std::string &fileName = *it;
+            errors.emplace_back(
+                UsdUtilsValidationErrorNameTokens->encryptionDetected,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites {
+                    UsdValidationErrorSite(
+                            rootLayer, SdfPath(fileName))
+                },
+                TfStringPrintf("File '%s' in package '%s' is encrypted.",
+                    fileName.c_str(), packagePath.c_str())
+            );
+        }
+
         if (fileInfo.dataOffset % 64 != 0)
         {
             const std::string &fileName = *it;
