@@ -92,6 +92,17 @@ HdSt_ShaderKey::ComputeHash() const
         GetLineWidth(),
         GetFvarPatchType()
     );
+    // These select codegen output (gl_FragDepth qualifier, hardware clip
+    // distances) and draw command contents (vertex count for draw items
+    // without vertex primvars). Keys that don't use these features return the
+    // base class defaults (0, empty token, true), so including them doesn't
+    // split otherwise identical keys.
+    hash = TfHash::Combine(
+        hash,
+        GetVertexCountFallback(),
+        GetDepthQualifier(),
+        UseHardwareClipPlanes()
+    );
 
     return hash;
 }
