@@ -47,6 +47,7 @@ struct Args {
     StringVector variants;
     StringVector variantSets;
     std::string includeKeywords;
+    std::string includeSuites;
     bool skipVariants = false;
     bool disableVariantValidationLimit = false;
     bool rootPackageOnly = false;
@@ -63,13 +64,26 @@ _Configure(CLI::App* app, Args& args) {
         "inputFile", args.inputFile, 
         "Name of the input file to inspect.")
         ->type_name("FILE");
-    // Add a new flag to only include validators from a specific keywords
     app->add_option(
         "--includeKeywords", args.includeKeywords,
-        "If specified, only validators from the included keywords are run. "
-        "Multiple keywords can be specified as a comma separated list. "
-        "If not specified, all validators are run.")
+        "If specified, only validators from the included keywords are run.\n"
+        "Multiple keywords can be specified as a comma separated list.\n"
+        "If neither this nor --includeSuites is specified, all validators\n"
+        "are run. Note that this includes validators in addition to the ones\n"
+        "specified in the --includeSuites option, if any. Validators and\n"
+        "suites included in the matching keywords are run regardless of\n"
+        "--rootPackageOnly and --noAssetChecks.")
         ->type_name("KEYWORDS");
+    app->add_option(
+        "--includeSuites", args.includeSuites,
+        "If specified, only validators from the included suites are run.\n"
+        "Multiple suites can be specified as a comma separated list.\n"
+        "If neither this nor --includeKeywords is specified, all validators\n"
+        "are run. Note that this includes validators in addition to the ones\n"
+        "specified in the --includeKeywords option, if any. Validators\n"
+        "contained in the specified suites are run regardless of\n"
+        "--rootPackageOnly and --noAssetChecks.")
+        ->type_name("SUITES");
     app->add_flag(
         "-s, --skipVariants", args.skipVariants, 
         "If specified, only the prims that are present in the default (i.e.\n"
@@ -79,7 +93,8 @@ _Configure(CLI::App* app, Args& args) {
     app->add_flag(
         "-p, --rootPackageOnly", args.rootPackageOnly, 
         "Check only the specified package. Nested packages, dependencies and\n"
-        "their contents are not validated.");
+        "their contents are not validated. Has no effect if either \n"
+        "--includeKeywords or --includeSuites is specified.");
     app->add_option(
         "-o, --out", args.outFile, 
         "The file to which all the failed checks are output. If unspecified,\n"
@@ -89,7 +104,9 @@ _Configure(CLI::App* app, Args& args) {
     app->add_flag(
         "--noAssetChecks", args.noAssetChecks, 
         "If specified, do NOT perform extra checks to help ensure the stage\n"
-        "or package can be easily and safely referenced into aggregate stages.");
+        "or package can be easily and safely referenced into aggregate stages.\n"
+        "Has no effect if either --includeKeywords or --includeSuites is \n"
+        "specified.");
     app->add_flag(
         "-d, --dumpRules", args.dumpRules, "Dump the enumerated set of rules\n"
         "being checked for the given set of options.");
@@ -129,8 +146,11 @@ _Configure(CLI::App* app, Args& args) {
 static
 bool 
 _ValidateArgs(const Args& args) {
-    // Check conflicting options
-    if (args.rootPackageOnly && args.skipVariants) {
+    // Check conflicting options. --rootPackageOnly is ignored when validators
+    // are explicitly selected, so it cannot conflict in that case.
+    const bool explicitSelection =
+        !args.includeKeywords.empty() || !args.includeSuites.empty();
+    if (args.rootPackageOnly && args.skipVariants && !explicitSelection) {
         std::cerr<<"Error: The options --rootPackageOnly and --skipVariants "
             "are mutually exclusive.\n";
         return false;
@@ -539,44 +559,88 @@ _UsdChecker(const Args& args)
     UsdValidationRegistry &validationReg = 
         UsdValidationRegistry::GetInstance();
 
+    const StringVector allKeywords = TfStringTokenize(
+        args.includeKeywords, ",");
+    const StringVector allSuites = TfStringTokenize(
+        args.includeSuites, ",");
+
     UsdValidationValidatorMetadataVector metadata;
-    if (args.includeKeywords.empty()) {
+    if (allKeywords.empty() && allSuites.empty()) {
         metadata = validationReg.GetAllValidatorMetadata();
+
+        // Drop suites. Every validator contained in a suite is also
+        // registered individually and so is already present; keeping the
+        // suite would let its validators bypass the filters below.
+        metadata.erase(
+            std::remove_if(
+                metadata.begin(), metadata.end(),
+                [](const UsdValidationValidatorMetadata &meta) {
+                    return meta.isSuite;
+                }), metadata.end());
+
+        // The following filters apply only when validators are not
+        // explicitly selected via --includeKeywords or --includeSuites.
+        if (args.noAssetChecks) {
+            // Remove metadata which have the stageMetadataChecker validator
+            // name.
+            metadata.erase(
+                std::remove_if(
+                    metadata.begin(), metadata.end(), 
+                    [](const UsdValidationValidatorMetadata &meta) {
+                        return meta.name == 
+                            UsdValidatorNameTokens->stageMetadataChecker;
+                    }), metadata.end());
+        }
+        if (args.rootPackageOnly) {
+            // Remove UsdUtilsValidators:UsdzPackageValidator
+            metadata.erase(
+                std::remove_if(
+                    metadata.begin(), metadata.end(), 
+                    [](const UsdValidationValidatorMetadata &meta) {
+                        return meta.name == 
+                            UsdUtilsValidatorNameTokens->usdzPackageValidator;
+                    }), metadata.end());
+        } else {
+            // Remove UsdUtilsValidators:RootPackageValidator
+            metadata.erase(
+                std::remove_if(
+                    metadata.begin(), metadata.end(), 
+                    [](const UsdValidationValidatorMetadata &meta) {
+                        return meta.name == 
+                            UsdUtilsValidatorNameTokens->rootPackageValidator;
+                    }), metadata.end());
+        }
     } else {
-        const StringVector allKeywords = TfStringTokenize(
-            args.includeKeywords, ",");
-        metadata = validationReg.GetValidatorMetadataForKeywords(
-            TfToTokenVector(allKeywords));
-    }
-    if (args.noAssetChecks) {
-        // Remove metadata which have the stageMetadataChecker validator
-        // name.
-        metadata.erase(
-            std::remove_if(
-                metadata.begin(), metadata.end(), 
-                [](const UsdValidationValidatorMetadata &meta) {
-                    return meta.name == 
-                        UsdValidatorNameTokens->stageMetadataChecker;
-                }), metadata.end());
-    }
-    if (args.rootPackageOnly) {
-        // Remove UsdUtilsValidators:UsdzPackageValidator
-        metadata.erase(
-            std::remove_if(
-                metadata.begin(), metadata.end(), 
-                [](const UsdValidationValidatorMetadata &meta) {
-                    return meta.name == 
-                        UsdUtilsValidatorNameTokens->usdzPackageValidator;
-                }), metadata.end());
-    } else {
-        // Remove UsdUtilsValidators:RootPackageValidator
-        metadata.erase(
-            std::remove_if(
-                metadata.begin(), metadata.end(), 
-                [](const UsdValidationValidatorMetadata &meta) {
-                    return meta.name == 
-                        UsdUtilsValidatorNameTokens->rootPackageValidator;
-                }), metadata.end());
+        // It's non-trivial to filter out validators from suites which might
+        // come in via --includeKeywords or --includeSuites, so we ignore the
+        // --rootPackageOnly and --noAssetChecks options in this case.
+        if (args.rootPackageOnly) {
+            std::cerr<<"Warning: --rootPackageOnly is ignored when "
+                "--includeKeywords or --includeSuites is specified.\n";
+        }
+        if (args.noAssetChecks) {
+            std::cerr<<"Warning: --noAssetChecks is ignored when "
+                "--includeKeywords or --includeSuites is specified.\n";
+        }
+        if (!allKeywords.empty()) {
+            metadata = validationReg.GetValidatorMetadataForKeywords(
+                TfToTokenVector(allKeywords));
+        }
+        for (const std::string &suiteName : allSuites) {
+            UsdValidationValidatorMetadata suiteMetadata;
+            if (!validationReg.GetValidatorMetadata(
+                    TfToken(suiteName), &suiteMetadata)) {
+                std::cerr<<"Error: The specified suite "<<suiteName
+                    <<" is not registered.\n";
+                return 1;
+            }
+            if (!suiteMetadata.isSuite) {
+                std::cerr<<"Error: The specified suite "<<suiteName
+                    <<" is not a valid validator suite.\n";
+                return 1;
+            }
+            metadata.push_back(suiteMetadata);
+        }
     }
     
     // Sort metadata based on the name of the validator. Helps with
