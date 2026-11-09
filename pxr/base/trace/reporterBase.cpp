@@ -18,6 +18,11 @@ TraceReporterBase::TraceReporterBase(DataSourcePtr dataSource)
 {
 }
 
+bool TraceReporterBase::HasProcessedCollections() const
+{
+    return !_processedCollections.empty();
+}
+
 bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
 {
     std::vector<CollectionPtr> collections;
@@ -27,9 +32,7 @@ bool TraceReporterBase::SerializeProcessedCollections(std::ostream& ostr) const
     return TraceSerialization::Write(ostr, collections);
 }
 
-TraceReporterBase::~TraceReporterBase()
-{
-}
+TraceReporterBase::~TraceReporterBase() = default;
 
 void
 TraceReporterBase::_Clear()
@@ -43,7 +46,9 @@ TraceReporterBase::_Clear()
 void
 TraceReporterBase::_Update()
 {
-    if (!_dataSource) return;
+    if (!_dataSource) {
+        return;
+    }
 
     std::vector<CollectionPtr> data = _dataSource->ConsumeData();
     for (const CollectionPtr& collection : data) {
