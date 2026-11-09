@@ -26,7 +26,7 @@ class PropertyLegend(QtWidgets.QWidget):
         self._isMinimized = True
         self._iconDisplaySize = (16, 16)
         
-        graphicsScene = QtWidgets.QGraphicsScene()
+        graphicsScene = QtWidgets.QGraphicsScene(self)
 
         self._ui.propertyLegendColorFallback.setScene(graphicsScene)
         self._ui.propertyLegendColorDefault.setScene(graphicsScene)
