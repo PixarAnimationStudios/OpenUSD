@@ -19,6 +19,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include "pxr/external/boost/python/class.hpp"
@@ -331,4 +332,8 @@ void wrapMatrix{{ SUFFIX }}()
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
 
+    // Let C-contiguous buffers of shape (N, {{ DIM }}, {{ DIM }}) be passed to
+    // wrapped functions taking TfSpan<{{ MAT }}>.
+    TfPyRegisterSpanBufferLayout<This>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { {{ DIM }}, {{ DIM }} });
 }

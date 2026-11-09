@@ -27,6 +27,7 @@
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -576,4 +577,9 @@ void wrapVec3f()
     TfPyContainerConversions::from_python_sequence<
         std::vector<GfVec3f>,
         TfPyContainerConversions::variable_capacity_policy >();
+
+    // Let C-contiguous buffers of shape (N, 3) be passed to wrapped
+    // functions taking TfSpan<GfVec3f>.
+    TfPyRegisterSpanBufferLayout<GfVec3f>(
+        Gf_GetPyBufferFmtFor<float>()[0], { 3 });
 }

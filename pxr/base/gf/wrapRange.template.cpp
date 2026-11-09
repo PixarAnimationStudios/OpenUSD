@@ -14,10 +14,13 @@
 #include "pxr/base/gf/range{{ DIM }}{{ S[0] }}.h"
 {% endfor %}
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -136,4 +139,13 @@ void wrapRange{{ SUFFIX }}()
     to_python_converter<std::vector<{{ RNG }}>,
         TfPySequenceToPython<std::vector<{{ RNG }}> > >();
 
+    // Let C-contiguous buffers of (min, max) pairs be passed to wrapped
+    // functions taking TfSpan<{{ RNG }}>.
+{% if DIM == 1 %}
+    TfPyRegisterSpanBufferLayout<{{ RNG }}>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { 2 });
+{% else %}
+    TfPyRegisterSpanBufferLayout<{{ RNG }}>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { 2, {{ DIM }} });
+{% endif %}
 }

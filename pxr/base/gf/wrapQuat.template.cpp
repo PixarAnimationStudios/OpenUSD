@@ -13,9 +13,12 @@
 #include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -144,4 +147,9 @@ void wrapQuat{{ SUFFIX }}()
     to_python_converter<std::vector<{{ QUAT }}>,
         TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
 
+    // Let C-contiguous buffers of shape (N, 4), with each quaternion's
+    // imaginary part followed by its real part, be passed to wrapped functions
+    // taking TfSpan<{{ QUAT }}>.
+    TfPyRegisterSpanBufferLayout<{{ QUAT }}>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { 4 });
 }

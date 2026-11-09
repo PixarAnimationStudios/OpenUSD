@@ -58,6 +58,7 @@ TF_WRAP_MODULE
     TF_WRAP( Rotation );
     TF_WRAP( Size2 );
     TF_WRAP( Size3 );
+    TF_WRAP( TestPySpan );
     TF_WRAP( TimeCode );
 
     // Order of wrapping Vecs matters because in the cases where overloads could

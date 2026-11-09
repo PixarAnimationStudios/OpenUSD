@@ -220,6 +220,8 @@ void wrapUsdSkelBindingAPI()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/tf/pySpan.h"
+
 namespace {
 
 

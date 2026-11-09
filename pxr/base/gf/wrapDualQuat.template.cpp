@@ -13,10 +13,13 @@
 #include "pxr/base/gf/dualQuat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -149,4 +152,9 @@ void wrapDualQuat{{ SUFFIX }}()
     to_python_converter<std::vector<{{ DUALQUAT }}>,
         TfPySequenceToPython<std::vector<{{ DUALQUAT }}> > >();
 
+    // Let C-contiguous buffers of shape (N, 2, 4), holding each dual
+    // quaternion's real and dual parts, be passed to wrapped functions taking
+    // TfSpan<{{ DUALQUAT }}>.
+    TfPyRegisterSpanBufferLayout<{{ DUALQUAT }}>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { 2, 4 });
 }

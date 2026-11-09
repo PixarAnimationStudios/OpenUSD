@@ -12,10 +12,13 @@
 #include "pxr/base/gf/range3f.h"
 #include "pxr/base/gf/range3d.h"
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -124,4 +127,8 @@ void wrapRange3f()
     to_python_converter<std::vector<GfRange3f>,
         TfPySequenceToPython<std::vector<GfRange3f> > >();
 
+    // Let C-contiguous buffers of (min, max) pairs be passed to wrapped
+    // functions taking TfSpan<GfRange3f>.
+    TfPyRegisterSpanBufferLayout<GfRange3f>(
+        Gf_GetPyBufferFmtFor<float>()[0], { 2, 3 });
 }

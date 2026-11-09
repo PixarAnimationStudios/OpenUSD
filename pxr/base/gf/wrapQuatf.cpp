@@ -13,9 +13,12 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -140,4 +143,9 @@ void wrapQuatf()
     to_python_converter<std::vector<GfQuatf>,
         TfPySequenceToPython<std::vector<GfQuatf> > >();
 
+    // Let C-contiguous buffers of shape (N, 4), with each quaternion's
+    // imaginary part followed by its real part, be passed to wrapped functions
+    // taking TfSpan<GfQuatf>.
+    TfPyRegisterSpanBufferLayout<GfQuatf>(
+        Gf_GetPyBufferFmtFor<float>()[0], { 4 });
 }

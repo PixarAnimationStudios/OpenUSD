@@ -362,6 +362,10 @@ protected:
 
 public:
 
+    /// Identifies VtValueRef as a view type to Python bindings.  See the
+    /// arg_rvalue_from_python specialization at the end of this file.
+    using pxr_boost_python_view_type = void;
+
     /// Default ctor gives empty VtValueRef.
     VtValueRef() : _info(nullptr) {}
 
