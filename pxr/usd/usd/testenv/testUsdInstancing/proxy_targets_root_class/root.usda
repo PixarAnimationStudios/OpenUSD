@@ -1,0 +1,20 @@
+#usda 1.0
+class "_cls"
+{
+    rel q = </World/setA/Lib/target>
+}
+
+def "World"
+{
+    def "setA" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+
+    def "setB" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+}

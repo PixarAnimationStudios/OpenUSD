@@ -1,0 +1,26 @@
+#usda 1.0
+def "World"
+{
+    def "one" (
+        instanceable = true
+        references = @./a.usda@</World/one>
+    )
+    {
+        over "lib"
+        {
+            over "cls"
+            {
+                def "extra"
+                {
+                }
+            }
+        }
+    }
+
+    def "two" (
+        instanceable = true
+        references = @./a.usda@</World/one>
+    )
+    {
+    }
+}

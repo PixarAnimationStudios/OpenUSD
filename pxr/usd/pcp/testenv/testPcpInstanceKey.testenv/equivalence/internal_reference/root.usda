@@ -1,0 +1,15 @@
+#usda 1.0
+def "World"
+{
+    def "set" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+    def "Inst2" (
+        instanceable = true
+        references = @./set.usda@</Set/Lib/A>
+    )
+    {
+    }
+}

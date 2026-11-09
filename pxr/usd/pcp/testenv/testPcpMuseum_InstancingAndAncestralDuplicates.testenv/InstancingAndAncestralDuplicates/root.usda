@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    """
+    This museum case exercises an arc within an instance that duplicates
+    an ancestral node.
+
+    /World/Group/Model and /World/Plain/Model both reference </Asset>
+    in asset.usda.  </Asset> references </Group/Variant> in group.usda,
+    which inherits </Group/Model> and so brings in its child Geom.
+
+    Beneath /World/Group, the inherit of </Group/Model> in group.usda
+    duplicates the ancestral node for that site from the reference on
+    /World/Group, so it is skipped.  The ancestral node provides the
+    skipped arc's opinions, so instancing treats it as part of the
+    instance: it is not made inert, and Geom is present beneath both
+    instances, as without instancing.  Because the ancestral node has a
+    different strength position than the inherit beneath
+    /World/Plain/Model, the two instances have different instance keys.
+    """
+)
+
+def "World"
+{
+    def "Group" (
+        references = @./group.usda@</Group>
+    )
+    {
+        over "Model" (
+            instanceable = true
+            references = @./asset.usda@</Asset>
+        )
+        {
+        }
+    }
+
+    def "Plain"
+    {
+        def "Model" (
+            instanceable = true
+            references = @./asset.usda@</Asset>
+        )
+        {
+        }
+    }
+}

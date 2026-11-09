@@ -240,6 +240,10 @@ private:
     friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
     friend bool Pcp_IsElided(const PcpNodeRef& node);
     friend void Pcp_SetElided(const PcpNodeRef& node);
+    friend size_t Pcp_GetSealedDepth(const PcpNodeRef& node);
+    friend void Pcp_SetSealed(const PcpNodeRef& node, uint16_t depth);
+    friend bool Pcp_IsDirectDuplicate(const PcpNodeRef& node);
+    friend void Pcp_SetDirectDuplicate(const PcpNodeRef& node, bool value);
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.
@@ -298,6 +302,7 @@ private:
             , hasValueClips(false)
             , inert(false)
             , permissionDenied(false)
+            , sealedDepth(0)
         */
         {
             memset(&smallInts, 0, sizeof(smallInts));
@@ -387,6 +392,11 @@ private:
             // node that was marked \c SdfPermissionPrivate, or we arrive
             // at this node from  another node that was denied permission.
             bool permissionDenied:1;
+            // Path element count of the namespace of the instance that
+            // sealed this node, or 0 if it is not sealed.  See
+            // Pcp_GetSealedDepth.  This occupies what would otherwise be
+            // tail padding.
+            _DepthSizeType sealedDepth;
         };
         _SmallInts smallInts;
     };
@@ -408,7 +418,8 @@ private:
             : hasSpecs(false)
             , culled(false)
             , isDueToAncestor(false)
-            , elided(false) {}
+            , elided(false)
+            , directDuplicate(false) {}
         explicit _UnsharedData(SdfPath const &p)
             : _UnsharedData(SdfPath(p)) {}
         explicit _UnsharedData(SdfPath &&p)
@@ -420,6 +431,7 @@ private:
             , hasTransitiveDirectArc(false)
             , hasTransitiveAncestralArc(false)
             , elided(false)
+            , directDuplicate(false)
             {}
 
         // The site path for a particular node.
@@ -453,6 +465,10 @@ private:
         // Whether this node was elided during prim indexing, for example
         // because a relocation supersedes its opinions.  See Pcp_IsElided.
         bool elided:1;
+
+        // Whether a direct arc to this node's site was skipped as a
+        // duplicate of this node.  See Pcp_IsDirectDuplicate.
+        bool directDuplicate:1;
     };
     
     // Elements in this vector correspond to nodes in the shared node

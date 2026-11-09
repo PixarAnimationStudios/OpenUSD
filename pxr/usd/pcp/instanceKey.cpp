@@ -15,12 +15,64 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct PcpInstanceKey::_Collector
+// Classify a path in the root namespace by where it lies relative to the
+// instance at \p root: empty if blocked, relative to \p root if within the
+// instance, or the absolute root path if outside it.  Paths outside the
+// instance are not distinguished, so that instances in different contexts,
+// such as the same asset instanced in two sets, can share a prototype.  Usd
+// does not translate targets outside the instance between such instances;
+// see PcpInstanceKey.
+static SdfPath
+_ClassifyImage(const SdfPath &image, const SdfPath &root)
+{
+    if (image.IsEmpty()) {
+        return image;
+    }
+    if (image.HasPrefix(root)) {
+        return image.MakeRelativePath(root);
+    }
+    return SdfPath::AbsoluteRootPath();
+}
+
+PcpInstanceKey::_Arc::_Arc(const PcpNodeRef& node)
+    : _arcType(node.GetArcType())
+    , _sourceSite(node.GetSite())
+{
+    const PcpMapFunction mapToRoot = node.GetMapToRoot().Evaluate();
+    _timeOffset = mapToRoot.GetTimeOffset();
+
+    // PathMap is ordered, so entries are visited in a deterministic order.
+    const SdfPath &root = node.GetRootNode().GetPath();
+    const PcpMapFunction::PathMap pathMap = mapToRoot.GetSourceToTargetMap();
+    for (const auto &[source, target] : pathMap) {
+        // The image this entry's nearest ancestor entry implies for source.
+        SdfPath implied;
+        for (SdfPath p = source.GetParentPath(); !p.IsEmpty();
+             p = p.GetParentPath()) {
+            const auto it = pathMap.find(p);
+            if (it != pathMap.end()) {
+                if (!it->second.IsEmpty()) {
+                    implied = source.ReplacePrefix(p, it->second);
+                }
+                break;
+            }
+        }
+        SdfPath image = _ClassifyImage(target, root);
+        if (image != _ClassifyImage(implied, root)) {
+            _domain.emplace_back(source, std::move(image));
+        }
+    }
+}
+
+namespace {
+
+template <class Fn>
+struct _InstanceableNodeVisitor
 {
     bool Visit(const PcpNodeRef& node, bool nodeIsInstanceable)
     {
         if (nodeIsInstanceable) {
-            instancingArcs.push_back(_Arc(node));
+            fn(node);
             // We can stop immediately if we know there is no payload
             // arc in the node graph -- but otherwise we must continue,
             // since payload arcs can be optionally included, and
@@ -32,9 +84,23 @@ struct PcpInstanceKey::_Collector
         return true;
     }
 
-    std::vector<_Arc> instancingArcs;
+    Fn &fn;
     bool indexHasPayload;
 };
+
+// Call fn(node) for each node of primIndex that contributes to its instance
+// key, in strong-to-weak order.  The i-th nodes of two prim indexes with equal
+// instance keys therefore correspond.
+template <class Fn>
+void
+_ForEachInstanceableNode(const PcpPrimIndex &primIndex, Fn &&fn)
+{
+    _InstanceableNodeVisitor<std::remove_reference_t<Fn>> visitor {
+        fn, primIndex.HasAnyPayloads() };
+    Pcp_TraverseInstanceableStrongToWeak(primIndex, &visitor);
+}
+
+} // anon
 
 PcpInstanceKey::PcpInstanceKey()
     : _hash(0)
@@ -52,10 +118,9 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
     }
 
     // Collect all composition arcs that contribute to the instance key.
-    _Collector collector;
-    collector.indexHasPayload = primIndex.HasAnyPayloads();
-    Pcp_TraverseInstanceableStrongToWeak(primIndex, &collector);
-    _arcs.swap(collector.instancingArcs);
+    _ForEachInstanceableNode(primIndex, [this](const PcpNodeRef &node) {
+        _arcs.push_back(_Arc(node));
+    });
 
     // Collect all authored variant selections in strong-to-weak order.
     SdfVariantSelectionMap variantSelection;
@@ -99,6 +164,15 @@ PcpInstanceKey::GetString() const
                         arc._timeOffset.GetOffset(),
                         arc._timeOffset.GetScale()).c_str()),
                 Pcp_FormatSite(arc._sourceSite).c_str());
+            for (const auto &[path, image] : arc._domain) {
+                s += image.IsEmpty() ?
+                    TfStringPrintf("      blocks <%s>\n", path.GetText()) :
+                    image.IsAbsoluteRootPath() ?
+                    TfStringPrintf("      maps <%s> outside\n",
+                                   path.GetText()) :
+                    TfStringPrintf("      maps <%s> to <%s>\n",
+                                   path.GetText(), image.GetText());
+            }
         }
     }
 

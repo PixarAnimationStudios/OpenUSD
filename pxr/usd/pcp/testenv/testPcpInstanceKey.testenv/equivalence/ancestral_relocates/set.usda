@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    relocates = {
+        </Set/Inst/c>: </Set/Inst/d>
+    }
+)
+def "Set"
+{
+    over "Inst"
+    {
+    }
+}

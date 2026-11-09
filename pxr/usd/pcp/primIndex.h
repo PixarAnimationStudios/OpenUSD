@@ -361,7 +361,8 @@ public:
         , includedPayloadsMutex(nullptr)
         , parentIndex(nullptr)
         , cull(true)
-        , usd(false) 
+        , usd(false)
+        , includeDuplicateNodes(false)
     { }
 
     /// Returns true if prim index computations using this parameters object
@@ -396,12 +397,6 @@ public:
         std::function<bool (const SdfPath &)> predicate)
     { includePayloadPredicate = predicate; return *this; }
 
-    /// Predicate for determining whether the prim index for an ancestor of
-    /// the index being computed is instanceable.
-    PcpPrimIndexInputs &AncestorIsInstanceablePredicate(
-        std::function<bool (const SdfPath &)> predicate)
-    { ancestorIsInstanceablePredicate = predicate; return *this; }
-    
     /// Whether subtrees that contribute no opinions should be culled
     /// from the index.
     PcpPrimIndexInputs& Cull(bool doCulling = true)
@@ -424,11 +419,14 @@ public:
     const PayloadSet* includedPayloads;
     tbb::spin_rw_mutex *includedPayloadsMutex;
     std::function<bool (const SdfPath &)> includePayloadPredicate;
-    std::function<bool (const SdfPath &)> ancestorIsInstanceablePredicate;
     const PcpPrimIndex *parentIndex;
     std::string fileFormatTarget;
     bool cull;
     bool usd;
+    // Internal: add arcs even when a node with the same site exists in the
+    // graph being built or in the graphs it is being built for.  Set only
+    // for an ancestor recheck.
+    bool includeDuplicateNodes;
 };
 
 /// Compute an index for the given path. \p errors will contain any errors

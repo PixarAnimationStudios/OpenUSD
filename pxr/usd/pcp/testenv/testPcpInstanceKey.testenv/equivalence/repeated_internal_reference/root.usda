@@ -1,0 +1,14 @@
+#usda 1.0
+def "World"
+{
+    def "setA" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+    def "setB" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+}

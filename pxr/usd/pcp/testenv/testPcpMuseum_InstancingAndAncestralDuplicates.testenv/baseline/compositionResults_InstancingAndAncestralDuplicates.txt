@@ -1,0 +1,88 @@
+Loading @InstancingAndAncestralDuplicates/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </World>
+
+Prim Stack:
+    root.usda            /World
+
+Child names:
+     ['Group', 'Plain']
+
+------------------------------------------------------------------------
+Results for composing </World/Group>
+
+Prim Stack:
+    root.usda            /World/Group
+    group.usda           /Group
+
+Child names:
+     ['Model', 'Variant']
+
+------------------------------------------------------------------------
+Results for composing </World/Group/Model>
+
+Prim Stack:
+    root.usda            /World/Group/Model
+    asset.usda           /Asset
+    group.usda           /Group/Variant
+    group.usda           /Group/Model
+
+Child names:
+     ['Geom']
+
+------------------------------------------------------------------------
+Results for composing </World/Group/Model/Geom>
+
+Prim Stack:
+    group.usda           /Group/Model/Geom
+
+------------------------------------------------------------------------
+Results for composing </World/Group/Variant>
+
+Prim Stack:
+    root.usda            /World/Group/Model
+    asset.usda           /Asset
+    group.usda           /Group/Variant
+    group.usda           /Group/Model
+
+Child names:
+     ['Geom']
+
+------------------------------------------------------------------------
+Results for composing </World/Group/Variant/Geom>
+
+Prim Stack:
+    group.usda           /Group/Model/Geom
+
+------------------------------------------------------------------------
+Results for composing </World/Plain>
+
+Prim Stack:
+    root.usda            /World/Plain
+
+Child names:
+     ['Model']
+
+------------------------------------------------------------------------
+Results for composing </World/Plain/Model>
+
+Prim Stack:
+    root.usda            /World/Plain/Model
+    asset.usda           /Asset
+    group.usda           /Group/Variant
+    group.usda           /Group/Model
+
+Child names:
+     ['Geom']
+
+------------------------------------------------------------------------
+Results for composing </World/Plain/Model/Geom>
+
+Prim Stack:
+    group.usda           /Group/Model/Geom
+

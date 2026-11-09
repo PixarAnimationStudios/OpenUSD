@@ -981,6 +981,21 @@ Pcp_CheckConsistency(const PcpPrimIndex& primIndex)
             n, anyAncestral == n.HasTransitiveAncestralDependency(),
             "Incorrect transitive ancestral dep flag");
     }
+
+    // Verify that a node implied from a node standing in for a direct
+    // arc's duplicate is either also standing in or is direct, so that
+    // instancing treats it as part of the instance.  See
+    // _MarkDirectDuplicate in primIndex.cpp.
+    for (PcpNodeRef n : primIndex.GetNodeRange()) {
+        const PcpNodeRef origin = n.GetOriginNode();
+        if (origin && Pcp_IsDirectDuplicate(origin)) {
+            _VERIFY_NODE(
+                n, Pcp_IsDirectDuplicate(n) ||
+                    n.HasTransitiveDirectDependency(),
+                "Node implied from a direct duplicate is neither "
+                "a direct duplicate nor direct");
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

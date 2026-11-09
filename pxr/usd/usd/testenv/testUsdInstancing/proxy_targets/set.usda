@@ -1,0 +1,47 @@
+#usda 1.0
+def "Set"
+{
+    def "Lib"
+    {
+        def "target"
+        {
+            double v
+        }
+        def "In"
+        {
+            def "widget"
+            {
+                rel outside = </Set/Lib/target>
+                rel inside = </Set/Lib/In/widget>
+                double c.connect = </Set/Lib/target.v>
+                pathExpression e = "/Set/Lib/target /Set/Lib/In/widget"
+            }
+        }
+        def "Out"
+        {
+            def "Inner" (
+                instanceable = true
+                references = </Set/Lib/In>
+            )
+            {
+            }
+            def "peer"
+            {
+                rel toInner = </Set/Lib/Out/Inner/widget>
+                rel outside = </Set/Lib/target>
+            }
+        }
+    }
+    def "Inst" (
+        instanceable = true
+        references = </Set/Lib/In>
+    )
+    {
+    }
+    def "Outer" (
+        instanceable = true
+        references = </Set/Lib/Out>
+    )
+    {
+    }
+}

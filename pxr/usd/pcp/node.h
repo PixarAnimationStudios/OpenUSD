@@ -369,6 +369,10 @@ private:
     friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
     friend bool Pcp_IsElided(const PcpNodeRef& node);
     friend void Pcp_SetElided(const PcpNodeRef& node);
+    friend size_t Pcp_GetSealedDepth(const PcpNodeRef& node);
+    friend void Pcp_SetSealed(const PcpNodeRef& node, uint16_t depth);
+    friend bool Pcp_IsDirectDuplicate(const PcpNodeRef& node);
+    friend void Pcp_SetDirectDuplicate(const PcpNodeRef& node, bool value);
 
     // Private constructor for internal use.
     PcpNodeRef(PcpPrimIndex_Graph* graph, size_t idx)

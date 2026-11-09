@@ -2768,6 +2768,33 @@ PcpChanges::_DidChangeLayerStackRelocations(
         }
     }
 
+    // Relocates update the map functions of existing prim indexes in place,
+    // and an instance's key records where its nodes map its descendants.  So
+    // a relocation affecting a path beneath an instance can change the
+    // instance's key without its prim index being recomputed.  Resync the
+    // outermost instance containing each affected path instead.
+    {
+        SdfPathSet instancePaths;
+        for (auto it = depPathSet.begin(); it != depPathSet.end(); ) {
+            SdfPath instancePath;
+            for (SdfPath p = it->GetParentPath();
+                 !p.IsEmpty() && !p.IsAbsoluteRootPath();
+                 p = p.GetParentPath()) {
+                const PcpPrimIndex *index = cache->FindPrimIndex(p);
+                if (index && index->IsInstanceable()) {
+                    instancePath = p;
+                }
+            }
+            if (instancePath.IsEmpty()) {
+                ++it;
+            } else {
+                instancePaths.insert(instancePath);
+                it = depPathSet.erase(it);
+            }
+        }
+        depPathSet.insert(instancePaths.begin(), instancePaths.end());
+    }
+
     if (!depPathSet.empty()) {
         PCP_APPEND_DEBUG("  and dependent paths in %s\n",
                          TfStringify(layerStack).c_str());

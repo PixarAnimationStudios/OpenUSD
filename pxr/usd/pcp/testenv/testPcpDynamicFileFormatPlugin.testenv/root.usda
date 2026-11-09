@@ -136,6 +136,11 @@ def "Inherits" (
     references = [@./params.usda@</Params2>, @./payload.usda@</PayloadCone>]
 ){}
 
+def "ReferencedSpecializes" (
+    references = @./params.usda@</SpecializesParams1>
+    payload = @cone.testpcpdynamic@
+){}
+
 def "WeakerParentSibling" (
     references = [@./params.usda@</Params1>,
                   @./payload.usda@</PayloadCone>,

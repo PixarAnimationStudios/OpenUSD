@@ -1,0 +1,19 @@
+#usda 1.0
+def "World"
+{
+    def "one"
+    {
+        def "lib"
+        {
+            class "cls"
+            {
+            }
+        }
+
+        def "widget" (
+            inherits = </World/one/lib/cls>
+        )
+        {
+        }
+    }
+}

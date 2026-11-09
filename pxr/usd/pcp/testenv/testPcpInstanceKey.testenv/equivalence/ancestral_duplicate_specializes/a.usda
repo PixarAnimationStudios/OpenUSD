@@ -1,0 +1,6 @@
+#usda 1.0
+def "A" (
+    references = @./c.usda@</G/Other>
+)
+{
+}

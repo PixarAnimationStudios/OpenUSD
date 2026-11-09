@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    defaultPrim = "cone"
+)
+
+def Cone "cone"
+{
+}
+
