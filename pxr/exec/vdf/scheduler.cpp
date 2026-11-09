@@ -166,15 +166,6 @@ struct _NodeDependencies {
 
 }
 
-// Returns true if the the optional interruptionFlag indicates that scheduling
-// has been interrupted.
-static inline bool
-_HasBeenInterrupted(const std::atomic_bool *const interruptionFlag)
-{
-    return interruptionFlag &&
-        interruptionFlag->load(std::memory_order_relaxed);
-}
-
 static inline void
 _AppendToMask(VdfMask::Bits *out, const VdfMask::Bits &in) {
     if (out->GetSize() == 0) {
@@ -914,7 +905,7 @@ _CreatePoolInvocations(
     // Visit every output in the pool chain, in order to determine the
     // partitioning of the data vectors.
     while (output) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return;
         }
 
@@ -1036,7 +1027,7 @@ _CreateInvocationTasks(
 
     // For each node, generate tasks.
     for (size_t i = f; i != l; ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return;
         }
 
@@ -1135,7 +1126,7 @@ _CreateInvocations(
     //      on a global lock.
     //
     for (size_t i = 0; i < invocations.bitsets.size(); ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return;
         }
 
@@ -1275,7 +1266,7 @@ _CreateSingularTasks(
         schedule.GetScheduleNodeVector();
 
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return;
         }
 
@@ -1405,7 +1396,7 @@ _GatherNodeDependenciesInRange(
         schedule.GetScheduleNodeVector(); 
 
     for (size_t i = f; i != l; ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return;
         }
 
@@ -1536,7 +1527,7 @@ _EstablishTaskDependency(
     TF_VERIFY(computeTaskId < end);
 
     for (; computeTaskId < end; computeTaskId++) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return false;
         }
 
@@ -1730,7 +1721,7 @@ _InsertInputDependencies(
     VdfSchedule::ScheduleNodeVector &scheduleNodes =
         schedule->GetScheduleNodeVector();
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return 0;
         }
 
@@ -1779,7 +1770,7 @@ _InsertInputDependencies(
                     &uniqueIndices,
                     &startHint);
 
-            if (_HasBeenInterrupted(interruptionFlag)) {
+            if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
                 return 0;
             }
 
@@ -1811,7 +1802,7 @@ _InsertInputDependencies(
                 inputDependencies,
                 &uniqueIndices);
 
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return 0;
         }
 
@@ -1825,7 +1816,7 @@ _InsertInputDependencies(
                 inputDependencies,
                 &uniqueIndices);
 
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return 0;
         }
 
@@ -1854,7 +1845,7 @@ _InsertInputDependencies(
 
     // Assign the unique indices to all scheduled output.
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return 0;
         }
 
@@ -2482,7 +2473,7 @@ _ProcessImmediateStack(
     // pool).
     //
     while (!stack->empty()) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return false;
         }
 
@@ -2772,7 +2763,7 @@ _TopologicallySort(
 
     // Process the stack.
     while (!stack.empty()) {
-        if (_HasBeenInterrupted(interruptionFlag)) {
+        if (VdfScheduler::HasBeenInterrupted(interruptionFlag)) {
             return false;
         }
 

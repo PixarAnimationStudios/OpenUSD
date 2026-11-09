@@ -83,6 +83,16 @@ public:
         VdfSchedule *schedule,
         const VdfOutput &output);
 
+    /// Returns `true` if the the optional \p interruptionFlag indicates that
+    /// scheduling has been interrupted.
+    ///
+    static bool HasBeenInterrupted(
+        const std::atomic_bool *const interruptionFlag) {
+        return interruptionFlag &&
+            interruptionFlag->load(std::memory_order_relaxed);
+    }
+
+
 protected:
     /// Returns `true` if the scheduler has been interrupted, if the scheduler
     /// supports interruption.
@@ -91,8 +101,7 @@ protected:
     /// set, this will always return `false`.
     ///
     bool _HasBeenInterrupted() const {
-        return _interruptionFlag &&
-            _interruptionFlag->load(std::memory_order_relaxed);
+        return HasBeenInterrupted(_interruptionFlag);
     }
 
     /// Method to signal that a \p schedule is done being built and that it is
@@ -226,6 +235,12 @@ protected:
     static void _UpdateLockMaskForNode(
         VdfSchedule *schedule,
         VdfScheduleNode *node);
+
+    /// Returns the optional flag used for scheduling interruption.
+    ///
+    const std::atomic_bool *_GetInterruptionFlag() const {
+        return _interruptionFlag;
+    }
 
 private:
 
