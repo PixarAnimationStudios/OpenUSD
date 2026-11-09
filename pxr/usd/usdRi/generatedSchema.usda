@@ -11,11 +11,3 @@ class "StatementsAPI" (
 {
 }
 
-class "RiSplineAPI" (
-    customData = {
-        string userDocBrief = "\\deprecated This API schema will be removed in a future release."
-    }
-)
-{
-}
-

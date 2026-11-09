@@ -17,17 +17,6 @@ void wrapUsdRiTokens()
 {
     pxr_boost::python::class_<UsdRiTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
-    _ADD_TOKEN(cls, bspline);
-    _ADD_TOKEN(cls, cameraVisibility);
-    _ADD_TOKEN(cls, catmullRom);
-    _ADD_TOKEN(cls, constant);
-    _ADD_TOKEN(cls, interpolation);
-    _ADD_TOKEN(cls, linear);
-    _ADD_TOKEN(cls, matte);
-    _ADD_TOKEN(cls, positions);
     _ADD_TOKEN(cls, renderContext);
-    _ADD_TOKEN(cls, spline);
-    _ADD_TOKEN(cls, values);
-    _ADD_TOKEN(cls, RiSplineAPI);
     _ADD_TOKEN(cls, StatementsAPI);
 }
