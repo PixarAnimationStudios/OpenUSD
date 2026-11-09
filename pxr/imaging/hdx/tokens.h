@@ -26,6 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (imagerVersion) /* \deprecated */ \
     (lightingContext)           \
     (lightingShader)            \
+    (minSelectionOpacity)       \
     (occludedSelectionOpacity)  \
     (oitCounter)                \
     (oitJointBuffer)            \

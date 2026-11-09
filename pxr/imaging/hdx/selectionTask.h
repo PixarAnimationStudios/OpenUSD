@@ -26,8 +26,11 @@ struct HdxSelectionTaskParams
 {
     bool enableSelectionHighlight;
     bool enableLocateHighlight;
-    float occludedSelectionOpacity; // lerp factor when blending 
+    float occludedSelectionOpacity; // lerp factor when blending
                                     // occluded selection
+    float minSelectionOpacity = 0.f; // lower limit on the alpha of selected
+                                     // and rolled-over prims/faces; 0 leaves
+                                     // alpha unchanged
     GfVec4f selectionColor; // "active" selection color
     GfVec4f locateColor; // "rollover" selection color
 };

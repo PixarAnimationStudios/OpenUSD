@@ -53,6 +53,7 @@ FORWARD_DECL(ScalarOverride GetScalarOverride());
 FORWARD_DECL(
     vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
 FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -69,7 +70,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         vec4 colorOverride = ApplyColorOverrides(result);
         result = reprStyle.applyColorOverride ? colorOverride : result;
 
-        return result;
+        // This path skips ApplyColorOverridesPostLighting, so apply the
+        // selection opacity floor here.
+        return ApplySelectionOpacity(result);
     }
 
     // Draw mode can override face color
