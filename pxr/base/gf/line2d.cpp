@@ -55,7 +55,7 @@ GfFindClosestPoints( const GfLine2d &l1, const GfLine2d &l2,
     //   closest2 = p2 + t2 * d2
     //
     // We know that the line connecting closest1 and closest2 is
-    // perpendicular to both the ray and the line segment. So:
+    // perpendicular to both lines. So:
     //   d1 . (closest2 - closest1) = 0
     //   d2 . (closest2 - closest1) = 0
     //

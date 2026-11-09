@@ -242,7 +242,7 @@ class GfRay {
 /// point on the lines is returned in \p rayDistance and \p lineDistance.
 ///
 /// This returns \c false if the lines were close enough to parallel that no
-/// points could be computed; in this case, the other return values are
+/// unique points could be computed; in this case, the other return values are
 /// undefined.
 GF_API
 bool GfFindClosestPoints( const GfRay &ray, const GfLine &line,
@@ -255,9 +255,9 @@ bool GfFindClosestPoints( const GfRay &ray, const GfLine &line,
 /// points are returned in \p rayPoint and \p segPoint.  The parametric
 /// distance of each point is returned in \p rayDistance and \p segDistance.
 ///
-/// This returns \c false if the lines were close enough to parallel that no
-/// points could be computed; in this case, the other return values are
-/// undefined.
+/// This returns \c false if the ray and line segment were close enough to
+/// parallel and overlapping so that no unique closest points could be computed;
+/// in this case, the other return values are undefined.
 GF_API
 bool GfFindClosestPoints( const GfRay &ray, const GfLineSeg &seg,
                           GfVec3d *rayPoint = nullptr,

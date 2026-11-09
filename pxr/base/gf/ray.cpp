@@ -31,9 +31,6 @@ TF_REGISTRY_FUNCTION(TfType) {
 }
 // CODE_COVERAGE_ON_GCOV_BUG
 
-// Menv 2x uses SetDirection, but it looks like it is only in
-// sgu/rayIntersectAction.cpp so I'm just going to change the name
-// and let the compiler complain about any problems.
 void
 GfRay::SetPointAndDirection(const GfVec3d &startPoint,
                             const GfVec3d &direction) {
@@ -89,7 +86,12 @@ GfFindClosestPoints(const GfRay &ray, const GfLine &line,
     if (!GfFindClosestPoints(l, line, &rp, &lp, &rd, &ld))
 	return false;
 
-    if (rd < 0.0) rd = 0.0;
+    // If we clamp the ray, the closest point on the line is the one closest
+    // to the ray's start point.
+    if (rd < 0.0) {
+        rd = 0.0;
+        lp = line.FindClosestPoint(ray._startPoint, &ld);
+    }
 
     if (rayPoint)
 	*rayPoint = l.GetPoint(rd);
@@ -119,22 +121,60 @@ GfFindClosestPoints(const GfRay &ray, const GfLineSeg &seg,
     GfVec3d rp, sp;
     double rd,sd;
 
-    if (!GfFindClosestPoints(l, seg, &rp, &sp, &rd, &sd))
-	return false;
+    bool parallel = !GfFindClosestPoints(l, seg, &rp, &sp, &rd, &sd);
 
-    if (rd < 0.0) rd = 0.0;
+    if (parallel) {
+        double dist0Sq, dist1Sq;
+        sp = seg.GetPoint(0.0);
+        rp = ray.FindClosestPoint(sp, &rd);
+        if (rd > 0.0) {
+            // The segment overlaps the ray
+            return false;
+        }
+        dist0Sq = (sp - rp).GetLengthSq();
 
-    if (rayPoint)
+        sp = seg.GetPoint(1.0);
+        rp = ray.FindClosestPoint(sp, &rd);
+        if (rd > 0.0) {
+            // The segment overlaps the ray
+            return false;
+        }
+        dist1Sq = (sp - rp).GetLengthSq();
+
+        if (dist1Sq < dist0Sq) {
+            sd = 1.0;
+            // sp is already correct
+        } else {
+            sd = 0.0;
+            sp = seg.GetPoint(0.0);
+        }
+
+        // rd is already 0.0
+    } else if (rd < 0.0) {
+        // If we clamp the ray, the closest point on the segment is the one
+        // closest to the ray's start point.
+        rd = 0.0;
+        sp = seg.FindClosestPoint(ray._startPoint, &sd);
+    }
+
+    if (rayPoint) {
 	*rayPoint = l.GetPoint(rd);
+    }
 
-    if (segPoint)
+    if (segPoint) {
+        // We could do:
+        //    *segPoint = seg.GetPoint(sd);
+        // but ray.FindClosestPoint has already computed the point for us.
 	*segPoint = sp;
+    }
 
-    if (rayDistance)
+    if (rayDistance) {
 	*rayDistance = rd / len;
+    }
 
-    if (segDistance)
+    if (segDistance) {
 	*segDistance = sd;
+    }
 
     return true;
 }
