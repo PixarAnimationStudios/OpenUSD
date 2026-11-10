@@ -1606,11 +1606,18 @@
         SCHEMA_NAME = 'Selection',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
-            ('fullySelected', T_BOOL, {}),
+            ('fullySelected', T_BOOL,
+             dict(DOC = '''
+                The (entire) prim is selected rather than just some of its
+                faces, for example. A future version of this schema will include
+                additional data sources to indicate that some faces, edges,
+                vertices of the prim are selected.''')),
             ('nestedInstanceIndices', 'HdInstanceIndicesVectorSchema',
              dict(DOC = '''
-                Starting with the outer most, list for each nesting
-                level of instancing what instances are selected.''')),
+                Present if this prim has an instanced by schema pointing
+                to an instancer. Indicates what instances of this prim
+                are selected. For nested instancing, the vector starts with
+                the outer most instancer.''')),
         ],
     ),
 
