@@ -89,8 +89,6 @@ pxr_library(hdx
         shaders/outline.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassColorShader.glslfx
-        shaders/renderPassColorAndSelectionShader.glslfx
-        shaders/renderPassColorWithOccludedSelectionShader.glslfx
         shaders/renderPassPickingShader.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx
