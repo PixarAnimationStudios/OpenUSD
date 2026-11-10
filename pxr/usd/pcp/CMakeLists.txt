@@ -534,18 +534,12 @@ pxr_register_test(testPcpMuseum_InstancingAndDeinstancedAncestors
     DIFF_COMPARE compositionResults_InstancingAndDeinstancedAncestors.txt
 )
 
-# XXX: USD-12864: Consistency checks are disabled because they report an
-# incorrect transitive ancestral dependency flag for an implied class reached
-# through a subroot reference into a referenced prim, independent of
-# instancing.  Re-enable them when that bug is fixed.
 pxr_register_test(testPcpMuseum_InstancingAndDeinstancedAncestors_ViaMid
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd InstancingAndDeinstancedAncestors/viaMid.usda"
     TESTENV testenv/testPcpMuseum_InstancingAndDeinstancedAncestors.testenv
     STDOUT_REDIRECT compositionResults_InstancingAndDeinstancedAncestors_ViaMid.txt
     DIFF_COMPARE compositionResults_InstancingAndDeinstancedAncestors_ViaMid.txt
-    ENV
-        PCP_ENABLE_CONSISTENCY_CHECKS=0
 )
 
 pxr_register_test(testPcpMuseum_InternalReferenceInOffsetSublayer

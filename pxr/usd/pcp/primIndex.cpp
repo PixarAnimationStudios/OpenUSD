@@ -2164,14 +2164,23 @@ _AddArc(
     // newNode. We only do this if we're not in a recursive prim indexing
     // call, otherwise we'll unnecessarily revisit this subtree after we
     // finish each recursive call.
+    //
+    // Recursive calls may have grafted subtrees beneath nodes deeper in this
+    // subtree, with flags computed relative to a different root, so each node
+    // takes its parent's flags rather than newNode's.  The traversal visits
+    // parents before children.
     if (opts.includeAncestralOpinions && !indexer->previousFrame) {
         for (PcpNodeRef n : Pcp_GetSubtreeRange(newNode)) {
+            if (n == newNode) {
+                continue;
+            }
+            const PcpNodeRef nParent = n.GetParentNode();
             n.SetHasTransitiveDirectDependency(
-                newNode.HasTransitiveDirectDependency() ||
+                nParent.HasTransitiveDirectDependency() ||
                 n.HasTransitiveDirectDependency());
-            
+
             n.SetHasTransitiveAncestralDependency(
-                newNode.HasTransitiveAncestralDependency() ||
+                nParent.HasTransitiveAncestralDependency() ||
                 n.HasTransitiveAncestralDependency());
         }
     }

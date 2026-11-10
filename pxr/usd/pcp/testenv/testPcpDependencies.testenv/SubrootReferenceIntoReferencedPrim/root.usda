@@ -1,0 +1,35 @@
+#usda 1.0
+
+def "ViaMid" (
+    references = </Mid/X>
+)
+{
+}
+
+def "Mid" (
+    references = </Inner>
+)
+{
+}
+
+def "Inner"
+{
+    def "X" (
+        references = </Other/Y>
+    )
+    {
+    }
+}
+
+def "Other"
+{
+    def "Y" (
+        references = </Leaf>
+    )
+    {
+    }
+}
+
+def "Leaf"
+{
+}

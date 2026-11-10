@@ -158,6 +158,39 @@ class TestPcpDependencies(unittest.TestCase):
             ])
 
         ########################################################################
+        # A subroot reference into a referenced prim, whose target has its own
+        # reference.  /ViaMid reaches /Leaf through the ancestral reference
+        # from /Mid to /Inner, so the dependency is partly direct.  The
+        # reference to /Leaf is added while indexing /Inner/X in a recursive
+        # call, which used to leave its ancestral flag unset (USD-12864).
+        #
+        self._AssertDepsEqual( self._FindSiteDeps(
+             'SubrootReferenceIntoReferencedPrim/root.usda',
+             'SubrootReferenceIntoReferencedPrim/root.usda',
+             '/Leaf',
+             depMask = Pcp.DependencyTypePartlyDirect |
+                Pcp.DependencyTypeNonVirtual
+             ),
+            [
+            Pcp.Dependency(
+                '/Mid/X',
+                '/Leaf',
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/Inner': '/Mid',
+                    '/Leaf': '/Mid/X'})
+                ),
+            Pcp.Dependency(
+                '/ViaMid',
+                '/Leaf',
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/Inner': '/Mid',
+                    '/Leaf': '/ViaMid'})
+                )
+            ])
+
+        ########################################################################
         # An example showing how we can use existing structure to reason about
         # deps that would apply to sites that do not contain any specs yet.
         # This case is important for change processing the addition of a new
