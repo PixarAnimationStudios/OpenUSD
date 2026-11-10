@@ -575,9 +575,21 @@ UsdCollectionAPI::HasNoIncludedPaths() const
 bool
 UsdCollectionAPI::IsInRelationshipsMode() const
 {
-    UsdCollectionMembershipQuery memQuery;
-    ComputeMembershipQuery(&memQuery);
-    return memQuery.UsesPathExpansionRuleMap();
+    TfToken mode;
+    GetModeAttr().Get(&mode);
+    if (mode == UsdTokens->expression) {
+        return false;
+    }
+    if (mode == UsdTokens->relationship) {
+        return true;
+    }
+
+    // In automatic-mode, the collection is in relationship-mode if its
+    // relationship-based properties produce rules.  Compute only those, since
+    // ComputeMembershipQuery() would also resolve the membershipExpression.
+    UsdCollectionMembershipQuery query;
+    _ComputeMembershipQueryImpl(&query, { GetCollectionPath() });
+    return query.UsesPathExpansionRuleMap();
 }
 
 static inline
@@ -744,7 +756,10 @@ UsdCollectionAPI::ComputeMembershipQuery(
             std::move(map), std::move(collections), expRule);
     }
 
-    if (mode != UsdTokens->relationship) {
+    // A collection with relationship-based rules is in relationship-mode, so
+    // its membershipExpression is ignored.
+    if (mode != UsdTokens->relationship &&
+        !query->UsesPathExpansionRuleMap()) {
         query->SetExpressionEvaluator({
                 GetPrim().GetStage(), ResolveCompleteMembershipExpression()
             });
@@ -981,7 +996,10 @@ UsdCollectionAPI::Validate(std::string *reason) const
         }
     }
 
-    if (!query.UsesPathExpansionRuleMap()) {
+    // A relationship-mode collection's membershipExpression is ignored.
+    TfToken mode;
+    GetModeAttr().Get(&mode);
+    if (mode != UsdTokens->relationship && !query.UsesPathExpansionRuleMap()) {
         // Check membershipExpression validity.
         bool circular = false;
         SdfPathExpression expr =
