@@ -132,7 +132,7 @@
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
 [usdUtilsValidators:RootPackageValidator]:
-	Doc: Files within the root layer of a usdz package should not be compressed or encrypted, and should be aligned to 64 bytes.
+	Doc: Files within the root usdz package should not be compressed or encrypted, and should be aligned to 64 bytes. Nested usdz packages are not tested.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
 [usdUtilsValidators:UsdzPackageValidator]:

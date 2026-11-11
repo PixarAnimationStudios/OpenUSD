@@ -24,7 +24,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((missingReferenceValidator,                                               \
       "usdUtilsValidators:MissingReferenceValidator"))                         \
     ((rootPackageValidator, "usdUtilsValidators:RootPackageValidator"))        \
-    ((usdzPackageValidator, "usdUtilsValidators:UsdzPackageValidator"))
+    ((usdzPackageValidator, "usdUtilsValidators:UsdzPackageValidator"))        \
+    ((vanillaUsdValidatorSuite, "usdUtilsValidators:VanillaUsdValidatorSuite"))
 
 #define USD_UTILS_VALIDATOR_KEYWORD_TOKENS                                     \
     (UsdUtilsValidators)                                                       \

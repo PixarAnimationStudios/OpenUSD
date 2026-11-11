@@ -6,33 +6,41 @@
                     "FileExtensionValidator": {
                         "doc": "Only valid core layer extensions (.usd, .usda, .usdc, .usdz), valid core texture extensions (.exr, .jpg, .jpeg, .png) and embedded audio files (.M4A, .MP3, .WAV) are allowed in a package.",
                         "keywords": [
+                            "UsdUtilsValidators",
                             "UsdzValidators"
                         ]
                     },
                     "MissingReferenceValidator": {
-                        "doc": "The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver."
+                        "doc": "The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver.",
+                        "keywords": [
+                            "UsdUtilsValidators"
+                        ]
                     },
                     "PackageEncapsulationValidator": {
                         "doc": "If the root layer is a package, then it's recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.", 
                         "keywords": [
+                            "UsdUtilsValidators",
                             "UsdzValidators"
                         ]
                     },
                     "RootPackageValidator": {
-                        "doc": "Files within the root layer of a usdz package should not be compressed or encrypted, and should be aligned to 64 bytes.",
+                        "doc": "Files within the root usdz package should not be compressed or encrypted, and should be aligned to 64 bytes. Nested usdz packages are not tested.",
                         "keywords": [
+                            "UsdUtilsValidators",
                             "UsdzValidators"
                         ]
                     },
                     "UsdzPackageValidator": {
                         "doc": "Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.",
                         "keywords": [
+                            "UsdUtilsValidators",
                             "UsdzValidators"
                         ]
                     },
-                    "keywords": [
-                        "UsdUtilsValidators"
-                    ]
+                    "VanillaUsdValidatorSuite": {
+                        "doc": "A suite of validators which check compliance with standard, generic use of OpenUSD. Passing this suite indicates that the USD is valid with respect to core USD, independent of any specific pipeline or use case.",
+                        "isSuite": true
+                    }
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
