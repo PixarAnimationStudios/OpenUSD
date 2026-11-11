@@ -395,15 +395,22 @@ function(_install_test_resource_files LIBRARY_NAME)
     set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
     set(TEST_PLUG_INFO_ROOT "..")
     
-    set(libraryFile  "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
     set(testPlugInfoLibDir "tests/${args_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
     set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
     set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
 
-    file(RELATIVE_PATH 
-        TEST_PLUG_INFO_LIBRARY_PATH
-        "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-        "${CMAKE_INSTALL_PREFIX}/tests/lib/${libraryFile}")
+    # TEST_PLUG_INFO_LIBRARY_PATH stores the path to the shared library to load
+    # at runtime, but for static builds we make this an empty string, because
+    # the library is not loadable at runtime.
+    set(TEST_PLUG_INFO_LIBRARY_PATH "")
+    get_property(libType TARGET ${LIBRARY_NAME} PROPERTY TYPE)
+    if(libType STREQUAL "SHARED_LIBRARY" OR libType STREQUAL "MODULE_LIBRARY")
+        set(libraryFile  "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+        file(RELATIVE_PATH
+            TEST_PLUG_INFO_LIBRARY_PATH
+            "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
+            "${CMAKE_INSTALL_PREFIX}/tests/lib/${libraryFile}")
+    endif()
 
     # Historically, test-only plugInfo.json files only substituted variables
     # named TEST_PLUG_INFO_XXX, but to support plugInfo.json files produced by
@@ -936,6 +943,12 @@ endfunction()
 #      side effects then those constructors and side effects will not
 #      run.  We depend on these constructs (e.g. TF_REGISTRY_FUNCTION).
 #
+#    - If the target is not an OBJECT library and we're not building shared
+#      libraries and we're linking with test-only libraries (see
+#      pxr_build_test_library), then we must link those using whole-archive
+#      functionality for the same reason.  This applies to monolithic builds
+#      too, since test-only libraries are never part of the monolithic library.
+#
 #    - We link against PXR_MALLOC_LIBRARY and PXR_THREAD_LIBS because we
 #      always want those.
 #
@@ -943,6 +956,20 @@ function(_pxr_target_link_libraries NAME)
     # Split core libraries from non-core libraries.
     _pxr_split_libraries("${ARGN}" internal external)
     get_property(type TARGET ${NAME} PROPERTY TYPE)
+
+    # Test-only libraries are never core libraries, so they are always in the
+    # external list.
+    if(NOT "${type}" STREQUAL "OBJECT_LIBRARY" AND NOT BUILD_SHARED_LIBS)
+        set(final "")
+        foreach(lib ${external})
+            if(lib IN_LIST PXR_TEST_LIBS)
+                list(APPEND final "$<LINK_LIBRARY:WHOLE_ARCHIVE,${lib}>")
+            else()
+                list(APPEND final ${lib})
+            endif()
+        endforeach()
+        set(external ${final})
+    endif()
 
     if("${type}" STREQUAL "OBJECT_LIBRARY")
         # OBJECT libraries can be linked to normally

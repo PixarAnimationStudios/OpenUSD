@@ -533,6 +533,18 @@ function(pxr_build_test_plugin LIBRARY_NAME)
         ${ARGN}
     )
         
+    # Test plugins must not link against test-only libraries. In static builds,
+    # the test-only library and the core libraries it depends on would be
+    # embedded in the test plugin, duplicating global registries. See
+    # pxr_build_test_library.
+    foreach(lib ${bt_LIBRARIES})
+        if(lib IN_LIST PXR_TEST_LIBS)
+            message(FATAL_ERROR
+                "Test plugin ${LIBRARY_NAME} must not link against test-only "
+                "library ${lib}")
+        endif()
+    endforeach()
+
     add_library(${LIBRARY_NAME}
         SHARED
         ${bt_CPPFILES}
@@ -587,8 +599,28 @@ endfunction() # pxr_build_test_plugin
 
 # Builds a test-only library that can be be directly linked to unit-test
 # executables. Those executables can consume public headers from the test-only
-# library.
+# library. Test-only libraries are only built when PXR_BUILD_TESTS is enabled.
+#
+# Like core libraries, test-only libraries may contain codeful schemas and
+# registry functions (e.g. TfType registration), and may provide a plugInfo.json
+# to advertise their contents.
+#
+# Unlike core libraries, test-only libraries are never included in the
+# monolithic library. Otherwise, the ABI of the monolithic library would differ
+# depending on whether tests are enabled. Instead, they are always built as
+# individual shared or static libraries, according to BUILD_SHARED_LIBS.
+#
+# Test-only libraries may only be linked by unit-test executables and other
+# test-only libraries. They must not be linked by core libraries, because the
+# core should not depend on code intended only for testing. They must not be
+# linked by test plugins (see pxr_build_test_plugin), because in static builds,
+# a test plugin would embed its own copy of the test-only library and the core
+# libraries it depends on, duplicating global registries.
 function(pxr_build_test_library LIBRARY_NAME)
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
     set(options
         INCLUDE_SCHEMA_FILES)
     set(oneValueArgs
@@ -641,10 +673,19 @@ function(pxr_build_test_library LIBRARY_NAME)
         list(APPEND cppFiles ${className}.cpp)
     endforeach()
 
+    # Test-only libraries are built as shared or static libraries according to
+    # BUILD_SHARED_LIBS. Unlike core libraries, they are never built as OBJECT
+    # libraries for the monolithic library.
     add_library(${LIBRARY_NAME}
-        SHARED
         ${cppFiles}
     )
+
+    # Keep track of test-only libraries in the PXR_TEST_LIBS cache variable so
+    # that they can be linked with whole-archive semantics in static builds,
+    # which is performed by _pxr_target_link_libraries.
+    get_property(help CACHE PXR_TEST_LIBS PROPERTY HELPSTRING)
+    list(APPEND PXR_TEST_LIBS ${LIBRARY_NAME})
+    set(PXR_TEST_LIBS "${PXR_TEST_LIBS}" CACHE INTERNAL "${help}")
 
     _pxr_target_link_libraries(${LIBRARY_NAME}
         ${args_LIBRARIES}
@@ -675,10 +716,32 @@ function(pxr_build_test_library LIBRARY_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
-    # Define macros for api.h
+    # Define macros for api.h.
+    #
+    # As in _pxr_library, PXR_STATIC is defined for static libraries, but not
+    # defined for static libraries in a monolithic build. We unconditionally
+    # define LIBNAME_EXPORTS=1 when building the library, but this definition is
+    # ignored when PXR_STATIC is defined.
     string(TOUPPER ${LIBRARY_NAME} uppercaseName)
+    set(apiPublic "")
+    get_property(libType TARGET ${LIBRARY_NAME} PROPERTY TYPE)
+    if(NOT PXR_BUILD_MONOLITHIC AND libType STREQUAL "STATIC_LIBRARY")
+        set(apiPublic PXR_STATIC=1)
+    endif()
     target_compile_definitions(${LIBRARY_NAME}
-        PRIVATE ${uppercaseName}_EXPORTS=1
+        PUBLIC
+            ${apiPublic}
+        PRIVATE
+            ${uppercaseName}_EXPORTS=1
+    )
+
+    # Define the package name macros used by TF_REGISTRY_FUNCTION and
+    # PLUG_THIS_PLUGIN, so the library's registry functions and plugin are
+    # identified by the library name, as is the case for core libraries.
+    target_compile_definitions(${LIBRARY_NAME}
+        PRIVATE
+            MFB_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
     )
 
     # Find libraries under the install prefix, which has the core USD

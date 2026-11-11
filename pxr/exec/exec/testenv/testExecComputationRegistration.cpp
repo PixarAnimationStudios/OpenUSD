@@ -16,7 +16,6 @@
 #include "pxr/exec/ef/time.h"
 #include "pxr/exec/esf/stage.h"
 #include "pxr/exec/esfUsd/sceneAdapter.h"
-#include "pxr/exec/execTest/publicClass.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/plug/plugin.h"
@@ -648,13 +647,6 @@ _PrintInputKeys(
     }
 
     std::cout << std::flush;
-}
-
-static void
-TestExecTestPublicClass()
-{
-    ExecTestPublicClass publicClass;
-    (void)publicClass;
 }
 
 // This test case needs to run first in order to encounter the errors we look
@@ -1765,7 +1757,6 @@ int main()
 
     _SetupTestPlugins();
 
-    TestExecTestPublicClass();
     TestRegistrationErrors();
     TestUndefinedComputations();
     TestUnknownSchemaType();
