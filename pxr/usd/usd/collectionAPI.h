@@ -591,7 +591,10 @@ public:
     /// SdfPathExpression::Nothing().  Replace other references by recursively
     /// resolving the expressions from the collections on the referenced prims.
     /// If no such prims or no such collections exist, replace those references
-    /// with SdfPathExpression::Nothing() as well.
+    /// with SdfPathExpression::Nothing() as well.  Expressions cannot reference
+    /// collections in *relationship-mode* (see IsInRelationshipsMode()), so
+    /// replace references to those with SdfPathExpression::Nothing() and issue
+    /// a warning.
     USD_API
     SdfPathExpression ResolveCompleteMembershipExpression() const;
     

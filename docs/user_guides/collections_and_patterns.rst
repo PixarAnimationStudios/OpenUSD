@@ -540,7 +540,9 @@ in the same prim, the allFood expression could reference allFruit as:
     Note that you can't reference a relationship-mode collection (that uses 
     includes/excludes rules) as a sub-expression in a pattern-based collection. 
     You can only reference other pattern-based collection expressions as 
-    sub-expressions. See :ref:`expression_for_relationship_mode_collection` for
+    sub-expressions. If an expression does reference a relationship-mode
+    collection, USD issues a warning when resolving it and the reference
+    matches nothing. See :ref:`expression_for_relationship_mode_collection` for
     details on computing the equivalent expression for a relationship-mode 
     collection that you can then reference.
 

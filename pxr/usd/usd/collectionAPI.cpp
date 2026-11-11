@@ -652,6 +652,22 @@ _ResolveCompleteMembershipExpressionImpl(
             return SdfPathExpression::Nothing();
         }
 
+        // A relationship-mode collection's membershipExpression is ignored, so
+        // expressions cannot reference it.  Warn and resolve the reference as
+        // Nothing.
+        if (refCollection.IsInRelationshipsMode()) {
+            TF_WARN("Collection '%s' on prim <%s> is in relationship-mode and "
+                    "cannot be referenced by an expression, while resolving "
+                    "references in expression '%s' from collection '%s' on "
+                    "prim <%s>; substituting empty expression",
+                    refCollectionName.GetText(),
+                    refCollectionPrim.GetPath().GetAsString().c_str(),
+                    thisExpr.GetText().c_str(),
+                    thisColl.GetName().GetText(),
+                    thisPrim.GetPath().GetAsString().c_str());
+            return SdfPathExpression::Nothing();
+        }
+
         // Check to see if we've visited this collection previously while
         // resolving references.  If we have, skip it, and substitute Nothing()
         // here.
