@@ -12,8 +12,8 @@ Tf -- Tools Foundation
 # and newer. These interpreters don't search for DLLs in the path anymore, you
 # have to provide a path explicitly. This re-enables path searching for USD 
 # dependency libraries
-import platform, sys
-if sys.version_info >= (3, 8) and platform.system() == "Windows":
+import sys
+if sys.version_info >= (3, 8) and sys.platform == "win32":
     import contextlib
 
     @contextlib.contextmanager
@@ -58,7 +58,7 @@ else:
             pass
         def __exit__(self, exc_type, ex_val, exc_tb):
             pass
-del platform, sys
+del sys
 
 
 def PreparePythonModule(moduleName=None):
