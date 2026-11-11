@@ -46,6 +46,7 @@ HgiVulkanGraphicsCmds::HgiVulkanGraphicsCmds(
     HgiVulkan* hgi,
     HgiGraphicsCmdsDesc const& desc)
     : _hgi(hgi)
+    , _tracker(hgi->GetCapabilities())
     , _descriptor(desc)
     , _commandBuffer(nullptr)
     , _renderPassStarted(false)
@@ -202,6 +203,10 @@ HgiVulkanGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 void
 HgiVulkanGraphicsCmds::BindResources(HgiResourceBindingsHandle res)
 {
+    if (res) {
+        _tracker.UseResourceBindings(res->GetDescriptor());
+    }
+
     // Delay until the pipeline is set and the render pass has begun.
     _pendingUpdates.push_back(
         [this, res] {
@@ -258,6 +263,13 @@ void
 HgiVulkanGraphicsCmds::BindVertexBuffers(
     HgiVertexBufferBindingVector const &bindings)
 {
+    for (HgiVertexBufferBinding const& binding : bindings) {
+        _TrackBufferRead(
+            binding.buffer,
+            VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
+            VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT);
+    }
+
     // Delay until the pipeline is set and the render pass has begun.
     _pendingUpdates.push_back(
         [this, bindings] {
@@ -308,6 +320,8 @@ HgiVulkanGraphicsCmds::DrawIndirect(
     uint32_t drawCount,
     uint32_t stride)
 {
+    _TrackIndirectRead(drawParameterBuffer);
+
     // Make sure the render pass has begun and resource are bound
     _ApplyPendingUpdates();
 
@@ -331,6 +345,8 @@ HgiVulkanGraphicsCmds::DrawIndexed(
     uint32_t instanceCount,
     uint32_t baseInstance)
 {
+    _TrackIndexRead(indexBuffer);
+
     // Make sure the render pass has begun and resource are bound
     _ApplyPendingUpdates();
 
@@ -361,6 +377,9 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
     std::vector<uint32_t> const& /*drawParameterBufferUInt32*/,
     uint32_t /*patchBaseVertexByteOffset*/)
 {
+    _TrackIndexRead(indexBuffer);
+    _TrackIndirectRead(drawParameterBuffer);
+
     // Make sure the render pass has begun and resource are bound
     _ApplyPendingUpdates();
 
@@ -402,6 +421,9 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
 {
     _CreateCommandBuffer();
 
+    _TrackAttachments(/*forClear*/true);
+    auto restore = _tracker.Flush(_commandBuffer->GetVulkanCommandBuffer());
+
     for (size_t i = 0; i < _descriptor.colorAttachmentDescs.size(); i++) {
         HgiAttachmentDesc const colorAttachmentDesc =
             _descriptor.colorAttachmentDescs[i];
@@ -413,7 +435,6 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
                     _descriptor.colorTextures[i].Get());
                 VkImage vkImage = texture->GetImage();
-                VkImageLayout oldVkLayout = texture->GetImageLayout();
                 
                 VkImageSubresourceRange vkImageSubRange;
                 vkImageSubRange.aspectMask =
@@ -426,31 +447,15 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 vkImageSubRange.layerCount =
                     texture->GetDescriptor().layerCount;
                 
-                texture->LayoutBarrier(
-                    _commandBuffer,
-                    /*oldLayout*/oldVkLayout,
-                    /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    /*producerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                    /*producerStage*/VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
                 
                 vkCmdClearColorImage(
                     _commandBuffer->GetVulkanCommandBuffer(),
                     vkImage,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    texture->GetImageLayout(),
                     &vkClearColor,
                     1,
                     &vkImageSubRange);
 
-                texture->LayoutBarrier(
-                    _commandBuffer,
-                    /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    /*newLayout*/oldVkLayout,
-                    /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                    /*consumerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    /*consumerStage*/VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
             }
 
             if (_descriptor.colorResolveTextures.size() > i &&
@@ -458,7 +463,6 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
                     _descriptor.colorResolveTextures[i].Get());
                 VkImage vkImage = texture->GetImage();
-                VkImageLayout oldVkLayout = texture->GetImageLayout();
                     
                 VkImageSubresourceRange vkImageSubRange;
                 vkImageSubRange.aspectMask =
@@ -471,31 +475,15 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 vkImageSubRange.layerCount =
                     texture->GetDescriptor().layerCount;
                     
-                texture->LayoutBarrier(
-                    _commandBuffer,
-                    /*oldLayout*/oldVkLayout,
-                    /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    /*producerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                    /*producerStage*/VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                    /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
                 
                 vkCmdClearColorImage(
                     _commandBuffer->GetVulkanCommandBuffer(),
                     vkImage,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    texture->GetImageLayout(),
                     &vkClearColor,
                     1,
                     &vkImageSubRange);
                 
-                texture->LayoutBarrier(
-                    _commandBuffer,
-                    /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    /*newLayout*/oldVkLayout,
-                    /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                    /*consumerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                    /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    /*consumerStage*/VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
             }
         }
     }
@@ -511,7 +499,6 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
             HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
                 _descriptor.depthTexture.Get());
             VkImage vkImage = texture->GetImage();
-            VkImageLayout oldVkLayout = texture->GetImageLayout();
             
             VkImageSubresourceRange vkImageSubRange;
             vkImageSubRange.aspectMask =
@@ -524,38 +511,21 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
             vkImageSubRange.layerCount =
                 texture->GetDescriptor().layerCount;
                 
-            texture->LayoutBarrier(
-                _commandBuffer,
-                /*oldLayout*/oldVkLayout,
-                /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
             
             vkCmdClearDepthStencilImage(
                 _commandBuffer->GetVulkanCommandBuffer(),
                 vkImage,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                texture->GetImageLayout(),
                 &vkClearDepthStencil,
                 1,
                 &vkImageSubRange);
                 
-            texture->LayoutBarrier(
-                _commandBuffer,
-                /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                /*newLayout*/oldVkLayout,
-                /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
         }
 
         if (_descriptor.depthResolveTexture) {
             HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
                 _descriptor.depthResolveTexture.Get());
             VkImage vkImage = texture->GetImage();
-            VkImageLayout oldVkLayout = texture->GetImageLayout();
                 
             VkImageSubresourceRange vkImageSubRange;
             vkImageSubRange.aspectMask =
@@ -567,33 +537,19 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
             vkImageSubRange.layerCount =
                 texture->GetDescriptor().layerCount;
             
-            texture->LayoutBarrier(
-                _commandBuffer,
-                /*oldLayout*/oldVkLayout,
-                /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
             
             vkCmdClearDepthStencilImage(
                 _commandBuffer->GetVulkanCommandBuffer(),
                 vkImage,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                texture->GetImageLayout(),
                 &vkClearDepthStencil,
                 1,
                 &vkImageSubRange);
             
-            texture->LayoutBarrier(
-                _commandBuffer,
-                /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                /*newLayout*/oldVkLayout,
-                /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
         }
     }
+
+    restore.Restore(_commandBuffer->GetVulkanCommandBuffer());
 }
 
 bool
@@ -661,6 +617,10 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
             beginInfo.pClearValues = _vkClearValues.data();
         }
 
+        _TrackAttachments(/*forClear*/false);
+        _attachmentRestore =
+            _tracker.Flush(_commandBuffer->GetVulkanCommandBuffer());
+
         VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
 
         vkCmdBeginRenderPass(
@@ -687,11 +647,112 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
 }
 
 void
+HgiVulkanGraphicsCmds::_TrackBufferRead(
+    HgiBufferHandle const& handle,
+    VkPipelineStageFlags2 stages,
+    VkAccessFlags2 access)
+{
+    HgiVulkanBuffer* buffer = static_cast<HgiVulkanBuffer*>(handle.Get());
+    if (!buffer) {
+        return;
+    }
+
+    HgiVulkanResourceUse use;
+    use.stages = stages;
+    use.access = access;
+    _tracker.Use(buffer->GetState(), use);
+}
+
+void
+HgiVulkanGraphicsCmds::_TrackIndexRead(HgiBufferHandle const& handle)
+{
+    _TrackBufferRead(
+        handle,
+        VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+        VK_ACCESS_2_INDEX_READ_BIT);
+}
+
+void
+HgiVulkanGraphicsCmds::_TrackIndirectRead(HgiBufferHandle const& handle)
+{
+    _TrackBufferRead(
+        handle,
+        VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+        VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT);
+}
+
+void
+HgiVulkanGraphicsCmds::_TrackAttachments(bool forClear)
+{
+    // Clearing outside a render pass goes through vkCmdClear*Image, which is a
+    // transfer rather than an attachment write.
+    HgiVulkanResourceUse color;
+    color.stages = forClear
+        ? VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT
+        : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    color.access = forClear
+        ? VK_ACCESS_2_TRANSFER_WRITE_BIT
+        : VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    color.write = true;
+    const VkImageLayout colorLayout = forClear
+        ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    HgiVulkanResourceUse depth;
+    depth.stages = forClear
+        ? VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT
+        : VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+          VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    depth.access = forClear
+        ? VK_ACCESS_2_TRANSFER_WRITE_BIT
+        : VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+          VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    depth.write = true;
+    const VkImageLayout depthLayout = forClear
+        ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+        : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    const auto trackTexture = [this](HgiTextureHandle const& handle,
+                               HgiVulkanResourceUse const& use,
+                               VkImageLayout layout) {
+        _tracker.UseImage(
+            dynamic_cast<HgiVulkanTexture*>(handle.Get()), use, layout);
+    };
+
+    const auto isColorTracked = [this, forClear](size_t i) {
+        return !forClear ||
+            (i < _descriptor.colorAttachmentDescs.size() &&
+             _descriptor.colorAttachmentDescs[i].loadOp ==
+                HgiAttachmentLoadOpClear);
+    };
+
+    for (size_t i = 0; i < _descriptor.colorTextures.size(); i++) {
+        if (isColorTracked(i)) {
+            trackTexture(_descriptor.colorTextures[i], color, colorLayout);
+        }
+    }
+    for (size_t i = 0; i < _descriptor.colorResolveTextures.size(); i++) {
+        if (isColorTracked(i)) {
+            trackTexture(
+                _descriptor.colorResolveTextures[i], color, colorLayout);
+        }
+    }
+    if (!forClear ||
+        _descriptor.depthAttachmentDesc.loadOp == HgiAttachmentLoadOpClear) {
+        trackTexture(_descriptor.depthTexture, depth, depthLayout);
+        trackTexture(_descriptor.depthResolveTexture, depth, depthLayout);
+    }
+}
+
+void
 HgiVulkanGraphicsCmds::_EndRenderPass()
 {
     if (_renderPassStarted) {
         vkCmdEndRenderPass(_commandBuffer->GetVulkanCommandBuffer());
         _renderPassStarted = false;
+        _tracker.Discard();
+        _attachmentRestore.Restore(_commandBuffer->GetVulkanCommandBuffer());
     }
 }
 
