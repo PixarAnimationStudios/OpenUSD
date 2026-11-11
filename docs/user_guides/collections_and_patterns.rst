@@ -257,7 +257,8 @@ user-provided applied API schema instance name:
   the same path. Targets that are added later are considered to be stronger than 
   earlier targets for the same path. Only the rules of a relationship-mode
   collection can be merged this way. If ``includes`` targets an expression-mode
-  collection, its ``membershipExpression`` is ignored and USD issues a warning.
+  collection, its ``membershipExpression`` is ignored, USD issues a warning, and
+  the ``usdValidation:CollectionCrossModeReferences`` validator reports it.
 
 * ``rel collection:instanceName:excludes``: Specifies a list of targets that are 
   excluded below the included paths in this collection. This can target prims or 
@@ -544,9 +545,11 @@ in the same prim, the allFood expression could reference allFruit as:
     You can only reference other pattern-based collection expressions as 
     sub-expressions. If an expression does reference a relationship-mode
     collection, USD issues a warning when resolving it and the reference
-    matches nothing. See :ref:`expression_for_relationship_mode_collection` for
-    details on computing the equivalent expression for a relationship-mode 
-    collection that you can then reference.
+    matches nothing, and the ``usdValidation:CollectionCrossModeReferences``
+    validator reports it. See
+    :ref:`expression_for_relationship_mode_collection` for details on computing
+    the equivalent expression for a relationship-mode collection that you can
+    then reference.
 
 .. _resolving_expressions:
 

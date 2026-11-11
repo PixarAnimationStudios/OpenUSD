@@ -11,11 +11,17 @@
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/base/ts/spline.h"
 
 #include <iostream>
+#include <set>
+#include <string>
+#include <tuple>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -33,7 +39,7 @@ TestUsdValidators()
     // this keyword this unit test will have to be updated.
     const UsdValidationValidatorMetadataVector coreValidatorMetadata
         = registry.GetValidatorMetadataForPlugin(_tokens->usdValidationPlugin);
-    TF_AXIOM(coreValidatorMetadata.size() == 4);
+    TF_AXIOM(coreValidatorMetadata.size() == 5);
 
     std::set<TfToken> validatorMetadataNameSet;
     for (const UsdValidationValidatorMetadata &metadata :
@@ -45,7 +51,8 @@ TestUsdValidators()
         = { UsdValidatorNameTokens->compositionErrorTest,
             UsdValidatorNameTokens->stageMetadataChecker,
             UsdValidatorNameTokens->attributeTypeMismatch,
-            UsdValidatorNameTokens->attributeSpecValueTypeMismatch };
+            UsdValidatorNameTokens->attributeSpecValueTypeMismatch,
+            UsdValidatorNameTokens->collectionCrossModeReferences };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -403,6 +410,113 @@ TestUsdAttributeValueTypeMismatch()
     TF_AXIOM(messages == expectedMessages);
 }
 
+static void
+TestUsdCollectionCrossModeReferences()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *const validator
+        = registry.GetOrLoadValidatorByName(
+            UsdValidatorNameTokens->collectionCrossModeReferences);
+    TF_AXIOM(validator);
+
+    const UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+    usdStage->DefinePrim(SdfPath("/World/A"));
+    usdStage->DefinePrim(SdfPath("/World/B"));
+
+    // A relationship-mode collection, inferred from its includes.
+    const UsdPrim rels = usdStage->DefinePrim(SdfPath("/Rels"));
+    TF_AXIOM(UsdCollectionAPI::Apply(rels, TfToken("rel"))
+                 .CreateIncludesRel().AddTarget(SdfPath("/World/A")));
+
+    const UsdPrim sets = usdStage->DefinePrim(SdfPath("/Sets"));
+    auto applyWithExpr = [&sets](const char *name, const char *expr) {
+        const UsdCollectionAPI collection =
+            UsdCollectionAPI::Apply(sets, TfToken(name));
+        TF_AXIOM(collection.CreateMembershipExpressionAttr().Set(
+                     SdfPathExpression(expr)));
+        return collection;
+    };
+
+    // An explicitly relationship-mode collection with no rules.
+    TF_AXIOM(UsdCollectionAPI::Apply(sets, TfToken("emptyRel"))
+                 .CreateModeAttr(VtValue(UsdTokens->relationship)));
+
+    applyWithExpr("expr", "/World/B");
+    applyWithExpr("refsRel", "/World/B %/Rels:rel %:emptyRel %:expr %:missing");
+    applyWithExpr("refsExpr", "%:expr");
+
+    // A relationship-mode collection whose expression is ignored.
+    TF_AXIOM(applyWithExpr("ignored", "%/Rels:rel")
+                 .CreateIncludesRel().AddTarget(SdfPath("/World/A")));
+
+    // A collection with no membership opinions at all.
+    UsdCollectionAPI::Apply(sets, TfToken("empty"));
+
+    // A collection that includes collections in both modes, and an
+    // expression-mode collection whose includes are ignored.
+    const SdfPathVector includes = {
+        SdfPath("/World/A"),
+        SdfPath("/Sets.collection:expr"),
+        SdfPath("/Sets.collection:empty"),
+        SdfPath("/Rels.collection:rel") };
+    TF_AXIOM(UsdCollectionAPI::Apply(sets, TfToken("includer"))
+                 .CreateIncludesRel().SetTargets(includes));
+    const UsdCollectionAPI exprIncluder = applyWithExpr("exprIncluder", "/");
+    TF_AXIOM(exprIncluder.CreateModeAttr(VtValue(UsdTokens->expression)));
+    TF_AXIOM(exprIncluder.CreateIncludesRel().SetTargets(includes));
+
+    // Only the references from refsRel to the two relationship-mode
+    // collections, and the include of the expression-mode collection "expr"
+    // by "includer", are errors.
+    TF_AXIOM(validator->Validate(rels).empty());
+
+    const UsdValidationErrorVector errors = validator->Validate(sets);
+    TF_AXIOM(errors.size() == 3);
+
+    auto identifier = [](const TfToken &errorName) {
+        return TfToken(
+            UsdValidatorNameTokens->collectionCrossModeReferences.GetString() +
+            "." + errorName.GetString());
+    };
+    const TfToken referenceIdentifier = identifier(
+        UsdValidationErrorNameTokens->referenceToRelationshipModeCollection);
+    const TfToken includeIdentifier = identifier(
+        UsdValidationErrorNameTokens->includeOfExpressionModeCollection);
+    const SdfPath refsRelExprPath(
+        "/Sets.collection:refsRel:membershipExpression");
+    const SdfPath includerIncludesPath("/Sets.collection:includer:includes");
+
+    using Expected = std::tuple<TfToken, SdfPath, std::string>;
+    const std::set<Expected> expected = {
+        { referenceIdentifier, refsRelExprPath,
+          "The membershipExpression of collection 'refsRel' on prim </Sets> "
+          "references collection 'rel' on prim </Rels>, which is in "
+          "relationship-mode. Expressions cannot reference relationship-mode "
+          "collections, so the reference matches nothing." },
+        { referenceIdentifier, refsRelExprPath,
+          "The membershipExpression of collection 'refsRel' on prim </Sets> "
+          "references collection 'emptyRel' on prim </Sets>, which is in "
+          "relationship-mode. Expressions cannot reference relationship-mode "
+          "collections, so the reference matches nothing." },
+        { includeIdentifier, includerIncludesPath,
+          "The includes of collection 'includer' on prim </Sets> target "
+          "collection 'expr' on prim </Sets>, which is in expression-mode. "
+          "Only relationship-mode collections can be included, so its "
+          "membershipExpression is ignored." }
+    };
+    std::set<Expected> actual;
+    for (const UsdValidationError &error : errors) {
+        TF_AXIOM(error.GetValidator() == validator);
+        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(error.GetSites().size() == 1);
+        TF_AXIOM(error.GetSites()[0].IsProperty());
+        actual.emplace(error.GetIdentifier(),
+                       error.GetSites()[0].GetProperty().GetPath(),
+                       error.GetMessage());
+    }
+    TF_AXIOM(actual == expected);
+}
+
 int
 main()
 {
@@ -411,6 +525,7 @@ main()
     TestUsdCompositionErrorTest();
     TestUsdAttributeTypeMismatch();
     TestUsdAttributeValueTypeMismatch();
+    TestUsdCollectionCrossModeReferences();
 
     std::cout << "OK\n";
 }

@@ -147,6 +147,10 @@
 	Doc: Checks that every property spec contributing to a composed attribute is an attribute spec declaring the attribute's composed type, and that each spec's authored values hold the spec's declared type.
 	Keywords: UsdCoreValidators
 	isSuite: False
+[usdValidation:CollectionCrossModeReferences]:
+	Doc: Checks that collections don't refer to collections in the other mode, which is not supported: a membershipExpression cannot reference a collection in relationship-mode, and includes cannot target a collection in expression-mode.
+	Keywords: UsdCoreValidators
+	isSuite: False
 [usdValidation:CompositionErrorTest]:
 	Doc: Validator aims at providing all composition errors, which were generated while composing the stage.
 	Keywords: UsdCoreValidators
