@@ -27,6 +27,8 @@
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/assetPath.h"
 
+#include <cstdint>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Numeric
@@ -37,6 +39,9 @@ using HdIntArrayDataSourceHandle = HdIntArrayDataSource::Handle;
 
 using HdSizetDataSource = HdTypedSampledDataSource<size_t>;
 using HdSizetDataSourceHandle = HdSizetDataSource::Handle;
+
+using HdUInt64DataSource = HdTypedSampledDataSource<uint64_t>;
+using HdUInt64DataSourceHandle = HdUInt64DataSource::Handle;
 
 using HdFloatDataSource = HdTypedSampledDataSource<float>;
 using HdFloatDataSourceHandle = HdFloatDataSource::Handle;

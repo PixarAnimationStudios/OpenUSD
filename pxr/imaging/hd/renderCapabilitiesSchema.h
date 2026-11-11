@@ -34,6 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_RENDER_CAPABILITIES_SCHEMA_TOKENS \
     (motionBlur) \
+    (consumeExtGpuBuffer) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderCapabilitiesSchemaTokens, HD_API,
     HD_RENDER_CAPABILITIES_SCHEMA_TOKENS);
@@ -63,6 +64,9 @@ public:
     HD_API
     HdBoolDataSourceHandle GetMotionBlur() const; 
 
+    HD_API
+    HdBoolDataSourceHandle GetConsumeExtGpuBuffer() const; 
+
     /// @} 
 
     /// \name Schema construction
@@ -78,7 +82,8 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdBoolDataSourceHandle &motionBlur
+        const HdBoolDataSourceHandle &motionBlur,
+        const HdBoolDataSourceHandle &consumeExtGpuBuffer
     );
 
     /// \class HdRenderCapabilitiesSchema::Builder
@@ -93,6 +98,9 @@ public:
         HD_API
         Builder &SetMotionBlur(
             const HdBoolDataSourceHandle &motionBlur);
+        HD_API
+        Builder &SetConsumeExtGpuBuffer(
+            const HdBoolDataSourceHandle &consumeExtGpuBuffer);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -100,6 +108,7 @@ public:
 
     private:
         HdBoolDataSourceHandle _motionBlur;
+        HdBoolDataSourceHandle _consumeExtGpuBuffer;
 
     };
 
