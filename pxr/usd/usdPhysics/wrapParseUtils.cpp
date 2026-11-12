@@ -234,7 +234,10 @@ struct _UsdPhysicsCustomTokens
     list instancerTokens;
 };
 
-struct _DeprecatedCustomUsdPhysicsTokens : public _UsdPhysicsCustomTokens {};
+struct _DeprecatedUsdPhysicsCustomTokens : public _UsdPhysicsCustomTokens {};
+
+struct _DeprecatedCustomUsdPhysicsTokens
+    : public _DeprecatedUsdPhysicsCustomTokens {};
 
 std::string GetString(const object& po)
 {
@@ -302,7 +305,20 @@ dict _DeprecatedLoadUsdPhysicsFromRange(UsdStageWeakPtr stage,
 {
     PyErr_WarnEx(PyExc_DeprecationWarning,
                  "LoadUsdPhysicsFromRange is deprecated, use "
-                 "UsdPhysicsLoadStageFromPrimRange instead.", 1);
+                 "LoadStageFromPrimRange instead.", 1);
+    return _UsdPhysicsLoadStageFromPrimRange(
+        stage, includePaths, excludePaths, customTokens, simulationOwners);
+}
+
+dict _DeprecatedUsdPhysicsLoadStageFromPrimRange(UsdStageWeakPtr stage,
+    const std::vector<SdfPath>& includePaths, 
+    const std::vector<SdfPath>& excludePaths,
+    const _UsdPhysicsCustomTokens& customTokens,
+    const std::vector<SdfPath>& simulationOwners)
+{
+    PyErr_WarnEx(PyExc_DeprecationWarning,
+                 "UsdPhysicsLoadStageFromPrimRange is deprecated, use "
+                 "LoadStageFromPrimRange instead.", 1);
     return _UsdPhysicsLoadStageFromPrimRange(
         stage, includePaths, excludePaths, customTokens, simulationOwners);
 }
@@ -312,8 +328,17 @@ _MakeDeprecatedCustomTokens()
 {
     PyErr_WarnEx(PyExc_DeprecationWarning,
                  "CustomUsdPhysicsTokens is deprecated, use "
-                 "UsdPhysicsCustomTokens instead.", 1);
+                 "CustomTokens instead.", 1);
     return new _DeprecatedCustomUsdPhysicsTokens();
+}
+
+static _DeprecatedUsdPhysicsCustomTokens*
+_MakeDeprecatedUsdPhysicsCustomTokens()
+{
+    PyErr_WarnEx(PyExc_DeprecationWarning,
+                 "UsdPhysicsCustomTokens is deprecated, use "
+                 "CustomTokens instead.", 1);
+    return new _DeprecatedUsdPhysicsCustomTokens();
 }
 
 static std::string
@@ -746,7 +771,7 @@ void wrapParseUtils()
         ;
 
     class_<_UsdPhysicsCustomTokens>
-        cupt("UsdPhysicsCustomTokens");
+        cupt("CustomTokens");
     cupt
         .def_readwrite("jointTokens", &_UsdPhysicsCustomTokens::jointTokens)
         .def_readwrite("shapeTokens", &_UsdPhysicsCustomTokens::shapeTokens)
@@ -754,7 +779,19 @@ void wrapParseUtils()
                        &_UsdPhysicsCustomTokens::instancerTokens)
         .def("__repr__", _UsdPhysicsCustomTokens_Repr);
 
-    class_<_DeprecatedCustomUsdPhysicsTokens, bases<_UsdPhysicsCustomTokens>>
+    class_<_DeprecatedUsdPhysicsCustomTokens, bases<_UsdPhysicsCustomTokens>>
+        dupct("UsdPhysicsCustomTokens");
+    dupct
+        .def("__init__",
+             make_constructor(&_MakeDeprecatedUsdPhysicsCustomTokens))
+        .def_readwrite("jointTokens", &_UsdPhysicsCustomTokens::jointTokens)
+        .def_readwrite("shapeTokens", &_UsdPhysicsCustomTokens::shapeTokens)
+        .def_readwrite("instancerTokens", 
+                       &_UsdPhysicsCustomTokens::instancerTokens)
+        .def("__repr__", _UsdPhysicsCustomTokens_Repr);
+
+    class_<_DeprecatedCustomUsdPhysicsTokens,
+           bases<_DeprecatedUsdPhysicsCustomTokens>>
         dcupt("CustomUsdPhysicsTokens");
     dcupt
         .def("__init__", make_constructor(&_MakeDeprecatedCustomTokens))
@@ -1159,7 +1196,13 @@ void wrapParseUtils()
             _UsdPhysicsCustomTokens(), args("simulationOwners") = 
         std::vector<SdfPath>()));
 
-    def("UsdPhysicsLoadStageFromPrimRange", _UsdPhysicsLoadStageFromPrimRange,
+    def("UsdPhysicsLoadStageFromPrimRange",
+        _DeprecatedUsdPhysicsLoadStageFromPrimRange,
+        (args("stage"), args("includePaths"), args("excludePaths") = std::vector<SdfPath>(), args("customTokens") =
+            _UsdPhysicsCustomTokens(), args("simulationOwners") = 
+        std::vector<SdfPath>()));
+
+    def("LoadStageFromPrimRange", _UsdPhysicsLoadStageFromPrimRange,
         (args("stage"), args("includePaths"), args("excludePaths") = std::vector<SdfPath>(), args("customTokens") =
             _UsdPhysicsCustomTokens(), args("simulationOwners") = 
         std::vector<SdfPath>()));
