@@ -47,11 +47,22 @@ public:
     }
 
     // Return the number of warnings about referencing a relationship-mode
-    // collection.
+    // collection from an expression.
     size_t CountRelationshipModeReferenceWarnings() const {
+        return _CountWarningsContaining("is in relationship-mode");
+    }
+
+    // Return the number of warnings about including an expression-mode
+    // collection.
+    size_t CountExpressionModeIncludeWarnings() const {
+        return _CountWarningsContaining("is in expression-mode");
+    }
+
+private:
+    size_t _CountWarningsContaining(const char *text) const {
         size_t count = 0;
         for (std::string const &warning : _warnings) {
-            if (TfStringContains(warning, "is in relationship-mode")) {
+            if (TfStringContains(warning, text)) {
                 ++count;
             }
         }
@@ -159,10 +170,89 @@ TestIgnoredExpressionDoesNotWarn()
     TF_AXIOM(recorder.CountRelationshipModeReferenceWarnings() == 0);
 }
 
+static void
+TestIncludeOfExpressionModeCollectionWarns()
+{
+    printf("TestIncludeOfExpressionModeCollectionWarns...\n");
+
+    const UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->DefinePrim(SdfPath("/World/A"));
+    stage->DefinePrim(SdfPath("/World/B"));
+    const UsdPrim sets = stage->DefinePrim(SdfPath("/Sets"));
+
+    // Expression-mode, inferred from the membershipExpression.
+    const UsdCollectionAPI autoExpr =
+        UsdCollectionAPI::Apply(sets, TfToken("autoExpr"));
+    TF_AXIOM(autoExpr.CreateMembershipExpressionAttr().Set(
+                 SdfPathExpression("/World/B")));
+
+    // Explicit expression-mode.
+    const UsdCollectionAPI explicitExpr =
+        UsdCollectionAPI::Apply(sets, TfToken("explicitExpr"));
+    TF_AXIOM(explicitExpr.CreateModeAttr(VtValue(UsdTokens->expression)));
+    TF_AXIOM(explicitExpr.CreateMembershipExpressionAttr().Set(
+                 SdfPathExpression("/World/B")));
+
+    // No membership opinions at all, and relationship-mode.
+    const UsdCollectionAPI empty =
+        UsdCollectionAPI::Apply(sets, TfToken("empty"));
+    const UsdCollectionAPI rel = UsdCollectionAPI::Apply(sets, TfToken("rel"));
+    TF_AXIOM(rel.CreateIncludesRel().AddTarget(SdfPath("/World/B")));
+
+    const UsdCollectionAPI includer =
+        UsdCollectionAPI::Apply(sets, TfToken("includer"));
+
+    // Including an expression-mode collection warns and merges nothing from
+    // its membershipExpression.
+    for (const UsdCollectionAPI &included : { autoExpr, explicitExpr }) {
+        TF_AXIOM(includer.CreateIncludesRel().SetTargets(
+                     { SdfPath("/World/A"), included.GetCollectionPath() }));
+        _WarningRecorder recorder;
+        TF_AXIOM(_ComputeIncludedPaths(includer) ==
+                 SdfPathVector { SdfPath("/World/A") });
+        TF_AXIOM(recorder.CountExpressionModeIncludeWarnings() == 1);
+    }
+
+    // Only computing the membership warns, not querying the mode or
+    // validating.
+    for (const UsdCollectionAPI &included : { autoExpr, explicitExpr }) {
+        TF_AXIOM(includer.CreateIncludesRel().SetTargets(
+                     { SdfPath("/World/A"), included.GetCollectionPath() }));
+        _WarningRecorder recorder;
+        TF_AXIOM(includer.IsInRelationshipsMode());
+        std::string reason;
+        TF_AXIOM(includer.Validate(&reason));
+        TF_AXIOM(recorder.CountExpressionModeIncludeWarnings() == 0);
+    }
+
+    // Including a collection with no membershipExpression doesn't warn.
+    for (const UsdCollectionAPI &included : { empty, rel }) {
+        TF_AXIOM(includer.CreateIncludesRel().SetTargets(
+                     { SdfPath("/World/A"), included.GetCollectionPath() }));
+        _WarningRecorder recorder;
+        _ComputeIncludedPaths(includer);
+        TF_AXIOM(recorder.CountExpressionModeIncludeWarnings() == 0);
+    }
+
+    // An explicit expression-mode collection ignores its includes, so they
+    // don't warn either.
+    {
+        TF_AXIOM(explicitExpr.CreateIncludesRel().SetTargets(
+                     { autoExpr.GetCollectionPath() }));
+        _WarningRecorder recorder;
+        TF_AXIOM(_ComputeIncludedPaths(explicitExpr) ==
+                 SdfPathVector { SdfPath("/World/B") });
+        std::string reason;
+        TF_AXIOM(explicitExpr.Validate(&reason));
+        TF_AXIOM(recorder.CountExpressionModeIncludeWarnings() == 0);
+    }
+}
+
 int main()
 {
     TestReferenceToRelationshipModeCollectionWarns();
     TestIgnoredExpressionDoesNotWarn();
+    TestIncludeOfExpressionModeCollectionWarns();
 
     printf("\n\n>>> Test SUCCEEDED\n");
     return 0;

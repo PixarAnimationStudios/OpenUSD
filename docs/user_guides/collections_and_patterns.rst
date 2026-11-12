@@ -255,7 +255,9 @@ user-provided applied API schema instance name:
   or more collections, the order in which targets are added to the ``includes`` 
   relationship may become significant, if there are conflicting opinions about 
   the same path. Targets that are added later are considered to be stronger than 
-  earlier targets for the same path.
+  earlier targets for the same path. Only the rules of a relationship-mode
+  collection can be merged this way. If ``includes`` targets an expression-mode
+  collection, its ``membershipExpression`` is ignored and USD issues a warning.
 
 * ``rel collection:instanceName:excludes``: Specifies a list of targets that are 
   excluded below the included paths in this collection. This can target prims or 

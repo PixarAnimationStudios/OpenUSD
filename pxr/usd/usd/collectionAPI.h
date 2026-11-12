@@ -752,10 +752,14 @@ private:
     // circular dependency is detected amongst the included collections.
     // If it is nullptr, a warning is issued when a circular dependency is
     // detected.
+    // If \p warnOnIgnoredExpressions is true, a warning is issued for each
+    // included expression-mode collection whose membershipExpression is
+    // ignored.
     void _ComputeMembershipQueryImpl(
         UsdCollectionMembershipQuery *query,
         const SdfPathSet &chainedCollectionPaths,
-        bool *foundCircularDependency=nullptr) const;
+        bool *foundCircularDependency=nullptr,
+        bool warnOnIgnoredExpressions=false) const;
 
     // The same as ResolveCompleteMembershipExpression(), but set
     // `foundCircularDependency` to true if a circular dependency is encountered

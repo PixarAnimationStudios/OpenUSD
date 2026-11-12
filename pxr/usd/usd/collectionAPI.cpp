@@ -765,7 +765,9 @@ UsdCollectionAPI::ComputeMembershipQuery(
     }
     else {
         SdfPathSet chainedCollectionPaths { GetCollectionPath() };
-        _ComputeMembershipQueryImpl(query, chainedCollectionPaths);
+        _ComputeMembershipQueryImpl(query, chainedCollectionPaths,
+                                    /* foundCircularDependency */ nullptr,
+                                    /* warnOnIgnoredExpressions */ true);
         PathExpansionRuleMap map = query->GetAsPathExpansionRuleMap();
         SdfPathSet collections = query->GetIncludedCollections();
         *query = UsdCollectionMembershipQuery(
@@ -786,7 +788,8 @@ void
 UsdCollectionAPI::_ComputeMembershipQueryImpl(
     UsdCollectionMembershipQuery *query,
     const SdfPathSet &chainedCollectionPaths,
-    bool *foundCircularDependency) const
+    bool *foundCircularDependency,
+    bool warnOnIgnoredExpressions) const
 {
     if (!TF_VERIFY(query)) {
         return;
@@ -872,7 +875,31 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
             seenCollectionPaths.insert(includedPath);
             UsdCollectionMembershipQuery includedQuery;
             includedCollection._ComputeMembershipQueryImpl(&includedQuery,
-                    seenCollectionPaths, foundCircularDependency);
+                    seenCollectionPaths, foundCircularDependency,
+                    warnOnIgnoredExpressions);
+
+            // An expression-mode collection's membershipExpression cannot be
+            // merged into these rules, so warn if including it drops one.
+            if (warnOnIgnoredExpressions) {
+                TfToken includedMode;
+                includedCollection.GetModeAttr().Get(&includedMode);
+                SdfPathExpression includedExpr;
+                if (includedMode != UsdTokens->relationship &&
+                    (includedMode == UsdTokens->expression ||
+                     !includedQuery.UsesPathExpansionRuleMap()) &&
+                    includedCollection.GetMembershipExpressionAttr().Get(
+                        &includedExpr) &&
+                    !includedExpr.IsEmpty()) {
+                    TF_WARN("Collection '%s' on prim <%s> is in "
+                            "expression-mode and cannot be included by "
+                            "collection '%s' on prim <%s>; ignoring its "
+                            "membershipExpression",
+                            collectionName.GetText(),
+                            includedPrimPath.GetText(),
+                            GetName().GetText(),
+                            GetPrim().GetPath().GetText());
+                }
+            }
 
             const PathExpansionRuleMap& includedMap =
                 includedQuery.GetAsPathExpansionRuleMap();
@@ -975,13 +1002,20 @@ UsdCollectionAPI::Validate(std::string *reason) const
         return false;
     }
 
+    // Properties belonging to the non-selected mode are ignored, so only
+    // validate those of the selected mode.
+    TfToken mode;
+    GetModeAttr().Get(&mode);
+
     // Check for circular dependencies.
     bool foundCircularDependency = false; 
     SdfPathSet chainedCollectionPaths{GetCollectionPath()};
     // We're not interested in the computed query object here.
     UsdCollectionMembershipQuery query;
-    _ComputeMembershipQueryImpl(&query, chainedCollectionPaths,
-                                &foundCircularDependency);
+    if (mode != UsdTokens->expression) {
+        _ComputeMembershipQueryImpl(&query, chainedCollectionPaths,
+                                    &foundCircularDependency);
+    }
     if (foundCircularDependency) {
         if (reason) {
             *reason += "Found one or more circular dependencies amongst "
@@ -1012,9 +1046,6 @@ UsdCollectionAPI::Validate(std::string *reason) const
         }
     }
 
-    // A relationship-mode collection's membershipExpression is ignored.
-    TfToken mode;
-    GetModeAttr().Get(&mode);
     if (mode != UsdTokens->relationship && !query.UsesPathExpansionRuleMap()) {
         // Check membershipExpression validity.
         bool circular = false;
