@@ -52,7 +52,7 @@ pxr_library(usdRiPxrImaging
 if(TARGET usdRiPxrImaging)
     target_include_directories(${PXR_PACKAGE}
         PRIVATE
-            "${PROJECT_BINARY_DIR}/include/pxr/imaging"
+            "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
     )
 endif()
 
