@@ -147,7 +147,6 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
                 = TfToken(pluginName.GetString()
                           + _tokens->PluginValidatorNameDelimiter.GetString()
                           + validatorName.GetString());
-            validatorNames.push_back(metadata.name);
 
             metadata.doc = doc->GetString();
 
@@ -188,6 +187,19 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
             } else {
                 metadata.isSuite = false;
             }
+
+            // A suite is expanded into its contained validators when
+            // validating, so only their schemaTypes are used. Skip a suite
+            // which provides schemaTypes, as it can never be registered.
+            if (metadata.isSuite && !metadata.schemaTypes.empty()) {
+                TF_RUNTIME_ERROR("Cannot provide schemaTypes metadata for "
+                                 "validator suite '%s'; provide it on the "
+                                 "contained validators instead.",
+                                 metadata.name.GetText());
+                continue;
+            }
+
+            validatorNames.push_back(metadata.name);
 
             // we need no protection of shared resource here, because this
             // member function is only called from within the constructor, and
@@ -492,56 +504,15 @@ UsdValidationRegistry::_RegisterValidatorSuite(
         return;
     }
 
-    // Make sure containedValidators are conforming if suite has schemaTypes.
-    // That is, validators have PrimTaskFn, otherwise, do not register this
-    // validator. And contained validators's schemaType is a subset of Suite's
-    // schemaTypes metadata.
-    //
-    // XXX: This block is unreachable: _CheckMetadata above rejects any suite
-    // with schemaTypes, as it is called with checkForPrimTask false. Suite
-    // schemaTypes are also never used for matching prims, since a suite is
-    // expanded into its contained validators, which carry their own
-    // schemaTypes. So this block does not canonicalize schemaTypes like the
-    // rest of the registry does, and will be removed in a follow-up change
-    // which disallows schemaTypes on suites.
-    if (!metadata.schemaTypes.empty()) {
-        for (const UsdValidationValidator *const validator :
-             containedValidators) {
-            if (!validator) {
-                // Possible clients try to register a validator which is
-                // invalid/nullptr
-                TF_CODING_ERROR(
-                    "Validator Suite '%s' not registered, one of the contained "
-                    "validator is invalid.",
-                    metadata.name.GetText());
-                return;
-            }
-            if (!validator->_GetValidatePrimTask()) {
-                TF_CODING_ERROR(
-                    "ValidatorSuite '%s' cannot be registered, as it provides "
-                    "schemaTypes, but at least one of its contained validator "
-                    "'%s' does not provide a UsdValidatePrimTaskFn",
-                    metadata.name.GetText(),
-                    validator->GetMetadata().name.GetText());
-                return;
-            }
-            // We also need to make sure the contained validator's schemaTypes
-            // is a subset of validatorSuite's schemaTypes
-            // NB: The size of the vectors here should be small.
-            for (const TfToken &schemaType :
-                 validator->GetMetadata().schemaTypes) {
-                if (std::find(metadata.schemaTypes.begin(),
-                              metadata.schemaTypes.end(), schemaType)
-                    == metadata.schemaTypes.end()) {
-                    TF_CODING_ERROR(
-                        "schemaType '%s' provided by a contained validator "
-                        "'%s' is not in schemaTypes for '%s' validator suite",
-                        schemaType.GetText(),
-                        validator->GetMetadata().name.GetText(),
-                        metadata.name.GetText());
-                    return;
-                }
-            }
+    // Contained validators are dereferenced when a validation context expands
+    // the suite, so do not register a suite which contains an invalid one.
+    for (const UsdValidationValidator *const validator : containedValidators) {
+        if (!validator) {
+            TF_CODING_ERROR(
+                "Validator Suite '%s' not registered, one of the contained "
+                "validator is invalid.",
+                metadata.name.GetText());
+            return;
         }
     }
 
@@ -862,6 +833,18 @@ UsdValidationRegistry::_CheckMetadata(
     const UsdValidationValidatorMetadata &metadata, bool checkForPrimTask,
     bool expectSuite)
 {
+    // return false if we are trying to register a suite which is associated
+    // with schemaTypes. A suite is expanded into its contained validators when
+    // validating, so only their schemaTypes are used.
+    if (expectSuite && !metadata.schemaTypes.empty()) {
+        TF_CODING_ERROR(
+            "Invalid metadata for ('%s') validator suite. Cannot provide "
+            "schemaTypes metadata for a validator suite; provide it on the "
+            "contained validators instead.",
+            metadata.name.GetText());
+        return false;
+    }
+
     // return false if we are trying to register a validator which is
     // associated with schemaTypes, and testing task is not
     // UsdValidatePrimTaskFn!

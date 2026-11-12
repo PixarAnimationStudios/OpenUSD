@@ -360,6 +360,11 @@ public:
     /// Note UsdValidationValidatorMetadata::isSuite must be set to true in the
     /// plugInfo, else the validatorSuite will not be registered.
     ///
+    /// Note a validator suite cannot provide schemaTypes metadata, as its
+    /// contained validators provide their own. A suite which provides
+    /// schemaTypes in the plugInfo is skipped when parsing the plugInfo and
+    /// will not be registered.
+    ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.
     /// HasValidatorSuite can be used to determine if a validator is already
@@ -389,8 +394,12 @@ public:
     /// immediately available via registry query methods such as
     /// GetAllValidatorMetadata, etc.
     ///
-    /// Note UsdValidationValidatorMetadata::isSuite must be set to true in the
-    /// plugInfo, else the validatorSuite will not be registered.
+    /// Note UsdValidationValidatorMetadata::isSuite must be set to true in
+    /// \p metadata, else the validatorSuite will not be registered.
+    ///
+    /// Note a validator suite cannot provide schemaTypes metadata, as its
+    /// contained validators provide their own. Providing schemaTypes in
+    /// \p metadata results in a coding error.
     ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.

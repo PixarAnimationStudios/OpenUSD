@@ -36,7 +36,8 @@ developers.
   schema type produces a warning when the validator is registered, and never
   matches any prim.
 * isTimeDependent: If the validator is testing rules which are time dependent. 
-* isSuite: If the validator represents a suite of validators.
+* isSuite: If the validator represents a suite of validators. A suite cannot
+  provide schemaTypes; its contained validators provide their own.
 
 Validator instances can be used to run validation tests, but more commonly a
 set of validators will be used, represented by a UsdValidationContext. 
