@@ -20,7 +20,9 @@
 //                                    section count of 2^64-1
 //
 // The test also writes bad_tokens_chunk.usdc, a copy of baseline.usdc whose
-// compressed tokens claim one chunk but are too short to hold its size.
+// compressed tokens claim one chunk but are too short to hold its size, and
+// bad_path_jumps_*.usdc, copies of baseline.usdc whose compressed paths jumps
+// tables are corrupt.
 //
 
 #include "pxr/pxr.h"
@@ -33,6 +35,7 @@
 #include "pxr/usd/sdf/crateInfo.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "../integerCoding.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -145,6 +148,81 @@ _TestTruncatedTokensChunk(char const *srcPath, char const *dstPath)
     mark.Clear();
 }
 
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+// Write a copy of `srcPath` to `dstPath` whose compressed PATHS section has its
+// jumps table entry at `jumpIndex` replaced by `jump`.  Then expect opening it
+// to fail with errors.
+static void
+_TestCorruptPathJumps(char const *srcPath, char const *dstPath,
+                      size_t jumpIndex, int32_t jump)
+{
+    SdfCrateInfo info = SdfCrateInfo::Open(srcPath);
+    TF_AXIOM(info);
+    int64_t pathsStart = -1;
+    for (SdfCrateInfo::Section const &sec: info.GetSections()) {
+        if (sec.name == "PATHS") {
+            pathsStart = sec.start;
+        }
+    }
+    TF_AXIOM(pathsStart >= 0);
+
+    FILE *in = fopen(srcPath, "rb");
+    TF_AXIOM(in);
+    std::vector<char> bytes;
+    char buf[4096];
+    for (size_t n; (n = fread(buf, 1, sizeof(buf), in)) != 0; ) {
+        bytes.insert(bytes.end(), buf, buf + n);
+    }
+    fclose(in);
+
+    // PATHS: numPaths, numEncodedPaths (uint64_t each), then three compressed
+    // int arrays (pathIndexes, elementTokenIndexes, jumps), each a uint64_t
+    // compressed size followed by that many bytes.
+    auto readU64 = [&bytes](size_t offset) {
+        uint64_t value;
+        TF_AXIOM(offset + sizeof(value) <= bytes.size());
+        memcpy(&value, &bytes[offset], sizeof(value));
+        return value;
+    };
+    size_t const numEncoded = readU64(pathsStart + 8);
+    size_t offset = pathsStart + 16;
+    offset += 8 + readU64(offset); // pathIndexes
+    offset += 8 + readU64(offset); // elementTokenIndexes
+    size_t const jumpsSize = readU64(offset);
+    TF_AXIOM(offset + 8 + jumpsSize <= bytes.size());
+
+    std::vector<int32_t> jumps(numEncoded);
+    TF_AXIOM(Sdf_IntegerCompression::DecompressFromBuffer(
+                 &bytes[offset + 8], jumpsSize,
+                 jumps.data(), jumps.size()) == numEncoded);
+    // The cases in main() are written against this table.
+    TF_AXIOM((jumps == std::vector<int32_t> { -1, -1, 0, -2 }));
+    TF_AXIOM(jumpIndex < jumps.size());
+    jumps[jumpIndex] = jump;
+
+    // The new encoding must fit in the old one's space.  Shorter is fine since
+    // the reader takes its compressed size from the stored value.
+    std::vector<char> compressed(
+        Sdf_IntegerCompression::GetCompressedBufferSize(jumps.size()));
+    uint64_t const newJumpsSize = Sdf_IntegerCompression::CompressToBuffer(
+        jumps.data(), jumps.size(), compressed.data());
+    TF_AXIOM(newJumpsSize <= jumpsSize);
+    memcpy(&bytes[offset], &newJumpsSize, sizeof(newJumpsSize));
+    memcpy(&bytes[offset + 8], compressed.data(), newJumpsSize);
+
+    FILE *out = fopen(dstPath, "wb");
+    TF_AXIOM(out);
+    TF_AXIOM(fwrite(bytes.data(), 1, bytes.size(), out) == bytes.size());
+    fclose(out);
+
+    TfErrorMark mark;
+    SdfLayerRefPtr layer = SdfLayer::FindOrOpen(dstPath);
+    TF_AXIOM(!layer);
+    TF_AXIOM(!mark.IsClean());
+    mark.Clear();
+}
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
+
 int
 main()
 {    
@@ -166,6 +244,16 @@ main()
           SdfPath("/Root.zcPoints"), /*error=*/true);
     _Test("bad_str_oversize.usdc",
           SdfPath("/Root.strs"), /*error=*/true);
+
+    // The baseline's paths are /, /Root, /Root.strs, /Root.zcPoints, with
+    // jumps -1 (child only), -1, 0 (sibling only), -2 (leaf).  Giving /Root
+    // both a child and a sibling at +1 makes the child and the sibling the
+    // same index, visited twice.
+    _TestCorruptPathJumps("baseline.usdc", "bad_path_jumps_repeat.usdc",
+                          /*jumpIndex=*/1, /*jump=*/1);
+    // A sibling jump past the end.
+    _TestCorruptPathJumps("baseline.usdc", "bad_path_jumps_range.usdc",
+                          /*jumpIndex=*/1, /*jump=*/100);
 #endif
     printf("PASSED\n");
     return 0;

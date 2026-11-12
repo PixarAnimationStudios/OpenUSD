@@ -4039,6 +4039,42 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     jumps.resize(numPaths);
     cr.Read(reader, jumps.data(), numPaths);
 
+    // Ensure the jumps table visits each index at most once.  If it visits an
+    // index more than once, concurrent tasks in _BuildDecompressedPathsImpl
+    // would data-race on the same SdfPath object in _paths, and a crafted
+    // table can make the number of visits grow exponentially.  This walks the
+    // indexes exactly as _BuildDecompressedPathsImpl does, but serially,
+    // deferring sibling subtrees to a stack instead of spawning tasks.  It
+    // also range checks every index _BuildDecompressedPathsImpl will visit.
+    if constexpr (SafetyOverSpeed) {
+        vector<bool> visited(numPaths);
+        vector<size_t> pendingSiblings { 0 };
+        while (!pendingSiblings.empty()) {
+            size_t curIndex = pendingSiblings.back();
+            pendingSiblings.pop_back();
+            bool hasChild = false, hasSibling = false;
+            do {
+                const size_t thisIndex = curIndex++;
+                if (thisIndex >= numPaths || visited[thisIndex]) {
+                    TF_RUNTIME_ERROR(
+                        "Corrupt paths jumps table in crate file "
+                        "(index:%zu %s)", thisIndex,
+                        thisIndex >= numPaths
+                        ? TfStringPrintf(">= %zu", numPaths).c_str()
+                        : "repeated");
+                    return;
+                }
+                visited[thisIndex] = true;
+                const int32_t jump = jumps[thisIndex];
+                hasChild = (jump > 0) || (jump == -1);
+                hasSibling = (jump >= 0);
+                if (hasChild && hasSibling) {
+                    pendingSiblings.push_back(thisIndex + jump);
+                }
+            } while (hasChild || hasSibling);
+        }
+    } // SafetyOverSpeed
+
     // Now build the paths.
     _BuildDecompressedPathsImpl(pathIndexes, elementTokenIndexes, jumps, 0,
                                 SdfPath(), dispatcher);
