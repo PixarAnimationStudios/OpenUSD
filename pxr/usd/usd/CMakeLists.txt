@@ -330,6 +330,15 @@ pxr_build_test(testUsdAttributeLimitsCpp
         testenv/testUsdAttributeLimits.cpp
 )
 
+pxr_build_test(testUsdCollectionAPICpp
+    LIBRARIES
+        sdf
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdCollectionAPICpp.cpp
+)
+
 pxr_build_test(testUsdColorSpaceAPI
     LIBRARIES
         usd
@@ -631,6 +640,11 @@ pxr_register_test(testUsdCollectionAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCollectionAPI"
     TESTENV testenv/testUsdCollectionAPI
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdCollectionAPICpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCollectionAPICpp"
     EXPECTED_RETURN_CODE 0
 )
 

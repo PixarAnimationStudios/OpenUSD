@@ -591,7 +591,10 @@ public:
     /// SdfPathExpression::Nothing().  Replace other references by recursively
     /// resolving the expressions from the collections on the referenced prims.
     /// If no such prims or no such collections exist, replace those references
-    /// with SdfPathExpression::Nothing() as well.
+    /// with SdfPathExpression::Nothing() as well.  Expressions cannot reference
+    /// collections in *relationship-mode* (see IsInRelationshipsMode()), so
+    /// replace references to those with SdfPathExpression::Nothing() and issue
+    /// a warning.
     USD_API
     SdfPathExpression ResolveCompleteMembershipExpression() const;
     
@@ -749,10 +752,14 @@ private:
     // circular dependency is detected amongst the included collections.
     // If it is nullptr, a warning is issued when a circular dependency is
     // detected.
+    // If \p warnOnIgnoredExpressions is true, a warning is issued for each
+    // included expression-mode collection whose membershipExpression is
+    // ignored.
     void _ComputeMembershipQueryImpl(
         UsdCollectionMembershipQuery *query,
         const SdfPathSet &chainedCollectionPaths,
-        bool *foundCircularDependency=nullptr) const;
+        bool *foundCircularDependency=nullptr,
+        bool warnOnIgnoredExpressions=false) const;
 
     // The same as ResolveCompleteMembershipExpression(), but set
     // `foundCircularDependency` to true if a circular dependency is encountered

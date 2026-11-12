@@ -20,7 +20,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((compositionErrorTest, "usdValidation:CompositionErrorTest"))             \
     ((stageMetadataChecker, "usdValidation:StageMetadataChecker"))             \
     ((attributeTypeMismatch, "usdValidation:AttributeTypeMismatch"))           \
-    ((attributeSpecValueTypeMismatch, "usdValidation:AttributeSpecValueTypeMismatch"))
+    ((attributeSpecValueTypeMismatch, "usdValidation:AttributeSpecValueTypeMismatch")) \
+    ((collectionCrossModeReferences,                                           \
+      "usdValidation:CollectionCrossModeReferences"))
 
 #define USD_VALIDATOR_KEYWORD_TOKENS                                           \
     (UsdCoreValidators)
@@ -29,7 +31,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((compositionError, "CompositionError"))                                   \
     ((missingDefaultPrim, "MissingDefaultPrim"))                               \
     ((attributeTypeMismatch, "AttributeTypeMismatch"))                         \
-    ((attributeSpecValueTypeMismatch, "AttributeSpecValueTypeMismatch"))
+    ((attributeSpecValueTypeMismatch, "AttributeSpecValueTypeMismatch"))       \
+    ((referenceToRelationshipModeCollection,                                   \
+      "ReferenceToRelationshipModeCollection"))                                \
+    ((includeOfExpressionModeCollection,                                       \
+      "IncludeOfExpressionModeCollection"))
 
 /// \def USD_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided

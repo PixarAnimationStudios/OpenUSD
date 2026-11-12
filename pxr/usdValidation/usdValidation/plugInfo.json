@@ -15,6 +15,9 @@
                     "AttributeSpecValueTypeMismatch": {
                         "doc": "Checks that the authored default, time sample, and spline values of each attribute spec hold the value type declared by that spec's typeName."
                     },
+                    "CollectionCrossModeReferences": {
+                        "doc": "Checks that collections don't refer to collections in the other mode, which is not supported: a membershipExpression cannot reference a collection in relationship-mode, and includes cannot target a collection in expression-mode."
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]
