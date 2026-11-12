@@ -45,6 +45,7 @@ Garch_GetModifierKeys(NSUInteger flags)
 {
     GarchGLDebugWindow *_callback;
     NSOpenGLContext *_ctx;
+    float _scaleFactor;
 }
 
 @end
@@ -52,8 +53,10 @@ Garch_GetModifierKeys(NSUInteger flags)
 @implementation Garch_GLPlatformView
 
 -(id)initGL:(NSRect)frame callback:(GarchGLDebugWindow*)cb
+    scaleFactor:(float) scaleFactor
 {
     _callback = cb;
+    _scaleFactor = scaleFactor;
 
     int attribs[] = {
         NSOpenGLPFAAccelerated,
@@ -106,7 +109,7 @@ Garch_GetModifierKeys(NSUInteger flags)
 -(void)windowDidResize:(NSNotification *)notification
 {
     NSRect r = [self frame];
-    _callback->OnResize(r.size.width, r.size.height);
+    _callback->OnResize(r.size.width * _scaleFactor, r.size.height * _scaleFactor);
 }
 
 -(void)mouseDown:(NSEvent*)event
@@ -115,7 +118,7 @@ Garch_GetModifierKeys(NSUInteger flags)
     NSRect r = [self frame];
     NSUInteger modflags = [event modifierFlags];
     _callback->OnMousePress(GarchGLDebugWindow::MyButton1,
-                            p.x, r.size.height - 1 - p.y,
+                            p.x * _scaleFactor, (r.size.height - 1 - p.y) * _scaleFactor,
                             Garch_GetModifierKeys(modflags));
 
     [self setNeedsDisplay:YES];
@@ -190,11 +193,18 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     id applicationName = [[NSProcessInfo processInfo] processName];
 
-    NSRect frame = NSMakeRect(0, 0, width, height);
-    NSRect viewBounds = NSMakeRect(0, 0, width, height);
+    NSScreen *mainScreen = [NSScreen mainScreen];
+    _scaleFactor = [mainScreen backingScaleFactor];
+    NSRect screenFrame = [mainScreen frame];
+    NSRect frame = NSMakeRect(screenFrame.origin.x, screenFrame.origin.y,
+        width / _scaleFactor, height / _scaleFactor);
+    NSRect viewBounds = NSMakeRect(screenFrame.origin.x, screenFrame.origin.y,
+        width / _scaleFactor, height / _scaleFactor);
 
-    Garch_GLPlatformView *view =
-        [[Garch_GLPlatformView alloc] initGL:viewBounds callback:_callback];
+    Garch_GLPlatformView* view =
+        [[Garch_GLPlatformView alloc] initGL:viewBounds
+                                    callback:_callback
+                                 scaleFactor:_scaleFactor];
 
     NSWindow *window = [[NSWindow alloc]
                         initWithContentRect:frame
