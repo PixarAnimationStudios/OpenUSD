@@ -1,0 +1,10 @@
+#usda 1.0
+
+def "Proto"
+{
+    def "geom" (
+        inherits = </Sibling/Twin/cls>
+    )
+    {
+    }
+}

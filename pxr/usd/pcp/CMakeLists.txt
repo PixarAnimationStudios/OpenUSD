@@ -526,6 +526,14 @@ pxr_register_test(testPcpMuseum_InstancingAndAncestralDuplicates
     DIFF_COMPARE compositionResults_InstancingAndAncestralDuplicates.txt
 )
 
+pxr_register_test(testPcpMuseum_InstancingAndArcsBeneathInstances
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd InstancingAndArcsBeneathInstances/root.usda"
+    TESTENV testenv/testPcpMuseum_InstancingAndArcsBeneathInstances.testenv
+    STDOUT_REDIRECT compositionResults_InstancingAndArcsBeneathInstances.txt
+    DIFF_COMPARE compositionResults_InstancingAndArcsBeneathInstances.txt
+)
+
 pxr_register_test(testPcpMuseum_InstancingAndDeinstancedAncestors
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd InstancingAndDeinstancedAncestors/root.usda"

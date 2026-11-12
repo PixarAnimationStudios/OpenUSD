@@ -362,7 +362,6 @@ public:
         , parentIndex(nullptr)
         , cull(true)
         , usd(false)
-        , includeDuplicateNodes(false)
     { }
 
     /// Returns true if prim index computations using this parameters object
@@ -423,10 +422,6 @@ public:
     std::string fileFormatTarget;
     bool cull;
     bool usd;
-    // Internal: add arcs even when a node with the same site exists in the
-    // graph being built or in the graphs it is being built for.  Set only
-    // for an ancestor recheck.
-    bool includeDuplicateNodes;
 };
 
 /// Compute an index for the given path. \p errors will contain any errors

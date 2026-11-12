@@ -1927,10 +1927,8 @@ _AddArc(
     // A node that does not contribute specs cannot introduce duplicate
     // opinions, so it is never skipped.  Such nodes are placeholders that keep
     // class-based arcs present for propagation, and skipping one would stop
-    // that propagation.  An ancestor recheck keeps duplicates; see
-    // _BuildInitialPrimIndexFromAncestor.
-    if (opts.skipDuplicateNodes && opts.directNodeShouldContributeSpecs &&
-        !indexer->inputs.includeDuplicateNodes) {
+    // that propagation.
+    if (opts.skipDuplicateNodes && opts.directNodeShouldContributeSpecs) {
         PcpLayerStackSite siteToAddInCurrentGraph = site;
 
         // Whether the new node would be a direct dependency in the graph
@@ -5385,50 +5383,15 @@ _BuildInitialPrimIndexFromAncestor(
                            /* rootNodeShouldContributeSpecs = */ true,
                            previousFrame, inputs, outputs);
 
-        // This recomputed index can differ from the full index at parentSite
-        // in whether it is instanceable, because it skips arcs whose nodes
-        // duplicate nodes already in the graphs it is being built for, and
-        // a skipped arc may carry an instanceable opinion, or the
-        // instanceable data that Pcp_PrimIndexIsInstanceable requires.  A
-        // missed instance is harmless when this build is for a node beneath
-        // a sealed node, since such nodes do not include ancestral opinions
-        // and so are not built this way (see Pcp_GetSealedDepth and the
-        // ImpliedArcsAndInstancing museum test).
-        //
-        // XXX: Otherwise a missed instance is not harmless.  An inherit to a
-        // path beneath an instance reached through a reference can build
-        // that instance's index this way, miss it, and pick up opinions on
-        // its descendants.  See USD-12866.
-        //
-        // A skipped opinion of false would seal opinions that apply,
-        // so when this index is instanceable we rebuild it without skipping
-        // duplicates and use that index's answer instead.  The rebuild keeps
-        // the stack frames, so payload inclusion and cycle detection behave
-        // as they do here.  Every recursive build within it also keeps
-        // duplicates, so its answers need no recheck of their own.
-        ancestorIsInstanceable =
+        // A build within a stack frame is for an arc's target, which is
+        // composed as if it were not beneath an instance, so it never seals
+        // its nodes here.  They are sealed only if the arc is added beneath
+        // a sealed node (see _AddArc).  Without a stack frame this build
+        // searches only its own graph for duplicates, as the full build at
+        // parentSite does, so it skips no arc that build would add.  See
+        // USD-12866.
+        ancestorIsInstanceable = !previousFrame &&
             Pcp_PrimIndexIsInstanceable(outputs->primIndex);
-        if (ancestorIsInstanceable && !inputs.includeDuplicateNodes) {
-            TRACE_SCOPE("Pcp recheck ancestor instanceable");
-            PcpPrimIndexInputs recheckInputs = inputs;
-            recheckInputs.includeDuplicateNodes = true;
-            PcpPrimIndexOutputs recheckOutputs;
-            Pcp_BuildPrimIndex(parentSite, rootSite,
-                               ancestorRecursionDepth+1,
-                               evaluateImpliedSpecializes,
-                               evaluateVariantsAndDynamicPayloads,
-                               /* rootNodeShouldContributeSpecs = */ true,
-                               previousFrame, recheckInputs, &recheckOutputs);
-            ancestorIsInstanceable =
-                Pcp_PrimIndexIsInstanceable(recheckOutputs.primIndex);
-            PCP_INDEXING_MSG(
-                _GetOriginatingIndex(previousFrame, outputs),
-                outputs->primIndex.GetRootNode(),
-                "Rechecked whether %s is instanceable without skipping "
-                "duplicate nodes: %s",
-                Pcp_FormatSite(parentSite).c_str(),
-                ancestorIsInstanceable ? "yes" : "no");
-        }
     }
 
     // If the ancestor graph is an instance, mark every node that cannot

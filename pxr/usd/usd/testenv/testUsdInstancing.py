@@ -934,9 +934,12 @@ class TestUsdInstancing(unittest.TestCase):
                                  '/SubrootRef_2'],
               '/__Prototype_4': ['/SubrootRef_3'] })
 
-        # Add an over for /RootRef/Ref1_Child in the root layer. This has no
-        # effect on the prototype for /SubrootRef_3 because this is a prohibited
-        # override on an instance child that is ignored by the instancing key.
+        # Add an over for /RootRef/Ref1_Child in the root layer.  This is a
+        # prohibited override on a child of the instance /RootRef, so it is
+        # ignored there.  The subroot reference from /SubrootRef_3 composes
+        # its target as if /RootRef were not instanceable, though, so the
+        # over applies to /SubrootRef_3.  Its instance key now includes the
+        # internal reference to that prim, so it gets a new prototype.
         rootLayer = s.GetRootLayer()
         Sdf.PrimSpec(rootLayer.GetPrimAtPath('/RootRef'), 'Ref1_Child', 
                      Sdf.SpecifierOver)
@@ -945,19 +948,69 @@ class TestUsdInstancing(unittest.TestCase):
               '/__Prototype_2': ['/__Prototype_1/Ref1_Child'],
               '/__Prototype_3': ['/SubrootRef_1', 
                                  '/SubrootRef_2'],
-              '/__Prototype_4': ['/SubrootRef_3'] })
+              '/__Prototype_5': ['/SubrootRef_3'] })
 
-        # Remove the instanceable flag from /RootRef. /__Prototype_1 goes
-        # away since there are no more instances. Because the over on
-        # /RootRef/Ref1_Child in the root layer is no longer prohibited, 
-        # /SubrootRef_3's instance key now includes the internal reference
-        # to that prim, so it gets a new prototype.
+        # Remove the instanceable flag from /RootRef.  /__Prototype_1 goes
+        # away since there are no more instances.  /SubrootRef_3 already
+        # includes the over on /RootRef/Ref1_Child, so it keeps its
+        # prototype.
         rootLayer.GetPrimAtPath('/RootRef').instanceable = False
         ValidateExpectedInstances(s,
             { '/__Prototype_2': ['/RootRef/Ref1_Child'],
               '/__Prototype_3': ['/SubrootRef_1',
                                  '/SubrootRef_2'],
               '/__Prototype_5': ['/SubrootRef_3'] })
+
+    def test_ArcsBeneathInstances(self):
+        """Test that an arc targeting a path beneath an instance composes
+        that path as if the instance were not instanceable."""
+        nl = NoticeListener()
+
+        s = OpenStage('arcs_beneath_instances/root.usda')
+
+        def _ChildNames(path):
+            return [c.GetName() for c in s.GetPrimAtPath(path).GetChildren()]
+
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/Backref/A', '/Backref/B'],
+              '/__Prototype_2': ['/Set/Inst'] })
+
+        # /Set/Other inherits /Set/Inst/cls, so it gets the override on
+        # /Set/Inst/cls that the instance /Set/Inst ignores.
+        self.assertEqual(_ChildNames('/Set/Other'), ['extra'])
+
+        # Removing and restoring the instanceable flag on /Set/Inst does not
+        # change /Set/Other.
+        rootLayer = s.GetRootLayer()
+        rootLayer.GetPrimAtPath('/Set/Inst').instanceable = False
+        self.assertEqual(_ChildNames('/Set/Other'), ['extra'])
+
+        rootLayer.GetPrimAtPath('/Set/Inst').instanceable = True
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/Backref/A', '/Backref/B'],
+              '/__Prototype_3': ['/Set/Inst'] })
+        self.assertEqual(_ChildNames('/Set/Other'), ['extra'])
+
+        # The prototype's geom references /Backref/A/cls, beneath one of the
+        # instances that share the prototype.  It gets the override on
+        # /Backref/A/cls in every instance, whichever instance is the
+        # prototype's source, so /Backref/A and /Backref/B still share it.
+        self.assertEqual(_ChildNames('/Backref/A/geom'), ['extra'])
+        self.assertEqual(_ChildNames('/Backref/B/geom'), ['extra'])
+
+        # Adding a prim under /Backref/A/cls adds it beneath geom in the
+        # prototype.
+        print("-" * 60)
+        print("Adding prim beneath /Backref/A/cls")
+        Sdf.CreatePrimInLayer(rootLayer, '/Backref/A/cls/added').specifier = \
+            Sdf.SpecifierDef
+        self.assertIn(Sdf.Path('/__Prototype_1/geom/added'),
+                      nl.resyncedPrimPaths)
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/Backref/A', '/Backref/B'],
+              '/__Prototype_3': ['/Set/Inst'] })
+        self.assertEqual(_ChildNames('/Backref/A/geom'), ['extra', 'added'])
+        self.assertEqual(_ChildNames('/Backref/B/geom'), ['extra', 'added'])
 
     def test_InstanceProxyTargets(self):
         """Test relationship targets, attribute connections, and path
