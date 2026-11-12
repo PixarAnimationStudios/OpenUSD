@@ -25,7 +25,16 @@ validator registration and does not need to be provided by custom validator
 developers.
 * keywords: Keywords associated with this validator.
 * doc: Doc string explaining the purpose of the validator.
-* schemaTypes: The schema types the validator is associated with, if any.
+* schemaTypes: The schema types the validator is associated with, if any. Each
+  entry may be either the schema's TfType name (e.g. `UsdGeomSphere`) or its
+  schema identifier, the name used in scene description (e.g. `Sphere`). A
+  prim validator with schemaTypes only runs on prims that are of one of these
+  types, or have one of these API schemas applied. For a multiple-apply API
+  schema, any applied instance matches, so entries should name the schema 
+  without an instance name (e.g. `CollectionAPI`). An entry that does not 
+  name a known
+  schema type produces a warning when the validator is registered, and never
+  matches any prim.
 * isTimeDependent: If the validator is testing rules which are time dependent. 
 * isSuite: If the validator represents a suite of validators.
 

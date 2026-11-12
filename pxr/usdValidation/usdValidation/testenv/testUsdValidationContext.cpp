@@ -8,6 +8,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/plug/registry.h"
+#include "pxr/base/tf/diagnosticTrap.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usdValidation/usdValidation/context.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
@@ -15,6 +18,9 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <iostream>
+#include <set>
+#include <string>
+#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -488,6 +494,253 @@ _TestUsdValidationContext()
     }
 }
 
+// Registers a non-plugin prim validator named \p name with \p schemaTypes,
+// which reports one error at each prim it runs on, and returns it.
+static const UsdValidationValidator *
+_RegisterSchemaTypeValidator(const std::string &name,
+                             const TfTokenVector &schemaTypes)
+{
+    UsdValidationValidatorMetadata metadata;
+    metadata.name = TfToken(name);
+    metadata.doc = "Validator for schemaTypes resolution tests.";
+    metadata.schemaTypes = schemaTypes;
+    metadata.pluginPtr = nullptr;
+    metadata.isTimeDependent = false;
+    metadata.isSuite = false;
+
+    const UsdValidatePrimTaskFn primTaskFn = [](
+        const UsdPrim &prim,
+        const UsdValidationTimeRange &/*timeRange*/) {
+        return UsdValidationErrorVector { UsdValidationError(
+            TfToken("SchemaTypeTestError"), UsdValidationErrorType::Error,
+            { UsdValidationErrorSite(prim.GetStage(), prim.GetPath()) },
+            "A schemaTypes resolution test validator error") };
+    };
+
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    registry.RegisterValidator(metadata, primTaskFn);
+    const UsdValidationValidator *const validator
+        = registry.GetOrLoadValidatorByName(metadata.name);
+    TF_AXIOM(validator);
+    return validator;
+}
+
+using _ValidatorPrimPairs = std::set<std::pair<std::string, std::string>>;
+
+// Returns the (validator name, prim path) pair for each of \p errors.
+static _ValidatorPrimPairs
+_GetValidatorPrimPairs(const UsdValidationErrorVector &errors)
+{
+    _ValidatorPrimPairs result;
+    for (const UsdValidationError &error : errors) {
+        TF_AXIOM(error.GetSites().size() == 1);
+        result.emplace(error.GetValidator()->GetMetadata().name.GetString(),
+                       error.GetSites()[0].GetPrim().GetPath().GetString());
+    }
+    return result;
+}
+
+// Returns the validator names in \p metadata.
+static std::set<std::string>
+_GetValidatorNames(const UsdValidationValidatorMetadataVector &metadata)
+{
+    std::set<std::string> result;
+    for (const UsdValidationValidatorMetadata &m : metadata) {
+        result.insert(m.name.GetString());
+    }
+    return result;
+}
+
+static void
+_TestSchemaTypeIdentifiers()
+{
+    // Make sure the test schema identifiers resolve, else the tests below
+    // would fail for an unrelated reason.
+    TF_AXIOM(UsdSchemaRegistry::GetTypeFromName(TfToken("BaseTypeTest"))
+             == TfType::FindByName("testBaseType"));
+    TF_AXIOM(UsdSchemaRegistry::GetTypeFromName(TfToken("APISchemaTestAPI"))
+             == TfType::FindByName("testAPISchemaAPI"));
+
+    const UsdStageRefPtr stage = UsdStage::Open(_CreateTestLayer());
+
+    // Typed schema, by schema identifier and by TfType name. Each runs on
+    // the baseType prim and the prims derived from it.
+    for (const std::string schemaType : { "BaseTypeTest", "testBaseType" }) {
+        const std::string name = "schemaTypeIdentifiers:" + schemaType;
+        const UsdValidationValidator *const validator
+            = _RegisterSchemaTypeValidator(name, { TfToken(schemaType) });
+        const UsdValidationContext context(
+            std::vector<const UsdValidationValidator *> { validator });
+        TF_AXIOM(_GetValidatorPrimPairs(context.Validate(stage))
+                 == _ValidatorPrimPairs({
+                     { name, "/World/baseType" },
+                     { name, "/World/derivedType" },
+                     { name, "/World/nestedDerivedType" } }));
+    }
+
+    // Applied API schema, by schema identifier and by TfType name. Each runs
+    // on the somePrim prim only.
+    for (const std::string schemaType :
+         { "APISchemaTestAPI", "testAPISchemaAPI" }) {
+        const std::string name = "schemaTypeIdentifiers:" + schemaType;
+        const UsdValidationValidator *const validator
+            = _RegisterSchemaTypeValidator(name, { TfToken(schemaType) });
+        const UsdValidationContext context(
+            std::vector<const UsdValidationValidator *> { validator });
+        TF_AXIOM(_GetValidatorPrimPairs(context.Validate(stage))
+                 == _ValidatorPrimPairs({ { name, "/World/somePrim" } }));
+    }
+}
+
+static void
+_TestSchemaTypeMultipleApply()
+{
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(R"usda(#usda 1.0
+        def "World"
+        {
+            def "collectionPrim" (
+                prepend apiSchemas = ["CollectionAPI:foo"]
+            )
+            {
+            }
+        }
+    )usda");
+    const UsdStageRefPtr stage = UsdStage::Open(layer);
+
+    // A multiple-apply API schema is named without an instance name, and
+    // matches any applied instance.
+    for (const std::string schemaType :
+         { "CollectionAPI", "UsdCollectionAPI" }) {
+        const std::string name = "schemaTypeMultipleApply:" + schemaType;
+        const UsdValidationValidator *const validator
+            = _RegisterSchemaTypeValidator(name, { TfToken(schemaType) });
+        const UsdValidationContext context(
+            std::vector<const UsdValidationValidator *> { validator });
+        TF_AXIOM(_GetValidatorPrimPairs(context.Validate(stage))
+                 == _ValidatorPrimPairs({
+                     { name, "/World/collectionPrim" } }));
+    }
+}
+
+static void
+_TestSchemaTypeDuplicateEntries()
+{
+    const UsdStageRefPtr stage = UsdStage::Open(_CreateTestLayer());
+
+    // Both entries name the same schema, so the validator runs once per
+    // matching prim, not once per entry.
+    const UsdValidationValidator *const validator
+        = _RegisterSchemaTypeValidator(
+            "schemaTypeDuplicateEntries:validator",
+            { TfToken("testBaseType"), TfToken("BaseTypeTest") });
+    const UsdValidationContext context(
+        std::vector<const UsdValidationValidator *> { validator });
+    // 3 errors, 1 each for the baseType, derivedType and nestedDerivedType
+    // prims.
+    TF_AXIOM(context.Validate(stage).size() == 3);
+}
+
+static void
+_TestSchemaTypeAncestors()
+{
+    const UsdStageRefPtr stage = UsdStage::Open(_CreateTestLayer());
+
+    const std::string baseName = "schemaTypeAncestors:base";
+    const std::string derivedName = "schemaTypeAncestors:derived";
+    _RegisterSchemaTypeValidator(baseName, { TfToken("BaseTypeTest") });
+    const UsdValidationValidator *const derivedValidator
+        = _RegisterSchemaTypeValidator(derivedName,
+                                       { TfToken("DerivedTypeTest") });
+
+    // The context also collects every other validator registered for these
+    // types, so only compare the errors from the validators above.
+    const auto getAncestorTestPairs
+        = [&](const UsdValidationContext &context) {
+        _ValidatorPrimPairs result;
+        for (const auto &pair :
+             _GetValidatorPrimPairs(context.Validate(stage))) {
+            if (pair.first == baseName || pair.first == derivedName) {
+                result.insert(pair);
+            }
+        }
+        return result;
+    };
+    const _ValidatorPrimPairs expected({
+        { baseName, "/World/baseType" },
+        { baseName, "/World/derivedType" },
+        { baseName, "/World/nestedDerivedType" },
+        { derivedName, "/World/derivedType" },
+        { derivedName, "/World/nestedDerivedType" } });
+
+    // A validator naming an ancestor type by its identifier is collected when
+    // creating a context from a derived TfType.
+    TF_AXIOM(getAncestorTestPairs(UsdValidationContext(
+                 std::vector<TfType> {
+                     TfType::FindByName("testDerivedType") }))
+             == expected);
+
+    // Same, when the derived type comes from validator metadata which names
+    // it by its identifier.
+    TF_AXIOM(getAncestorTestPairs(UsdValidationContext(
+                 UsdValidationValidatorMetadataVector {
+                     derivedValidator->GetMetadata() },
+                 /* includeAllAncestors */ true))
+             == expected);
+}
+
+static void
+_TestSchemaTypeQueries()
+{
+    const std::string identifierName = "schemaTypeQueries:identifier";
+    const std::string typeName = "schemaTypeQueries:typeName";
+    _RegisterSchemaTypeValidator(identifierName, { TfToken("BaseTypeTest") });
+    _RegisterSchemaTypeValidator(typeName, { TfToken("testBaseType") });
+
+    // Querying by either name returns the validators registered by either
+    // name. Compare as sets, as the result may contain duplicates.
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const std::set<std::string> byIdentifier = _GetValidatorNames(
+        registry.GetValidatorMetadataForSchemaType(TfToken("BaseTypeTest")));
+    const std::set<std::string> byTypeName = _GetValidatorNames(
+        registry.GetValidatorMetadataForSchemaType(TfToken("testBaseType")));
+    TF_AXIOM(byIdentifier == byTypeName);
+    TF_AXIOM(byIdentifier.count(identifierName));
+    TF_AXIOM(byIdentifier.count(typeName));
+}
+
+static void
+_TestSchemaTypeUnknown()
+{
+    const std::string name = "schemaTypeUnknown:validator";
+    const UsdValidationValidator *validator = nullptr;
+    {
+        // A schemaTypes entry which names no schema type warns on
+        // registration, naming both the validator and the entry.
+        TfDiagnosticTrap trap;
+        validator = _RegisterSchemaTypeValidator(
+            name, { TfToken("NotASchemaType") });
+        const std::vector<TfWarning> &warnings = trap.GetWarnings();
+        TF_AXIOM(warnings.size() == 1);
+        TF_AXIOM(TfStringContains(warnings[0].GetCommentary(), name));
+        TF_AXIOM(TfStringContains(warnings[0].GetCommentary(),
+                                  "NotASchemaType"));
+        trap.ClearWarnings();
+    }
+
+    // Such a validator never runs on any prim.
+    const UsdStageRefPtr stage = UsdStage::Open(_CreateTestLayer());
+    const UsdValidationContext context(
+        std::vector<const UsdValidationValidator *> { validator });
+    TF_AXIOM(context.Validate(stage).empty());
+
+    // But it can still be queried by the name it was registered with.
+    TF_AXIOM(_GetValidatorNames(
+                 UsdValidationRegistry::GetInstance()
+                     .GetValidatorMetadataForSchemaType(
+                         TfToken("NotASchemaType"))).count(name));
+}
+
 int
 main()
 {
@@ -537,4 +790,14 @@ main()
     }
 
     _TestUsdValidationContext();
+
+    // These register further validators, so run them after
+    // _TestUsdValidationContext, whose error counts depend on the set of
+    // registered validators.
+    _TestSchemaTypeIdentifiers();
+    _TestSchemaTypeMultipleApply();
+    _TestSchemaTypeDuplicateEntries();
+    _TestSchemaTypeAncestors();
+    _TestSchemaTypeQueries();
+    _TestSchemaTypeUnknown();
 }

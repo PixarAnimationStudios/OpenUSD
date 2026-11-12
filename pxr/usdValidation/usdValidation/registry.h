@@ -540,6 +540,11 @@ public:
     /// Returns vector of UsdValidationValidatorMetadata associated with the
     /// Validators which has the \p schemaType.
     ///
+    /// \p schemaType may be either the schema's TfType name (e.g.
+    /// "UsdGeomSphere") or its schema identifier (e.g. "Sphere"), as in the
+    /// schemaTypes validator metadata. Either name returns the same
+    /// validators, whichever name the validators were registered with.
+    ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
     ///
@@ -577,10 +582,13 @@ public:
     GetValidatorMetadataForKeywords(const TfTokenVector &keywords) const;
 
     /// Returns vector of UsdValidationValidatorMetadata associated with the
-    /// Validators which has at least one of the \p schameTypes.
+    /// Validators which has at least one of the \p schemaTypes.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
     /// associated with the schemaTypes.
+    ///
+    /// Each entry in \p schemaTypes may be either a TfType name or a schema
+    /// identifier, as described in GetValidatorMetadataForSchemaType().
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.

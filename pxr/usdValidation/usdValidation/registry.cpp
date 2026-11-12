@@ -13,6 +13,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 
 #include <algorithm>
 #include <memory>
@@ -51,6 +52,17 @@ _FillTokenVector(const JsValue &value)
         tokens.emplace_back(a);
     }
     return tokens;
+}
+
+// schemaTypes metadata may name a schema by its TfType name (UsdGeomSphere) or
+// by its schema identifier (Sphere). Returns the TfType name, which is used as
+// the canonical key for schema types. If \p schemaType does not name a known
+// schema type, it is returned unchanged.
+static TfToken
+_GetCanonicalSchemaTypeName(const TfToken &schemaType)
+{
+    const TfType type = UsdSchemaRegistry::GetTypeFromName(schemaType);
+    return type ? TfToken(type.GetTypeName()) : schemaType;
 }
 
 // Helper to return common keywords associated with all validators in plugInfo
@@ -484,6 +496,14 @@ UsdValidationRegistry::_RegisterValidatorSuite(
     // That is, validators have PrimTaskFn, otherwise, do not register this
     // validator. And contained validators's schemaType is a subset of Suite's
     // schemaTypes metadata.
+    //
+    // XXX: This block is unreachable: _CheckMetadata above rejects any suite
+    // with schemaTypes, as it is called with checkForPrimTask false. Suite
+    // schemaTypes are also never used for matching prims, since a suite is
+    // expanded into its contained validators, which carry their own
+    // schemaTypes. So this block does not canonicalize schemaTypes like the
+    // rest of the registry does, and will be removed in a follow-up change
+    // which disallows schemaTypes on suites.
     if (!metadata.schemaTypes.empty()) {
         for (const UsdValidationValidator *const validator :
              containedValidators) {
@@ -753,9 +773,20 @@ UsdValidationValidatorMetadataVector
 UsdValidationRegistry::GetValidatorMetadataForSchemaTypes(
     const TfTokenVector &schemaTypes) const
 {
+    // Clients may query by TfType name or schema identifier, so look up by
+    // the same canonical names used to key _schemaTypeToValidatorNames.
+    const TfTokenVector canonicalizedSchemaTypes = [&]() {
+        TfTokenVector result;
+        result.reserve(schemaTypes.size());
+        for (const TfToken &schemaType : schemaTypes) {
+            result.push_back(_GetCanonicalSchemaTypeName(schemaType));
+        }
+        return result;
+    }();
+
     std::shared_lock lock(_mutex);
     return _GetValidatorMetadataForToken(_schemaTypeToValidatorNames,
-                                         schemaTypes);
+                                         canonicalizedSchemaTypes);
 }
 
 UsdValidationValidatorMetadataVector
@@ -795,8 +826,30 @@ UsdValidationRegistry::_AddValidatorMetadata(
         // Callers are required to hold a lock on `_mutex`, so
         // _schemaTypeToValidatorNames and _keywordToValidatorNames are
         // protected here.
+        //
+        // schemaTypes are keyed by their canonical TfType name. Entries
+        // naming the same schema collapse to a single key; a linear find
+        // suffices as schemaTypes lists are small.
+        // Entries that do not resolve are kept under their authored name, so
+        // they can still be queried, but no context will match them to a prim.
+        TfTokenVector schemaTypes;
+        schemaTypes.reserve(metadata.schemaTypes.size());
+        for (const TfToken &schemaType : metadata.schemaTypes) {
+            const TfType type = UsdSchemaRegistry::GetTypeFromName(schemaType);
+            if (!type) {
+                TF_WARN("schemaType '%s' for validator '%s' is not a known "
+                        "schema TfType name or schema identifier.",
+                        schemaType.GetText(), metadata.name.GetText());
+            }
+            const TfToken canonicalName
+                = type ? TfToken(type.GetTypeName()) : schemaType;
+            if (std::find(schemaTypes.begin(), schemaTypes.end(),
+                          canonicalName) == schemaTypes.end()) {
+                schemaTypes.push_back(canonicalName);
+            }
+        }
         _UpdateValidatorNamesMappings(_schemaTypeToValidatorNames,
-                                      metadata.name, metadata.schemaTypes);
+                                      metadata.name, schemaTypes);
         _UpdateValidatorNamesMappings(_keywordToValidatorNames, metadata.name,
                                       metadata.keywords);
     }

@@ -437,7 +437,7 @@ private:
 
     // Validators catering to a specific schemaType
     using _SchemaTypeValidatorPair
-        = std::pair<TfToken, std::vector<const UsdValidationValidator *>>;
+        = std::pair<TfType, std::vector<const UsdValidationValidator *>>;
     using _SchemaTypeValidatorPairVector
         = std::vector<_SchemaTypeValidatorPair>;
 
@@ -450,13 +450,14 @@ private:
     std::vector<const UsdValidationValidator *> _primValidators;
 
     // validators here will be used to validate prims based on their schema
-    // types, such that:
-    // - For every typed schemaType found in here, prim being validated will be
-    //   checked if it satisfies the IsA<schemaType> and validation task will be
+    // types, keyed by the TfType their schemaTypes entries resolve to, such
+    // that:
+    // - For every typed schema type found in here, prim being validated will
+    //   be checked if it satisfies IsA(type) and validation task will be
     //   enqueued.
-    // - For every applied schemaType found in here, prim's appliedAPISchemas
-    //   will be checked and if found, validation task will be enqueued for the
-    //   prim.
+    // - For every applied API schema type found in here, prim will be checked
+    //   if it satisfies HasAPI(type), which matches any instance of a
+    //   multiple-apply schema, and validation task will be enqueued.
     _SchemaTypeValidatorPairVector _schemaTypeValidators;
 };
 
