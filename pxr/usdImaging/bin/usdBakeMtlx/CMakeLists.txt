@@ -22,10 +22,10 @@ pxr_library(usdBakeMtlx
         MaterialXFormat
         MaterialXRenderGlsl
 
-    PUBLIC_CLASSES
+    PRIVATE_CLASSES
         bakeMaterialX
 
-    PUBLIC_HEADERS
+    PRIVATE_HEADERS
         api.h
 
     PYMODULE_CPPFILES
