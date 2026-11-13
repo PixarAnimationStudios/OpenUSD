@@ -62,6 +62,14 @@ Glf_TestGLContextPrivate::Glf_TestGLContextPrivate( Glf_TestGLContextPrivate con
     int n;
     GLXFBConfig * fbConfigs = glXChooseFBConfig( _dpy, 
         DefaultScreen(_dpy), attribs, &n );
+    // Not every implementation has multisampled configs (e.g. Mesa's
+    // llvmpipe with Xvfb), so fall back to one without multisampling.
+    if (!fbConfigs || n == 0) {
+        static int attribsNoMS[] = { GLX_DOUBLEBUFFER, True,
+            GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8, None };
+        fbConfigs = glXChooseFBConfig( _dpy,
+            DefaultScreen(_dpy), attribsNoMS, &n );
+    }
 
     GLXContext share = other ? other->_context : 0;
 
