@@ -73,3 +73,15 @@ pxr_library(hgiMetal
 
     DISABLE_PRECOMPILED_HEADERS
 )
+
+if (${PXR_HEADLESS_TEST_MODE})
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
+    return()
+endif()
+
+if (BUILD_SHARED_LIBS)
+    pxr_register_hgi_backend_tests(Metal
+        HGI_ENABLE_VULKAN=0
+        HGI_ENABLE_WEBGPU=0
+    )
+endif()

@@ -122,27 +122,31 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    bool isTexArray = texDesc.layerCount>1;
-    int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
 
-    VkOffset3D origin;
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
+    VkOffset3D origin{};
     origin.x = copyOp.sourceTexelOffset[0];
     origin.y = copyOp.sourceTexelOffset[1];
     origin.z = depthOffset;
 
-    VkExtent3D size;
-    size.width = texDesc.dimensions[0] - copyOp.sourceTexelOffset[0];
-    size.height = texDesc.dimensions[1] - copyOp.sourceTexelOffset[1];
-    size.depth = texDesc.dimensions[2] - depthOffset;
+    VkExtent3D size{};
+    size.width = width - copyOp.sourceTexelOffset[0];
+    size.height = height - copyOp.sourceTexelOffset[1];
+    size.depth = depth - depthOffset;
 
-    VkImageSubresourceLayers imageSub;
+    VkImageSubresourceLayers imageSub{};
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
     imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
 
     // See vulkan docs: Copying Data Between Buffers and Images
-    VkBufferImageCopy region;
+    VkBufferImageCopy region{};
     region.bufferImageHeight = 0; // Buffer is tightly packed, like image
     region.bufferRowLength = 0;   // Buffer is tightly packed, like image
     region.bufferOffset = 0;      // We offset cpuDestinationBuffer. Not here.
@@ -582,23 +586,30 @@ HgiVulkanBlitCmds::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
         /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
         copyOp.mipLevel);
 
-    VkOffset3D origin;
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
+
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
+    VkOffset3D origin{};
     origin.x = copyOp.sourceTexelOffset[0];
     origin.y = copyOp.sourceTexelOffset[1];
-    origin.z = copyOp.sourceTexelOffset[2];
+    origin.z = depthOffset;
 
-    VkExtent3D size;
-    size.width = texDesc.dimensions[0];
-    size.height = texDesc.dimensions[1];
-    size.depth = texDesc.dimensions[2];
+    VkExtent3D size{};
+    size.width = width - copyOp.sourceTexelOffset[0];
+    size.height = height - copyOp.sourceTexelOffset[1];
+    size.depth = depth - depthOffset;
 
-    VkImageSubresourceLayers imageSub;
-    imageSub.baseArrayLayer = 0;
-    imageSub.layerCount = texDesc.layerCount;
+    VkImageSubresourceLayers imageSub{};
+    imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
+    imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
     imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
 
-    VkBufferImageCopy region;
+    VkBufferImageCopy region{};
     region.bufferImageHeight = 0; // Buffer is tightly packed, like image
     region.bufferRowLength = 0;   // Buffer is tightly packed, like image
     region.bufferOffset = copyOp.destinationByteOffset;
@@ -669,23 +680,32 @@ HgiVulkanBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
         /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
         copyOp.mipLevel);
 
-    VkOffset3D origin;
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset =
+        isTexArray ? 0 : copyOp.destinationTexelOffset[2];
+
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
+    VkOffset3D origin{};
     origin.x = copyOp.destinationTexelOffset[0];
     origin.y = copyOp.destinationTexelOffset[1];
-    origin.z = copyOp.destinationTexelOffset[2];
+    origin.z = depthOffset;
 
-    VkExtent3D size;
-    size.width = texDesc.dimensions[0] - copyOp.destinationTexelOffset[0];
-    size.height = texDesc.dimensions[1] - copyOp.destinationTexelOffset[1];
-    size.depth = texDesc.dimensions[2] - copyOp.destinationTexelOffset[2];
+    VkExtent3D size{};
+    size.width = width - copyOp.destinationTexelOffset[0];
+    size.height = height - copyOp.destinationTexelOffset[1];
+    size.depth = depth - depthOffset;
 
-    VkImageSubresourceLayers imageSub;
-    imageSub.baseArrayLayer = 0;
-    imageSub.layerCount = texDesc.layerCount;
+    VkImageSubresourceLayers imageSub{};
+    imageSub.baseArrayLayer =
+        isTexArray ? copyOp.destinationTexelOffset[2] : 0;
+    imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
     imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
 
-    VkBufferImageCopy region;
+    VkBufferImageCopy region{};
     region.bufferImageHeight = 0; // Buffer is tightly packed, like image
     region.bufferRowLength = 0;   // Buffer is tightly packed, like image
     region.bufferOffset = copyOp.sourceByteOffset;
