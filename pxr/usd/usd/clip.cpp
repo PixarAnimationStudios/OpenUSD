@@ -117,7 +117,7 @@ Usd_Clip::Usd_Clip(
             sourceLayer, assetPath.GetAssetPath());
     }
 
-    _hasLayer = (bool)_layer;
+    _hasLayer.store((bool)_layer, std::memory_order_relaxed);
 }
 
 // Helper function to determine the linear segment in the given
@@ -872,7 +872,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 SdfLayerRefPtr
 Usd_Clip::_GetLayerForClip() const
 {
-    if (_hasLayer) {
+    if (_hasLayer.load(std::memory_order_acquire)) {
         return _layer; 
     }
 
@@ -901,7 +901,7 @@ Usd_Clip::_GetLayerForClip() const
     std::lock_guard<std::mutex> lock(_layerMutex);
     if (!_layer) { 
         _layer = layer;
-        _hasLayer = true;
+        _hasLayer.store(true, std::memory_order_release);
     }
 
     return _layer;
@@ -919,7 +919,7 @@ Usd_Clip::GetLayer() const
 SdfLayerHandle
 Usd_Clip::GetLayerIfOpen() const
 {
-    if (!_hasLayer) {
+    if (!_hasLayer.load(std::memory_order_acquire)) {
         return SdfLayerHandle();
     }
     return GetLayer();

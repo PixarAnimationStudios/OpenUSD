@@ -16,6 +16,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/ts/spline.h"
 
+#include <atomic>
 #include <iosfwd>
 #include <memory>
 #include <mutex>
@@ -289,7 +290,10 @@ private:
         TimeMapping* m1Out = nullptr, TimeMapping* m2Out = nullptr) const;
 
 private:
-    mutable bool _hasLayer;
+    // Set, with release ordering, after _layer is assigned under
+    // _layerMutex.  Readers that see it set with acquire ordering may read
+    // _layer without locking; _layer is never changed after it is set.
+    mutable std::atomic<bool> _hasLayer;
     mutable std::mutex _layerMutex;
     mutable SdfLayerRefPtr _layer;
 };
