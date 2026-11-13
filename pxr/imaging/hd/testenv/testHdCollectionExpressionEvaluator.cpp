@@ -280,8 +280,6 @@ bool TestPathExpressions()
 {
     // Ensure that path expressions without predicates match only those prims
     // that exist in the scene index.
-    // This isn't actually the case! See the XXX comment below.
-    // 
 
     // Populate test scene index.
     HdRetainedSceneIndexRefPtr si = HdRetainedSceneIndex::New();
@@ -300,14 +298,10 @@ bool TestPathExpressions()
         TF_AXIOM(eval.Match(SdfPath("/a/b/c/x/y/z/a/b")));
         TF_AXIOM(eval.Match(SdfPath("/a/b/c/d/e/f/a/b")));
         TF_AXIOM(eval.Match(SdfPath("/a/b/c/d/e/f/a/b/a/b")));
+        TF_AXIOM(!eval.Match(SdfPath::EmptyPath()));
 
-        // XXX The scenario below is interesting. We shouldn't be matching a 
-        //     non-existent prim path, but handling this comes at a performance
-        //     cost.
-        //     See relevant comment in HdCollectionExpressionEvaluator::Match
-        //     
-        TF_AXIOM(eval.Match(SdfPath("/PrimDoesNotExist/b")));
-
+        // Test a non-existent prim path that matches the expression.
+        TF_AXIOM(!eval.Match(SdfPath("/PrimDoesNotExist/b")));
 
         TF_AXIOM(!eval.Match(SdfPath("/a/b/c")));
         // Even though this is a descendant, it won't be matched by expr.
@@ -322,9 +316,7 @@ bool TestPathExpressions()
         TF_AXIOM(eval.Match(SdfPath("/a/b/c/x/y/z/a/b")));
         TF_AXIOM(eval.Match(SdfPath("/a/b/c/x/y/z/a/b/c")));
 
-        // XXX Same scenario as above. While the path matches the expression,
-        //     such a prim does not exist in the scene index.
-        TF_AXIOM(eval.Match(SdfPath("/a/b/PrimDoesNotExist/x/y/z/a")));
+        TF_AXIOM(!eval.Match(SdfPath("/a/b/PrimDoesNotExist/x/y/z/a")));
     }
 
     return true;
@@ -348,6 +340,8 @@ bool TestHdPredicateLibrary()
 
             TF_AXIOM(!eval.Match(SdfPath("/PrimDoesNotExist/C")));
             TF_AXIOM(!eval.Match(SdfPath("/A/B/Carrot")));
+
+            TF_AXIOM(!eval.Match(SdfPath::EmptyPath()));
         }
 
         // Match children of any prim "B" whose type is "fruit".

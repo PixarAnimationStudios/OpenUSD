@@ -63,28 +63,48 @@ HdCollectionExpressionEvaluator::Match(
         return SdfPredicateFunctionResult::MakeConstant(false);
     }
 
-    // XXX For a prim path that isn't in the scene index, we'll get an empty
-    //     prim entry. The only way to determine if a prim exists at a path is
-    //     to query GetChildPrimPaths with its parent path and check if it is
-    //     indeed its child.
-    //     While we could choose to return MakeVarying(false) for empty prim
-    //     entries, that would come at the cost of additional evaluation.
-    //
-    //     Consider a scene "/world/sets/room/..." where descendants of room
-    //     have non-empty prim entries.
-    //     The expression "//room//" matches /world/sets/room/ and all its
-    //     descendants. If we were to restrict evaluation to non-empty prim
-    //     entries, then we'd have to evaluate the expression on each of the
-    //     children of room instead of stopping the evaluation at
-    //     /world/sets/room.
-    //     
+    // What we want below is simply:
+    constexpr bool useSimpleImplementation = false;
+    if (useSimpleImplementation) {
+        if (_sceneIndex->GetPrim(path).IsDefined()) {
+            return _eval.Match(
+                path,
+                [sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
+                    return sceneIndex->GetPrim(path);
+                });
+        }
+        return SdfPredicateFunctionResult::MakeConstant(false);
+    }
 
-    // Note that _sceneIndex must be non-null due to the IsEmpty() check above.
-    return _eval.Match(
-        path,
-        [sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
-            return sceneIndex->GetPrim(path);
-        });
+    // But, that would involve querying the prim _prior_ to evaluation.
+    // Scene index prim queries get expensive at scale, so avoid a query if
+    // the path didn't match, or if we already queried the prim to handle
+    // predicate evaluation.
+    //
+    std::optional<HdSceneIndexPrim> optPrim;
+    auto pathToObjFn =
+        [&optPrim, sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
+            optPrim = sceneIndex->GetPrim(path);
+            return *optPrim;
+        };
+
+    const auto result = _eval.Match(path, pathToObjFn);
+    if (result == SdfPredicateFunctionResult::MakeConstant(false)) {
+        return result;
+    }
+    if (optPrim) {
+        // Prim was queried. Factor existence into the result.
+        if (optPrim->IsDefined()) {
+            return result;
+        }
+        return SdfPredicateFunctionResult::MakeConstant(false);
+    }
+
+    // Prim wasn't queried during evaluation.
+    if (_sceneIndex->GetPrim(path).IsDefined()) {
+        return result;
+    }
+    return SdfPredicateFunctionResult::MakeConstant(false);
 }
 
 void
