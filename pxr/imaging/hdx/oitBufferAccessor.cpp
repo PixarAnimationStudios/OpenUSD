@@ -195,8 +195,7 @@ HdxOitBufferAccessor::AllocateOitBuffersIfNecessary(HdRenderIndex *renderIndex)
 bool
 HdxOitBufferAccessor::ResizeOitBuffersIfNecessary(
     HdRenderIndex *renderIndex,
-    GfVec2i const &screenSize,
-    GfVec2i *prevScreenSize)
+    GfVec2i const &screenSize)
 {
     static const int numSamples = 8; // Must match glslfx files
 
@@ -227,44 +226,46 @@ HdxOitBufferAccessor::ResizeOitBuffersIfNecessary(
         return false;
     }
 
-    const size_t oldNumPixels = static_cast<size_t>((*prevScreenSize)[0]) *
-                                static_cast<size_t>((*prevScreenSize)[1]);
-    *prevScreenSize = screenSize;
-
     HdStResourceRegistrySharedPtr const hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex->GetResourceRegistry());
 
-    // We only ever need to grow this buffer; if it's too big,
-    // we can just use part of it and don't need to shrink it.
-    if (oldNumPixels < numPixels) {
-        // Update counterBar since we've already checked its length.
-        _GetBar(HdxTokens->oitCounterBufferBar)->Resize(numCounterElements);
+    // The OIT buffers live in the task context, which may be shared by several
+    // viewports of different sizes, so size them against their current
+    // allocation rather than any per-task history. We only ever grow them; if
+    // they're too big, the shader just uses part of them.
+    HdBufferArrayRangeSharedPtr const &counterBar =
+        _GetBar(HdxTokens->oitCounterBufferBar);
+    if (counterBar->GetNumElements() < numCounterElements) {
+        counterBar->Resize(numCounterElements);
+    }
 
-        // The data/joint buffer elements are allocated as-needed to represent
-        // transparent pixels, so these can be safely clamped if they are too
-        // big (and data buffer, holding the color samples, is likely to be the
-        // first to hit the size limit). Clamping here might mean we throw
-        // away transparent pixels for complex scenes rendered at high res, so
-        // warn before clamping.
-        auto clampedResize = [&](
-                HdBufferArrayRangeSharedPtr const &bar,
-                const char *name) {
-            const size_t numElements = numPixels * numSamples;
-            const size_t maxElements = bar->GetMaxNumElements();
-            if (numElements > maxElements) {
+    // The data/joint buffer elements are allocated as-needed to represent
+    // transparent pixels, so these can be safely clamped if they are too
+    // big (and data buffer, holding the color samples, is likely to be the
+    // first to hit the size limit). Clamping here might mean we throw
+    // away transparent pixels for complex scenes rendered at high res, so
+    // warn before clamping.
+    auto growClamped = [&](
+            HdBufferArrayRangeSharedPtr const &bar,
+            const char *name) {
+        size_t numElements = numPixels * numSamples;
+        const size_t maxElements = bar->GetMaxNumElements();
+        if (numElements > maxElements) {
+            if (bar->GetNumElements() < maxElements) {
                 TF_WARN("OIT %s needs 0x%zx elements, which exceeds the "
                         "hardware maximum of 0x%zx; clamping.",
                         name, numElements, maxElements);
-                bar->Resize(maxElements);
-            } else {
-                bar->Resize(numElements);
             }
-        };
+            numElements = maxElements;
+        }
+        if (bar->GetNumElements() < numElements) {
+            bar->Resize(numElements);
+        }
+    };
 
-        clampedResize(_GetBar(HdxTokens->oitJointBufferBar), "joint buffer");
-        clampedResize(_GetBar(HdxTokens->oitDataBufferBar), "data buffer");
-    }
+    growClamped(_GetBar(HdxTokens->oitJointBufferBar), "joint buffer");
+    growClamped(_GetBar(HdxTokens->oitDataBufferBar), "data buffer");
 
     hdStResourceRegistry->AddSource(
         _GetBar(HdxTokens->oitUniformBar),

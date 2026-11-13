@@ -66,6 +66,11 @@ vec4 imageShader(vec2 uv)
     int screenIndex = int(gl_FragCoord.x) + int(gl_FragCoord.y) * screenWidth;
     screenIndex += 1;
 
+    // Matches the bounds check in WriteOitLayersToBuffer.
+    if (screenIndex >= screenWidth * screenHeight + 1) {
+        return vec4(0);
+    }
+
     int nodeIndex = ATOMIC_LOAD(hdxOitCounterBuffer[screenIndex]);
     int numDepths = 0;
 

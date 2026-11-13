@@ -94,7 +94,6 @@ HdxOitResolveTask::HdxOitResolveTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
     : HdTask(id)
-    , _screenSize(0)
     , _oitShouldDraw(false)
 {
 }
@@ -238,7 +237,7 @@ HdxOitResolveTask::_ComputeScreenSize(
     return GfVec2i(buffer->GetWidth(), buffer->GetHeight());
 }
 
-void
+bool
 HdxOitResolveTask::_PrepareOitBuffers(
     HdTaskContext* ctx,
     HdRenderIndex* renderIndex,
@@ -260,7 +259,7 @@ HdxOitResolveTask::_PrepareOitBuffers(
     }
 
     if (!_counterBar) {
-        return;
+        return false;
     }
 
     // Restore bars to ctx each frame in case the context was cleared.
@@ -269,8 +268,8 @@ HdxOitResolveTask::_PrepareOitBuffers(
     (*ctx)[HdxTokens->oitDataBufferBar] = _dataBar;
     (*ctx)[HdxTokens->oitUniformBar] = _uniformBar;
 
-    HdxOitBufferAccessor(ctx).ResizeOitBuffersIfNecessary(
-        renderIndex, screenSize, &_screenSize);
+    return HdxOitBufferAccessor(ctx).ResizeOitBuffersIfNecessary(
+        renderIndex, screenSize);
 }
 
 static
@@ -291,13 +290,11 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
 
     _oitShouldDraw = false;
 
-    // Pull OIT buffers off the context...
-    _PrepareOitBuffers(
-        ctx, renderIndex, _ComputeScreenSize(ctx, renderIndex));
-
-    // If there aren't any OIT buffers, we can early out. If OIT is disabled,
-    // or if we're not running Storm, we'll always early out here.
-    if (!_counterBar) {
+    // Pull OIT buffers off the context and size them for this screen. If there
+    // aren't any OIT buffers (OIT disabled, or not Storm), or they can't be
+    // sized for this screen, we can early out.
+    if (!_PrepareOitBuffers(
+            ctx, renderIndex, _ComputeScreenSize(ctx, renderIndex))) {
         return;
     }
 

@@ -86,8 +86,8 @@ private:
     HdxOitResolveTask(const HdxOitResolveTask &) = delete;
     HdxOitResolveTask &operator =(const HdxOitResolveTask &) = delete;
 
-    void _PrepareOitBuffers(
-        HdTaskContext* ctx, 
+    bool _PrepareOitBuffers(
+        HdTaskContext* ctx,
         HdRenderIndex* renderIndex,
         GfVec2i const& screenSize);
 
@@ -108,7 +108,6 @@ private:
     HdStRenderPassStateSharedPtr _renderPassState;
     HdStRenderPassShaderSharedPtr _renderPassShader;
 
-    GfVec2i _screenSize;
     HdBufferArrayRangeSharedPtr _counterBar;
     HdBufferArrayRangeSharedPtr _dataBar;
     HdBufferArrayRangeSharedPtr _jointBar;

@@ -55,13 +55,12 @@ public:
     void AllocateOitBuffersIfNecessary(HdRenderIndex *renderIndex);
 
     /// Called during Prepare (by OitResolveTask) to grow OIT bars to fit the
-    /// current screen.  prevScreenSize is updated in-place and must be
-    /// persisted by the caller across frames. Returns false if "screenSize"
-    /// is invalid.
+    /// current screen and update the OIT uniforms. Bars are never shrunk, so
+    /// they end up sized for the largest screen sharing this task context.
+    /// Returns false if OIT can't be used at this screen size.
     HDX_API
     bool ResizeOitBuffersIfNecessary(HdRenderIndex *renderIndex,
-                                     GfVec2i const &screenSize,
-                                     GfVec2i *prevScreenSize);
+                                     GfVec2i const &screenSize);
 
     /// Called during Excecute before writing to OIT buffers.
     HDX_API
