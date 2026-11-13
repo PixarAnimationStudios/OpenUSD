@@ -878,6 +878,21 @@ nonLockingLinux__execve (const char *file,
         );
         result = __file_result;
     }
+#elif defined(ARCH_CPU_RISCV) && defined(ARCH_BITS_64)
+    {
+        // Linux RV64 syscall ABI: a0..a2 hold the arguments, a7 the number;
+        // a0 returns either the result or a negative errno. __NR_execve is 221
+        // in asm-generic/unistd.h. Keep this path independent of libc locks.
+        register long arg0 asm ("a0") = (long)file;
+        register char* const* arg1 asm ("a1") = argv;
+        register char* const* arg2 asm ("a2") = envp;
+        register long number asm ("a7") = 221;
+        __asm__ __volatile__ (
+            "ecall" : "+r" (arg0)
+            : "r" (arg1), "r" (arg2), "r" (number) : "memory"
+        );
+        result = arg0;
+    }
 #elif defined(ARCH_CPU_INTEL) && defined(ARCH_BITS_64)
 
     /*
