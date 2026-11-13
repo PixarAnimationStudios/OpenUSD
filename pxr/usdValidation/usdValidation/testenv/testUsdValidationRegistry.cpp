@@ -18,7 +18,20 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
+#include <set>
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+// Returns the names in \p metadata, and checks that none is repeated.
+static std::set<TfToken>
+_GetUniqueValidatorNames(const UsdValidationValidatorMetadataVector &metadata)
+{
+    std::set<TfToken> names;
+    for (const UsdValidationValidatorMetadata &m : metadata) {
+        TF_AXIOM(names.insert(m.name).second);
+    }
+    return names;
+}
 
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
@@ -184,6 +197,45 @@ TestUsdValidationRegistry()
                  == expectedValue);
         TF_AXIOM(!metadata[0].isSuite);
         TF_AXIOM(!metadata[1].isSuite);
+    }
+    {
+        // TestValidator2 has both SomePrimType and SomeAPISchema, but is
+        // returned once.
+        TF_AXIOM(_GetUniqueValidatorNames(
+                     registry.GetValidatorMetadataForSchemaTypes(
+                         { TfToken("SomePrimType"), TfToken("SomeAPISchema") }))
+                 == std::set<TfToken>(
+                     { TfToken("testValidationPlugin:FailedValidator"),
+                       TfToken("testValidationPlugin:TestValidator2"),
+                       TfToken("testValidationPlugin:TestValidator3") }));
+    }
+    {
+        // Querying the same keyword twice, or keywords shared by the same
+        // validators, returns each validator once.
+        const std::set<TfToken> includedInAll = _GetUniqueValidatorNames(
+            registry.GetValidatorMetadataForKeyword(TfToken("IncludedInAll")));
+        TF_AXIOM(!includedInAll.empty());
+        TF_AXIOM(_GetUniqueValidatorNames(
+                     registry.GetValidatorMetadataForKeywords(
+                         { TfToken("IncludedInAll"),
+                           TfToken("IncludedInAll") }))
+                 == includedInAll);
+        TF_AXIOM(_GetUniqueValidatorNames(
+                     registry.GetValidatorMetadataForKeywords(
+                         { TfToken("IncludedInAll"), TfToken("SomeKeyword1") }))
+                 == includedInAll);
+    }
+    {
+        // Querying the same plugin twice returns each validator once.
+        const std::set<TfToken> pluginValidators = _GetUniqueValidatorNames(
+            registry.GetValidatorMetadataForPlugin(
+                TfToken("testValidationPlugin")));
+        TF_AXIOM(!pluginValidators.empty());
+        TF_AXIOM(_GetUniqueValidatorNames(
+                     registry.GetValidatorMetadataForPlugins(
+                         { TfToken("testValidationPlugin"),
+                           TfToken("testValidationPlugin") }))
+                 == pluginValidators);
     }
     {
         const UsdValidationValidatorSuite *suiteValidator

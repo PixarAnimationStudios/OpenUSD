@@ -566,7 +566,8 @@ public:
     /// Validators which belong to the \p pluginNames.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the plugins.
+    /// associated with the plugins. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
@@ -580,7 +581,8 @@ public:
     /// Validators which has at least one of the \p keywords.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the keywords.
+    /// associated with the keywords. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
@@ -594,7 +596,8 @@ public:
     /// Validators which has at least one of the \p schemaTypes.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the schemaTypes.
+    /// associated with the schemaTypes. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
     ///
     /// Each entry in \p schemaTypes may be either a TfType name or a schema
     /// identifier, as described in GetValidatorMetadataForSchemaType().
@@ -667,7 +670,10 @@ private:
     using _TokenToValidatorNamesMap
         = std::unordered_map<TfToken, TfTokenVector, TfToken::HashFunctor>;
 
-    // Helper to query
+    // Helper to query the metadata of validators associated with any of
+    // \p tokens in \p tokenToValidatorNames. Each validator's metadata is
+    // returned once, in the order it is first found.
+    // _mutex must be acquired before calling this method.
     UsdValidationValidatorMetadataVector _GetValidatorMetadataForToken(
         const _TokenToValidatorNamesMap &tokenToValidatorNames,
         const TfTokenVector &tokens) const;

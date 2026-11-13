@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <memory>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -725,9 +726,11 @@ UsdValidationValidatorMetadataVector
 UsdValidationRegistry::GetValidatorMetadataForPlugins(
     const TfTokenVector &pluginNames) const
 {
-    // Since the _pluginNameToValidatorNames is created during registry
-    // initialization this method is inherently thread safe, as
-    // _pluginNameToValidatorNames is already populated and never updated.
+    // _pluginNameToValidatorNames is populated during registry initialization
+    // and never updated, but _validatorNameToMetadata, which the helper reads,
+    // is updated as validators are registered dynamically, so we need to hold a
+    // shared lock on _mutex here.
+    std::shared_lock lock(_mutex);
     return _GetValidatorMetadataForToken(_pluginNameToValidatorNames,
                                          pluginNames);
 }
@@ -765,14 +768,22 @@ UsdValidationRegistry::_GetValidatorMetadataForToken(
     const _TokenToValidatorNamesMap &tokenToValidatorNames,
     const TfTokenVector &tokens) const
 {
+    // Callers hold a shared lock on _mutex.
+ 
+    // A validator may be found through more than one of the tokens, or more
+    // than once through one token, so only add its metadata the first time it
+    // is found.
     UsdValidationValidatorMetadataVector result;
+    std::unordered_set<TfToken, TfToken::HashFunctor> addedValidatorNames;
     for (const TfToken &token : tokens) {
         const auto &itr = tokenToValidatorNames.find(token);
         if (itr == tokenToValidatorNames.end()) {
             continue;
         }
-        std::shared_lock lock(_mutex);
         for (const TfToken &validatorName : itr->second) {
+            if (!addedValidatorNames.insert(validatorName).second) {
+                continue;
+            }
             // If we have a validatorName in tokenToValidatorNames, we
             // must have a validatorMetadata for this validatorName, because
             // that's how these are added in _AddValidatorMetadata
@@ -892,9 +903,10 @@ UsdValidationRegistry::_UpdateValidatorNamesMappings(
         if (tokenMap.find(token) == tokenMap.end()) {
             tokenMap.emplace(token, TfTokenVector { validatorName });
         } else {
-            // Since this method is only called from the
-            // _PopulateMetadataFromPlugInfo, its guaranteed that
-            // validatorNames will be unique in this vector.
+            // validatorName may already be in this vector, if \p tokens
+            // contains the same token more than once, e.g. a keyword provided
+            // both for all validators in a plugInfo and for this validator.
+            // _GetValidatorMetadataForToken skips repeated validator names.
             tokenMap[token].push_back(validatorName);
         }
     }
