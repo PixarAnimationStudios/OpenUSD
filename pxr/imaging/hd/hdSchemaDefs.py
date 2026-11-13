@@ -1078,6 +1078,7 @@
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('passType', T_TOKEN, {}),
             ('renderSource', T_PATH, {}),
+            ('namespacedSettings', 'HdSampledDataSourceContainerSchema', {}),
         ],
     ),
 
