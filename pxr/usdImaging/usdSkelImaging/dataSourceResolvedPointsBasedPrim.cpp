@@ -210,6 +210,7 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim(
  , _jointInfluencesDataCache(_primSource, _skeletonPrimSource)
  , _xformResolver(sceneIndex, _primSource)
 {
+    _hasNormalsExtComputations = _ComputeHasNormalsExtComputations();
 }
 
 UsdSkelImagingDataSourceResolvedPointsBasedPrim::
@@ -1108,6 +1109,15 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::HasExtComputations() const
 
 bool
 UsdSkelImagingDataSourceResolvedPointsBasedPrim::HasNormalsExtComputations() const
+{
+    // Computed at construction time since it depends on the mesh's attributes.
+    // Avoids querying stale data sources if called while refreshing a prim.
+    return _hasNormalsExtComputations;
+}
+
+bool
+UsdSkelImagingDataSourceResolvedPointsBasedPrim::
+_ComputeHasNormalsExtComputations() const
 {
     static const bool normalComputationsEnabled =
         TfGetEnvSetting(USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS);
