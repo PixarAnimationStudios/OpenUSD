@@ -204,6 +204,8 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
                 "\t#define HGI_COMPILER_ATTR_DONT_FLATTEN\n"
             "#endif\n";
 
+    ss << _GetShaderCodeExtensions() << "\n";
+
     if (_GetShaderStage() & HgiShaderStageVertex) {
         if (glslVersion < 460 && shaderDrawParametersEnabled) {
             ss << "#extension GL_ARB_shader_draw_parameters : require\n";
