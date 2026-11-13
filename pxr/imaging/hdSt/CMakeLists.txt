@@ -30,6 +30,7 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen
+         materialXLobePruner
     )
 endif()
 if (PXR_ENABLE_PTEX_SUPPORT)
