@@ -190,8 +190,11 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
     id applicationName = [[NSProcessInfo processInfo] processName];
 
-    NSRect frame = NSMakeRect(0, 0, width, height);
-    NSRect viewBounds = NSMakeRect(0, 0, width, height);
+    NSScreen *mainScreen = [NSScreen mainScreen];
+    CGFloat scaleFactor = [mainScreen backingScaleFactor];
+    NSRect screenFrame = [mainScreen frame];
+    NSRect frame = NSMakeRect(screenFrame.origin.x, screenFrame.origin.y, width / scaleFactor, height / scaleFactor);
+    NSRect viewBounds = NSMakeRect(screenFrame.origin.x, screenFrame.origin.y, width / scaleFactor, height / scaleFactor);
 
     Garch_GLPlatformView *view =
         [[Garch_GLPlatformView alloc] initGL:viewBounds callback:_callback];
@@ -204,7 +207,7 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
                                  |NSResizableWindowMask
                         backing:NSBackingStoreBuffered
                         defer:NO];
-    [window cascadeTopLeftFromPoint:NSMakePoint(20,20)];
+    [window cascadeTopLeftFromPoint:NSMakePoint(screenFrame.origin.x + 20, screenFrame.origin.y + 20)];
     [window setTitle: applicationName];
     [window makeKeyAndOrderFront:nil];
 
