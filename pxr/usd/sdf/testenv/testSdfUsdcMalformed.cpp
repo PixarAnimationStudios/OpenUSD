@@ -22,7 +22,9 @@
 // The test also writes bad_tokens_chunk.usdc, a copy of baseline.usdc whose
 // compressed tokens claim one chunk but are too short to hold its size, and
 // bad_path_jumps_*.usdc, copies of baseline.usdc whose compressed paths jumps
-// tables are corrupt.
+// tables are corrupt.  It writes lut.usdc, holding a float[] stored as a
+// lookup table and indexes, and bad_lut_index.usdc, a copy whose last index is
+// past the end of the table.
 //
 
 #include "pxr/pxr.h"
@@ -30,13 +32,18 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/crateInfo.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/types.h"
 #include "../integerCoding.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -148,6 +155,92 @@ _TestTruncatedTokensChunk(char const *srcPath, char const *dstPath)
     mark.Clear();
 }
 
+// Write `srcPath` holding /Root.f, a float[] stored as a lookup table and
+// indexes, then write a copy of it to `dstPath` whose last index is far past
+// the end of the table.  Then expect reading /Root.f from the copy to fail with
+// errors.
+static void
+_TestLookupTableIndex(char const *srcPath, char const *dstPath)
+{
+    // 32 elements cycling through 8 non-integral values, so the writer uses a
+    // lookup table of size 8 with indexes 0..7.
+    float const lut[8] = { 0.25, 1.25, 2.25, 3.25, 4.25, 5.25, 6.25, 7.25 };
+    VtFloatArray values(32);
+    for (size_t i = 0; i != values.size(); ++i) {
+        values[i] = lut[i % 8];
+    }
+    {
+        SdfLayerRefPtr layer = SdfLayer::CreateNew(srcPath);
+        TF_AXIOM(layer);
+        SdfPrimSpecHandle prim =
+            SdfPrimSpec::New(layer, "Root", SdfSpecifierDef);
+        SdfAttributeSpecHandle attr = SdfAttributeSpec::New(
+            prim, "f", SdfValueTypeNames->FloatArray);
+        TF_AXIOM(attr);
+        attr->SetDefaultValue(VtValue(values));
+        TF_AXIOM(layer->Save());
+    }
+    _Test(srcPath, SdfPath("/Root.f"), /*error=*/false);
+
+    FILE *in = fopen(srcPath, "rb");
+    TF_AXIOM(in);
+    std::vector<char> bytes;
+    char buf[4096];
+    for (size_t n; (n = fread(buf, 1, sizeof(buf), in)) != 0; ) {
+        bytes.insert(bytes.end(), buf, buf + n);
+    }
+    fclose(in);
+
+    // The compressed array is the code 't', a uint32_t table size, the table,
+    // then the indexes as a uint64_t compressed size followed by that many
+    // bytes.
+    uint32_t const lutSize = 8;
+    std::vector<char> header(1 + sizeof(lutSize) + sizeof(lut));
+    header[0] = 't';
+    memcpy(&header[1], &lutSize, sizeof(lutSize));
+    memcpy(&header[1 + sizeof(lutSize)], lut, sizeof(lut));
+    auto iter = std::search(
+        bytes.begin(), bytes.end(), header.begin(), header.end());
+    TF_AXIOM(iter != bytes.end());
+    TF_AXIOM(std::search(iter + 1, bytes.end(),
+                         header.begin(), header.end()) == bytes.end());
+    size_t const offset = (iter - bytes.begin()) + header.size();
+
+    uint64_t indexesSize;
+    TF_AXIOM(offset + sizeof(indexesSize) <= bytes.size());
+    memcpy(&indexesSize, &bytes[offset], sizeof(indexesSize));
+    TF_AXIOM(offset + sizeof(indexesSize) + indexesSize <= bytes.size());
+
+    std::vector<uint32_t> indexes(values.size());
+    TF_AXIOM(Sdf_IntegerCompression::DecompressFromBuffer(
+                 &bytes[offset + sizeof(indexesSize)], indexesSize,
+                 indexes.data(), indexes.size()) == indexes.size());
+    for (size_t i = 0; i != indexes.size(); ++i) {
+        TF_AXIOM(indexes[i] == i % 8);
+    }
+    // All zeros encode compactly, leaving room for one large index.
+    std::fill(indexes.begin(), indexes.end(), 0);
+    indexes.back() = 0x7fffffff;
+
+    // The new encoding must fit in the old one's space.  Shorter is fine since
+    // the reader takes its compressed size from the stored value.
+    std::vector<char> compressed(
+        Sdf_IntegerCompression::GetCompressedBufferSize(indexes.size()));
+    uint64_t const newIndexesSize = Sdf_IntegerCompression::CompressToBuffer(
+        indexes.data(), indexes.size(), compressed.data());
+    TF_AXIOM(newIndexesSize <= indexesSize);
+    memcpy(&bytes[offset], &newIndexesSize, sizeof(newIndexesSize));
+    memcpy(&bytes[offset + sizeof(newIndexesSize)],
+           compressed.data(), newIndexesSize);
+
+    FILE *out = fopen(dstPath, "wb");
+    TF_AXIOM(out);
+    TF_AXIOM(fwrite(bytes.data(), 1, bytes.size(), out) == bytes.size());
+    fclose(out);
+
+    _Test(dstPath, SdfPath("/Root.f"), /*error=*/true);
+}
+
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
 // Write a copy of `srcPath` to `dstPath` whose compressed PATHS section has its
 // jumps table entry at `jumpIndex` replaced by `jump`.  Then expect opening it
@@ -232,6 +325,8 @@ main()
     _TestObsolete("bad_obsolete_version.usdc");
 
     _TestTruncatedTokensChunk("baseline.usdc", "bad_tokens_chunk.usdc");
+
+    _TestLookupTableIndex("lut.usdc", "bad_lut_index.usdc");
 
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
     // These tests rely on safety checks that only exist when

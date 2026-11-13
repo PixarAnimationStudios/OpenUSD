@@ -2305,6 +2305,17 @@ _ReadPossiblyCompressedArray(
         _ReadCompressedInts(reader, indexes.data(), indexes.size());
         auto o = odata;
         for (auto index: indexes) {
+            // The indexes come from the file, so check them.  We do so
+            // unconditionally, regardless of PXR_SAFETY_OVER_SPEED, since it's
+            // relatively inexpensive here.
+            if (ARCH_UNLIKELY(index >= lutSize)) {
+                TF_RUNTIME_ERROR("Corrupt data stream detected reading "
+                                 "compressed array in <%s>: lookup table "
+                                 "index %u out of range for table size %u",
+                                 reader.crate->GetAssetPath().c_str(),
+                                 index, lutSize);
+                return;
+            }
             *o++ = lut[index];
         }
     } else {
