@@ -53,7 +53,7 @@ public:
 
     /// Encode drawing commands for this batch.
     HDST_API
-    void EncodeDraw(
+    bool EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry,
         bool firstDrawBatch) override;
