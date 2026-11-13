@@ -73,6 +73,17 @@ public:
     HD_API
     static void RegisterTranslatorsForCustomRprimType(TfToken const& primType,
         LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
+
+    /// Allows for customization of translation for unknown (to the system)
+    /// bprim types. Absence of registered functions for an unknown type falls
+    /// back to DirtyAll equivalents in both directions.
+    ///
+    /// Note that \p sToBFnc may be handed the universal locator set (i.e., a
+    /// set containing only the empty locator), for example when a prim is
+    /// first added. Implementations should treat that as dirtying everything.
+    HD_API
+    static void RegisterTranslatorsForCustomBprimType(TfToken const& primType,
+        LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
