@@ -294,11 +294,11 @@ class Controller(QtCore.QObject):
         # various startup scripts, so that they can access the location from
         # which they are being run.
         # also, update the globals dict after we exec the file (bug 9529)
-        self.interpreter.runsource( 
-            'g = dict(globals());' 
-            'g["__file__"] = "{0}";'
-            'f = open("{0}", "rb");'
-            'exec(compile(f.read(), "{0}", "exec"), g);'
+        self.interpreter.runsource(
+            'g = dict(globals());'
+            'g["__file__"] = {0!r};'
+            'f = open({0!r}, "rb");'
+            'exec(compile(f.read(), {0!r}, "exec"), g);'
             'f.close();'
             'del g["__file__"];'
             'globals().update(g);'.format(path))
