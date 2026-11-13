@@ -366,6 +366,17 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << ", uv, data);\n";
         ss << "}\n";
 
+        // Write a function that lets you read from the texture with
+        // HgiGet_texName(uv, data).
+        ss << "vec4 HgiGet_";
+        WriteIdentifier(ss);
+        ss << "(" << intCoordType << " uv) {\n";
+        ss << "    ";
+        ss << "return imageLoad(";
+        WriteIdentifier(ss);
+        ss << ", uv);\n";
+        ss << "}\n";
+
         // HgiGetSize_texName()
         ss << sizeType << " HgiGetSize_";
         WriteIdentifier(ss);
