@@ -127,6 +127,7 @@ pxr_library(usdImaging
         primvarDescCache
         rootOverridesSceneIndex
         unloadedDrawModeSceneIndex
+        usdMetersPerUnitSchema
         usdPrimInfoSchema
         usdRenderProductSchema
         usdRenderSettingsSchema

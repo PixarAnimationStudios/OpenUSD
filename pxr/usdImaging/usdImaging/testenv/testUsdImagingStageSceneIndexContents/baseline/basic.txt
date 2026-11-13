@@ -1,4 +1,7 @@
 </> type = 
+	[__usdMetersPerUnit]
+		[metersPerUnit]
+			1
 	[__usdUpAxis]
 		[upAxis]
 			Z

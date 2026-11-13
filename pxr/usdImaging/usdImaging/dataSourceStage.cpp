@@ -6,6 +6,7 @@
 //
 #include "pxr/usdImaging/usdImaging/dataSourceStage.h"
 
+#include "pxr/usdImaging/usdImaging/usdMetersPerUnitSchema.h"
 #include "pxr/usdImaging/usdImaging/usdUpAxisSchema.h"
 
 #include "pxr/imaging/hdar/systemSchema.h"
@@ -28,6 +29,7 @@ UsdImagingDataSourceStage::GetNames()
         HdSystemSchema::GetSchemaToken(),
         HdSceneGlobalsSchema::GetSchemaToken(),
         UsdImagingUsdUpAxisSchema::GetSchemaToken(),
+        UsdImagingUsdMetersPerUnitSchema::GetSchemaToken(),
     };
 }
 
@@ -75,6 +77,12 @@ UsdImagingDataSourceStage::Get(const TfToken& name)
                 UsdImagingUsdUpAxisSchemaTokens->upAxis,
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     UsdGeomGetStageUpAxis(_stage)));
+    }
+    if (name == UsdImagingUsdMetersPerUnitSchema::GetSchemaToken()) {
+        return HdRetainedContainerDataSource::New(
+                UsdImagingUsdMetersPerUnitSchemaTokens->metersPerUnit,
+                HdRetainedTypedSampledDataSource<double>::New(
+                    UsdGeomGetStageMetersPerUnit(_stage)));
     }
     return nullptr;
 }
