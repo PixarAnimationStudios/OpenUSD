@@ -266,6 +266,10 @@ struct HdxPrimOriginInfo
 ///         influences this operation. For e.g., the subprim indices are ignored
 ///         when the pickTarget is pickPrimsAndInstances.
 ///
+/// 'searchRect': The searchRect is specified as a subset of the viewport to narrow down
+///         the search for any pickItems from the buffer into outHits. A width, height of
+///         -1 for the searchRect indicates an invalid specfied searchRect.
+///
 struct HdxPickTaskContextParams
 {
     using DepthMaskCallback = std::function<void(void)>;
@@ -288,6 +292,7 @@ struct HdxPickTaskContextParams
         , depthBiasConstantFactor(0.0f)
         , depthBiasSlopeFactor(0.0f)
         , outHits(nullptr)
+        , searchRect({0,0,-1,-1})
     {}
 
     GfVec2i resolution;
@@ -307,6 +312,7 @@ struct HdxPickTaskContextParams
     float depthBiasConstantFactor;
     float depthBiasSlopeFactor;
     HdxPickHitVector *outHits;
+    GfVec4i searchRect;
 };
 
 /// \class HdxPickTask
