@@ -82,7 +82,6 @@ private:
 
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
     Hgi const *_hgi;
-    uint32_t _textureBindIndexStart;
     uint32_t _inLocationIndex;
     uint32_t _outLocationIndex;
     std::vector<std::string> _shaderLayoutAttributes;
