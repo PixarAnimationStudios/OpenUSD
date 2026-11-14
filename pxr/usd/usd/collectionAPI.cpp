@@ -832,6 +832,16 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
 
             UsdCollectionAPI includedCollection(includedPrim, collectionName);
 
+            // An expression-mode collection's relationship-based properties are
+            // ignored, so it contributes no rules.  It is still an included
+            // collection, since changing its mode would change these rules.
+            TfToken includedMode;
+            includedCollection.GetModeAttr().Get(&includedMode);
+            if (includedMode == UsdTokens->expression) {
+                collections.insert(includedPath);
+                continue;
+            }
+
             // Recursively compute the included collection's membership map with
             // an updated set of seen/included collection paths.
             // 
