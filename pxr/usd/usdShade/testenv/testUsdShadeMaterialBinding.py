@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Sdf, Usd, UsdShade
+from pxr import Sdf, Tf, Usd, UsdShade
 import unittest    
 
 class TestUsdShadeMaterialBinding(unittest.TestCase): 
@@ -745,6 +745,29 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
         # This will compose in gprim's binding, but should still be blocked
         over.GetInherits().AddInherit("/World/gprim")
         self.assertFalse(self._GetBoundMaterial(over))
+
+    def test_ComputeBoundMaterialsRequiresSingleStage(self):
+        # ComputeBoundMaterials shares a bindings cache keyed by prim path
+        # across all prims, so all prims must belong to the same UsdStage.
+        # Matching prim paths on different stages must not silently return
+        # another stage's material; a coding error is issued instead.
+        prims = []
+        stages = []
+        for name in ('Red', 'Blue'):
+            stage = Usd.Stage.CreateInMemory()
+            prim = stage.DefinePrim('/Object')
+            UsdShade.MaterialBindingAPI.Apply(prim).Bind(
+                UsdShade.Material.Define(stage, '/' + name))
+            stages.append(stage)
+            prims.append(prim)
+
+        with self.assertRaises(Tf.ErrorException):
+            UsdShade.MaterialBindingAPI.ComputeBoundMaterials(prims)
+
+        # Single-stage calls behave exactly as before.
+        (boundMaterials, _) = \
+            UsdShade.MaterialBindingAPI.ComputeBoundMaterials(prims[:1])
+        self.assertEqual([str(m.GetPath()) for m in boundMaterials], ['/Red'])
 
 if __name__ == "__main__":
     unittest.main()

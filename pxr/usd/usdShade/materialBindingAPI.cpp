@@ -879,6 +879,26 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
     // MembershipQuery object is only constructed once.
     CollectionQueryCache collQueryCache;
 
+    // bindingsCache and collQueryCache are keyed by prim path, so they are
+    // only valid for prims on a single stage. Reusing them across stages
+    // would silently return another stage's material for prims that share a
+    // path, so reject that input instead.
+    const UsdPrim *first = nullptr;
+    for (const UsdPrim &prim : prims) {
+        if (!prim) {
+            continue;
+        }
+        if (!first) {
+            first = &prim;
+        } else if (prim.GetStage() != first->GetStage()) {
+            TF_CODING_ERROR("All prims passed to ComputeBoundMaterials must "
+                "belong to the same stage, but <%s> and <%s> belong to "
+                "different stages.",
+                first->GetPath().GetText(), prim.GetPath().GetText());
+            return materials;
+        }
+    }
+
     WorkParallelForN(prims.size(), 
         [&](size_t start, size_t end) {
             for (size_t i = start; i < end; ++i) {
