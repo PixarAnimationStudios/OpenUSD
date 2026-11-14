@@ -450,6 +450,13 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             self.assertEqual(a.Get(10), 20.0)
             self.assertEqual(a.Get(12), 40.0)
 
+            # Splines: knot times are remapped as key*2 + 10; values are
+            # untouched.
+            a = p.GetAttribute("Spline")
+            self.assertEqual(list(a.GetSpline().GetKnots()), [10.0, 12.0])
+            self.assertEqual(a.Get(10), 10.0)
+            self.assertEqual(a.Get(12), 20.0)
+
     def test_ValueBlocks(self):
         src_stage = Usd.Stage.Open('valueBlocks_root.usda')
         src_layer_stack = src_stage._GetPcpCache().layerStack
