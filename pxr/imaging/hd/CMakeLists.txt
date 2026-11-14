@@ -207,6 +207,7 @@ pxr_library(hd
         splitDiopterSchema
         sprim
         subdivisionTagsSchema
+        surfaceSchema
         systemMessages
         systemSchema
         task
@@ -378,6 +379,16 @@ pxr_build_test(testHdSceneIndex
        testenv/testHdSceneIndex.cpp
 )
 
+pxr_build_test(testHdPrefixingSceneIndex
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdPrefixingSceneIndex.cpp
+)
+
 pxr_build_test(testHdSortedIds
    LIBRARIES
        hd
@@ -471,6 +482,10 @@ pxr_register_test(testHdMergingSceneIndex
 
 pxr_register_test(testHdSceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSceneIndex"
+)
+
+pxr_register_test(testHdPrefixingSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdPrefixingSceneIndex"
 )
 
 pxr_register_test(testHdSortedIds

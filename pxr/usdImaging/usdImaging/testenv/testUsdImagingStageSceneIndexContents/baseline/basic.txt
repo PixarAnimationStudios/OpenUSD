@@ -147,6 +147,9 @@
 				[(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
 			[role]
 				point
+	[surface]
+		[doubleSided]
+			0
 	[usdMaterialBindings]
 		[preview]
 			[0]
@@ -436,6 +439,9 @@
 	[sphere]
 		[radius]
 			1
+	[surface]
+		[doubleSided]
+			0
 </NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_2> type = 
 	[__usdPrimInfo]
 		[isLoaded]
@@ -477,6 +483,9 @@
 	[sphere]
 		[radius]
 			1
+	[surface]
+		[doubleSided]
+			0
 </__Prototype_1> type = 
 	[__usdPrimInfo]
 		[isLoaded]
@@ -575,3 +584,6 @@
 	[sphere]
 		[radius]
 			1
+	[surface]
+		[doubleSided]
+			0

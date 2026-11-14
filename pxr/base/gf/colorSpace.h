@@ -177,19 +177,22 @@ public:
     /// \return True if the color spaces are not equal, false otherwise.
     bool operator !=(const GfColorSpace &rh) const { return !(*this == rh); }
 
-    /// Convert in place a packed array of RGB values from one color space to "this" one.
+    /// Convert in place a packed array of RGB values from "this" color space
+    /// to \p to.  Note that this is the opposite direction from Convert().
     ///
     /// \param to The target color space.
     /// \param rgb The packed array of RGB values to convert.
-    GF_API 
-    void ConvertRGBSpan(const GfColorSpace& srcColorSpace, TfSpan<float> rgb) const;
+    GF_API
+    void ConvertRGBSpan(const GfColorSpace& to, TfSpan<float> rgb) const;
 
-    /// Convert in place a packed array of RGBA values from one color space to "this one.
+    /// Convert in place a packed array of RGBA values from "this" color space
+    /// to \p to.  Alpha values are unchanged.  Note that this is the opposite
+    /// direction from Convert().
     ///
     /// \param to The target color space.
     /// \param rgba The packed array of RGBA values to convert.
-    GF_API 
-    void ConvertRGBASpan(const GfColorSpace& srcColorSpace, TfSpan<float> rgba) const;
+    GF_API
+    void ConvertRGBASpan(const GfColorSpace& to, TfSpan<float> rgba) const;
 
     /// Convert a rgb triplet in a certain color space to "this" color space.
     GF_API

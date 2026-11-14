@@ -1,0 +1,33 @@
+#usda 1.0
+
+class "_class_Root"
+{
+    def "From_root_class_in_set"
+    {
+    }
+}
+
+def "Set"
+{
+    def "Instance" (
+        instanceable = true
+        references = @./asset.usda@</Asset>
+    )
+    {
+        # These are overrides on descendants of an instance, so they should
+        # be ignored, like the corresponding overrides on /Twin in root.usda.
+        over "_class_Inherited"
+        {
+            def "From_inherited_class_in_set"
+            {
+            }
+        }
+
+        over "_class_Specialized"
+        {
+            def "From_specialized_class_in_set"
+            {
+            }
+        }
+    }
+}

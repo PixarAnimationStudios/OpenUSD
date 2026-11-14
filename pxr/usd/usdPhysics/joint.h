@@ -16,6 +16,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdPhysics/tokens.h"
 
+#include "pxr/base/gf/quatf.h"
+#include "pxr/usd/usdGeom/xformCache.h" 
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -378,6 +381,46 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get the rigid body that this joint's body0 relationship attaches to.
+    ///
+    /// The relationship may target a collider or other prim below the body,
+    /// so the target and its ancestors are searched for the nearest enabled
+    /// UsdPhysicsRigidBodyAPI.
+    ///
+    /// \return The rigid body prim, or an invalid prim when body0 is unset or
+    /// has no enabled rigid body, in which case the joint attaches to the
+    /// world.
+    USDPHYSICS_API
+    UsdPrim GetBody0() const;
+
+    /// \sa GetBody0()
+    USDPHYSICS_API
+    UsdPrim GetBody1() const;
+
+    /// Compute this joint's local pose for body0.
+    ///
+    /// The pose is expressed in the frame of GetBody0(), or in world space
+    /// when the joint attaches to the world. The authored physics:localPos0
+    /// and physics:localRot0 are relative to the body0 target, so they are
+    /// rebased when the target is not the body itself. Any xform scale in the
+    /// attachment frame is applied to the position, which is in stage distance
+    /// units.
+    ///
+    /// \param position Set to the local position.
+    /// \param orientation Set to the normalized local orientation.
+    /// \param xformCache Optional cache to reuse across calls.
+    /// \return false when body0 targets a path with no prim on the stage, in
+    /// which case the outputs are the authored pose without rebasing; true
+    /// otherwise.
+    USDPHYSICS_API
+    bool ComputeLocalPose0(GfVec3f* position, GfQuatf* orientation,
+                           UsdGeomXformCache* xformCache = nullptr) const;
+
+    /// \sa ComputeLocalPose0()
+    USDPHYSICS_API
+    bool ComputeLocalPose1(GfVec3f* position, GfQuatf* orientation,
+                           UsdGeomXformCache* xformCache = nullptr) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

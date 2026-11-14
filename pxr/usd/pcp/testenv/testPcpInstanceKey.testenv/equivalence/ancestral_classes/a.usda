@@ -1,0 +1,12 @@
+#usda 1.0
+def "A"
+{
+    class "class_widget"
+    {
+        double radius = 1
+    }
+    def "widget" ( inherits = </A/class_widget> )
+    {
+        double radius = 5
+    }
+}

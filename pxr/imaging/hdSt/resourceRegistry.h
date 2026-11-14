@@ -690,9 +690,6 @@ private:
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
     
-    // Right now, this map will only have one value since we have only
-    // implemented one repr for implicit spheres, but we expect it to
-    // expand as we add more reprs and implicit surfaces.
     _TopologyIndexRangeInstanceRegMap _implicitPrimsTopologyIndexRangeRegistry;
 
     // Register shared primvar buffers.

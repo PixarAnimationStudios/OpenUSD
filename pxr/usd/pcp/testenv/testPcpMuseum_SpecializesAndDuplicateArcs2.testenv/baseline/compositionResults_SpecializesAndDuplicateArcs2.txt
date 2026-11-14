@@ -1,0 +1,158 @@
+Loading @SpecializesAndDuplicateArcs2/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Set>
+
+Prim Stack:
+    root.usda            /Set
+    asset.usda           /Asset
+    asset.usda           /Asset_dsv
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks>
+
+Prim Stack:
+    asset.usda           /Asset_dsv/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Mat>
+
+Prim Stack:
+    asset.usda           /Asset_dsv/Looks/Mat
+    shaders.usda         /Shaders_dsv/Looks/MatA
+    root.usda            /_class_Shaders/Looks/Base
+    shaders.usda         /Shaders_dsv/Looks/Base
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Mat.probe:
+    root.usda            /_class_Shaders/Looks/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Set/Looks/Mat/Child>
+
+Prim Stack:
+    root.usda            /_class_Shaders/Looks/Base/Child
+    shaders.usda         /Shaders_dsv/Looks/Base/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Set/Looks/Mat/Child.probe:
+    root.usda            /_class_Shaders/Looks/Base/Child.probe
+
+------------------------------------------------------------------------
+Results for composing </Control>
+
+Prim Stack:
+    root.usda            /Control
+    asset.usda           /AssetDirect
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Control/Looks>
+
+Prim Stack:
+    asset.usda           /AssetDirect/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Control/Looks/Mat>
+
+Prim Stack:
+    asset.usda           /AssetDirect/Looks/Mat
+    shaders.usda         /Shaders_dsv/Looks/MatA
+    root.usda            /_class_Shaders/Looks/Base
+    shaders.usda         /Shaders_dsv/Looks/Base
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Control/Looks/Mat.probe:
+    root.usda            /_class_Shaders/Looks/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Control/Looks/Mat/Child>
+
+Prim Stack:
+    root.usda            /_class_Shaders/Looks/Base/Child
+    shaders.usda         /Shaders_dsv/Looks/Base/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Control/Looks/Mat/Child.probe:
+    root.usda            /_class_Shaders/Looks/Base/Child.probe
+
+------------------------------------------------------------------------
+Results for composing </_class_Shaders>
+
+Prim Stack:
+    root.usda            /_class_Shaders
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </_class_Shaders/Looks>
+
+Prim Stack:
+    root.usda            /_class_Shaders/Looks
+
+Child names:
+     ['Base']
+
+------------------------------------------------------------------------
+Results for composing </_class_Shaders/Looks/Base>
+
+Prim Stack:
+    root.usda            /_class_Shaders/Looks/Base
+
+Child names:
+     ['Child']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/_class_Shaders/Looks/Base.probe:
+    root.usda            /_class_Shaders/Looks/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </_class_Shaders/Looks/Base/Child>
+
+Prim Stack:
+    root.usda            /_class_Shaders/Looks/Base/Child
+
+Property names:
+     ['probe']
+
+Property stacks:
+/_class_Shaders/Looks/Base/Child.probe:
+    root.usda            /_class_Shaders/Looks/Base/Child.probe
+

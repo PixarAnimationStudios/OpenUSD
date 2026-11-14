@@ -26,6 +26,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,6 +44,7 @@ HdStImplicitSurface::HdStImplicitSurface(SdfPath const &id,
   , _displayOpacityFromPrimvars(false)
   , _displayInOverlay(false)
   , _occludedSelectionShowsThrough(false)
+  , _pointsShadingEnabled(false)
 {
 }
 
@@ -84,6 +87,7 @@ HdStImplicitSurface::Sync(HdSceneDelegate *delegate,
     if (*dirtyBits & (HdChangeTracker::DirtyCullStyle|
                       HdChangeTracker::DirtyDoubleSided|
                       HdChangeTracker::DirtyInstancer|
+                      HdChangeTracker::DirtyDisplayStyle|
                       HdChangeTracker::NewRepr)) {
         updateGeometricShader = true;
     }
@@ -174,7 +178,7 @@ HdStImplicitSurface::_UpdateRepr(HdSceneDelegate *sceneDelegate,
 
         if (HdChangeTracker::IsDirty(*dirtyBits)) {
             _UpdateDrawItem(sceneDelegate, renderParam,
-                            drawItem, dirtyBits);
+                            drawItem, dirtyBits, desc);
         }
     }
 
@@ -185,7 +189,8 @@ void
 HdStImplicitSurface::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                      HdRenderParam *renderParam,
                                      HdStDrawItem *drawItem,
-                                     HdDirtyBits *dirtyBits)
+                                     HdDirtyBits *dirtyBits,
+                                     HdImplicitSurfaceReprDesc const &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -215,6 +220,7 @@ HdStImplicitSurface::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _displayInOverlay = ds.displayInOverlay;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
+        _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
 
     /* INSTANCE PRIMVARS */
@@ -260,7 +266,7 @@ HdStImplicitSurface::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
     }
 
     if(*dirtyBits & HdChangeTracker::NewRepr) {
-        _PopulateIndexBuffer(sceneDelegate, renderParam, drawItem);
+        _PopulateIndexBuffer(sceneDelegate, renderParam, drawItem, desc);
     }
 
     TF_VERIFY(drawItem->GetConstantPrimvarRange());
@@ -285,8 +291,26 @@ HdStImplicitSurface::_UpdateDrawItemGeometricShader(
     }
     bool doubleSided = _doubleSided || desc.doubleSided;
 
-    HdSt_ImplicitSurfaceShaderKey shaderKey{
-        cullStyle, doubleSided, _vertexCount, _primType};
+    const bool usesBillboard =
+        desc.geomStyle != HdImplicitSurfaceGeomStylePoints;
+
+    const uint32_t vertexCount = usesBillboard ? 4 : 1;
+
+    const bool nativeRoundPoints =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
+    HdSt_ImplicitSurfaceShaderKey shaderKey{cullStyle,
+                                            doubleSided,
+                                            vertexCount,
+                                            _primType,
+                                            desc.geomStyle,
+                                            desc.blendWireframeColor,
+                                            desc.forceOpaqueEdges,
+                                            desc.shadingTerminal,
+                                            static_cast<bool>(
+                                                _pointsShadingEnabled),
+                                            nativeRoundPoints};
 
     HdSt_GeometricShaderSharedPtr geomShader = HdSt_GeometricShader::Create(
                                                 shaderKey, resourceRegistry);
@@ -380,6 +404,10 @@ HdStImplicitSurface::_UpdateMaterialTagsForAllReprs(
                 continue;
             }
 
+            // The points representation does not write custom depth.
+            const bool hasCustomDepth =
+                desc.geomStyle != HdImplicitSurfaceGeomStylePoints;
+
             HdStDrawItem *drawItem = static_cast<HdStDrawItem*>(
                 repr->GetDrawItem(drawItemIndex++));
 
@@ -387,7 +415,8 @@ HdStImplicitSurface::_UpdateMaterialTagsForAllReprs(
                 GetMaterialId(),
                 _displayOpacityFromPrimvars || _displayOpacityFromInstancer,
                 _displayInOverlay,
-                _occludedSelectionShowsThrough);
+                _occludedSelectionShowsThrough,
+                hasCustomDepth);
         }
     }
 }
@@ -395,7 +424,8 @@ HdStImplicitSurface::_UpdateMaterialTagsForAllReprs(
 void
 HdStImplicitSurface::_PopulateIndexBuffer(HdSceneDelegate *sceneDelegate,
                                      HdRenderParam *renderParam,
-                                     HdStDrawItem *drawItem)
+                                     HdStDrawItem *drawItem,
+                                     HdImplicitSurfaceReprDesc const &desc)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -404,8 +434,14 @@ HdStImplicitSurface::_PopulateIndexBuffer(HdSceneDelegate *sceneDelegate,
     std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
+    const bool usesBillboard =
+        desc.geomStyle != HdImplicitSurfaceGeomStylePoints;
+
+    const TfToken &indexToken = usesBillboard ? HdTokens->indices
+                                              : HdTokens->pointsIndices;
+
     HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
-        resourceRegistry->RegisterImplicitPrimsIndexRange(1, HdTokens->indices);
+        resourceRegistry->RegisterImplicitPrimsIndexRange(1, indexToken);
 
     if(rangeInstance.IsFirstInstance()) {
         HdBufferSpecVector bufferSpecs;
@@ -413,9 +449,14 @@ HdStImplicitSurface::_PopulateIndexBuffer(HdSceneDelegate *sceneDelegate,
         static const VtVec3iArray quadIndices{
             GfVec3i(0, 1, 2), GfVec3i(0, 2, 3)};
 
+        static const VtIntArray pointIndices{0};
+
+        const VtValue indicesSource = usesBillboard ? VtValue(quadIndices)
+                                                    : VtValue(pointIndices);
+
         HdBufferSourceSharedPtrVector sources = {
             std::make_shared<HdVtBufferSource>(
-                HdTokens->indices, VtValue(quadIndices))
+                HdTokens->indices, indicesSource)
         };
 
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);

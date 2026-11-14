@@ -50,7 +50,8 @@ def Sphere "sphere4" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
-    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    rel material:binding = </Materials/MaterialX/Materials/USD_Glass>
+    uniform bool doubleSided = true
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
     double3 xformOp:translate = (4.5, 1.5, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
@@ -96,7 +97,8 @@ def Cylinder_1 "conic4" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
-    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    rel material:binding = </Materials/MaterialX/Materials/Glass>
+    uniform bool doubleSided = true
     uniform token axis = "X"
     double height = 1.5
     double radiusTop = 0.0
@@ -145,7 +147,8 @@ def Capsule "capsule4" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
-    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    rel material:binding = </Materials/MaterialX/Materials/USD_Glass>
+    uniform bool doubleSided = true
     uniform token axis = "X"
     double height = 1.5
     double radius = 0.6
@@ -158,6 +161,7 @@ def Scope "Materials" {
         references = [
             # USD Preview Surface MaterialX Nodes
             @./mtlxFiles/usd_preview_surface_nodes.mtlx@</MaterialX>,
+            @./mtlxFiles/glass.mtlx@</MaterialX>,
         ]
     )
     {

@@ -1,0 +1,21 @@
+#usda 1.0
+def "World"
+{
+    def "one" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+        over "widget" (
+            TestPcp_num = 3
+        )
+        {
+        }
+    }
+    def "two" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+    }
+}

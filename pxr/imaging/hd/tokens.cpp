@@ -72,8 +72,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdSkinningSkelInputTokens,
 
 bool HdPrimTypeIsGprim(TfToken const& primType)
 {
-    TRACE_FUNCTION();
-
     // Performance optimzation.
     if (primType.IsEmpty()) {
         return false;

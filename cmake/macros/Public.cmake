@@ -285,47 +285,14 @@ function(pxr_library NAME)
             ${filePath}
         )
 
-        # Read the generated classes
-        file(STRINGS ${filePath} fileContents)
+        _pxr_parse_generated_schema_classes("${filePath}"
+            OUT_PUBLIC_CLASSES generatedPublicClasses
+            OUT_PYTHON_MODULE_FILES generatedPymoduleFiles
+            OUT_RESOURCE_FILES generatedResourceFiles)
 
-        # fileType potential values:
-        # -1: Skip line
-        # 0: Public Classes
-        # 1: Python Module Files
-        # 2: Resource Files
-        set(fileType -1)
-
-        foreach(line ${fileContents})
-            # Determine which section of the generated file we are in.
-            if (${fileType} EQUAL -1)
-                string(FIND ${line} "# Public Classes" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 0)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 0)
-                string(FIND ${line} "# Python Module Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 1)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 1)
-                string(FIND ${line} "# Resource Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 2)
-                    continue()
-                endif()
-            endif()
-
-            # Depending on the file type, append to the appropriate list.
-            if (${fileType} EQUAL 0)
-                list(APPEND args_PUBLIC_CLASSES ${line})
-            elseif(${fileType} EQUAL 1)
-                list(APPEND args_PYMODULE_CPPFILES ${line})
-            elseif(${fileType} EQUAL 2)
-                list(APPEND args_RESOURCE_FILES ${line})
-            endif()
-        endforeach()
+        list(APPEND args_PUBLIC_CLASSES ${generatedPublicClasses})
+        list(APPEND args_PYMODULE_CPPFILES ${generatedPymoduleFiles})
+        list(APPEND args_RESOURCE_FILES ${generatedResourceFiles})
     endif()
 
     # Collect libraries.
@@ -566,6 +533,18 @@ function(pxr_build_test_plugin LIBRARY_NAME)
         ${ARGN}
     )
         
+    # Test plugins must not link against test-only libraries. In static builds,
+    # the test-only library and the core libraries it depends on would be
+    # embedded in the test plugin, duplicating global registries. See
+    # pxr_build_test_library.
+    foreach(lib ${bt_LIBRARIES})
+        if(lib IN_LIST PXR_TEST_LIBS)
+            message(FATAL_ERROR
+                "Test plugin ${LIBRARY_NAME} must not link against test-only "
+                "library ${lib}")
+        endif()
+    endforeach()
+
     add_library(${LIBRARY_NAME}
         SHARED
         ${bt_CPPFILES}
@@ -592,24 +571,10 @@ function(pxr_build_test_plugin LIBRARY_NAME)
     set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
-        set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
-        set(TEST_PLUG_INFO_ROOT "..")
-        set(LIBRARY_FILE "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-        set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
-        set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
-        set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
-
-        file(RELATIVE_PATH 
-            TEST_PLUG_INFO_LIBRARY_PATH
-            "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-            "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
-
-        configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
         # XXX -- We shouldn't have to install to run tests.
-        install(
-            FILES ${testPlugInfoPath}
-            DESTINATION ${testPlugInfoResourceDir})
+        _install_test_resource_files(${LIBRARY_NAME}
+            INSTALL_PREFIX ${bt_INSTALL_PREFIX}
+            FILES "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
     endif()
 
     # We always want this test to build after the package it's under, even if
@@ -634,15 +599,40 @@ endfunction() # pxr_build_test_plugin
 
 # Builds a test-only library that can be be directly linked to unit-test
 # executables. Those executables can consume public headers from the test-only
-# library.
+# library. Test-only libraries are only built when PXR_BUILD_TESTS is enabled.
+#
+# Like core libraries, test-only libraries may contain codeful schemas and
+# registry functions (e.g. TfType registration), and may provide a plugInfo.json
+# to advertise their contents.
+#
+# Unlike core libraries, test-only libraries are never included in the
+# monolithic library. Otherwise, the ABI of the monolithic library would differ
+# depending on whether tests are enabled. Instead, they are always built as
+# individual shared or static libraries, according to BUILD_SHARED_LIBS.
+#
+# Test-only libraries may only be linked by unit-test executables and other
+# test-only libraries. They must not be linked by core libraries, because the
+# core should not depend on code intended only for testing. They must not be
+# linked by test plugins (see pxr_build_test_plugin), because in static builds,
+# a test plugin would embed its own copy of the test-only library and the core
+# libraries it depends on, duplicating global registries.
 function(pxr_build_test_library LIBRARY_NAME)
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
+    set(options
+        INCLUDE_SCHEMA_FILES)
+    set(oneValueArgs
+        INSTALL_PREFIX)
     set(multiValueArgs
         LIBRARIES
         CPPFILES
         PUBLIC_HEADERS
         PRIVATE_HEADERS
         PUBLIC_CLASSES
-        PRIVATE_CLASSES)
+        PRIVATE_CLASSES
+        RESOURCE_FILES)
     cmake_parse_arguments(args
         "${options}"
         "${oneValueArgs}"
@@ -650,16 +640,52 @@ function(pxr_build_test_library LIBRARY_NAME)
         ${ARGN}
     )
 
+    # Inject files listed in generatedSchema.classes.txt into the corresponding
+    # function arguments.
+    if(args_INCLUDE_SCHEMA_FILES)
+        set(filePath "generatedSchema.classes.txt")
+
+        # Register a dependency so that cmake will regenerate the build
+        # system if generatedSchema.classes.txt changes
+        set_property(
+            DIRECTORY 
+            APPEND 
+            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            ${filePath}
+        )
+
+        # TODO: Resource files listed in generatedSchema.classes.txt include
+        # a resource file named "schema.usda:pluginName/schema.usda". For
+        # simplicity, we skip installing files with overridden installation
+        # paths, but we can revisit this in the future.
+        _pxr_parse_generated_schema_classes("${filePath}"
+            SKIP_INSTALL_PATHS
+            OUT_PUBLIC_CLASSES generatedPublicClasses
+            OUT_RESOURCE_FILES generatedResourceFiles)
+
+        list(APPEND args_PUBLIC_CLASSES ${generatedPublicClasses})
+        list(APPEND args_RESOURCE_FILES ${generatedResourceFiles})
+    endif()
+
     # Get list of cpp files
     set(cppFiles ${args_CPPFILES})
     foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
         list(APPEND cppFiles ${className}.cpp)
     endforeach()
 
+    # Test-only libraries are built as shared or static libraries according to
+    # BUILD_SHARED_LIBS. Unlike core libraries, they are never built as OBJECT
+    # libraries for the monolithic library.
     add_library(${LIBRARY_NAME}
-        SHARED
         ${cppFiles}
     )
+
+    # Keep track of test-only libraries in the PXR_TEST_LIBS cache variable so
+    # that they can be linked with whole-archive semantics in static builds,
+    # which is performed by _pxr_target_link_libraries.
+    get_property(help CACHE PXR_TEST_LIBS PROPERTY HELPSTRING)
+    list(APPEND PXR_TEST_LIBS ${LIBRARY_NAME})
+    set(PXR_TEST_LIBS "${PXR_TEST_LIBS}" CACHE INTERNAL "${help}")
 
     _pxr_target_link_libraries(${LIBRARY_NAME}
         ${args_LIBRARIES}
@@ -690,10 +716,32 @@ function(pxr_build_test_library LIBRARY_NAME)
         PREFIX ${PXR_PREFIX}
     )
 
-    # Define macros for api.h
+    # Define macros for api.h.
+    #
+    # As in _pxr_library, PXR_STATIC is defined for static libraries, but not
+    # defined for static libraries in a monolithic build. We unconditionally
+    # define LIBNAME_EXPORTS=1 when building the library, but this definition is
+    # ignored when PXR_STATIC is defined.
     string(TOUPPER ${LIBRARY_NAME} uppercaseName)
+    set(apiPublic "")
+    get_property(libType TARGET ${LIBRARY_NAME} PROPERTY TYPE)
+    if(NOT PXR_BUILD_MONOLITHIC AND libType STREQUAL "STATIC_LIBRARY")
+        set(apiPublic PXR_STATIC=1)
+    endif()
     target_compile_definitions(${LIBRARY_NAME}
-        PRIVATE ${uppercaseName}_EXPORTS=1
+        PUBLIC
+            ${apiPublic}
+        PRIVATE
+            ${uppercaseName}_EXPORTS=1
+    )
+
+    # Define the package name macros used by TF_REGISTRY_FUNCTION and
+    # PLUG_THIS_PLUGIN, so the library's registry functions and plugin are
+    # identified by the library name, as is the case for core libraries.
+    target_compile_definitions(${LIBRARY_NAME}
+        PRIVATE
+            MFB_PACKAGE_NAME=${LIBRARY_NAME}
+            MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
     )
 
     # Find libraries under the install prefix, which has the core USD
@@ -710,6 +758,13 @@ function(pxr_build_test_library LIBRARY_NAME)
         ARCHIVE DESTINATION "tests/lib"
         RUNTIME DESTINATION "tests/lib"
     )
+
+    if(args_RESOURCE_FILES)
+        # XXX -- We shouldn't have to install to run tests.
+        _install_test_resource_files(${LIBRARY_NAME}
+            INSTALL_PREFIX ${args_INSTALL_PREFIX}
+            FILES ${args_RESOURCE_FILES})
+    endif()
 endfunction() # pxr_build_test_library
 
 function(pxr_build_test TEST_NAME)
@@ -983,6 +1038,11 @@ function(pxr_register_test TEST_NAME)
 
     if (bt_IMAGE_DIFF_COMPARE)
         if (IMAGE_DIFF_TOOL)
+            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
+        elseif(TARGET OpenImageIO::idiff)
+            set(IMAGE_DIFF_TOOL_PATH "$<TARGET_FILE_DIR:OpenImageIO::idiff>")
+        endif()
+        if (IMAGE_DIFF_TOOL_PATH)
             foreach (compareFile ${bt_IMAGE_DIFF_COMPARE})
                 set(testWrapperCmd ${testWrapperCmd} --image-diff-compare=${compareFile})
             endforeach ()
@@ -1017,8 +1077,9 @@ function(pxr_register_test TEST_NAME)
 
             # Make sure to add the image diff tool to the PATH so
             # it can be easily found within the testWrapper
-            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
             set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
+        else()
+            message(WARN "idiff was not located. Image comparison will be skipped without failure.")
         endif()
     endif()
 

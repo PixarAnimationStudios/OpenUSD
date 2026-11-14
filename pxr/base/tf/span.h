@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -108,6 +109,9 @@ public:
            typename std::enable_if<
                !std::is_const<element_type>::value &&
                std::is_same<typename Container::value_type, value_type
+                >::value &&
+               std::is_convertible<
+                   decltype(std::declval<Container &>().data()), pointer
                 >::value, Container
            >::type* = 0)
         : _data(cont.data()), _size(cont.size())
@@ -122,6 +126,9 @@ public:
     TfSpan(const Container& cont,
            typename std::enable_if<
                std::is_same<typename Container::value_type, value_type
+                >::value &&
+               std::is_convertible<
+                   decltype(std::declval<Container const &>().data()), pointer
                 >::value, Container
            >::type* = 0)
         : _data(cont.data()), _size(cont.size())
@@ -211,6 +218,10 @@ public:
         TF_DEV_AXIOM(_size >= count);
         return TfSpan<T>(end() - count, count);
     }
+
+    /// Identifies TfSpan as a view type to Python bindings.  Translation units
+    /// that wrap functions taking TfSpan must include pxr/base/tf/pySpan.h.
+    using pxr_boost_python_view_type = void;
 
 private:
     pointer _data = nullptr;

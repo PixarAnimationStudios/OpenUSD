@@ -248,8 +248,8 @@ SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape)
                          CONICAL_FRUSTUM_SEG_TOP_CAP,
                          rayNotParallelToCaps &&
                             IsValidCapHit(tTop,
-                                        shape.conicalFrustum.radiusTop,
-                                        rayShape));
+                                          shape.conicalFrustum.radiusTop,
+                                          rayShape));
 
     const float tBot = (-0.5 * shape.conicalFrustum.height - rayShape.origin.z)
                         * invRayDirZ;
@@ -260,8 +260,8 @@ SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape)
                          CONICAL_FRUSTUM_SEG_BOT_CAP,
                          rayNotParallelToCaps &&
                             IsValidCapHit(tBot,
-                                        shape.conicalFrustum.radiusBot,
-                                        rayShape));
+                                          shape.conicalFrustum.radiusBot,
+                                          rayShape));
 
     // Sort hits in ascending order by t using
     // Batcher's optimal 5-compare network.
@@ -288,4 +288,174 @@ vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
     }
 
     return ComputeConicalFrustumNormal(shape.conicalFrustum, pointShape.position);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Edge.ConicalFrustum
+
+// Returns true if the line and the surface point have opposite facing
+// characteristics.
+bool ShouldSkipLineBasedOnFacing(const ConicalFrustum conicalFrustum,
+                                 const vec3 lineMidPoint,
+                                 const vec3 lineRayDirEye,
+                                 const float Pfacing,
+                                 const mat3 NshapeToNeye)
+{
+    // All points on the line will always have the same normal and facing
+    // characteristic.
+    const vec3 lineNshape = ComputeConicalFrustumNormal(conicalFrustum,
+                                                        lineMidPoint);
+
+    const float lineFacing = ComputeFacing(NshapeToNeye,
+                                           lineNshape,
+                                           lineRayDirEye);
+
+    return Pfacing * lineFacing < 0.0;
+}
+
+// Computes the nearest distance in pixels to the four generatrix lines and the
+// top and bottom rings of the conical frustum.
+float ComputeConicalFrustumEdgeDist(const ConicalFrustum conicalFrustum,
+                                    const vec3 Pshape,
+                                    const vec2 Pscreen,
+                                    const MAT4 shapeToEye,
+                                    const MAT4 shapeToPixelClip,
+                                    const mat3 NshapeToNeye,
+                                    const vec3 PrayDirEye)
+{
+    // Surface point facing characteristic.
+    const vec3 Nshape = ComputeConicalFrustumNormal(conicalFrustum, Pshape);
+
+    const float Pfacing = ComputeFacing(NshapeToNeye, Nshape, PrayDirEye);
+
+    const bool isOrtho = IsCameraOrthographic();
+
+    // Four generatrix lines for the conical frustum.
+    const float halfH = 0.5 * conicalFrustum.height;
+    float minDist = INF;
+
+    HGI_COMPILER_ATTR_UNROLL
+    for (uint i = 0; i < 4; i++) {
+        const float radiusSign = (i % 2) == 0 ? -1.0 : +1.0;
+        const vec2 axisMult = i < 2 ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+
+        const vec2 topCoord = axisMult * radiusSign * conicalFrustum.radiusTop;
+        const vec2 botCoord = axisMult * radiusSign * conicalFrustum.radiusBot;
+
+        LineSeg lineSegShape;
+        lineSegShape.endPoint1 = vec3(topCoord, +halfH);
+        lineSegShape.endPoint2 = vec3(botCoord, -halfH);
+
+        const vec3 lineMidPoint = 0.5 * (lineSegShape.endPoint1 +
+                                         lineSegShape.endPoint2);
+
+        // Orthographic rays are all parallel.
+        vec3 lineRayDirEye = PrayDirEye;
+        if (!isOrtho) {
+            lineRayDirEye = ComputeRayDirectionEye(
+                                TransformPoint(shapeToEye, lineMidPoint));
+        }
+
+        if (!ShouldSkipLineBasedOnFacing(conicalFrustum,
+                                         lineMidPoint,
+                                         lineRayDirEye,
+                                         Pfacing,
+                                         NshapeToNeye)) {
+            const vec2 linePointScreen = ComputeNearestLinePointScreen(
+                                             lineSegShape,
+                                             Pscreen,
+                                             shapeToPixelClip);
+
+            const float lineDist = length(linePointScreen - Pscreen);
+            minDist = min(minDist, lineDist);
+        }
+    }
+
+    // Top and bottom rings.
+    HGI_COMPILER_ATTR_UNROLL
+    for (uint i = 0; i < 2; i++) {
+        const bool isTop = i == 0;
+        const float heightSign = isTop ? +1.0 : -1.0;
+
+        Ring ring;
+        ring.axis = RING_AXIS_Z;
+        ring.center = vec3(0.0, 0.0, heightSign * halfH);
+        ring.radius = abs(isTop ? conicalFrustum.radiusTop
+                                : conicalFrustum.radiusBot);
+
+        const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                        ring,
+                                        Pshape,
+                                        Pscreen,
+                                        shapeToPixelClip);
+
+        const vec3 ringPointNshape = ComputeConicalFrustumNormal(
+                                         conicalFrustum,
+                                         ringPointShape);
+
+        const float ringDist = ComputeFacingAwareScreenDist(Pscreen,
+                                                            ringPointShape,
+                                                            Pfacing,
+                                                            ringPointNshape,
+                                                            NshapeToNeye,
+                                                            shapeToEye,
+                                                            shapeToPixelClip);
+
+        minDist = min(minDist, ringDist);
+    }
+
+    return minDist;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Wire.ConicalFrustum
+
+// Computes the nearest distance in pixels to the wireframe edges.
+float ComputeWireDist(const Shape shape,
+                      const Point pointShape,
+                      const MAT4 shapeToEye,
+                      const MAT4 shapeToPixelClip,
+                      const mat3 NshapeToNeye,
+                      const vec3 PrayDirEye)
+{
+    const vec2 Pscreen = TransformPoint(shapeToPixelClip,
+                                        pointShape.position).xy;
+
+    // Caps.
+    if (pointShape.segment == CONICAL_FRUSTUM_SEG_TOP_CAP ||
+        pointShape.segment == CONICAL_FRUSTUM_SEG_BOT_CAP) {
+        const bool isTop = pointShape.segment == CONICAL_FRUSTUM_SEG_TOP_CAP;
+        const float heightSign = isTop ? +1.0 : -1.0;
+
+        const float halfH = 0.5 * shape.conicalFrustum.height;
+
+        Ring ring;
+        ring.axis = RING_AXIS_Z;
+        ring.center = vec3(0.0, 0.0, heightSign * halfH);
+        ring.radius = abs(isTop ? shape.conicalFrustum.radiusTop
+                                : shape.conicalFrustum.radiusBot);
+
+        const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                        ring,
+                                        pointShape.position,
+                                        Pscreen,
+                                        shapeToPixelClip);
+
+        // The rings share the cap's normal with the surface point,
+        // so no facing check is needed.
+        const float ringDist = ComputeScreenDist(Pscreen,
+                                                 ringPointShape,
+                                                 shapeToPixelClip);
+
+        return ringDist;
+    }
+
+    // Lateral segment.
+    return ComputeConicalFrustumEdgeDist(shape.conicalFrustum,
+                                         pointShape.position,
+                                         Pscreen,
+                                         shapeToEye,
+                                         shapeToPixelClip,
+                                         NshapeToNeye,
+                                         PrayDirEye);
 }

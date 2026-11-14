@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Asm"
+{
+    def "I" (
+        instanceable = true
+        references = @./model.usda@</M>
+    )
+    {
+    }
+}

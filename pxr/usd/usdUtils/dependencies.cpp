@@ -64,6 +64,18 @@ public:
                 processingFunc(layer, depInfo);
             
             if (processedInfo.GetAssetPath().empty()) {
+                // The processing function removed this dependency, so do
+                // not traverse into it either. This is as per UsdUtilsDependencyInfo
+                // contract for GetAssetPath which states that if the returned value 
+                // is an empty string, the system will ignore this path as well as any 
+                // dependencies associated with it.
+		// Note: Exclusion is recorded per anchored path, not per
+                // referencing layer, and each path is traversed at most once.
+                // If layers disagree about the same path, the result depends
+                // on traversal order: neither a per-layer exclusion nor a
+                // per-layer inclusion is guaranteed.
+                excludedPaths.insert(SdfComputeAssetPathRelativeToLayer(
+                    layer, depInfo.GetAssetPath()));
                 return {};
             }
 
@@ -157,8 +169,14 @@ public:
         }
     }
 
+    bool ShouldTraverse(const std::string &anchoredPath) override
+    {
+        return excludedPaths.count(anchoredPath) == 0;
+    }
+
     std::unordered_set<SdfLayerRefPtr, TfHash> layers;
     std::unordered_set<std::string> assets, unresolvedPaths;
+    std::unordered_set<std::string> excludedPaths;
     std::function<UsdUtilsProcessingFunc> processingFunc;
 };
 

@@ -30,17 +30,13 @@ TraceSerialization::Write(
     std::ostream& ostr,
     const std::vector<std::shared_ptr<TraceCollection>>& collections)
 {
-    JsValue colVal;
     if (collections.empty()) {
         return false;
     }
-    {
-        TF_DESCRIBE_SCOPE("Writing JSON");
-        JsWriter js(ostr);
-        Trace_JSONSerialization::WriteCollectionsToJSON(js, collections);
-        return true;
-    }
-    return false;
+
+    TF_DESCRIBE_SCOPE("Writing JSON");
+    JsWriter js(ostr);
+    return Trace_JSONSerialization::WriteCollectionsToJSON(js, collections);
 }
 
 std::unique_ptr<TraceCollection>

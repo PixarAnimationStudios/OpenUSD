@@ -5,7 +5,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 
 from pxr import Tf
 Tf.PreparePythonModule()

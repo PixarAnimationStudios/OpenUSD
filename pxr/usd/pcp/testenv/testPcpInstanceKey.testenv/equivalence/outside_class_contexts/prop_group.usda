@@ -1,0 +1,14 @@
+#usda 1.0
+class "_class_Prop"
+{
+}
+
+def "PropGroup"
+{
+    def "Prop" (
+        inherits = </_class_Prop>
+    )
+    {
+        double x = 1.0
+    }
+}

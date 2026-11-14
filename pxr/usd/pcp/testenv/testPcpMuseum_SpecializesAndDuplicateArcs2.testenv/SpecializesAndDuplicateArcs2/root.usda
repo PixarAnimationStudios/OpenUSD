@@ -1,0 +1,49 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Set/Looks/Mat reaches the specializes arc
+    authored on shaders.usda</Shaders_dsv/Looks/MatA> through a reference
+    and then an internal reference in asset.usda.  Implying that arc
+    across the internal reference maps </Shaders/Looks/Base> to itself,
+    so the prim index contains two inert specializes placeholders for
+    the same site, asset.usda</Shaders/Looks/Base>, both of which share
+    a single propagated node under the root.
+
+    /Shaders inherits /_class_Shaders, so there is an implied inherit
+    of the subroot class /_class_Shaders/Looks/Base that must be
+    propagated through both placeholders up to the root layer stack.
+    We expect opinions from root.usda</_class_Shaders/Looks/Base> on
+    /Set/Looks/Mat, and from its Child on /Set/Looks/Mat/Child.
+
+    /Control/Looks/Mat is the same setup without the internal
+    reference, and should see the same class opinions.
+    """
+)
+
+def "Set" (
+    references = @./asset.usda@</Asset>
+)
+{
+}
+
+def "Control" (
+    references = @./asset.usda@</AssetDirect>
+)
+{
+}
+
+class "_class_Shaders"
+{
+    class "Looks"
+    {
+        class "Base"
+        {
+            int probe = 1
+
+            class "Child"
+            {
+                int probe = 1
+            }
+        }
+    }
+}

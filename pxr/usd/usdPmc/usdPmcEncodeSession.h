@@ -31,8 +31,9 @@ struct UsdPmc_EncodeSession
 {
     /// Construct an encode session for the given mesh.
     /// \param ugm The UsdGeomMesh to encode
-    /// \param options Encoder parameters
-    UsdPmc_EncodeSession(const UsdGeomMesh& ugm, const VtDictionary& options)
+    /// \param options Encoder parameters.  Note the pointer for this parameter
+    /// must remain valid for the lifetime of the encode session.
+    UsdPmc_EncodeSession(const UsdGeomMesh& ugm, const VtDictionary* options)
     : _ugm(ugm), _options(options)
     {}
 
@@ -80,8 +81,8 @@ protected:
     /// Perform the actual encoding
     std::vector<uint8_t> _encode();
 
-    const UsdGeomMesh& _ugm;
-    const VtDictionary& _options;
+    const UsdGeomMesh _ugm;
+    const VtDictionary* _options;
 
     pmc::Encoder _enc;
     pmc::GeometryMeshpart _gmp;

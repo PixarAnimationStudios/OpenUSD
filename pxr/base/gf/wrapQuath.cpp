@@ -13,9 +13,12 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -40,16 +43,6 @@ static string __repr__(GfQuath const &self) {
     return TF_PY_REPR_PREFIX + "Quath(" +
         TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
-}
-
-static GfQuath __truediv__(const GfQuath &self, GfHalf value)
-{
-    return self / value;
-}
-
-static GfQuath& __itruediv__(GfQuath &self, GfHalf value)
-{
-    return self /= value;
 }
 
 static size_t __hash__(GfQuath const &self) {
@@ -150,18 +143,9 @@ void wrapQuath()
     to_python_converter<std::vector<GfQuath>,
         TfPySequenceToPython<std::vector<GfQuath> > >();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / GfHalf() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= GfHalf() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
+    // Let C-contiguous buffers of shape (N, 4), with each quaternion's
+    // imaginary part followed by its real part, be passed to wrapped functions
+    // taking TfSpan<GfQuath>.
+    TfPyRegisterSpanBufferLayout<GfQuath>(
+        Gf_GetPyBufferFmtFor<GfHalf>()[0], { 4 });
 }

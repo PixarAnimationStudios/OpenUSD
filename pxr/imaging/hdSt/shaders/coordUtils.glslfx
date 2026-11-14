@@ -35,6 +35,14 @@ ComputeMax3(float a, float b, float c)
     return max(a, max(b, c));
 }
 
+// Normalizes v, or returns fallback if v is (nearly) zero length.
+vec2
+SafeNormalize(const vec2 v, const vec2 fallback)
+{
+    const float lenSq = dot(v, v);
+    return lenSq > 1e-20 ? v * inversesqrt(lenSq) : fallback;
+}
+
 // Computes the inverse of the scaling of an affine transform.
 // Approximately - since most transforms have uniform scaling
 // and no shear, this is fine.
@@ -105,7 +113,7 @@ ComputeRayDirectionEye(vec3 rayPointEye)
 }
 
 --- --------------------------------------------------------------------------
--- glsl CoordUtils.Depth
+-- glsl CoordUtils.Depth.Common
 
 // Convert depth value z in NDC to depth in eye space [near, far].
 float
@@ -167,20 +175,28 @@ WindowToNDCDepth(float windowDepth)
 #endif
 }
 
-// The depth at which we hit opaque geometry in eye space (negative
-// value by OpenGL convention).
+--- --------------------------------------------------------------------------
+-- glsl CoordUtils.Depth.Fragment
+
+// The window-space depth [0,1] at which we hit opaque geometry.
 float
 SampleZBuffer(vec2 fragcoord)
 {
 #ifdef HD_HAS_depthReadback
     // Sample the z-Buffer at the frag coordinate.
-    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
-                                       ivec2(fragcoord),
-                                       /* lod = */ 0).x;
+    return texelFetch(HdGetSampler_depthReadback(),
+                      ivec2(fragcoord),
+                      /* lod = */ 0).x;
 #else
     // Assume far-plane if we cannot sample the z-Buffer.
-    const float bufferVal = 1.0;
+    return 1.0;
 #endif
+}
 
-    return NDCtoEyeZ(WindowToNDCDepth(bufferVal));
+// The depth at which we hit opaque geometry in eye space (negative
+// value by OpenGL convention).
+float
+SampleZBufferEye(vec2 fragCoord)
+{
+    return NDCtoEyeZ(WindowToNDCDepth(SampleZBuffer(fragCoord)));
 }

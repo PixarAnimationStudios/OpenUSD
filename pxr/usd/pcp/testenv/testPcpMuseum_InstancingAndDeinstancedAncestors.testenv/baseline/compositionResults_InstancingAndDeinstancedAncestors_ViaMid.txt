@@ -1,0 +1,26 @@
+Loading @InstancingAndDeinstancedAncestors/viaMid.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     viaMid.usda
+
+------------------------------------------------------------------------
+Results for composing </ViaMid>
+
+Prim Stack:
+    viaMid.usda          /ViaMid
+    inner_plain.usda     /Inner/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light_plain.usda     /Light/I/rig/propagated/X
+    light_plain.usda     /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/ViaMid.a:
+    inner_plain.usda     /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light_plain.usda     /Light/I/rig/propagated/X.a
+

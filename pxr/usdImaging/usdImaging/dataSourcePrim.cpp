@@ -19,15 +19,16 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
+#include "pxr/imaging/hd/surfaceSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usdGeom/gprim.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -513,6 +514,35 @@ UsdImagingDataSourceXform::Get(const TfToken &name)
 
 // ----------------------------------------------------------------------------
 
+UsdImagingDataSourceSurface::UsdImagingDataSourceSurface(
+        const UsdAttribute &doubleSidedAttr,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+    : _doubleSidedAttr(doubleSidedAttr)
+    , _stageGlobals(stageGlobals)
+{
+}
+
+TfTokenVector
+UsdImagingDataSourceSurface::GetNames()
+{
+    return {
+        HdSurfaceSchemaTokens->doubleSided,
+    };
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourceSurface::Get(const TfToken &name)
+{
+    if (name == HdSurfaceSchemaTokens->doubleSided) {
+        return UsdImagingDataSourceAttribute<bool>::New(
+                _doubleSidedAttr, _stageGlobals);
+    }
+
+    return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
 UsdImagingDataSourcePrimOrigin::UsdImagingDataSourcePrimOrigin(
         const UsdPrim &usdPrim)
   : _usdPrim(usdPrim)
@@ -726,6 +756,10 @@ UsdImagingDataSourcePrim::GetNames()
         vec.push_back(HdExtentSchema::GetSchemaToken());
     }
 
+    if (usdPrim.IsA<UsdGeomGprim>()) {
+        vec.push_back(HdSurfaceSchema::GetSchemaToken());
+    }
+
     if (usdPrim.IsModel()) {
         vec.push_back(UsdImagingModelSchema::GetSchemaToken());
     }
@@ -818,6 +852,19 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         } else {
             return nullptr;
         }
+    } else if (name == HdSurfaceSchema::GetSchemaToken()) {
+        UsdGeomGprim gprim(_GetUsdPrim());
+        if (!gprim) {
+            return nullptr;
+        }
+
+        if (const auto &doubleSidedAttr = gprim.GetDoubleSidedAttr()) {
+            return UsdImagingDataSourceSurface::New(doubleSidedAttr,
+                                                    _GetStageGlobals());
+        }
+
+        return nullptr;
+        
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
             if (UsdImagingDataSourcePrim_ModelAPI::HasData(_usdPrim)) {
@@ -889,6 +936,10 @@ UsdImagingDataSourcePrim::Invalidate(
 
         if (propertyName == UsdGeomTokens->extentsHint) {
             locators.insert(UsdImagingExtentsHintSchema::GetDefaultLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->doubleSided) {
+            locators.insert(HdSurfaceSchema::GetDoubleSidedLocator());
         }
 
         if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {

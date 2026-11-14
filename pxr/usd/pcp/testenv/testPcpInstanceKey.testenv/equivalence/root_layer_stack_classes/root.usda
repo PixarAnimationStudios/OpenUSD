@@ -1,0 +1,47 @@
+#usda 1.0
+class "_class_Root"
+{
+    def "fromRoot"
+    {
+    }
+}
+
+class "_class_FromSet"
+{
+    def "fromRoot"
+    {
+    }
+}
+
+def "World"
+{
+    def "classes"
+    {
+        over "Widget"
+        {
+            def "fromRoot"
+            {
+            }
+        }
+    }
+
+    def "one" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+    }
+
+    def "two" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+    }
+
+    def "set" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+}

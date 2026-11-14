@@ -47,7 +47,11 @@ enum operator_id
     op_iadd,
     op_isub,
     op_imul,
+#if PY_VERSION_HEX >= 0x03000000
+    op_itruediv,
+#else
     op_idiv,
+#endif
     op_imod,
     op_ilshift,
     op_irshift,

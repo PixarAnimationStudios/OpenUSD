@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import division
 
 import unittest
 from pxr import Gf, Vt

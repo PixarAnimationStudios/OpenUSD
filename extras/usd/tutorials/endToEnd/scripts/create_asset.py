@@ -11,7 +11,6 @@ Creates an asset file that consists of a top level layer and sublayers for
 shading and geometry.
 '''
 
-from __future__ import print_function
 
 import os
 from pxr import Kind, Sdf, Usd, UsdGeom

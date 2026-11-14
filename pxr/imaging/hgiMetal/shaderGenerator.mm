@@ -500,6 +500,7 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
               "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
               "#define dFdx    dfdx\n"
               "#define dFdy    dfdy\n"
+              "#define inversesqrt rsqrt\n"
 
               "#define lessThan(a, b) ((a) < (b))\n"
               "#define lessThanEqual(a, b) ((a) <= (b))\n"

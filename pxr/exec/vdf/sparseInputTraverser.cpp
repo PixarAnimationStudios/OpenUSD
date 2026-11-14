@@ -7,6 +7,7 @@
 #include "pxr/exec/vdf/sparseInputTraverser.h"
 
 #include "pxr/exec/vdf/connection.h"
+#include "pxr/exec/vdf/debugCodes.h"
 #include "pxr/exec/vdf/network.h"
 #include "pxr/exec/vdf/poolChainIndexer.h"
 #include "pxr/exec/vdf/types.h"
@@ -18,11 +19,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-
-#define _TRAVERSAL_TRACING 0
-#if _TRAVERSAL_TRACING
-#include <iostream>
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -262,12 +258,9 @@ VdfSparseInputTraverser::_InitTraversal(
 {
     TF_AXIOM(state);
 
-    #if _TRAVERSAL_TRACING
-        std::cout << "\n"
-                  << "Starting sparse input traversal with "
-                  << request.size()
-                  << " outputs\n";
-    #endif
+    TF_DEBUG(VDF_SPARSE_INPUT_TRAVERSER_TRACING).Msg(
+        "\nStarting sparse input traversal with %zu outputs\n",
+        request.size());
 
     // Early bail-out for empty request.
     if (request.empty()) {
@@ -310,11 +303,9 @@ VdfSparseInputTraverser::_InitTraversal(
 
             const _PrioritizedOutput &top = topIter->second;
 
-            #if _TRAVERSAL_TRACING
-                std::cout << "  Traversing pool output \""
-                          << top.GetOutput()->GetDebugName()
-                          << "\"" << std::endl;
-            #endif
+            TF_DEBUG(VDF_SPARSE_INPUT_TRAVERSER_TRACING).Msg(
+                "  Traversing pool output \"%s\"\n",
+                top.GetOutput()->GetDebugName().c_str());
 
             // Process the output.
 
@@ -355,13 +346,10 @@ VdfSparseInputTraverser::_TraverseOutput(
     const VdfOutput       *output       = maskedOutput.GetOutput();
     TF_DEV_AXIOM(output);
 
-    #if _TRAVERSAL_TRACING
-        std::cout << "  Traversing output "
-                  << output->GetDebugName()
-                  << " with mask = "
-                  << maskedOutput.GetMask().GetRLEString()
-                  << "\n";
-    #endif
+    TF_DEBUG(VDF_SPARSE_INPUT_TRAVERSER_TRACING).Msg(
+        "  Traversing output %s with mask = %s\n",
+        output->GetDebugName().c_str(),
+        maskedOutput.GetMask().GetRLEString().c_str());
 
     const VdfNode &node = output->GetNode();
 

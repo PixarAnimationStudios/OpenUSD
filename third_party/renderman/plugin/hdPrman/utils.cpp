@@ -34,6 +34,7 @@
 #include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/usd/ar/resolver.h"
 
@@ -47,6 +48,13 @@
 
 #include "pxr/usd/sdf/assetPath.h"
 
+// needed for IsRtxHioNeeded
+#include <algorithm>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <regex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if PXR_VERSION < 2505
@@ -56,6 +64,10 @@ using SdrStringVec = NdrStringVec;
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (primvar)
+    (tiles)
+    (PixarTextureFormat)
+    ((tiffPixarTextureFormat, "TIFF Pixar Texture Format"))
+    ((originalFileFormat, "Original File Format"))
 );
 
 extern TfEnvSetting<bool> HD_PRMAN_DISABLE_ADAPTIVE_SAMPLING;
@@ -714,13 +726,6 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
     }
 };
 
-bool
-_IsNativeRenderManFormat(std::string const &path)
-{
-    const std::string ext = ArGetResolver().GetExtension(path);
-    return (ext == "tex") || (ext == "bkm") || (ext == "ptc") || (ext == "ies");
-}
-
 /// Update the supplied list of options using searchpaths
 /// pulled from envrionment variables:
 ///
@@ -866,6 +871,209 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
 
 namespace HdPrman_Utils {
 
+#if PXR_VERSION < 2701
+// Check if an EXR file has kRmanExrTileSize x kRmanExrTileSize sized tiles.
+// Reads raw EXR header bytes directly.
+// Should be removed once HioImage can output tile size in all USD versions we support.
+static bool
+_HasRenderManExrTileSize(const std::string& filename)
+{
+    constexpr uint32_t kRmanExrTileSize = 32;
+
+    // Read EXR file
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        return false;
+    }
+
+    // Read EXR magic number
+    uint32_t magic;
+    if (!file.read(reinterpret_cast<char*>(&magic), sizeof(magic))
+        || magic != 0x01312f76) {
+        return false;
+    }
+
+    // Check tiled flag (bit 9 of version field)
+    uint32_t version;
+    if (!file.read(reinterpret_cast<char*>(&version), sizeof(version))
+        || !(version & 0x200)) {
+        return false;
+    }
+
+    // Scan header attributes.  
+    // Each attribute is layed out as:
+    // name\0  type\0  size(int32)  value[size]
+    // An empty name (lone \0) marks end of header.
+    // Cap to 64KB to guard against corrupt files that lack an end-of-header marker.
+    constexpr std::streamoff kMaxHeaderBytes = 65536;
+    char name[256], type[256];
+    while (file.tellg() < kMaxHeaderBytes)
+    {
+        // Read Attribute Name
+        if (!file.getline(name, sizeof(name), '\0') || name[0] == '\0') {
+            break;
+        }
+
+        // Read Attribute Type
+        if (!file.getline(type, sizeof(type), '\0')) {
+            break;
+        }
+
+        // Read Size of Attribute Data
+        int32_t size;
+        if (!file.read(reinterpret_cast<char*>(&size), sizeof(size)) || size <= 0) {
+            break;
+        }
+
+        // If this is the tiles attribute read the data and return
+        if (strcmp(name, "tiles") == 0 && strcmp(type, "tiledesc") == 0 && size >= 9) {
+            uint32_t xSize, ySize;
+            if (file.read(reinterpret_cast<char*>(&xSize), sizeof(xSize))
+            &&  file.read(reinterpret_cast<char*>(&ySize), sizeof(ySize))) {
+                return (xSize == kRmanExrTileSize && ySize == kRmanExrTileSize);
+            }
+            break;
+        }
+
+        // Otherwise read until the size of the attribute data
+        if (!file.seekg(size, std::ios::cur)) {
+            break;
+        }
+    }
+
+    return false;
+}
+#endif
+
+bool
+IsRtxHioNeeded(const std::string& filename)
+{
+    const std::string ext = ArGetResolver().GetExtension(filename);
+
+    // Don't load RenderMan native formats.
+    if (ext.empty() 
+    || (ext == "tex")
+    || (ext == "bkm") 
+    || (ext == "ptc") 
+    || (ext == "b2r") 
+    || (ext == "ies")) {
+        return false;
+    }
+
+    std::vector<std::string> files;
+    std::filesystem::path fs_path = filename.c_str();
+
+    if (fs_path.filename().string().find("<") != std::string::npos &&
+        std::regex_search(
+            fs_path.filename().string(), std::regex("<UDIM>|<primstr:.*>"))) {
+        try {
+            // replace the tokens with a regex
+            // <UDIM> -> [0-9]{4}
+            // <primstr:.*> -> .*
+            std::string replaced = std::regex_replace(
+                fs_path.filename().string(), std::regex("<UDIM>"), "[0-9]{4}");
+            replaced = std::regex_replace(
+                replaced, std::regex("<primstr:.*>"), ".*");
+            std::regex pattern(replaced);
+
+            for (const auto& entry :
+                 std::filesystem::directory_iterator(fs_path.parent_path())) {
+                if (entry.is_regular_file()) {
+                    // check if this file matches the regex pattern
+                    if (std::regex_match(
+                            entry.path().filename().string(), pattern)) {
+                        files.push_back(entry.path().string());
+
+                        // NOTE: for now, we only grab the first file that
+                        // matches the pattern. The assumption is that if one of
+                        // the files in the UDIM is already mipmapped the rest
+                        // should be as well.
+                        //
+                        // If we ever we decide we have to check all the files
+                        // in the UDIM range, remove this break
+                        break;
+                    }
+                }
+            }
+        } catch (const std::filesystem::filesystem_error& e) {
+            TF_WARN("std::filesystem error: %s\n", e.what());
+        }
+    }
+    else {
+        // file has no recognized tokens
+        files.push_back(filename);
+    }
+
+    // Loop through the vector of files and see if they are already mipmapped
+    // that RenderMan can read directly
+    for (const std::string& file : files) {
+
+        // If HioImage can't support the file type just skip
+        static HioImageRegistry& registry = HioImageRegistry::GetInstance();
+        if (!registry.IsSupportedImageFile(file)) {
+            return false;
+        }
+
+        HioImageSharedPtr image = HioImage::OpenForReading(file);
+        if (image) {
+            int width = image->GetWidth();
+            int height = image->GetHeight();
+
+            // Check Image is power of 2
+            if (((width & (width - 1)) != 0) ||
+                ((height & (height - 1)) != 0)) {
+                return true;
+            }
+
+            // For EXR files, check that tile sizes are compatible with
+            // RenderMan's texture reader (requires 32x32 tiles).
+#if PXR_VERSION >= 2701
+            if (ext == "exr") {
+                VtValue val;
+                if (!image->GetMetadata(_tokens->tiles, &val) ||
+                    !val.CanCast<GfVec2i>()) {
+                    // EXR is not tiled. Use RtxHioImage.
+                    return true;
+                }
+
+                constexpr uint32_t kRmanExrTileSize = 32;
+                val = val.Cast<GfVec2i>();
+                const GfVec2i tileSize = val.UncheckedGet<GfVec2i>();
+                if (tileSize[0] != kRmanExrTileSize ||
+                    tileSize[1] != kRmanExrTileSize) {
+                    // EXR tile size doesn't match RenderMan's. Use RtxHioImage.
+                    return true;
+                }
+            }
+#else
+            if (ext == "exr" && !_HasRenderManExrTileSize(file)) {
+                return true;
+            }
+#endif
+
+            // Check the metadata to see if we have the right tags
+            VtValue val;
+            if (image->GetMetadata(_tokens->PixarTextureFormat, &val)) {
+                continue;
+            }
+            else if (image->GetMetadata(_tokens->tiffPixarTextureFormat, &val)) {
+                continue;
+            }
+            else if (image->GetMetadata(_tokens->originalFileFormat, &val)) {
+                std::string v = val.UncheckedGet<std::string>();
+                if (v == std::string("Texture")) {
+                    continue;
+                }
+            }
+
+            // Metadata was missing. Use RtxHioImage.
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool
 SetParamFromVtValue(
     RtUString const& name,
@@ -937,10 +1145,6 @@ ResolveAssetToRtUString(
     bool writeAsset,
     char const *debugNodeType /* = nullptr*/)
 {
-
-    static HioImageRegistry& imageRegistry =
-        HioImageRegistry::GetInstance();
-
     std::string v = asset.GetResolvedPath();
     if (v.empty()) {
         v = asset.GetAssetPath();
@@ -952,12 +1156,7 @@ ResolveAssetToRtUString(
     // instead of read (for example the PxrBakeTexture node).
     // Note: we cannot read tex files from USDZ until we add support
     // to RtxHioImage (or another Rtx plugin) for this.
-    // FUTURE NOTE: When we want to support primvar substitutions with
-    // the use of non-tex textures, the following clause can no longer
-    // be an "else if" (because such paths won't ArResolve), and we may
-    // not be able to even do an extension check...
-    else if (!writeAsset && !_IsNativeRenderManFormat(v) &&
-             imageRegistry.IsSupportedImageFile(v)) {
+    if (!v.empty() && !writeAsset && IsRtxHioNeeded(v)) {
         v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
             "?filename=" + v + (flipTexture ? "" : "&flipped=false");
     }

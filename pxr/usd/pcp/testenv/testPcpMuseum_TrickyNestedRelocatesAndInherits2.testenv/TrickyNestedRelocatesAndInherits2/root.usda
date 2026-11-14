@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    """
+    This museum case uses the same charrig.usda and feathers.usda as
+    TrickyNestedRelocatesAndInherits, and demonstrates that a reference plus
+    overrides composes the same as the target with those overrides authored
+    in it.
+
+    root.usda references /CharRig at /Saverio and authors class opinions on
+    /Saverio/Rig/SymWing/Control/Flight01 and its child X.  In charrig.usda,
+    the nested relocate Rig/RWing/Deform/Flight01Rig/Control ->
+    Control/RWing/Flight01 elides the SymWing/Control/Flight01 class opinions
+    from /CharRig/Control/RWing/Flight01, so the root.usda opinions should
+    not apply to /Saverio/Control/RWing/Flight01 or its child X either.
+    Previously, the implied class for Control/RWing was carried down to
+    Control/RWing/Flight01 in root.usda, even though the corresponding class
+    in charrig.usda was elided there.
+    """
+)
+
+def "Saverio" (
+    references = @./charrig.usda@</CharRig>
+)
+{
+    over "Rig"
+    {
+        over "SymWing"
+        {
+            over "Control"
+            {
+                over "Flight01"
+                {
+                    string probe = "root SymWing/Control/Flight01"
+
+                    over "X"
+                    {
+                        string probe = "root SymWing/Control/Flight01/X"
+                    }
+                }
+            }
+        }
+    }
+}

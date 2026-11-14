@@ -1,0 +1,73 @@
+#usda 1.0
+(
+    """
+    This museum case exercises class arcs beneath an instance that is
+    brought in ancestrally from another layer stack.
+
+    /World/Set/Instance and /World/Twin both reference </Asset> in
+    asset.usda and have equal instance keys.  The prims beneath them
+    inherit or specialize classes, and set.usda has overrides on those
+    classes that are local opinions about descendants of
+    /Set/Instance.  Like the corresponding overrides on /World/Twin in
+    this layer, they are ignored.
+
+    The implied class arcs into set.usda are added in recursive prim
+    indexing calls beneath nodes that instancing has made inert.  Nodes
+    added beneath such nodes are inert too, unless they are class arcs to
+    paths outside the instance.
+
+    The root class _class_Root lies outside the instances, so its
+    overrides apply as they do without instancing: the one in this layer
+    to both instances, and the one in set.usda to /World/Set/Instance.
+    The instance key does not yet reflect the latter, so the two instances
+    compose differently (see GitHub issue #3201).  The class
+    /World/Classes/_class_World, which lies beneath an ancestor of the
+    instances but outside them, applies to both.
+    """
+)
+
+class "_class_Root"
+{
+    def "From_root_class_in_root"
+    {
+    }
+}
+
+def "World"
+{
+    def "Classes"
+    {
+        class "_class_World"
+        {
+            def "From_world_class_in_root"
+            {
+            }
+        }
+    }
+
+    def "Set" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+
+    def "Twin" (
+        instanceable = true
+        references = @./asset.usda@</Asset>
+    )
+    {
+        over "_class_Inherited"
+        {
+            def "From_inherited_class_in_root"
+            {
+            }
+        }
+
+        over "_class_Specialized"
+        {
+            def "From_specialized_class_in_root"
+            {
+            }
+        }
+    }
+}

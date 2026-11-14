@@ -134,7 +134,19 @@ _DoSerializationTest(
 
         const TsSpline spline2 = attr2.GetSpline();
         TF_AXIOM(spline2.IsEmpty() == isEmpty);
-        TF_AXIOM(spline == spline2);
+        if (spline.GetValueType()) {
+            TF_AXIOM(spline == spline2);
+        } else {
+            // Untyped splines must be empty.
+            TF_AXIOM(spline.IsEmpty());
+            TF_AXIOM(spline2.IsEmpty());
+            TF_AXIOM(spline2.GetValueType() == attrType.GetType());
+            TF_AXIOM(spline.GetCurveType() == spline2.GetCurveType());
+            TF_AXIOM(
+                spline.GetPreExtrapolation() == spline2.GetPreExtrapolation());
+            TF_AXIOM(
+                spline.GetPostExtrapolation() == spline2.GetPostExtrapolation());
+        }
     }
 }
 
@@ -199,6 +211,14 @@ TestSerializationEmpty()
     // Need to specify a Spline supported value type for the empty spline to be
     // valid.
     _DoSerializationTest("Empty", TsSpline(attrType.GetType()), attrType, true);
+
+    // Untyped splines get assigned a type when the spline is set on an
+    // attribute.
+    TsSpline untyped;
+    // Set a few non-default values so we can verify they were preserved.
+    untyped.SetCurveType(TsCurveTypeHermite);
+    untyped.SetPreExtrapolation(TsExtrapLinear);
+    _DoSerializationTest("Untyped", TsSpline(), attrType, true);
 }
 
 static

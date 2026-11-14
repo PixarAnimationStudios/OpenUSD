@@ -84,6 +84,7 @@ public:
     HD_API
     HdSubdivisionTagsSchema GetSubdivisionTags() const;
 
+    /// Deprecated. Use the prim-level surface schema instead.
     HD_API
     HdBoolDataSourceHandle GetDoubleSided() const; 
 

@@ -39,7 +39,6 @@ r'''>>> import pickle2_ext
     Incomplete pickle support (__getstate_manages_dict__ not set)
 '''
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

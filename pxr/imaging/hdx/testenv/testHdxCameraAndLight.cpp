@@ -121,8 +121,9 @@ static void CameraAndLightTest()
 
     engine.Execute(index.get(), &tasks);
 
-    // batch rebuilt
-    VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
+    // No shadow task is part of this test, so no shadow render pass picks up
+    // the new collection, and the main render pass's batches are not rebuilt.
+    VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 
     // Update shadow collection again with the same data
     delegate->SetLight(light, HdLightTokens->shadowCollection,
@@ -133,7 +134,7 @@ static void CameraAndLightTest()
     engine.Execute(index.get(), &tasks);
 
     // batch should not be rebuilt
-    VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 2);
+    VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);
 }
 
 int main()

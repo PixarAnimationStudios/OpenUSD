@@ -51,6 +51,15 @@ protected:
                HdTaskContext* ctx,
                HdDirtyBits* dirtyBits) override;
 
+    HdRenderPassStateSharedPtr _GetTranslucentPassState() const {
+        return _translucentPassState;
+    }
+
+    /// Whether Prepare() determined this task should draw this frame.
+    bool _ShouldDraw() const {
+        return _oitShouldDraw;
+    }
+
 private:
     HdxOitRenderTask() = delete;
     HdxOitRenderTask(const HdxOitRenderTask &) = delete;
@@ -58,9 +67,16 @@ private:
 
     HdStRenderPassShaderSharedPtr _translucentPassShader;
     HdStRenderPassShaderSharedPtr _opaquePassShader;
-    const bool _isOitEnabled;
     HdRenderPassStateSharedPtr _translucentPassState;
     HdRenderPassSharedPtr _translucentPass;
+    // Set at initialization time.
+    const bool _isOitEnabled;
+    // Prepare() does a bunch of analysis to figure out whether the OIT
+    // task should run this frame.
+    bool _oitShouldDraw;
+
+    // Indicates if the shader will write to the depth buffer.
+    bool _translucentPassHasCustomDepth;
 };
 
 

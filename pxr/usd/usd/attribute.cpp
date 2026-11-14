@@ -297,12 +297,25 @@ UsdAttribute::SetSpline(const TsSpline &spline) const
 
     // Verify a spline of the correct value type has been provided.
     if (spline.GetValueType() != attrType) {
-        TF_CODING_ERROR("Can't set spline of type '%s' on <%s>, "
-                        "which requires splines of type '%s'",
-                        spline.GetValueType().GetTypeName().c_str(),
-                        GetPath().GetText(),
-                        attrType.GetTypeName().c_str());
-        return false;
+        if (!spline.CanSetValueType(attrType)) {
+            TF_CODING_ERROR("Can't set spline of type '%s' on <%s>, "
+                            "which requires splines of type '%s'",
+                            spline.GetValueType().GetTypeName().c_str(),
+                            GetPath().GetText(),
+                            attrType.GetTypeName().c_str());
+            return false;
+        }
+
+        // Copy the spline (it has no knots or we wouldn't be here) and set its
+        // valueType.
+        TsSpline retypedSpline(spline);
+        retypedSpline.SetValueType(attrType);
+    
+        return _GetStage()->_SetMetadata(
+            *this,                 // write a field in our attribute spec
+            SdfFieldKeys->Spline,  // write the Spline field
+            TfToken(),             // not a dict field, so no dict key
+            retypedSpline);        // write this value
     }
     
     return _GetStage()->_SetMetadata(

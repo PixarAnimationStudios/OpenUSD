@@ -34,6 +34,14 @@ def "Params1" (
     int TestPcp_num = 3
 }
 
+# A class specialized from within this layer, so that a reference to
+# </SpecializesParams1> brings in the specializes arc ahead of the root.
+def "SpecializesParams1" (
+    specializes = </Params1>
+    )
+{
+}
+
 def "Params2" (
     TestPcp_depth = 3
     TestPcp_radius = 50

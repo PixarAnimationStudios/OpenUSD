@@ -39,6 +39,44 @@ _HasDrawItems(HdRenderPassSharedPtr pass,
     return hdStRenderPass && hdStRenderPass->HasDrawItems(renderTags);
 }
 
+// Shadow passes enable depth clamping, which disables the rasterizer's near
+// plane clipping. Some drivers then mis-rasterize triangles that cross the
+// center of projection (clip-space w = 0) of a perspective shadow frustum,
+// dropping coverage that should be kept. Restore well-defined behavior by
+// clipping just in front of the center of projection (w >= epsilon), which
+// only removes geometry the frustum's side planes would exclude anyway, so
+// casters in front of the near plane are still depth clamped.
+//
+// Note that OpenGL defines clipping as following:
+// http://registry.khronos.org/OpenGL/specs/gl/glspec46.core.pdf (page 454)
+// The view volume is -w <= x <= w; -w <= y <= w; the z check is omitted
+// for shadow maps.  If w < 0 this inequality is impossible to satisfy so this
+// clip plane should be a no-op.  Vulkan & Metal also clip before perspective
+// divide.  However, this clip plane fixes observed rasterization issues.
+// Annoyingly, I haven't been able to distill a unit test yet :|.
+static HdRenderPassState::ClipPlanesVector
+_ComputeShadowClipPlanes(GfMatrix4d const &projection)
+{
+    const GfVec4d wPlane = projection.GetColumn(3);
+
+    // Orthographic projections have constant w; nothing to clip.
+    if (GfVec3d(wPlane[0], wPlane[1], wPlane[2]) == GfVec3d(0.0)) {
+        return {};
+    }
+
+    // Use a small fraction of w at the center of the clip volume so that
+    // epsilon scales with the frustum.
+    // A valid projection maps the clip volume's center to w > 0.
+    const GfVec4d center =
+        GfVec4d(0.0, 0.0, 0.0, 1.0) * projection.GetInverse();
+    if (center[3] <= 0.0) {
+        return {};
+    }
+    const double epsilon = 1e-3 / center[3];
+
+    return { wPlane - GfVec4d(0.0, 0.0, 0.0, epsilon) };
+}
+
 HdxShadowTask::HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
     , _passes()
@@ -286,13 +324,21 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 
             GfVec2i shadowMapRes = shadows->GetShadowMapSize(shadowMapId);
 
+            const GfMatrix4d shadowProj =
+                shadows->GetProjectionMatrix(shadowMapId);
+
             // Set camera framing based on the shadow map's, which is computed 
             // in HdxSimpleLightTask.
+
+            // Note that for perspective shadow projections, we optionally add a clip
+            // plane to work around an observed driver bug (on Linux GL) where
+            // triangles that cross the projection point with depth clamp on are clipped
+            // incorrectly.  The clip plane should be a no-op on a correct driver.
             _renderPassStates[passId]->SetCameraFramingState( 
                 shadows->GetViewMatrix(shadowMapId), 
-                shadows->GetProjectionMatrix(shadowMapId),
+                shadowProj,
                 GfVec4d(0,0,shadowMapRes[0], shadowMapRes[1]),
-                HdRenderPassState::ClipPlanesVector());
+                _ComputeShadowClipPlanes(shadowProj));
             
             // Set AOV bindings.
             if (shadowMapId < shadowAovBindings.size()) {

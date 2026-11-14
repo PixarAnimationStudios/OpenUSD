@@ -6,8 +6,6 @@
 
 #include "hdPrman/dependencyForwardingSceneIndexPlugin.h"
 
-#if PXR_VERSION >= 2208
-
 #include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
@@ -50,5 +48,3 @@ HdPrman_DependencyForwardingSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // PXR_VERSION >= 2208

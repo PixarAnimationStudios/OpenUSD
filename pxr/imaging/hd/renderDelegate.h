@@ -397,6 +397,20 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     ///
+    /// Signal to beginning of execution scope, renderers can use this for
+    /// any garbage collection or signalling debugging utilities
+    ///
+    HD_API
+    virtual void BeginExecute();
+
+    ///
+    /// Signal to beginning of execution scope, renderers can use this for
+    /// any garbage collection or signalling debugging utilities
+    ///
+    HD_API
+    virtual void EndExecute();
+
+    ///
     /// Notification point from the Engine to the delegate.
     /// This notification occurs after all Sync's have completed and
     /// before task execution.

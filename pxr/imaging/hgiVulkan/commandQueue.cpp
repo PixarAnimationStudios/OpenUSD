@@ -10,9 +10,17 @@
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEFER_COMMANDBUFFER_SUBMIT_COUNT, -1,
+    "Controls the number of enqueued command buffers before vkQueueSubmit"
+    "is called. Enqueued buffers will also be flushed on wait or explicit "
+    "flush. This can reduce CPU overhead by reducing the number of queue "
+    "submits, at the cost of increased latency in CPU bound environments. "
+    "values less than 1 will be interpreted as infinite.");
 
 static HgiVulkanCommandQueue::HgiVulkan_CommandPool*
 _CreateCommandPool(HgiVulkanDevice* device)
@@ -128,8 +136,13 @@ HgiVulkanCommandQueue::SubmitToQueue(
     cb->SetCompletedTimelineValue(_timelineNextVal);
     _queuedBuffers.push_back(cb);
 
-    // Optional blocking flush and wait.
-    if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+    const int queuedBuffersEnvRaw =
+        TfGetEnvSetting(HGIVULKAN_DEFER_COMMANDBUFFER_SUBMIT_COUNT);
+    const size_t queuedBuffersMax = queuedBuffersEnvRaw > 0 ?
+        queuedBuffersEnvRaw : SIZE_MAX; 
+    // Flush when required to wait, or when enqueued buffers exceeds threshold
+    if (wait == HgiSubmitWaitTypeWaitUntilCompleted ||
+        _queuedBuffers.size() > queuedBuffersMax) {
         Flush(wait);
     }
 }

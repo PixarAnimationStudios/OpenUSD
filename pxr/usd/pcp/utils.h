@@ -14,6 +14,7 @@
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <string>
@@ -212,7 +213,108 @@ Pcp_IsPropagatedSpecializesNode(
 {
     return (PcpIsSpecializeArc(node._graph->GetArcType(node._nodeIdx)) &&
             node.GetParentNode() == node.GetRootNode() &&
-            node.GetSite() == node.GetOriginNode().GetSite());
+            node.HasSameSiteAs(node.GetOriginNode()));
+}
+
+// Returns true if the given node was elided during prim indexing, so that
+// neither it nor any node implied from it may contribute opinions.  Unlike
+// culling, this is independent of PcpPrimIndexInputs::Cull, and unlike
+// inertness, it distinguishes these nodes from placeholders.
+inline bool
+Pcp_IsElided(
+    const PcpNodeRef& node)
+{
+    return node._graph->_unshared[node._nodeIdx].elided;
+}
+
+// Marks the given node as elided.  See Pcp_IsElided.
+inline void
+Pcp_SetElided(
+    const PcpNodeRef& node)
+{
+    node._graph->_unshared[node._nodeIdx].elided = true;
+}
+
+// Returns the path element count, in the given node's layer stack, of the
+// namespace of the instance that sealed the node, or 0 if the node is not
+// sealed.  A node is sealed when it is made inert because a namespace
+// ancestor of the prim index is an instance, and when it is added beneath a
+// sealed node, unless it is a class arc to a path outside that namespace.
+// Sealed nodes lie outside the arcs that the instance key records and their
+// opinions are about the instance's descendants, so they may not contribute:
+// instances with equal keys must compose equal descendants.  The count is
+// that of the node's own path when it was first sealed, and nodes sealed
+// beneath it copy it.
+inline size_t
+Pcp_GetSealedDepth(
+    const PcpNodeRef& node)
+{
+    return node._graph->_GetNode(node._nodeIdx).smallInts.sealedDepth;
+}
+
+// Returns true if the given node is sealed.  See Pcp_GetSealedDepth.
+inline bool
+Pcp_IsSealed(
+    const PcpNodeRef& node)
+{
+    return Pcp_GetSealedDepth(node) != 0;
+}
+
+// Returns the path, in the given sealed node's layer stack, of the instance
+// that sealed it: the node's path, without variant selections, truncated to
+// the sealed depth.  Returns the empty path if the node is not sealed, or
+// if its path is shallower than the sealed depth, which is a coding error.
+inline SdfPath
+Pcp_GetSealingInstancePath(
+    const PcpNodeRef& node)
+{
+    const size_t depth = Pcp_GetSealedDepth(node);
+    if (depth == 0) {
+        return SdfPath();
+    }
+    SdfPath path = node.GetPath().StripAllVariantSelections();
+    if (!TF_VERIFY(path.GetPathElementCount() >= depth,
+                   "Sealed node <%s> is shallower than its instance",
+                   node.GetPath().GetText())) {
+        return SdfPath();
+    }
+    while (path.GetPathElementCount() > depth) {
+        path = path.GetParentPath();
+    }
+    return path;
+}
+
+// Marks the given node as sealed by an instance whose namespace has the
+// given nonzero path element count.  See Pcp_GetSealedDepth.
+inline void
+Pcp_SetSealed(
+    const PcpNodeRef& node, uint16_t depth)
+{
+    // Skip unchanged writes so they do not detach a shared node pool.
+    if (node._graph->_GetNode(node._nodeIdx).smallInts.sealedDepth != depth) {
+        node._graph->_GetWriteableNode(node._nodeIdx).smallInts.sealedDepth =
+            depth;
+    }
+}
+
+// Returns true if an arc at this node's level of namespace, which would have
+// been a direct dependency, was skipped because this node, or the root of a
+// subtree containing it, has the same site.  The node then provides the
+// opinions that arc's subtree would have, so instancing treats it as part of
+// the instance even if it is ancestral.
+inline bool
+Pcp_IsDirectDuplicate(
+    const PcpNodeRef& node)
+{
+    return node._graph->_unshared[node._nodeIdx].directDuplicate;
+}
+
+// Sets or clears the flag returned by Pcp_IsDirectDuplicate.
+inline void
+Pcp_SetDirectDuplicate(
+    const PcpNodeRef& node, bool value)
+{
+    node._graph->_unshared[node._nodeIdx].directDuplicate = value;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

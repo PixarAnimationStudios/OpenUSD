@@ -7,7 +7,6 @@
 
 # pylint: disable=dict-keys-not-iterating
 
-from __future__ import print_function
 
 from pxr import Tf
 
@@ -149,11 +148,11 @@ class Interpreter(InteractiveInterpreter):
         self._outputBrush = None
 
     # overridden
-    def showsyntaxerror(self, filename = None):
+    def showsyntaxerror(self, filename = None, **kwargs):
         self._outputBrush = QtGui.QBrush(QtGui.QColor('#ffcc63'))
 
         try:
-            InteractiveInterpreter.showsyntaxerror(self, filename)
+            InteractiveInterpreter.showsyntaxerror(self, filename, **kwargs)
         finally:
             self._outputBrush = None
 

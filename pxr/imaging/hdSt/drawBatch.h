@@ -234,6 +234,11 @@ protected:
     bool _IsAggregated(HdStDrawItem const *drawItem0,
                        HdStDrawItem const *drawItem1);
 
+    /// Returns true if the batch's first draw item has a different geometric
+    /// shader than the one the batch was built with.
+    HDST_API
+    bool _GeometricShaderChanged() const;
+
     std::vector<HdStDrawItemInstance const*> _drawItemInstances;
 
     bool const _allowTextureResourceRebinding;
@@ -253,6 +258,10 @@ private:
 
     _DrawingProgram _program;
     HdStShaderCode::ID _shaderHash;
+
+    // Hash of the geometric shader of the first draw item, recorded when the
+    // batch is (re)initialized. See _GeometricShaderChanged().
+    HdStShaderCode::ID _geometricShaderHash;
 };
 
 

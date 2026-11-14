@@ -11,6 +11,7 @@
 
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndex.h"
@@ -80,7 +81,8 @@ HdPrman_MeshLightResolvingSceneIndexPlugin::_AppendSceneIndex(
         .SubscribeTo<HdPrman_MeshLightResolvingSceneIndexPlugin>();
 
     const bool isRIS = (inputArgs && inputArgs->Get(HdPrmanDisplayNamesTokens->RenderManRIS));
-    return HdPrmanMeshLightResolvingSceneIndex::New(inputScene, isRIS);
+    return HdDependencyForwardingSceneIndex::New(
+        HdPrmanMeshLightResolvingSceneIndex::New(inputScene, isRIS));
 }
 
 /* static */

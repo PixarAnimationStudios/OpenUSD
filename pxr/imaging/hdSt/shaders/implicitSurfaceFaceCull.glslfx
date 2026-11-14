@@ -14,26 +14,23 @@
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurfaceFaceCull.Fragment.None
 
-void DiscardBasedOnShading(bool frontFacing)
+bool ShouldDiscardBasedOnShading(bool frontFacing)
 {
+    return false;
 }
 
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurfaceFaceCull.Fragment.FrontFacing
 
-void DiscardBasedOnShading(bool frontFacing)
+bool ShouldDiscardBasedOnShading(bool frontFacing)
 {
-    if (frontFacing) {
-        discard;
-    }
+    return frontFacing;
 }
 
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurfaceFaceCull.Fragment.BackFacing
 
-void DiscardBasedOnShading(bool frontFacing)
+bool ShouldDiscardBasedOnShading(bool frontFacing)
 {
-    if (!frontFacing) {
-        discard;
-    }
+    return !frontFacing;
 }

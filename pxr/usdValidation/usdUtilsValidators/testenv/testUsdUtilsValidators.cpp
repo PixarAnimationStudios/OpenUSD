@@ -6,6 +6,7 @@
 //
 
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/usd/editContext.h"
@@ -27,7 +28,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 );
 
 static void
-TestSdfUsdzValidators()
+TestUsdUtilsValidators()
 {
     // This should be updated with every new validator added with
     // UsdUtilsValidators keyword.
@@ -35,7 +36,7 @@ TestSdfUsdzValidators()
     UsdValidationValidatorMetadataVector metadata
         = registry.GetValidatorMetadataForPlugin(
             _tokens->usdUtilsValidatorsPlugin);
-    TF_AXIOM(metadata.size() == 5);
+    TF_AXIOM(metadata.size() == 6);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -49,9 +50,25 @@ TestSdfUsdzValidators()
             UsdUtilsValidatorNameTokens->fileExtensionValidator, 
             UsdUtilsValidatorNameTokens->missingReferenceValidator,
             UsdUtilsValidatorNameTokens->rootPackageValidator,
-            UsdUtilsValidatorNameTokens->usdzPackageValidator };
+            UsdUtilsValidatorNameTokens->usdzPackageValidator,
+            UsdUtilsValidatorNameTokens->vanillaUsdValidatorSuite };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
+}
+
+static void
+TestVanillaUsdValidatorSuite()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
+    TfErrorMark m;
+    const UsdValidationValidatorSuite *suite =
+        registry.GetOrLoadValidatorSuiteByName(
+            UsdUtilsValidatorNameTokens->vanillaUsdValidatorSuite);
+    TF_AXIOM(suite);
+    TF_AXIOM(m.IsClean());
+    TF_AXIOM(suite->GetMetadata().isSuite);
+    TF_AXIOM(!suite->GetContainedValidators().empty());
 }
 
 
@@ -406,7 +423,8 @@ TestUsdzPackageValidator()
 int
 main()
 {
-    TestSdfUsdzValidators();
+    TestUsdUtilsValidators();
+    TestVanillaUsdValidatorSuite();
     TestPackageEncapsulationValidator();
     TestFileExtensionValidator();
     TestMissingReferenceValidator();

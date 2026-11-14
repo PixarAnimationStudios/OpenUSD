@@ -1,0 +1,103 @@
+Loading @SpecializesAndCulledAncestors/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    lib.usda             /Asset
+    lib.usda             /_class_Lib
+
+Child names:
+     ['Model', '_class_Mat']
+
+------------------------------------------------------------------------
+Results for composing </Root/Model>
+
+Prim Stack:
+    lib.usda             /_class_Lib/Model
+
+Child names:
+     ['InheritsMat', 'SpecializesMat']
+
+------------------------------------------------------------------------
+Results for composing </Root/Model/InheritsMat>
+
+Prim Stack:
+    lib.usda             /Asset/_class_Mat
+    lib.usda             /_class_Lib/Model/InheritsMat
+    lib.usda             /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromLibClass', 'fromAssetClass']
+
+Property stacks:
+/Root/Model/InheritsMat.fromAssetClass:
+    lib.usda             /Asset/_class_Mat.fromAssetClass
+/Root/Model/InheritsMat.fromLibClass:
+    lib.usda             /_class_Lib/_class_Mat.fromLibClass
+
+------------------------------------------------------------------------
+Results for composing </Root/Model/InheritsMat/Kid>
+
+Prim Stack:
+    lib.usda             /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </Root/Model/SpecializesMat>
+
+Prim Stack:
+    lib.usda             /_class_Lib/Model/SpecializesMat
+    lib.usda             /Asset/_class_Mat
+    lib.usda             /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromLibClass', 'fromAssetClass']
+
+Property stacks:
+/Root/Model/SpecializesMat.fromAssetClass:
+    lib.usda             /Asset/_class_Mat.fromAssetClass
+/Root/Model/SpecializesMat.fromLibClass:
+    lib.usda             /_class_Lib/_class_Mat.fromLibClass
+
+------------------------------------------------------------------------
+Results for composing </Root/Model/SpecializesMat/Kid>
+
+Prim Stack:
+    lib.usda             /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </Root/_class_Mat>
+
+Prim Stack:
+    lib.usda             /Asset/_class_Mat
+    lib.usda             /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromLibClass', 'fromAssetClass']
+
+Property stacks:
+/Root/_class_Mat.fromAssetClass:
+    lib.usda             /Asset/_class_Mat.fromAssetClass
+/Root/_class_Mat.fromLibClass:
+    lib.usda             /_class_Lib/_class_Mat.fromLibClass
+
+------------------------------------------------------------------------
+Results for composing </Root/_class_Mat/Kid>
+
+Prim Stack:
+    lib.usda             /Asset/_class_Mat/Kid
+

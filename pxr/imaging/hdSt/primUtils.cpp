@@ -308,6 +308,18 @@ _GetDisplayOpacityMaterialTag(HdSceneDelegate * const delegate)
     return HdStMaterialTagTokens->masked;
 }
 
+static
+TfToken
+_ModifyTagForCustomDepth(const TfToken& materialTag,
+                         const bool hasCustomDepth)
+{
+    if (materialTag == HdStMaterialTagTokens->translucent && hasCustomDepth) {
+        return HdStMaterialTagTokens->translucentWithCustomDepth;
+    }
+
+    return materialTag;
+}
+
 // Opinion precedence:
 //   Display In Overlay >
 //     Show occluded selection >
@@ -320,7 +332,8 @@ _ComputeMaterialTag(HdSceneDelegate * const delegate,
                     SdfPath const & materialId,
                     const bool hasDisplayOpacityPrimvar,
                     const bool displayInOverlay,
-                    const bool occludedSelectionShowsThrough)
+                    const bool occludedSelectionShowsThrough,
+                    const bool hasCustomDepth = false)
 {
     if (displayInOverlay) {
         return HdStMaterialTagTokens->displayInOverlay;
@@ -335,11 +348,13 @@ _ComputeMaterialTag(HdSceneDelegate * const delegate,
             delegate->GetRenderIndex().GetSprim(
                 HdPrimTypeTokens->material, materialId));
     if (material && !material->IsUsingFallbackShader()) {
-        return material->GetMaterialTag();
+        return _ModifyTagForCustomDepth(material->GetMaterialTag(),
+                                        hasCustomDepth);
     }
 
     if (hasDisplayOpacityPrimvar) {
-        return _GetDisplayOpacityMaterialTag(delegate);
+        return _ModifyTagForCustomDepth(
+                    _GetDisplayOpacityMaterialTag(delegate), hasCustomDepth);
     }
 
     return HdMaterialTagTokens->defaultMaterialTag;
@@ -352,13 +367,14 @@ HdStSetMaterialTag(HdSceneDelegate * const delegate,
                    SdfPath const & materialId,
                    const bool hasDisplayOpacityPrimvar,
                    const bool displayInOverlay,
-                   const bool occludedSelectionShowsThrough)
+                   const bool occludedSelectionShowsThrough,
+                   const bool hasCustomDepth)
 {
     HdStSetMaterialTag(
         renderParam, drawItem,
         _ComputeMaterialTag(
             delegate, drawItem, materialId, hasDisplayOpacityPrimvar,
-            displayInOverlay, occludedSelectionShowsThrough));
+            displayInOverlay, occludedSelectionShowsThrough, hasCustomDepth));
 }
 
 HdSt_MaterialNetworkShaderSharedPtr

@@ -52,16 +52,6 @@ static bool __contains__(const GfSize3 &self, size_t value) {
     return false;
 }
 
-static GfSize3 __truediv__(const GfSize3 &self, size_t value)
-{
-    return self / value;
-}
-
-static GfSize3& __itruediv__(GfSize3 &self, size_t value)
-{
-    return self /= value;
-}
-
 static string _Repr(GfSize3 const &self) {
     return TF_PY_REPR_PREFIX + "Size3(" + TfPyRepr(self[0]) + ", " +
         TfPyRepr(self[1]) + ", " + TfPyRepr(self[2]) + ")";
@@ -116,18 +106,4 @@ void wrapSize3()
     // conversion operator
     implicitly_convertible<This, GfVec3i>();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
 }

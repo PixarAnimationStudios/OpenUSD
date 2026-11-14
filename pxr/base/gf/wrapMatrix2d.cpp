@@ -18,6 +18,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include "pxr/external/boost/python/class.hpp"
@@ -179,11 +180,6 @@ static bool __contains__vector( const GfMatrix2d &self, GfVec2d value ) {
     return false;
 }
 
-static GfMatrix2d __truediv__(const GfMatrix2d &self, GfMatrix2d value)
-{
-    return self / value;
-}
-
 static GfMatrix2d *__init__() {
     // Default constructor produces identity from python.
     return new GfMatrix2d(1);
@@ -317,10 +313,8 @@ void wrapMatrix2d()
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / self ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__ );
-    }
+    // Let C-contiguous buffers of shape (N, 2, 2) be passed to
+    // wrapped functions taking TfSpan<GfMatrix2d>.
+    TfPyRegisterSpanBufferLayout<This>(
+        Gf_GetPyBufferFmtFor<double>()[0], { 2, 2 });
 }

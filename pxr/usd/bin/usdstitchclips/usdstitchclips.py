@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 
 import argparse, os, sys
 from pxr import UsdUtils, Sdf, Tf 

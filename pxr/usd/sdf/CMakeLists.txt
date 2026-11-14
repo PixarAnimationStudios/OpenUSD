@@ -230,6 +230,7 @@ pxr_test_scripts(
     testenv/testSdfVariants.py
     testenv/testSdfZipFile.py
     testenv/testSdfZipFileLimits.py
+    testenv/testSdfZipFileLimits64.py
 )
 
 pxr_build_test_plugin(TestSdfFileFormatCapabilities
@@ -749,6 +750,15 @@ pxr_register_test(testSdfZipFileLimits
     ENV 
         SDF_MAX_ZIPFILE_SIZE=195
         SDF_MAX_ZIPFILE_ENTRY_SIZE=64
+)
+pxr_register_test(testSdfZipFileLimits64
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfZipFileLimits64"
+    EXPECTED_RETURN_CODE 0
+    ENV 
+        SDF_MAX_ZIP32_ENTRY_SIZE=100
+        SDF_MAX_ZIP32_ZIPFILE_SIZE=300
+        SDF_MAX_ZIP32_ENTRY_COUNT=5
 )
 pxr_register_test(testSdfZipFile_CPP
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfZipFile_CPP"

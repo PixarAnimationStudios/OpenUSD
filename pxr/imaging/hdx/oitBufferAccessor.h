@@ -13,11 +13,14 @@
 
 #include "pxr/imaging/hd/task.h"
 
+#include "pxr/base/gf/vec2i.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
+class HdRenderIndex;
 
 using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
@@ -45,6 +48,19 @@ public:
     /// Called during Prepare to indicate that OIT buffers are needed.
     HDX_API
     void RequestOitBuffers();
+
+    /// Called during Prepare to allocate OIT bars if not yet in context.
+    /// Bars are initially unsized; call ResizeOitBuffersIfNecessary to size them.
+    HDX_API
+    void AllocateOitBuffersIfNecessary(HdRenderIndex *renderIndex);
+
+    /// Called during Prepare (by OitResolveTask) to grow OIT bars to fit the
+    /// current screen and update the OIT uniforms. Bars are never shrunk, so
+    /// they end up sized for the largest screen sharing this task context.
+    /// Returns false if OIT can't be used at this screen size.
+    HDX_API
+    bool ResizeOitBuffersIfNecessary(HdRenderIndex *renderIndex,
+                                     GfVec2i const &screenSize);
 
     /// Called during Excecute before writing to OIT buffers.
     HDX_API

@@ -886,12 +886,17 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         if (hdInterp != HdInterpolationConstant &&
             val.IsArrayValued() &&
             val.GetArraySize() != expectedArraySize) {
+#if HD_API_VERSION >= 104
+            const int elementSize = primvar.elementSize;
+#else
+            const int elementSize = 1;
+#endif
             TF_WARN("<%s> %s '%s' array size (%zu) did not match "
                     "expected size (%d elements, %d values per element)",
                     id.GetText(), label.c_str(), primvar.name.GetText(),
                     val.GetArraySize(),
                     elementCount,
-                    primvar.elementSize);
+                    elementSize);
             continue;
         }
         if constexpr(std::is_same<RtPrimVarList, T>()) {
@@ -1227,12 +1232,11 @@ HdPrman_RenderParam::ConvertAndRetainCoordSysBindings(
         // Look up sprim for binding.
         const HdSprim *sprim = sceneDelegate->GetRenderIndex()
             .GetSprim(HdPrimTypeTokens->coordSys, hdId);
-        // Expect there to be an sprim with this id.
-        if (TF_VERIFY(sprim)) {
-            // Expect it to be an HdPrmanCoordSys.
-            const HdPrmanCoordSys *prmanSprim =
-                dynamic_cast<const HdPrmanCoordSys*>(sprim);
-            if (TF_VERIFY(prmanSprim) && prmanSprim->IsValid()) {
+        // If the sprim does not exist at this path, it may have been
+        // pruned.  We do not treat this condition as a warning or error.
+        if (const HdPrmanCoordSys *prmanSprim =
+            dynamic_cast<const HdPrmanCoordSys*>(sprim)) {
+            if (prmanSprim->IsValid()) {
                 // Use the assigned Riley ID.
                 rileyIdVec.push_back(prmanSprim->GetCoordSysId());
             }
@@ -2079,9 +2083,13 @@ HdPrman_RenderParam::_CreateStatsSession(void)
     // Editor for entering data into the scene index
     HdContainerDataSourceEditor editor;
 
-    // Add serverID to the stats hydra scene index, to be picked up by UI code
+    // Add serverID and port to the stats hydra scene index, to be picked up
+    // by UI code.  The port enables direct connection without a stats broker.
     editor.Set(HdDataSourceLocator(TfToken("liveStatsServerId")),
         HdRetainedTypedSampledDataSource<std::string>::New(serverId));
+    editor.Set(HdDataSourceLocator(TfToken("liveStatsPort")),
+        HdRetainedTypedSampledDataSource<int>::New(
+            _statsSession->GetLiveStatsPort()));
 
     // Finalize addition of scene index information
     _statsSceneIndex->AddPrims({{SdfPath("/globals"), TfToken("globals"),
@@ -3499,7 +3507,7 @@ HdPrman_RenderParam::SetRileyOptions()
         // support for multiple cameras than RIS, the last-modified rule still
         // affects OSL shader evaluation when shaders access camera params,
         // which XPU currently treats as global render options. XPU will add
-        // official OSL §7.11 camera parameter access in a future release,
+        // official OSL sec 7.11 camera parameter access in a future release,
         // which should remove the last-modified requirement under XPU.
         _cameraContext.ReapplyActiveCamera(_renderDelegate->GetRenderIndex());
 

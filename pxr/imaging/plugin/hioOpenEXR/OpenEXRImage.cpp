@@ -751,9 +751,10 @@ void Hio_OpenEXRImage::_AttributeReadCallback(void* self_, exr_context_t exr) {
                 break;
             }
             case EXR_ATTR_TILEDESC:
-                // this is explicitly handled elsewhere, it isn't
-                // metadata attributes for Hio's purposes.
-                continue;
+                GfVec2i v;
+                v.Set(attr->tiledesc->x_size, attr->tiledesc->y_size);
+                self->_metadata[attr->name] = VtValue(v);
+                break;
             case EXR_ATTR_TIMECODE:
                 // Is there a VtValue that can represent this?
                 continue;

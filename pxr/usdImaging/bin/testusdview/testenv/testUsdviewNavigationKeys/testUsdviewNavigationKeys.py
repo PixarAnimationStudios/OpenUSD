@@ -7,7 +7,6 @@
 #
 
 # Leaving these in for future debugging
-from __future__ import print_function
 import sys
 
 from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets

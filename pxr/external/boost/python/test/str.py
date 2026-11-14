@@ -42,7 +42,6 @@ this is a blabla string
 aaaaaaaaaaaaaaaaaaaaa
 """
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

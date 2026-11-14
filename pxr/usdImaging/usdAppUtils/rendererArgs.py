@@ -22,9 +22,12 @@ def GetPluginIdFromArgument(argumentString):
     Returns plugin id, if found, for the passed in argument string.
 
     Valid argument strings are returned by GetAllPluginArguments().
+    "GL" is also accepted as an alias for "Storm".
     """
 
     from pxr import UsdImagingGL
+    if argumentString == 'GL':
+        argumentString = 'Storm'
     for p in UsdImagingGL.Engine.GetRendererPlugins():
         if argumentString == UsdImagingGL.Engine.GetRendererDisplayName(p) or argumentString == p:
             return p

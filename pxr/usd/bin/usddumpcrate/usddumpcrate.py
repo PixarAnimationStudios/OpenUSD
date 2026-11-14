@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import print_function
 import argparse, sys, os
 from pxr import Sdf, Usd
 

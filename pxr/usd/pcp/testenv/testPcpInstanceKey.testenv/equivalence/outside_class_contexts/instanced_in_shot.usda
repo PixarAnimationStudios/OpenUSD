@@ -1,0 +1,11 @@
+#usda 1.0
+def "Set" (
+    references = @./set_uninstanced.usda@</Set>
+)
+{
+    over "PropGroup" (
+        instanceable = true
+    )
+    {
+    }
+}

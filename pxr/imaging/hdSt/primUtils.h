@@ -107,7 +107,8 @@ void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         SdfPath const & materialId,
                         const bool hasDisplayOpacityPrimvar,
                         const bool displayInOverlay,
-                        const bool occludedSelectionShowsThrough);
+                        const bool occludedSelectionShowsThrough,
+                        const bool hasCustomDepth = false);
 // Resolves the material network shader for the given prim (using a fallback
 // material as necessary).
 HDST_API

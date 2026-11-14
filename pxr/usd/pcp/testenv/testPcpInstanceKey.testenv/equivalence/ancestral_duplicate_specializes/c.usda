@@ -1,0 +1,26 @@
+#usda 1.0
+def "G" (
+    specializes = </Base>
+)
+{
+    def "Inst"
+    {
+        def "fromC"
+        {
+        }
+    }
+    def "Other" (
+        inherits = </G/Inst>
+    )
+    {
+    }
+}
+def "Base"
+{
+    def "Inst"
+    {
+        def "fromBase"
+        {
+        }
+    }
+}

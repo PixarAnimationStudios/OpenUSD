@@ -360,6 +360,11 @@ public:
     /// Note UsdValidationValidatorMetadata::isSuite must be set to true in the
     /// plugInfo, else the validatorSuite will not be registered.
     ///
+    /// Note a validator suite cannot provide schemaTypes metadata, as its
+    /// contained validators provide their own. A suite which provides
+    /// schemaTypes in the plugInfo is skipped when parsing the plugInfo and
+    /// will not be registered.
+    ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.
     /// HasValidatorSuite can be used to determine if a validator is already
@@ -389,8 +394,12 @@ public:
     /// immediately available via registry query methods such as
     /// GetAllValidatorMetadata, etc.
     ///
-    /// Note UsdValidationValidatorMetadata::isSuite must be set to true in the
-    /// plugInfo, else the validatorSuite will not be registered.
+    /// Note UsdValidationValidatorMetadata::isSuite must be set to true in
+    /// \p metadata, else the validatorSuite will not be registered.
+    ///
+    /// Note a validator suite cannot provide schemaTypes metadata, as its
+    /// contained validators provide their own. Providing schemaTypes in
+    /// \p metadata results in a coding error.
     ///
     /// Note calling RegisterPluginValidatorSuite with a validatorSuiteName
     /// which is already registered will result in a coding error.
@@ -540,6 +549,11 @@ public:
     /// Returns vector of UsdValidationValidatorMetadata associated with the
     /// Validators which has the \p schemaType.
     ///
+    /// \p schemaType may be either the schema's TfType name (e.g.
+    /// "UsdGeomSphere") or its schema identifier (e.g. "Sphere"), as in the
+    /// schemaTypes validator metadata. Either name returns the same
+    /// validators, whichever name the validators were registered with.
+    ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
     ///
@@ -552,7 +566,8 @@ public:
     /// Validators which belong to the \p pluginNames.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the plugins.
+    /// associated with the plugins. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
@@ -566,7 +581,8 @@ public:
     /// Validators which has at least one of the \p keywords.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the keywords.
+    /// associated with the keywords. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
@@ -577,10 +593,14 @@ public:
     GetValidatorMetadataForKeywords(const TfTokenVector &keywords) const;
 
     /// Returns vector of UsdValidationValidatorMetadata associated with the
-    /// Validators which has at least one of the \p schameTypes.
+    /// Validators which has at least one of the \p schemaTypes.
     ///
     /// The returned vector is a union of all UsdValidationValidatorMetadata
-    /// associated with the schemaTypes.
+    /// associated with the schemaTypes. Each validator's metadata appears once,
+    /// even if the validator is associated with more than one of them.
+    ///
+    /// Each entry in \p schemaTypes may be either a TfType name or a schema
+    /// identifier, as described in GetValidatorMetadataForSchemaType().
     ///
     /// This API can be used to curate a vector of validator metadata, that
     /// clients may want to load and use in their validation context.
@@ -650,7 +670,10 @@ private:
     using _TokenToValidatorNamesMap
         = std::unordered_map<TfToken, TfTokenVector, TfToken::HashFunctor>;
 
-    // Helper to query
+    // Helper to query the metadata of validators associated with any of
+    // \p tokens in \p tokenToValidatorNames. Each validator's metadata is
+    // returned once, in the order it is first found.
+    // _mutex must be acquired before calling this method.
     UsdValidationValidatorMetadataVector _GetValidatorMetadataForToken(
         const _TokenToValidatorNamesMap &tokenToValidatorNames,
         const TfTokenVector &tokens) const;

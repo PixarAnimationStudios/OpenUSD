@@ -67,7 +67,6 @@
 1 3 5 7
 '''
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

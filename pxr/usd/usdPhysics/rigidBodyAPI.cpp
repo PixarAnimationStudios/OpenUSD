@@ -448,6 +448,52 @@ UsdPhysicsMassProperties _ParseCollisionShapeForMass(const UsdPrim& prim,
     return UsdPhysicsMassProperties(shapeMassInfo.mass, inertia, massInfo.centerOfMass);
 }
 
+// gather the enabled colliders that belong to this rigid body
+std::vector<UsdPrim> UsdPhysicsRigidBodyAPI::GetCollisionPrims() const
+{
+    std::vector<UsdPrim> collisionPrims;
+
+    const UsdPrim usdPrim = GetPrim();
+    if (!usdPrim)
+    {
+        return collisionPrims;
+    }
+
+    UsdPrimRange range(usdPrim, UsdTraverseInstanceProxies());
+    for (auto it = range.begin(); it != range.end(); ++it)
+    {
+        const UsdPrim collisionPrim = *it;
+        if (collisionPrim && collisionPrim != usdPrim &&
+            collisionPrim.HasAPI<UsdPhysicsRigidBodyAPI>())
+        {
+            const UsdPhysicsRigidBodyAPI nestedBodyAPI(collisionPrim);
+            bool nestedBodyEnabled = true;
+            nestedBodyAPI.GetRigidBodyEnabledAttr().Get(&nestedBodyEnabled);
+            if (nestedBodyEnabled)
+            {
+                // the colliders below belong to the nested rigid body
+                it.PruneChildren();
+                continue;
+            }
+        }
+
+        if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
+        {
+            const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
+            bool collisionEnabled = true;
+            collisionAPI.GetCollisionEnabledAttr().Get(&collisionEnabled);
+            if (!collisionEnabled)
+            {
+                continue;
+            }
+
+            collisionPrims.push_back(collisionPrim);
+        }
+    }
+
+    return collisionPrims;
+}
+
 // compute mass properties for given rigid body
 float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia, 
     GfVec3f* _com, GfQuatf* _principalAxes, const MassInformationFn& massInfoFn) const
@@ -479,47 +525,8 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
     {
         std::vector<UsdPhysicsMassProperties> massProps;
         std::vector<GfMatrix4f> massTransf;
-        std::vector<UsdPrim> collisionPrims;        
 
-        // traverse all collisions below this body and get their collision information
-        // first gather all collisions
-        UsdPrimRange range(usdPrim, UsdTraverseInstanceProxies());
-        for (auto it = range.begin(); it != range.end(); ++it)
-        {
-            UsdPrim collisionPrim = *it;
-            if (collisionPrim && collisionPrim != usdPrim && 
-                collisionPrim.HasAPI<UsdPhysicsRigidBodyAPI>())
-            {
-                // A nested rigid body only forms the root of its own subtree
-                // while it is enabled. A disabled body takes no part in 
-                // simulation, so it does not own colliders; its subtree still 
-                // belongs to this body and must be traversed, otherwise the 
-                // colliders below it would contribute mass to no body at all.
-                const UsdPhysicsRigidBodyAPI nestedBodyAPI(collisionPrim);
-                bool nestedBodyEnabled = true;
-                nestedBodyAPI.GetRigidBodyEnabledAttr().Get(&nestedBodyEnabled);
-                if (nestedBodyEnabled)
-                {
-                    it.PruneChildren(); // Skip the subtree rooted at this prim, 
-                                        // the colliders belong to a different 
-                                        // rigid body
-                    continue;
-                }
-            }
-
-            if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
-            {
-                const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
-                bool collisionEnabled = true;
-                collisionAPI.GetCollisionEnabledAttr().Get(&collisionEnabled);
-                if (!collisionEnabled)
-                {
-                    continue;
-                }
-
-                collisionPrims.push_back(std::move(collisionPrim));
-            }
-        }
+        std::vector<UsdPrim> collisionPrims = GetCollisionPrims();
 
         // get materials for all prims
         std::vector<UsdShadeMaterial> physicsMaterials = 

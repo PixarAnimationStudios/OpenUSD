@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Set/Looks/Base references
+    shaders.usda</Shaders/Looks/Mat>, which reaches lib.usda</Lib/Looks/Mat>
+    through an internal reference to /Shaders_dsv.  /Lib inherits
+    /_class_Lib, so the subroot class /_class_Lib/Looks/Mat is implied
+    up to shaders.usda</Shaders_dsv/Looks/Mat>, then across the internal
+    reference to shaders.usda</Shaders/Looks/Mat>.  The internal reference
+    maps the class to itself, so the second implied inherit is an inert
+    placeholder for the same site, which is needed to keep propagating
+    the class.
+
+    /Set/Looks/Derived specializes /Set/Looks/Base, so the same subgraph
+    is built again while propagating the specializes arc to the root,
+    inside a recursive frame that skips duplicate nodes.  The placeholder
+    must not be skipped there.  We expect opinions from
+    root.usda</_class_Lib/Looks/Mat> on both /Set/Looks/Base and
+    /Set/Looks/Derived, and from its Child on both of their Child prims.
+    """
+)
+
+def "Set" (
+    references = @./asset.usda@</Asset>
+)
+{
+}
+
+class "_class_Lib"
+{
+    class "Looks"
+    {
+        class "Mat"
+        {
+            int probe = 1
+            class "Child"
+            {
+                int probe = 1
+            }
+        }
+    }
+}

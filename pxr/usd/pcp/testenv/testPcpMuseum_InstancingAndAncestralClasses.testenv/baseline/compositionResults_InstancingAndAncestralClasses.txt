@@ -1,0 +1,209 @@
+Loading @InstancingAndAncestralClasses/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_Root>
+
+Prim Stack:
+    root.usda            /_class_Root
+
+Child names:
+     ['From_root_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </_class_Root/From_root_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Root/From_root_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </World>
+
+Prim Stack:
+    root.usda            /World
+
+Child names:
+     ['Classes', 'Set', 'Twin']
+
+------------------------------------------------------------------------
+Results for composing </World/Classes>
+
+Prim Stack:
+    root.usda            /World/Classes
+
+Child names:
+     ['_class_World']
+
+------------------------------------------------------------------------
+Results for composing </World/Classes/_class_World>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World
+
+Child names:
+     ['From_world_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </World/Classes/_class_World/From_world_class_in_root>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World/From_world_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </World/Set>
+
+Prim Stack:
+    root.usda            /World/Set
+    set.usda             /Set
+
+Child names:
+     ['Instance']
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance>
+
+Prim Stack:
+    set.usda             /Set/Instance
+    asset.usda           /Asset
+
+Child names:
+     ['_class_Inherited', '_class_Specialized', 'InheritsSubroot', 'SpecializesSubroot', 'InheritsRoot', 'InheritsWorldClass']
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/_class_Inherited>
+
+Prim Stack:
+    asset.usda           /Asset/_class_Inherited
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/_class_Specialized>
+
+Prim Stack:
+    asset.usda           /Asset/_class_Specialized
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsSubroot>
+
+Prim Stack:
+    asset.usda           /Asset/InheritsSubroot
+    asset.usda           /Asset/_class_Inherited
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/SpecializesSubroot>
+
+Prim Stack:
+    asset.usda           /Asset/SpecializesSubroot
+    asset.usda           /Asset/_class_Specialized
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsRoot>
+
+Prim Stack:
+    root.usda            /_class_Root
+    set.usda             /_class_Root
+    asset.usda           /Asset/InheritsRoot
+    asset.usda           /_class_Root
+
+Child names:
+     ['From_root_class_in_set', 'From_root_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsRoot/From_root_class_in_set>
+
+Prim Stack:
+    set.usda             /_class_Root/From_root_class_in_set
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsRoot/From_root_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Root/From_root_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsWorldClass>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World
+    asset.usda           /Asset/InheritsWorldClass
+
+Child names:
+     ['From_world_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </World/Set/Instance/InheritsWorldClass/From_world_class_in_root>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World/From_world_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </World/Twin>
+
+Prim Stack:
+    root.usda            /World/Twin
+    asset.usda           /Asset
+
+Child names:
+     ['_class_Inherited', '_class_Specialized', 'InheritsSubroot', 'SpecializesSubroot', 'InheritsRoot', 'InheritsWorldClass']
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/_class_Inherited>
+
+Prim Stack:
+    asset.usda           /Asset/_class_Inherited
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/_class_Specialized>
+
+Prim Stack:
+    asset.usda           /Asset/_class_Specialized
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/InheritsSubroot>
+
+Prim Stack:
+    asset.usda           /Asset/InheritsSubroot
+    asset.usda           /Asset/_class_Inherited
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/SpecializesSubroot>
+
+Prim Stack:
+    asset.usda           /Asset/SpecializesSubroot
+    asset.usda           /Asset/_class_Specialized
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/InheritsRoot>
+
+Prim Stack:
+    root.usda            /_class_Root
+    asset.usda           /Asset/InheritsRoot
+    asset.usda           /_class_Root
+
+Child names:
+     ['From_root_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/InheritsRoot/From_root_class_in_root>
+
+Prim Stack:
+    root.usda            /_class_Root/From_root_class_in_root
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/InheritsWorldClass>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World
+    asset.usda           /Asset/InheritsWorldClass
+
+Child names:
+     ['From_world_class_in_root']
+
+------------------------------------------------------------------------
+Results for composing </World/Twin/InheritsWorldClass/From_world_class_in_root>
+
+Prim Stack:
+    root.usda            /World/Classes/_class_World/From_world_class_in_root
+

@@ -10,6 +10,14 @@
 #include "pxr/usd/sdf/zipFile.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/userProcessingFunc.h"
+#include "pxr/usdValidation/usdValidation/validatorTokens.h"
+#include "pxr/usdValidation/usdGeomValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdLodValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdLuxValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdMediaValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdPhysicsValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdShadeValidators/validatorTokens.h"
+#include "pxr/usdValidation/usdSkelValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdUtilsValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
@@ -17,6 +25,7 @@
 
 #include "pxr/usd/sdf/fileFormat.h"
 
+#include <algorithm>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -238,6 +247,21 @@ _GetUsdzPackageErrors(const SdfLayerHandle &rootLayer)
             );
         }
 
+        if (fileInfo.encrypted)
+        {
+            const std::string &fileName = *it;
+            errors.emplace_back(
+                UsdUtilsValidationErrorNameTokens->encryptionDetected,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites {
+                    UsdValidationErrorSite(
+                            rootLayer, SdfPath(fileName))
+                },
+                TfStringPrintf("File '%s' in package '%s' is encrypted.",
+                    fileName.c_str(), packagePath.c_str())
+            );
+        }
+
         if (fileInfo.dataOffset % 64 != 0)
         {
             const std::string &fileName = *it;
@@ -311,6 +335,53 @@ _UsdzPackageValidator(const UsdStagePtr& usdStage,
     return errors;
 }
 
+static void
+_RegisterVanillaUsdValidatorSuite(UsdValidationRegistry &registry)
+{
+    // Include every validator from the core and schema domain validator
+    // plugins, except the ones listed in excludedNames.
+    const std::vector<const std::vector<TfToken> *> domainTokens = {
+        &UsdValidatorNameTokens->allTokens,
+        &UsdGeomValidatorNameTokens->allTokens,
+        &UsdLodValidatorNameTokens->allTokens,
+        &UsdLuxValidatorNameTokens->allTokens,
+        &UsdMediaValidatorNameTokens->allTokens,
+        &UsdPhysicsValidatorNameTokens->allTokens,
+        &UsdShadeValidatorNameTokens->allTokens,
+        &UsdSkelValidatorNameTokens->allTokens,
+        &UsdUtilsValidatorNameTokens->allTokens
+    };
+
+    const TfTokenVector excludedNames = {
+        // Asset checks for stages intended to be referenced into aggregate
+        // stages.
+        UsdValidatorNameTokens->stageMetadataChecker,
+        UsdGeomValidatorNameTokens->stageMetadataChecker,
+        // UsdzPackageValidator already checks the root layer's package, along
+        // with every other package in the stage's dependencies.
+        UsdUtilsValidatorNameTokens->rootPackageValidator,
+        // This suite itself.
+        UsdUtilsValidatorNameTokens->vanillaUsdValidatorSuite
+    };
+
+    TfTokenVector validatorNames;
+    for (const std::vector<TfToken> *tokens : domainTokens) {
+        for (const TfToken &name : *tokens) {
+            if (std::find(excludedNames.begin(), excludedNames.end(), name)
+                == excludedNames.end()) {
+                validatorNames.push_back(name);
+            }
+        }
+    }
+
+    const std::vector<const UsdValidationValidator *> containedValidators =
+        registry.GetOrLoadValidatorsByName(validatorNames);
+
+    registry.RegisterPluginValidatorSuite(
+        UsdUtilsValidatorNameTokens->vanillaUsdValidatorSuite,
+        containedValidators);
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -334,6 +405,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
             UsdUtilsValidatorNameTokens->usdzPackageValidator,
             _UsdzPackageValidator);
+
+    _RegisterVanillaUsdValidatorSuite(registry);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

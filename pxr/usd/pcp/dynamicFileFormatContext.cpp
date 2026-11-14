@@ -55,6 +55,19 @@ public:
     }
 
 private:
+    // Return true if opinions at \p path in \p node may be read; see
+    // _ComposeOpinionInSubtree.
+    static bool _IsReadable(const PcpNodeRef &node, const SdfPath &path)
+    {
+        if (!Pcp_IsSealed(node)) {
+            return true;
+        }
+        const SdfPath instancePath = Pcp_GetSealingInstancePath(node);
+        return !instancePath.IsEmpty() &&
+            !path.GetPrimPath().StripAllVariantSelections().HasPrefix(
+                instancePath);
+    }
+
     _ComposeValueHelper(
         const PcpDynamicFileFormatContext *context,
         bool strongestOpinionOnly = true)
@@ -80,53 +93,65 @@ private:
             pathInNode : pathInNode.AppendProperty(propName);
 
         // Search the node's layer stack in strength order for the field on
-        // the spec.
-        for (const auto &layer : node.GetLayerStack()->GetLayers()) {
-            VtValue value;
-            if (layer->HasField(path, fieldName, &value)) {
-                // If the value is an asset path, resolve it.
-                if (value.IsHolding<SdfAssetPath>() ||
-                    value.IsHolding<VtArray<SdfAssetPath>>()) {
+        // the spec.  A sealed node provides no opinions within the namespace
+        // of the instance that sealed it (see Pcp_GetSealingInstancePath),
+        // though nodes beneath it may.  Its opinions at paths outside that
+        // namespace are read as they are without instancing.  We have not
+        // found a case where this matters: such a site has so far always
+        // also been reached through an unsealed node, such as the honored
+        // node of a class outside the instance.  Other nodes that cannot
+        // contribute specs are still read: a specializes placeholder holds
+        // the class's opinions until they are propagated to the root, which
+        // happens after payloads are evaluated.
+        if (_IsReadable(node, path)) {
+            for (const auto &layer : node.GetLayerStack()->GetLayers()) {
+                VtValue value;
+                if (layer->HasField(path, fieldName, &value)) {
+                    // If the value is an asset path, resolve it.
+                    if (value.IsHolding<SdfAssetPath>() ||
+                        value.IsHolding<VtArray<SdfAssetPath>>()) {
 
-                    const PcpExpressionVariables &exprVars =
-                        node.GetLayerStack()->GetExpressionVariables();
+                        const PcpExpressionVariables &exprVars =
+                            node.GetLayerStack()->GetExpressionVariables();
 
-                    std::vector<std::string> errors;
-                    if (value.IsHolding<SdfAssetPath>()) {
-                        SdfAssetPath assetPath;
-                        value.UncheckedSwap(assetPath);
-                        SdfResolveAssetPaths(
-                            layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(&assetPath, 1), &errors);
-                        value.UncheckedSwap(assetPath);
-                            
-                    }
-                    else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
-                        VtArray<SdfAssetPath> assetPaths;
-                        value.UncheckedSwap(assetPaths);
-                        SdfResolveAssetPaths(
-                            layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(assetPaths.data(), 
-                            assetPaths.size()), &errors);
-                        value.UncheckedSwap(assetPaths);
-                    }
+                        std::vector<std::string> errors;
+                        if (value.IsHolding<SdfAssetPath>()) {
+                            SdfAssetPath assetPath;
+                            value.UncheckedSwap(assetPath);
+                            SdfResolveAssetPaths(
+                                layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(&assetPath, 1), &errors);
+                            value.UncheckedSwap(assetPath);
+                                
+                        }
+                        else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
+                            VtArray<SdfAssetPath> assetPaths;
+                            value.UncheckedSwap(assetPaths);
+                            SdfResolveAssetPaths(
+                                layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(assetPaths.data(), 
+                                assetPaths.size()), &errors);
+                            value.UncheckedSwap(assetPaths);
+                        }
 
-                    if (!errors.empty()) {
-                        // XXX: Ideally we surface these as composition errors
-                        // instead of as a TF_WARN
-                        for (const auto& err : errors) {
-                            TF_WARN("Encountered error when resolving asset" 
-                                "paths for dynamic payload in node %s: %s", 
-                                node.GetPath().GetText(), err.c_str());
+                        if (!errors.empty()) {
+                            // XXX: Ideally we surface these as composition
+                            // errors instead of as a TF_WARN
+                            for (const auto& err : errors) {
+                                TF_WARN("Encountered error when resolving "
+                                    "asset paths for dynamic payload in node "
+                                    "%s: %s",
+                                    node.GetPath().GetText(), err.c_str());
+                            }
                         }
                     }
-                }
 
-                // Process the value and mark found.
-                composeFunc(std::move(value));
-                _foundValue = true;
+                    // Process the value and mark found.
+                    composeFunc(std::move(value));
+                    _foundValue = true;
 
-                // Stop if we only need the strongest opinion.
-                if (_strongestOpinionOnly) {
-                    return true;
+                    // Stop if we only need the strongest opinion.
+                    if (_strongestOpinionOnly) {
+                        return true;
+                    }
                 }
             }
         }

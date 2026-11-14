@@ -1159,12 +1159,6 @@ def Xform "TestSpheres"
 :width: 600px
 ```
 
-```{note} 
-If you are using Hydra and RenderMan for rendering, you will need to 
-enable scene indexes in Hydra (enabling `USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX`
-in your environment if needed) to see the results of mesh lights.
-```
-
 (usdLux_light_linking)=
 ## Light-linking and Shadow-linking
 

@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 
 def main():
     shotFilePath = 'shots/s00_01/s00_01.usd'

@@ -33,9 +33,9 @@ Some examples:
 #### On Linux
 
 ```bash
-cmake                                       \
--DTBB_ROOT_DIR=/path/to/tbb                 \
--DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+cmake                                                       \
+-DTBB_ROOT_DIR=/path/to/tbb                                 \
+-DOpenSubdiv_DIR=/path/to/opensubdiv/lib/cmake/OpenSubdiv   \
 /path/to/USD/source
 
 cmake --build . --target install -- -j <NUM_CORES>
@@ -46,10 +46,10 @@ cmake --build . --target install -- -j <NUM_CORES>
 The following will generate an Xcode project that can be used to build USD.
 
 ```bash
-cmake                                       \
--G "Xcode"                                  \
--DTBB_ROOT_DIR=/path/to/tbb                 \
--DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
+cmake                                                       \
+-G "Xcode"                                                  \
+-DTBB_ROOT_DIR=/path/to/tbb                                 \
+-DOpenSubdiv_DIR=/path/to/opensubdiv/lib/cmake/OpenSubdiv   \
 /path/to/USD/source
 
 cmake --build . --target install -- -j <NUM_CORES>
@@ -61,10 +61,10 @@ The following will generate a Visual Studio 2017 solution that can be used to
 build USD.
 
 ```cmd.exe
-"C:\Program Files\CMake\bin\cmake.exe"      ^
--G "Visual Studio 15 2017 Win64"            ^
--DTBB_ROOT_DIR=C:\path\to\tbb               ^
--DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
+"C:\Program Files\CMake\bin\cmake.exe"                      ^
+-G "Visual Studio 15 2017 Win64"                            ^
+-DTBB_ROOT_DIR=C:\path\to\tbb                               ^
+-DOpenSubdiv_DIR=/path/to/opensubdiv/lib/cmake/OpenSubdiv   ^
 \path\to\USD\source
 
 cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
@@ -342,9 +342,9 @@ cmake.
 
 The additional dependencies that must be supplied when invoking cmake are:
 
-| Dependency Name       | Description                                 |
-| --------------        | -----------------------------------         |
-| EMBREE_LOCATION       | The root path to an embree library install. |
+| Dependency Name    | Description                                                 |
+| ------------------ |-----------------------------------------------------------  |
+| Embree_DIR         | Path to the CMake package config of an Embree install.      |
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 

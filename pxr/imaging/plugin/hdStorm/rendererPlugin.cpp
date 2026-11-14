@@ -94,6 +94,9 @@ HdStormRendererPlugin::GetSceneIndexCreateArgs() const
             .SetRenderSettingDescriptors(
                 _ToContainerDataSource(
                     HdStRenderDelegate::GetRenderSettingDescriptorsForPlugin()))
+            .SetExcludedPurposesHint(
+                HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    { HdRenderTagTokens->render }))
             .Build();
 }
 

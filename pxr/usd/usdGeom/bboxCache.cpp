@@ -154,13 +154,22 @@ public:
         // that won't be traversed when resolving other bounding boxes.
         _ThreadXformCache xfCache;
 
+        // Establish the root prototypes upfront before dispatching work.
+        // Otherwise, once we dispatch a task, we can't tell whether a
+        // prototype with numDependencies == 0 is a true root or a non-root
+        // that was executed by a previously-dispatched task.  In the
+        // latter case, we would erroneously execute it again.
+        std::vector<_PrimContext> rootPrototypes;
         for (const auto& t : prototypeTasks) {
             if (t.second.numDependencies == 0) {
-                _owner->_dispatcher.Run(
-                    &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
-                    this, t.first, &prototypeTasks, &xfCache,
-                    &_owner->_dispatcher);
+                rootPrototypes.push_back(t.first);
             }
+        }
+        for (const auto& rootPrototype : rootPrototypes) {
+            _owner->_dispatcher.Run(
+                &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
+                this, rootPrototype, &prototypeTasks, &xfCache,
+                &_owner->_dispatcher);
         }
         _owner->_dispatcher.Wait();
     }

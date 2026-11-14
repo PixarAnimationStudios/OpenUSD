@@ -7,7 +7,6 @@
 #
 
 
-from __future__ import print_function
 import sys
 
 # Remove any unwanted visuals from the view.

@@ -33,6 +33,15 @@ class PcpPrimIndex;
 /// properties beneath those name children. They are NOT guaranteed to have
 /// the same opinions for direct properties of the prim indexes themselves.
 ///
+/// Target and connection paths beneath key-equal instances correspond by
+/// replacing one instance's path with the other's for paths within the
+/// instances, and by identity for paths outside them, provided that each
+/// composed path outside the instances is mapped to the root alike by every
+/// node that contributes it.  Key-equal instances may map such paths
+/// differently, for example the same asset instanced in two sets with a
+/// target into the set, so their targets outside the instances need not
+/// correspond this way.
+///
 class PcpInstanceKey
 {
 public:
@@ -78,22 +87,16 @@ public:
     std::string GetString() const;
 
 private:
-    struct _Collector;
-
     struct _Arc
     {
-        explicit _Arc(const PcpNodeRef& node)
-            : _arcType(node.GetArcType())
-            , _sourceSite(node.GetSite())
-            , _timeOffset(node.GetMapToRoot().GetTimeOffset())
-        { 
-        }
+        explicit _Arc(const PcpNodeRef& node);
 
         bool operator==(const _Arc& rhs) const
         {
             return _arcType == rhs._arcType    &&
                 _sourceSite == rhs._sourceSite &&
-                _timeOffset == rhs._timeOffset;
+                _timeOffset == rhs._timeOffset &&
+                _domain == rhs._domain;
         }
 
         template <typename HashState>
@@ -101,11 +104,21 @@ private:
             h.Append(arc._arcType);
             h.Append(arc._sourceSite);
             h.Append(arc._timeOffset);
+            h.Append(arc._domain);
         }
 
         PcpArcType _arcType;
         PcpSite _sourceSite;
         SdfLayerOffset _timeOffset;
+        // The node's map to the root, up to translation between instances:
+        // each source path whose image differs from the one its nearest
+        // ancestor entry implies, with that image classified as blocked
+        // (empty), within the instance (relative to the instance's path), or
+        // outside it (the absolute root path).  Images outside the instance
+        // are not distinguished, so key-equal instances may compose
+        // different targets outside the instance, which Usd's prototype
+        // translation does not account for; see PcpInstanceKey.
+        std::vector<std::pair<SdfPath, SdfPath>> _domain;
     };
     std::vector<_Arc> _arcs;
 

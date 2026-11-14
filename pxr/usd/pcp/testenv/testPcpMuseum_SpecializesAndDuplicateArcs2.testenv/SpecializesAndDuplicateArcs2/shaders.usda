@@ -1,0 +1,27 @@
+#usda 1.0
+
+def "Shaders" (
+    inherits = </_class_Shaders>
+    references = </Shaders_dsv>
+)
+{
+}
+
+def "Shaders_dsv"
+{
+    def "Looks"
+    {
+        def "Base"
+        {
+            def "Child"
+            {
+            }
+        }
+
+        def "MatA" (
+            specializes = </Shaders_dsv/Looks/Base>
+        )
+        {
+        }
+    }
+}

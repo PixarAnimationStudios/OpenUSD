@@ -5,7 +5,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import division
 from .qt import QtCore, QtWidgets
 
 # simple class to have a "clear" button on a line edit when the line edit

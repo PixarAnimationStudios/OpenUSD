@@ -7,7 +7,6 @@
 
 # pylint: disable=map-builtin-not-iterating
 
-from __future__ import print_function
 import sys, os, unittest
 from pxr import Usd, Sdf, Gf, Tf
 

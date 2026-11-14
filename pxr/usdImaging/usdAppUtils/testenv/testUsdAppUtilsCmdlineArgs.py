@@ -257,6 +257,26 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
 
         args = self._parser.parse_args(['-r', 'Storm'])
         self.assertEqual(args.rendererPlugin, 'GL')
+
+        # Both aliases must resolve to Storm rather than the default renderer.
+        for renderer in ('GL', 'Storm'):
+            self.assertEqual(
+                UsdAppUtils.rendererArgs.GetPluginIdFromArgument(renderer),
+                'HdStormRendererPlugin')
+            args = self._parser.parse_args(['--renderer', renderer])
+            self.assertEqual(
+                UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
+                    args.rendererPlugin), 'HdStormRendererPlugin')
+
+        # Renderer plugin IDs remain valid command-line arguments.
+        args = self._parser.parse_args(['--renderer', 'HdStormRendererPlugin'])
+        self.assertEqual(
+            UsdAppUtils.rendererArgs.GetPluginIdFromArgument(args.rendererPlugin),
+            'HdStormRendererPlugin')
+
+        for renderer in (None, 'bogus'):
+            self.assertIsNone(
+                UsdAppUtils.rendererArgs.GetPluginIdFromArgument(renderer))
    
         # Test passing an invalid option.
         parser = _NonExitingArgumentParser(prog=self._progName)

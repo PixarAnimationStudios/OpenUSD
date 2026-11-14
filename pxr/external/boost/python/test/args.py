@@ -140,7 +140,6 @@
 
 """
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

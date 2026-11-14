@@ -465,6 +465,12 @@ HioOIIO_ExtractCustomMetadata(
 bool
 HioOIIO_Image::GetMetadata(TfToken const & key, VtValue * value) const
 {
+    // Expose tile dimensions under "tiles" to match EXR convention.
+    if (key == "tiles" && _imagespec.tile_width > 0 && _imagespec.tile_height > 0) {
+        *value = VtValue(GfVec2i(_imagespec.tile_width, _imagespec.tile_height));
+        return true;
+    }
+
     VtValue result = _FindAttribute(_imagespec, key.GetString());
     if (!result.IsEmpty()) {
         *value = result;

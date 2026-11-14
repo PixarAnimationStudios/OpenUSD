@@ -204,6 +204,15 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get the rigid body that owns this collider.
+    ///
+    /// Searches this prim and its ancestors for the nearest enabled
+    /// UsdPhysicsRigidBodyAPI.
+    ///
+    /// \return The owning rigid body prim, or an invalid prim if there is none.
+    USDPHYSICS_API
+    UsdPrim GetBody() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

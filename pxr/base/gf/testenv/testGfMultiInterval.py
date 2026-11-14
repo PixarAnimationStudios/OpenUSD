@@ -7,8 +7,6 @@
 #
 # pylint: disable=range-builtin-not-iterating
 #
-from __future__ import print_function
-from __future__ import division
 
 import sys
 import unittest

@@ -90,6 +90,18 @@ HdRenderDelegate::CreateRenderPassState() const
     return std::make_shared<HdRenderPassState>();
 }
 
+void 
+HdRenderDelegate::BeginExecute()
+{
+
+}
+
+void 
+HdRenderDelegate::EndExecute()
+{
+
+}
+
 TfToken
 HdRenderDelegate::GetMaterialBindingPurpose() const
 {

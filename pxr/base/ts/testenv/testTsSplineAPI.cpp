@@ -144,15 +144,14 @@ void TestSplineIO()
     TF_AXIOM(spline.IsEmpty());
     TF_AXIOM(!spline.HasValueBlocks());
     TF_AXIOM(!spline.HasLoops());
-    
+
     ARCH_PRAGMA_PUSH
     ARCH_PRAGMA_DEPRECATED
     TF_AXIOM(!spline._HasInnerLoops());
-    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_POP
 
     TF_AXIOM(!spline.HasExtrapolatingLoops());
     TF_AXIOM(!spline.HasValueBlockAtTime(0));
-
 
     // Round-trip some values.
     spline.SetPreExtrapolation(TsExtrapLinear);
@@ -207,6 +206,25 @@ void TestSplineIO()
     TF_AXIOM(spline2 != spline);
     TsSpline spline3(spline2);
     TF_AXIOM(spline3 == spline2);
+
+    const TfType valueType = TfType::Find<T>();
+    TF_AXIOM(valueType);
+    TF_AXIOM(valueType == spline.GetValueType());
+    TF_AXIOM(valueType == spline2.GetValueType());
+    TF_AXIOM(valueType == spline3.GetValueType());
+
+    TsSpline spline4;
+    TF_AXIOM(!spline4.GetValueType());
+    TF_AXIOM(spline4.CanSetValueType(valueType));
+    spline4.SetValueType(valueType);
+    TF_AXIOM(spline4.GetValueType() == valueType);
+    TF_AXIOM(spline4.CanSetValueType(valueType));
+    // Verify that we cannot set the value to a different type.
+    if constexpr(std::is_same_v<T, double>) {
+        TF_AXIOM(!spline4.CanSetValueType(TfType::Find<float>()));
+    } else {
+        TF_AXIOM(!spline4.CanSetValueType(TfType::Find<double>()));
+    }
 
     // Setup for knot addition and removal.
     TsSpline splineAR;

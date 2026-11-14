@@ -99,6 +99,11 @@ public:
     void DestroyBprim(HdBprim *bPrim) override;
 
     HDST_API
+    void BeginExecute() override;
+    HDST_API
+    void EndExecute() override;
+
+    HDST_API
     void CommitResources(HdChangeTracker *tracker) override;
 
     HDST_API

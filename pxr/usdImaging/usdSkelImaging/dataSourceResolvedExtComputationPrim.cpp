@@ -18,6 +18,7 @@
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarsSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
+#include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
@@ -324,8 +325,17 @@ _ExtAggregatorComputationPrimDataSource(
 {
     TRACE_FUNCTION();
 
+    // Order of argument evalution in C++ is unspecified.
+    // So, get the purpose data source since we move resolvedPrimSource
+    // below.
+    const HdContainerDataSourceHandle purposeDs =
+        HdPurposeSchema::GetFromParent(resolvedPrimSource).GetContainer();
+
     return
         HdRetainedContainerDataSource::New(
+            HdPurposeSchema::GetSchemaToken(),
+            purposeDs,
+
             HdExtComputationSchema::GetSchemaToken(),
             HdExtComputationSchema::Builder()
                 .SetInputValues(
@@ -428,6 +438,9 @@ _ExtComputationPrimDataSource(
 
     return
         HdRetainedContainerDataSource::New(
+            HdPurposeSchema::GetSchemaToken(),
+            HdPurposeSchema::GetFromParent(resolvedPrimSource).GetContainer(),
+
             HdExtComputationSchema::GetSchemaToken(),
             HdExtComputationSchema::Builder()
                 .SetInputValues(

@@ -9,6 +9,13 @@ pxr_library(usdUtilsValidators
         usd
         usdUtils
         usdValidation
+        usdGeomValidators
+        usdLodValidators
+        usdLuxValidators
+        usdMediaValidators
+        usdPhysicsValidators
+        usdShadeValidators
+        usdSkelValidators
 
     PUBLIC_CLASSES
         validatorTokens

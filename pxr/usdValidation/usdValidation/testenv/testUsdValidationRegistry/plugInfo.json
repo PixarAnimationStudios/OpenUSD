@@ -11,12 +11,13 @@
                         "schemaTypes": ["SomePrimType"]
                     },
                     "FailedValidatorSuite": {
-                        "doc": "Won't get registered, as contained validators will not comply",
-                        "schemaTypes": ["SomePrimType", "SomeAPISchema"]
+                        "doc": "Won't get registered, as a suite cannot provide schemaTypes",
+                        "schemaTypes": ["SomePrimType", "SomeAPISchema"],
+                        "isSuite": true
                     },
                     "FailedValidatorSuite2": {
-                        "doc": "Won't get registered, as contained validators will not comply",
-                        "schemaTypes": ["SomeOtherPrimType"]
+                        "doc": "Won't get registered, as a contained validator is invalid",
+                        "isSuite": true
                     },
                     "TestValidator1": {
                         "doc": "TestValidator1 for keywords metadata parsing",

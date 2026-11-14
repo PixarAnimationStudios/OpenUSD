@@ -15,6 +15,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
 
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -65,11 +66,13 @@ HdxRenderTask::_Sync(HdSceneDelegate* delegate,
         // all.
         if (collection.GetName().IsEmpty()) {
             _pass.reset();
+            _passState.reset();
         } else {
             if (!_pass) {
                 HdRenderIndex &index = delegate->GetRenderIndex();
                 HdRenderDelegate *renderDelegate = index.GetRenderDelegate();
                 _pass = renderDelegate->CreateRenderPass(&index, collection);
+                _passState = renderDelegate->CreateRenderPassState();
             } else {
                 _pass->SetRprimCollection(collection);
             }
@@ -117,12 +120,63 @@ HdxRenderTask::_Sync(HdSceneDelegate* delegate,
 }
 
 void
-HdxRenderTask::Prepare(HdTaskContext* ctx,
-                       HdRenderIndex* renderIndex)
+HdxRenderTask::_PrepareRenderPassState(HdTaskContext* ctx,
+                                       HdRenderIndex* renderIndex)
 {
     if (_setupTask) {
         _setupTask->Prepare(ctx, renderIndex);
     }
+
+    if (_passState) {
+        HdRenderPassStateSharedPtr stateSource;
+        if (_setupTask) {
+            // If HdxRenderTaskParams is set on this task, we will have created an
+            // internal HdxRenderSetupTask in _Sync, to sync and unpack the params,
+            // and we should use the resulting resources.
+            stateSource = _setupTask->GetRenderPassState();
+        } else {
+            // Otherwise, we expect an application-created HdxRenderSetupTask to
+            // have run and put the renderpass resources in the task context.
+            // See HdxRenderSetupTask::_Execute.
+            _GetTaskContextData(ctx, HdxTokens->renderPassState, &stateSource);
+        }
+
+        _passState->Copy(*stateSource);
+    }
+}
+
+void
+HdxRenderTask::Prepare(HdTaskContext* ctx,
+                       HdRenderIndex* renderIndex)
+{
+    _PrepareRenderPassState(ctx, renderIndex);
+
+    if (_passState) {
+        HdStRenderPassStateSharedPtr extendedState =
+            std::dynamic_pointer_cast<HdStRenderPassState>(_passState);
+        if (extendedState) {
+            _AddStormSelectionBindings(ctx,
+                extendedState->GetRenderPassShader());
+            _AddStormLightingShader(ctx, extendedState);
+        }
+    }
+}
+
+static
+HdRenderParam * _GetRenderParam(HdRenderPassSharedPtr const &pass)
+{
+    if (!pass) {
+        return nullptr;
+    }
+    HdRenderIndex * const renderIndex = pass->GetRenderIndex();
+    if (!renderIndex) {
+        return nullptr;
+    }
+    HdRenderDelegate * const renderDelegate = renderIndex->GetRenderDelegate();
+    if (!renderDelegate) {
+        return nullptr;
+    }
+    return renderDelegate->GetRenderParam();
 }
 
 void
@@ -131,24 +185,29 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
-
-    if (!TF_VERIFY(renderPassState)) return;
-
-    if (HdStRenderPassState* extendedState =
-            dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
-
-        // Bail out early for Storm tasks that have no rendering work to submit
-        // and don't need to clear AOVs.
-        if (!_HasDrawItems() && !_NeedToClearAovs(renderPassState)) {
-            return;
-        }
-        _SetHdStRenderPassState(ctx, extendedState);
+    // Bail out early for Storm tasks that have no rendering work to submit
+    // and don't need to clear AOVs.
+    if (!_passState ||
+        (!_HasDrawItems() && !_NeedToClearAovs(_passState))) {
+        return;
     }
 
     // Render geometry with the rendertags (if any)
     if (_pass) {
-        _pass->Execute(renderPassState, GetRenderTags());
+        _pass->Execute(_passState, GetRenderTags());
+
+        // Copy scene state id from render param to task context.
+        //
+        // This allows clients to use the
+        // existing HdLegacyRenderControlInterface::GetTaskContextData
+        // to retrieve it.
+        if (HdRenderParam * const renderParam = _GetRenderParam(_pass)) {
+            static const TfToken &key =
+                HdSceneGlobalsSchemaTokens->sceneStateId;
+            if (renderParam->HasArbitraryValue(key)) {
+                (*ctx)[key] = renderParam->GetArbitraryValue(key);
+            }
+        }
     }
 }
 
@@ -159,21 +218,15 @@ HdxRenderTask::GetRenderTags() const
 }
 
 HdRenderPassStateSharedPtr
-HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
+HdxRenderTask::_GetRenderPassState() const
 {
-    if (_setupTask) {
-        // If HdxRenderTaskParams is set on this task, we will have created an
-        // internal HdxRenderSetupTask in _Sync, to sync and unpack the params,
-        // and we should use the resulting resources.
-        return _setupTask->GetRenderPassState();
-    } else {
-        // Otherwise, we expect an application-created HdxRenderSetupTask to
-        // have run and put the renderpass resources in the task context.
-        // See HdxRenderSetupTask::_Execute.
-        HdRenderPassStateSharedPtr renderPassState;
-        _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
-        return renderPassState;
-    }
+    return _passState;
+}
+
+HdRenderPassSharedPtr
+HdxRenderTask::_GetRenderPass() const
+{
+    return _pass;
 }
 
 bool
@@ -190,31 +243,27 @@ HdxRenderTask::_HasDrawItems() const
 }
 
 void
-HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
-                                       HdStRenderPassState *renderPassState)
+HdxRenderTask::_AddStormLightingShader(
+    HdTaskContext* ctx,
+    HdStRenderPassStateSharedPtr passState)
 {
-    // Can't use GetTaskContextData because the lightingShader
-    // is optional.
+    // Lighting shader setup
     VtValue lightingShader = (*ctx)[HdxTokens->lightingShader];
 
     // it's possible to not set lighting shader to HdRenderPassState.
     // Hd_DefaultLightingShader will be used in that case.
     if (lightingShader.IsHolding<HdStLightingShaderSharedPtr>()) {
-        renderPassState->SetLightingShader(
+        passState->SetLightingShader(
             lightingShader.Get<HdStLightingShaderSharedPtr>());
     }
-    // Register selection highlight bindings with the shader
-    _SetHdStSelectionBindings(ctx, renderPassState->GetRenderPassShader());
 }
 
 void
-HdxRenderTask::_SetHdStSelectionBindings(
+HdxRenderTask::_AddStormSelectionBindings(
     HdTaskContext* ctx,
-    const HdStRenderPassShaderSharedPtr& renderPassShader)
+    HdStRenderPassShaderSharedPtr passShader)
 {
-    // Selection Setup
-    // Note that selectionTask comes after renderTask, so that
-    // it can access rprimIDs populated in RenderTask::_Sync.
+    // Selection buffer setup
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
 
@@ -224,17 +273,17 @@ HdxRenderTask::_SetHdStSelectionBindings(
         HdBufferArrayRangeSharedPtr ubar
             = vu.Get<HdBufferArrayRangeSharedPtr>();
 
-        renderPassShader->AddBufferBinding(
+        passShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
                                HdxTokens->selectionOffsets, obar,
                                /*interleave*/false));
-        renderPassShader->AddBufferBinding(
+        passShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::UBO,
                                HdxTokens->selectionUniforms, ubar,
                                /*interleave*/true));
     } else {
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
+        passShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
+        passShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
     }
 }
 
