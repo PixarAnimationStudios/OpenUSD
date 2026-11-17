@@ -39,6 +39,7 @@
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/span.h"
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -108,27 +109,62 @@ UsdPrim::IsA(const TfToken& schemaFamily,
 
 // Helper implementations for wrapping UsdSchemaRegistry's 
 // FindSchemaInfosInFamily with all possible inputs to the 
-// IsAny/HasAnyAPI#VersionInFamily functions.
+// IsAny/HasAnyAPI#VersionInFamily functions. They return a view into the
+// registry's list of the family's schemas rather than a copy, since these
+// queries can run for every prim on a stage.
+using _SchemaInfoSpan = TfSpan<const UsdSchemaRegistry::SchemaInfo * const>;
+
 static
-const std::vector<const UsdSchemaRegistry::SchemaInfo *> &
+_SchemaInfoSpan
 _FindSchemaInfosInFamily(const TfToken &schemaFamily)
 {
     return UsdSchemaRegistry::FindSchemaInfosInFamily(schemaFamily);
 }
 
 static 
-std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_SchemaInfoSpan
 _FindSchemaInfosInFamily(
     const TfToken &schemaFamily, 
     UsdSchemaVersion schemaVersion, 
     UsdSchemaRegistry::VersionPolicy versionPolicy)
 {
-    return UsdSchemaRegistry::FindSchemaInfosInFamily(
-        schemaFamily, schemaVersion, versionPolicy);
+    // The registry orders a family's schemas from highest version to lowest,
+    // so each version policy selects a contiguous range of them: the same
+    // range the filtered UsdSchemaRegistry::FindSchemaInfosInFamily overload
+    // copies into a new vector.
+    using SchemaInfoPtr = const UsdSchemaRegistry::SchemaInfo *;
+    const _SchemaInfoSpan schemas = 
+        UsdSchemaRegistry::FindSchemaInfosInFamily(schemaFamily);
+    const auto lowerBound = [&schemas, schemaVersion]() {
+        return std::lower_bound(schemas.begin(), schemas.end(), schemaVersion,
+            [](SchemaInfoPtr lhs, UsdSchemaVersion version) {
+                return lhs->version > version;
+            });
+    };
+    const auto upperBound = [&schemas, schemaVersion]() {
+        return std::upper_bound(schemas.begin(), schemas.end(), schemaVersion,
+            [](UsdSchemaVersion version, SchemaInfoPtr rhs) {
+                return version > rhs->version;
+            });
+    };
+
+    switch (versionPolicy) {
+    case UsdSchemaRegistry::VersionPolicy::All:
+        return schemas;
+    case UsdSchemaRegistry::VersionPolicy::GreaterThan:
+        return _SchemaInfoSpan(schemas.begin(), lowerBound());
+    case UsdSchemaRegistry::VersionPolicy::GreaterThanOrEqual:
+        return _SchemaInfoSpan(schemas.begin(), upperBound());
+    case UsdSchemaRegistry::VersionPolicy::LessThan:
+        return _SchemaInfoSpan(upperBound(), schemas.end());
+    case UsdSchemaRegistry::VersionPolicy::LessThanOrEqual:
+        return _SchemaInfoSpan(lowerBound(), schemas.end());
+    }
+    return {};
 }
 
 static 
-std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_SchemaInfoSpan
 _FindSchemaInfosInFamily(
     const TfType& schemaType,
     UsdSchemaRegistry::VersionPolicy versionPolicy)
@@ -145,7 +181,7 @@ _FindSchemaInfosInFamily(
 }
 
 static 
-std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_SchemaInfoSpan
 _FindSchemaInfosInFamily(
     const TfToken& schemaIdentifier,
     UsdSchemaRegistry::VersionPolicy versionPolicy)
@@ -281,11 +317,21 @@ _IsSchemaInstanceInAppliedSchemas(
         return false;
     }
 
-    // We're looking for exact match of "<schemaIdentifier>:<instanceName>"
-    const TfToken apiSchemaName(
-        SdfPath::JoinIdentifier(schemaInfo.identifier, instanceName));
-    return std::find(appliedSchemas.begin(), appliedSchemas.end(), 
-        apiSchemaName) != appliedSchemas.end();
+    // We're looking for exact match of "<schemaIdentifier>:<instanceName>".
+    // Compare the applied schema names in place rather than building that
+    // name, since interning it as a token would allocate and lock the token
+    // registry on every call.
+    static const char delim = UsdObject::GetNamespaceDelimiter();
+    const std::string &identifier = schemaInfo.identifier.GetString();
+    const std::string &instance = instanceName.GetString();
+    return std::any_of(appliedSchemas.begin(), appliedSchemas.end(),
+        [&](const TfToken &appliedSchema) {
+            const std::string &name = appliedSchema.GetString();
+            return name.size() == identifier.size() + 1 + instance.size() &&
+                name[identifier.size()] == delim &&
+                TfStringStartsWith(name, identifier) &&
+                TfStringEndsWith(name, instance);
+        });
 }
 
 bool 
@@ -295,7 +341,7 @@ UsdPrim::_HasAPI(const UsdSchemaRegistry::SchemaInfo *schemaInfo) const
         return false;
     }
 
-    const TfTokenVector appliedSchemas = GetAppliedSchemas();
+    const TfTokenVector &appliedSchemas = GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return false;
     }
@@ -317,7 +363,7 @@ UsdPrim::_HasAPIInstance(
         return false;
     }
 
-    const TfTokenVector appliedSchemas = GetAppliedSchemas();
+    const TfTokenVector &appliedSchemas = GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return false;
     }
@@ -381,7 +427,7 @@ const UsdSchemaRegistry::SchemaInfo *
 _GetFirstSchemaInFamilyPrimHasAPI(
     const UsdPrim &prim, const FindInFamilyArgs &... findInFamilyArgs) 
 {
-    const TfTokenVector appliedSchemas = prim.GetAppliedSchemas();
+    const TfTokenVector &appliedSchemas = prim.GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return nullptr;
     }
@@ -412,7 +458,7 @@ _GetFirstSchemaInFamilyPrimHasAPIInstance(
         return nullptr;
     }
 
-    const TfTokenVector appliedSchemas = prim.GetAppliedSchemas();
+    const TfTokenVector &appliedSchemas = prim.GetAppliedSchemas();
     if (appliedSchemas.empty()) {
         return nullptr;
     }
