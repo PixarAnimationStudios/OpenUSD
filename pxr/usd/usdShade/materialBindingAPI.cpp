@@ -872,17 +872,10 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
         bindingRels->resize(prims.size());
     }
 
-    // This ensures that bindings are only computed once per prim.
-    BindingsCache bindingsCache;
-
-    // The use of CollectionQueryCache ensures that every collection's 
-    // MembershipQuery object is only constructed once.
-    CollectionQueryCache collQueryCache;
-
-    // bindingsCache and collQueryCache are keyed by prim path, so they are
-    // only valid for prims on a single stage. Reusing them across stages
-    // would silently return another stage's material for prims that share a
-    // path, so reject that input instead.
+    // The caches below are keyed by prim path, so they are only valid for
+    // prims on a single stage. Reusing them across stages would silently
+    // return another stage's material for prims that share a path, so reject
+    // that input before building them.
     const UsdPrim *first = nullptr;
     for (const UsdPrim &prim : prims) {
         if (!prim) {
@@ -898,6 +891,13 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterials(
             return materials;
         }
     }
+
+    // This ensures that bindings are only computed once per prim.
+    BindingsCache bindingsCache;
+
+    // The use of CollectionQueryCache ensures that every collection's 
+    // MembershipQuery object is only constructed once.
+    CollectionQueryCache collQueryCache;
 
     WorkParallelForN(prims.size(), 
         [&](size_t start, size_t end) {

@@ -769,5 +769,13 @@ class TestUsdShadeMaterialBinding(unittest.TestCase):
             UsdShade.MaterialBindingAPI.ComputeBoundMaterials(prims[:1])
         self.assertEqual([str(m.GetPath()) for m in boundMaterials], ['/Red'])
 
+        # Invalid prims are ignored by the stage check. They still report
+        # their own invalid-prim error, but not the multi-stage one.
+        with self.assertRaises(Tf.ErrorException) as cm:
+            UsdShade.MaterialBindingAPI.ComputeBoundMaterials(
+                [Usd.Prim(), prims[0]])
+        self.assertIn('Invalid prim', str(cm.exception))
+        self.assertNotIn('same stage', str(cm.exception))
+
 if __name__ == "__main__":
     unittest.main()
