@@ -25,8 +25,10 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -90,22 +92,243 @@ Usd_ClipCache::Lifeboat::Lifeboat(Usd_ClipCache& cache)
     TF_AXIOM(!_cache._lifeboat);
     _cache._lifeboat = this;
 }
- 
+
 Usd_ClipCache::Lifeboat::~Lifeboat()
 {
+    // Release the invalidated clip sets, then stop tracking the layers that
+    // only they used.
+    _data.reset();
+
     _cache._lifeboat = nullptr;
+    _cache._RemoveUnusedClipLayers();
 }
 
 // ------------------------------------------------------------
 
-Usd_ClipCache::Usd_ClipCache()
+Usd_ClipCache::Usd_ClipCache(RegisterLayerFn registerLayerFn)
     : _concurrentPopulationContext(nullptr)
     , _lifeboat(nullptr)
+    , _registerLayerFn(std::move(registerLayerFn))
 {
 }
 
 Usd_ClipCache::~Usd_ClipCache()
 {
+    for (auto& entry : _clipLayers) {
+        TfNotice::Revoke(entry.second);
+    }
+}
+
+void
+Usd_ClipCache::_AddClipLayer(const SdfLayerHandle &layer)
+{
+    if (!_registerLayerFn) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(_clipLayersMutex);
+    TfNotice::Key &key = _clipLayers[layer];
+    if (!key) {
+        key = _registerLayerFn(layer);
+    }
+}
+
+void
+Usd_ClipCache::_AdoptClipSet(const Usd_ClipSetRefPtr &clipSet)
+{
+    // Clips that opened their layers before this point, either because the
+    // layer was already open when the clip was constructed or because it is a
+    // generated manifest, will not report them to this cache, so record them
+    // here.
+    const auto adopt = [this](Usd_Clip &clip) {
+        clip._cache = this;
+        if (SdfLayerHandle layer = clip.GetLayerIfOpen()) {
+            _AddClipLayer(layer);
+        }
+    };
+
+    adopt(*clipSet->manifestClip);
+    for (const Usd_ClipRefPtr& clip : clipSet->valueClips) {
+        adopt(*clip);
+    }
+}
+
+void
+Usd_ClipCache::_RemoveUnusedClipLayers()
+{
+    {
+        std::lock_guard<std::mutex> lock(_clipLayersMutex);
+        if (_clipLayers.empty()) {
+            return;
+        }
+    }
+
+    const SdfLayerHandleSet usedLayers = GetUsedLayers();
+
+    std::vector<TfNotice::Key> keysToRevoke;
+    {
+        std::lock_guard<std::mutex> lock(_clipLayersMutex);
+        for (auto it = _clipLayers.begin(); it != _clipLayers.end(); ) {
+            if (!it->first || !usedLayers.count(it->first)) {
+                keysToRevoke.push_back(it->second);
+                it = _clipLayers.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+    }
+
+    for (TfNotice::Key& key : keysToRevoke) {
+        TfNotice::Revoke(key);
+    }
+}
+
+const SdfChangeList::Entry &
+Usd_ClipCache::GetClipValuesChangedEntry()
+{
+    // Intentional leak to avoid static destructor registration & call.
+    static const SdfChangeList::Entry *entry = []() {
+        SdfChangeList::Entry *entry = new SdfChangeList::Entry;
+        entry->flags.didChangeAttributeTimeSamples = true;
+        entry->infoChanged.emplace_back(
+            SdfFieldKeys->Spline, std::make_pair(VtValue(), VtValue()));
+        return entry;
+    }();
+    return *entry;
+}
+
+void
+Usd_ClipCache::ComputeChangedSites(
+    const SdfLayerHandle &layer,
+    const SdfChangeList &changeList,
+    ChangedSites *sites) const
+{
+    {
+        std::lock_guard<std::mutex> lock(_clipLayersMutex);
+        if (!_clipLayers.count(layer)) {
+            return;
+        }
+    }
+
+    // Find the clip sets that use layer. Collect unique clip sets first, as
+    // Reload does, since ancestral clip sets appear in several entries (see
+    // PopulateClipsForPrim).
+    std::unordered_set<Usd_ClipSetRefPtr> clipSets;
+    for (auto it = _table.begin(), end = _table.end(); it != end; ++it) {
+        clipSets.insert(it->second.begin(), it->second.end());
+    }
+
+    for (const Usd_ClipSetRefPtr& clipSet : clipSets) {
+        // Value resolution consults a clip set's manifest before any of its
+        // value clips, so if the manifest has not been opened no attribute
+        // value has been resolved from this clip set and there is nothing to
+        // report. The clip set's value clip layers may still be open, since a
+        // clip takes its layer if it is already open when the clip is
+        // constructed. Checking this also avoids opening the manifest here.
+        const SdfLayerHandle manifest =
+            clipSet->manifestClip->GetLayerIfOpen();
+        if (!manifest) {
+            continue;
+        }
+
+        const bool isManifest = manifest == layer;
+        const bool isValueClip = std::any_of(
+            clipSet->valueClips.begin(), clipSet->valueClips.end(),
+            [&layer](const Usd_ClipRefPtr& clip) {
+                return clip->GetLayerIfOpen() == layer;
+            });
+        if (isManifest || isValueClip) {
+            _AddChangedSites(*clipSet, manifest, isManifest, isValueClip,
+                             changeList, sites);
+        }
+    }
+}
+
+void
+Usd_ClipCache::_AddChangedSites(
+    const Usd_ClipSet &clipSet,
+    const SdfLayerHandle &manifest,
+    bool isManifest,
+    bool isValueClip,
+    const SdfChangeList &changeList,
+    ChangedSites *sites)
+{
+    const SdfPath &clipPrimPath = clipSet.clipPrimPath;
+    const auto addSite = [&clipSet, &clipPrimPath, sites](
+        const SdfPath &pathInClip) {
+        sites->push_back({
+            clipSet.sourceLayerStack,
+            pathInClip.ReplacePrefix(clipPrimPath, clipSet.sourcePrimPath)});
+    };
+
+    // Edits to a manifest's attribute can change whether and how the attribute
+    // takes values from clips. Edits to a value clip's attribute only matter if
+    // the manifest declares it.
+    const auto addAttributeSite = [&](const SdfPath &pathInClip) {
+        if (pathInClip.HasPrefix(clipPrimPath) &&
+            (isManifest ||
+             clipSet.ContainsValueForAttribute(pathInClip.ReplacePrefix(
+                 clipPrimPath, clipSet.sourcePrimPath)))) {
+            addSite(pathInClip);
+        }
+    };
+
+    for (const auto& pathAndEntry : changeList.GetEntryList()) {
+        const SdfPath &path = pathAndEntry.first;
+        const SdfChangeList::Entry &entry = pathAndEntry.second;
+
+        if (path == SdfPath::AbsoluteRootPath()) {
+            if (!entry.flags.didReplaceContent) {
+                continue;
+            }
+
+            // The layer's content was replaced without itemizing changes, as
+            // when a layer that streams its data is reloaded.
+            if (isManifest) {
+                // The attributes the manifest declares may have changed
+                // arbitrarily. Since clips cannot introduce attributes, the
+                // affected attributes are among those on the clip prim and its
+                // descendants.
+                addSite(clipPrimPath);
+            }
+            else if (isValueClip && manifest->HasSpec(clipPrimPath)) {
+                // Only attributes declared in the manifest take values from
+                // clips, so report those.
+                manifest->Traverse(clipPrimPath,
+                    [&addSite](const SdfPath &p) {
+                        if (p.IsPrimPropertyPath()) {
+                            addSite(p);
+                        }
+                    });
+            }
+            continue;
+        }
+
+        if (path.IsPrimPropertyPath()) {
+            addAttributeSite(path);
+            if (entry.flags.didRename) {
+                addAttributeSite(entry.oldPath);
+            }
+        }
+        else if (path.IsPrimOrPrimVariantSelectionPath() &&
+                 (entry.flags.didAddInertPrim ||
+                  entry.flags.didAddNonInertPrim ||
+                  entry.flags.didRemoveInertPrim ||
+                  entry.flags.didRemoveNonInertPrim ||
+                  entry.flags.didRename)) {
+            // Adding, removing or renaming a prim spec in a clip or manifest
+            // can change the values of attributes beneath it without itemizing
+            // them.
+            if (path.HasPrefix(clipPrimPath)) {
+                addSite(path);
+            }
+            if (entry.flags.didRename &&
+                entry.oldPath.HasPrefix(clipPrimPath)) {
+                addSite(entry.oldPath);
+            }
+        }
+    }
 }
 
 static Usd_ClipSetRefPtr
@@ -138,8 +361,8 @@ _CreateClipSetFromDefinition(
 void
 Usd_ClipCache::_ComputeClipsFromPrimIndex(
     const SdfPath& usdPrimPath,
-    const PcpPrimIndex& primIndex, 
-    std::vector<Usd_ClipSetRefPtr>* clips) const
+    const PcpPrimIndex& primIndex,
+    std::vector<Usd_ClipSetRefPtr>* clips)
 {
     std::vector<Usd_ClipSetDefinition> clipSetDefs;
     std::vector<std::string> clipSetNames;
@@ -183,6 +406,7 @@ Usd_ClipCache::_ComputeClipsFromPrimIndex(
             if (reusingGeneratedManifest) {
                 TF_UNUSED(clipSet->manifestClip->GetLayer());
             }
+            _AdoptClipSet(clipSet);
             clips->push_back(clipSet);
         }
     }

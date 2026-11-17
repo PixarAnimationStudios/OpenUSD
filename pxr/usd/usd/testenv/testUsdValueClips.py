@@ -35,6 +35,45 @@ def LayerChangeListener():
     l = _Listener()
     yield l
 
+@contextlib.contextmanager
+def ObjectsChangedListener(stage, objs):
+    """Collect the paths of the objects in objs that are affected by any
+    UsdNotice::ObjectsChanged sent by stage while the context is active."""
+    class _Listener(object):
+        def __init__(self):
+            self.affectedPaths = set()
+            self._key = Tf.Notice.Register(
+                Usd.Notice.ObjectsChanged, self._HandleNotice, stage)
+        def _HandleNotice(self, notice, sender):
+            self.affectedPaths.update(
+                o.GetPath() for o in objs if notice.AffectedObject(o))
+
+    l = _Listener()
+    try:
+        yield l
+    finally:
+        l._key.Revoke()
+
+def _WriteClipFile(path, samples):
+    """Write a clip layer to path with the given time samples, a dict
+    mapping attribute path strings to dicts of {time: value}.  The file's
+    modification time is advanced if it already exists so that
+    SdfLayer::Reload sees the new contents regardless of timestamp
+    resolution."""
+    layer = Sdf.Layer.CreateAnonymous('.usda')
+    for attrPath, timeSamples in samples.items():
+        attrPath = Sdf.Path(attrPath)
+        prim = Sdf.CreatePrimInLayer(layer, attrPath.GetPrimPath())
+        prim.specifier = Sdf.SpecifierDef
+        Sdf.AttributeSpec(prim, attrPath.name, Sdf.ValueTypeNames.Double)
+        for t, v in timeSamples.items():
+            layer.SetTimeSample(attrPath, t, v)
+
+    oldMTime = os.path.getmtime(path) if os.path.exists(path) else None
+    layer.Export(path)
+    if oldMTime is not None:
+        os.utime(path, (oldMTime + 10, oldMTime + 10))
+
 class TestUsdValueClips(unittest.TestCase):
     def CheckTimeSamples(self, attr):
         """Verifies attribute time samples are as expected via
@@ -3428,6 +3467,313 @@ class TestUsdValueClips(unittest.TestCase):
         _TestRemoveAndInsertNonEmptySublayer()
         _TestInsertAndRemoveEmptySublayer()
         _TestRemoveAndInsertEmptySublayer()
+
+    def _SetupClipNoticesStage(self, dirName):
+        """Write a stage to dirName with these value clip sets:
+          /Model    - explicit clip ./clip.usda and manifest ./manifest.usda.
+                      The clip's values also apply to /Model/Child.
+          /Other    - explicit clip ./other.usda and a generated manifest.
+          /Template - template clips ./tclip.#.usdc for times 1 and 2,
+                      introduced through a payload as in production
+                      assets. Reloading these crate files replaces their
+                      content without itemizing the changes.
+        Returns the path to the root layer."""
+        shutil.rmtree(dirName, ignore_errors=True)
+        os.makedirs(dirName)
+
+        _WriteClipFile(os.path.join(dirName, 'clip.usda'), {
+            '/Clip.a': {0: 1.0},
+            '/Clip.b': {0: 2.0},
+            '/Clip/Child.attr': {0: 3.0}})
+        _WriteClipFile(os.path.join(dirName, 'other.usda'), {
+            '/Clip.a': {0: 4.0}})
+        _WriteClipFile(os.path.join(dirName, 'tclip.1.usdc'), {
+            '/Clip.a': {1: 5.0}})
+        _WriteClipFile(os.path.join(dirName, 'tclip.2.usdc'), {
+            '/Clip.a': {2: 6.0}})
+
+        # The manifest deliberately omits /Clip.b so that tests can add it.
+        manifest = Sdf.Layer.CreateAnonymous('.usda')
+        Sdf.CreatePrimInLayer(manifest, '/Clip/Child')
+        Sdf.AttributeSpec(manifest.GetPrimAtPath('/Clip'), 'a',
+                          Sdf.ValueTypeNames.Double)
+        Sdf.AttributeSpec(manifest.GetPrimAtPath('/Clip/Child'), 'attr',
+                          Sdf.ValueTypeNames.Double)
+        manifest.Export(os.path.join(dirName, 'manifest.usda'))
+
+        def _DefineAttrs(layer, primPath, names):
+            prim = Sdf.CreatePrimInLayer(layer, primPath)
+            prim.specifier = Sdf.SpecifierDef
+            for name in names:
+                Sdf.AttributeSpec(prim, name, Sdf.ValueTypeNames.Double)
+            return prim
+
+        stage = Usd.Stage.CreateNew(os.path.join(dirName, 'payload.usda'))
+        _DefineAttrs(stage.GetRootLayer(), '/Template', ['a'])
+        clips = Usd.ClipsAPI(stage.GetPrimAtPath('/Template'))
+        clips.SetClipTemplateAssetPath('./tclip.#.usdc')
+        clips.SetClipPrimPath('/Clip')
+        clips.SetClipTemplateStartTime(1)
+        clips.SetClipTemplateEndTime(2)
+        clips.SetClipTemplateStride(1)
+        stage.GetRootLayer().Save()
+
+        rootPath = os.path.join(dirName, 'root.usda')
+        stage = Usd.Stage.CreateNew(rootPath)
+        root = stage.GetRootLayer()
+        _DefineAttrs(root, '/Model', ['a', 'b'])
+        _DefineAttrs(root, '/Model/Child', ['attr'])
+        _DefineAttrs(root, '/Other', ['a'])
+        _DefineAttrs(root, '/Template', []).payloadList.Prepend(
+            Sdf.Payload('./payload.usda', '/Template'))
+
+        clips = Usd.ClipsAPI(stage.GetPrimAtPath('/Model'))
+        clips.SetClipAssetPaths([Sdf.AssetPath('./clip.usda')])
+        clips.SetClipManifestAssetPath(Sdf.AssetPath('./manifest.usda'))
+        clips.SetClipPrimPath('/Clip')
+        clips.SetClipActive([(0, 0)])
+
+        clips = Usd.ClipsAPI(stage.GetPrimAtPath('/Other'))
+        clips.SetClipAssetPaths([Sdf.AssetPath('./other.usda')])
+        clips.SetClipPrimPath('/Clip')
+        clips.SetClipActive([(0, 0)])
+
+        stage.GetRootLayer().Save()
+        return rootPath
+
+    def _OpenClipNoticesStage(self, rootPath):
+        """Open the stage at rootPath and pull on every attribute that
+        gets values from clips, so that all clip layers are open."""
+        stage = Usd.Stage.Open(rootPath)
+        attrs = {
+            'a': stage.GetAttributeAtPath('/Model.a'),
+            'b': stage.GetAttributeAtPath('/Model.b'),
+            'child': stage.GetAttributeAtPath('/Model/Child.attr'),
+            'other': stage.GetAttributeAtPath('/Other.a'),
+            'template': stage.GetAttributeAtPath('/Template.a')}
+        self.assertTrue(all(attrs.values()))
+
+        self.CheckValue(attrs['a'], time=0, expected=1.0)
+        self.CheckValue(attrs['b'], time=0, expected=None)
+        self.CheckValue(attrs['child'], time=0, expected=3.0)
+        self.CheckValue(attrs['other'], time=0, expected=4.0)
+        self.CheckValue(attrs['template'], time=1, expected=5.0)
+        self.CheckValue(attrs['template'], time=2, expected=6.0)
+        return stage, attrs
+
+    def test_ClipLayerReloadNotices(self):
+        """Verifies that UsdStage::Reload sends ObjectsChanged notices for
+        objects whose values come from clip layers that changed on disk."""
+        rootPath = self._SetupClipNoticesStage('clipReloadNotices')
+        stage, attrs = self._OpenClipNoticesStage(rootPath)
+        objs = list(attrs.values())
+        dirName = os.path.dirname(rootPath)
+
+        # Rewrite an explicit clip.  The change must be reported for attributes
+        # on the clip prim and its descendants, but not for attributes that get
+        # values from other clip sets.  /Clip.b also changes, but since the
+        # manifest does not declare it /Model.b takes no values from the clip,
+        # so it is not reported.
+        _WriteClipFile(os.path.join(dirName, 'clip.usda'), {
+            '/Clip.a': {0: 10.0},
+            '/Clip.b': {0: 20.0},
+            '/Clip/Child.attr': {0: 30.0}})
+        with ObjectsChangedListener(stage, objs) as l:
+            stage.Reload()
+        self.CheckValue(attrs['a'], time=0, expected=10.0)
+        self.CheckValue(attrs['b'], time=0, expected=None)
+        self.CheckValue(attrs['child'], time=0, expected=30.0)
+        self.assertIn(attrs['a'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['b'].GetPath(), l.affectedPaths)
+        self.assertIn(attrs['child'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['other'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['template'].GetPath(), l.affectedPaths)
+
+        # Rewrite a clip that uses a generated manifest.
+        _WriteClipFile(os.path.join(dirName, 'other.usda'), {
+            '/Clip.a': {0: 40.0}})
+        with ObjectsChangedListener(stage, objs) as l:
+            stage.Reload()
+        self.CheckValue(attrs['other'], time=0, expected=40.0)
+        self.assertIn(attrs['other'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['a'].GetPath(), l.affectedPaths)
+
+        # Rewrite one clip of a template clip set brought in by a payload.
+        _WriteClipFile(os.path.join(dirName, 'tclip.2.usdc'), {
+            '/Clip.a': {2: 60.0}})
+        with ObjectsChangedListener(stage, objs) as l:
+            stage.Reload()
+        self.CheckValue(attrs['template'], time=1, expected=5.0)
+        self.CheckValue(attrs['template'], time=2, expected=60.0)
+        self.assertIn(attrs['template'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['a'].GetPath(), l.affectedPaths)
+
+        # Reloading when no clip changed on disk must not report clip
+        # objects as changed.
+        with ObjectsChangedListener(stage, objs) as l:
+            stage.Reload()
+        self.assertEqual(l.affectedPaths, set())
+
+    def test_ClipLayerEditNotices(self):
+        """Verifies that in-memory edits to clip layers send ObjectsChanged
+        notices for objects whose values come from those layers."""
+        rootPath = self._SetupClipNoticesStage('clipEditNotices')
+        stage, attrs = self._OpenClipNoticesStage(rootPath)
+        objs = list(attrs.values())
+        dirName = os.path.dirname(rootPath)
+
+        clip = Sdf.Layer.Find(os.path.join(dirName, 'clip.usda'))
+        self.assertTrue(clip)
+        with ObjectsChangedListener(stage, objs) as l:
+            clip.SetTimeSample('/Clip/Child.attr', 0, 300.0)
+        self.CheckValue(attrs['child'], time=0, expected=300.0)
+        self.assertIn(attrs['child'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['other'].GetPath(), l.affectedPaths)
+
+        tclip = Sdf.Layer.Find(os.path.join(dirName, 'tclip.1.usdc'))
+        self.assertTrue(tclip)
+        with ObjectsChangedListener(stage, objs) as l:
+            tclip.SetTimeSample('/Clip.a', 1, 500.0)
+        self.CheckValue(attrs['template'], time=1, expected=500.0)
+        self.assertIn(attrs['template'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['a'].GetPath(), l.affectedPaths)
+
+        # Edits to an explicit manifest change which attributes get values from
+        # clips.  /Clip.b is in the clip but not yet in the manifest.
+        manifest = Sdf.Layer.Find(os.path.join(dirName, 'manifest.usda'))
+        self.assertTrue(manifest)
+        with ObjectsChangedListener(stage, objs) as l:
+            Sdf.AttributeSpec(manifest.GetPrimAtPath('/Clip'), 'b',
+                              Sdf.ValueTypeNames.Double)
+        self.CheckValue(attrs['b'], time=0, expected=2.0)
+        self.assertIn(attrs['b'].GetPath(), l.affectedPaths)
+
+    def test_SharedClipLayerNotices(self):
+        """Verifies that edits to a clip layer used by several stages send
+        ObjectsChanged notices from each of those stages."""
+        rootPath = self._SetupClipNoticesStage('sharedClipNotices')
+        stage1, attrs1 = self._OpenClipNoticesStage(rootPath)
+        stage2, attrs2 = self._OpenClipNoticesStage(rootPath)
+        self.assertNotEqual(stage1, stage2)
+
+        clip = Sdf.Layer.Find(
+            os.path.join(os.path.dirname(rootPath), 'clip.usda'))
+        with ObjectsChangedListener(stage1, [attrs1['a']]) as l1, \
+             ObjectsChangedListener(stage2, [attrs2['a']]) as l2:
+            clip.SetTimeSample('/Clip.a', 0, 100.0)
+        self.CheckValue(attrs1['a'], time=0, expected=100.0)
+        self.CheckValue(attrs2['a'], time=0, expected=100.0)
+        self.assertEqual(l1.affectedPaths, {attrs1['a'].GetPath()})
+        self.assertEqual(l2.affectedPaths, {attrs2['a'].GetPath()})
+
+    def test_ClipLayerNoticesAfterRecompose(self):
+        """Verifies that clip layers are still tracked for change
+        notification after the prims using them are recomposed, including
+        clip layers that are first opened while recomposing."""
+        rootPath = self._SetupClipNoticesStage('clipRecomposeNotices')
+        stage, attrs = self._OpenClipNoticesStage(rootPath)
+        objs = list(attrs.values())
+        dirName = os.path.dirname(rootPath)
+        root = stage.GetRootLayer()
+
+        def _GeneratedManifests():
+            return set(l.identifier
+                       for l in stage.GetUsedLayers(includeClipLayers=True)
+                       if l.anonymous and 'generated_manifest' in l.identifier)
+
+        # Recompose /Model and /Other without changing their clips.  The clip
+        # sets are rebuilt from the layers kept alive during change processing,
+        # including the generated manifest for /Other.  /Other and /Template
+        # have generated manifests.
+        manifestsBefore = _GeneratedManifests()
+        self.assertEqual(len(manifestsBefore), 2)
+        with Sdf.ChangeBlock():
+            root.GetPrimAtPath('/Model').kind = 'component'
+            root.GetPrimAtPath('/Other').kind = 'component'
+        self.assertEqual(_GeneratedManifests(), manifestsBefore)
+
+        clip = Sdf.Layer.Find(os.path.join(dirName, 'clip.usda'))
+        with ObjectsChangedListener(stage, objs) as l:
+            clip.SetTimeSample('/Clip.a', 0, 10.0)
+        self.CheckValue(attrs['a'], time=0, expected=10.0)
+        self.assertEqual(l.affectedPaths, {attrs['a'].GetPath()})
+
+        other = Sdf.Layer.FindOrOpen(os.path.join(dirName, 'other.usda'))
+        with ObjectsChangedListener(stage, objs) as l:
+            other.SetTimeSample('/Clip.a', 0, 40.0)
+        self.CheckValue(attrs['other'], time=0, expected=40.0)
+        self.assertEqual(l.affectedPaths, {attrs['other'].GetPath()})
+
+        # Point /Other at a clip layer that is not open.  Generating the new
+        # manifest opens it while the stage is processing this change, so the
+        # stage starts listening to it during that round.
+        newClipPath = os.path.join(dirName, 'newClip.usda')
+        _WriteClipFile(newClipPath, {'/Clip.a': {0: 7.0}})
+        self.assertFalse(Sdf.Layer.Find(newClipPath))
+        with ObjectsChangedListener(stage, objs) as l:
+            Usd.ClipsAPI(stage.GetPrimAtPath('/Other')).SetClipAssetPaths(
+                [Sdf.AssetPath('./newClip.usda')])
+        self.assertIn(attrs['other'].GetPath(), l.affectedPaths)
+        newClip = Sdf.Layer.Find(newClipPath)
+        self.assertTrue(newClip)
+        self.CheckValue(attrs['other'], time=0, expected=7.0)
+
+        with ObjectsChangedListener(stage, objs) as l:
+            newClip.SetTimeSample('/Clip.a', 0, 70.0)
+        self.CheckValue(attrs['other'], time=0, expected=70.0)
+        self.assertEqual(l.affectedPaths, {attrs['other'].GetPath()})
+
+        # The stage no longer uses other.usda, so edits to it must not be
+        # reported.
+        with ObjectsChangedListener(stage, objs) as l:
+            other.SetTimeSample('/Clip.a', 0, 400.0)
+        self.assertEqual(l.affectedPaths, set())
+        self.CheckValue(attrs['other'], time=0, expected=70.0)
+
+        # Edit a clip layer in the same round as a change that recomposes the
+        # prim using it.
+        with ObjectsChangedListener(stage, objs) as l:
+            with Sdf.ChangeBlock():
+                clip.SetTimeSample('/Clip/Child.attr', 0, 30.0)
+                root.GetPrimAtPath('/Model').kind = 'group'
+        self.CheckValue(attrs['child'], time=0, expected=30.0)
+        self.assertIn(attrs['child'].GetPath(), l.affectedPaths)
+        self.assertNotIn(attrs['other'].GetPath(), l.affectedPaths)
+
+        # Clip layers are still tracked after that round.
+        with ObjectsChangedListener(stage, objs) as l:
+            clip.SetTimeSample('/Clip/Child.attr', 0, 300.0)
+        self.CheckValue(attrs['child'], time=0, expected=300.0)
+        self.assertEqual(l.affectedPaths, {attrs['child'].GetPath()})
+
+    def test_ClipLayerNoticesBeforeManifestOpened(self):
+        """Verifies that edits to a clip layer that was already open when the
+        stage was opened are not reported, and do not open the manifest,
+        before any value has been resolved from the clip set."""
+        rootPath = self._SetupClipNoticesStage('clipNoticesNoManifest')
+        dirName = os.path.dirname(rootPath)
+        manifestPath = os.path.join(dirName, 'manifest.usda')
+
+        clip = Sdf.Layer.FindOrOpen(os.path.join(dirName, 'clip.usda'))
+        self.assertTrue(clip)
+        stage = Usd.Stage.Open(rootPath)
+        attr = stage.GetAttributeAtPath('/Model.a')
+        self.assertTrue(attr)
+        self.assertFalse(Sdf.Layer.Find(manifestPath))
+
+        with ObjectsChangedListener(stage, [attr]) as l:
+            clip.SetTimeSample('/Clip.a', 0, 10.0)
+        self.assertEqual(l.affectedPaths, set())
+        self.assertFalse(Sdf.Layer.Find(manifestPath))
+
+        # Resolving a value opens the manifest, after which edits are
+        # reported.
+        self.CheckValue(attr, time=0, expected=10.0)
+        self.assertTrue(Sdf.Layer.Find(manifestPath))
+        with ObjectsChangedListener(stage, [attr]) as l:
+            clip.SetTimeSample('/Clip.a', 0, 20.0)
+        self.assertEqual(l.affectedPaths, {attr.GetPath()})
+        self.CheckValue(attr, time=0, expected=20.0)
 
     def test_ExpectedAttributeFormat(self):
         """Test syntax that results in "spline vs time samples" being expected

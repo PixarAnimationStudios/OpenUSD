@@ -894,7 +894,13 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                 _rootLayer, _sessionLayer, pathResolverContext),
             /*fileFormatTarget=*/_rootLayer->GetFileFormat()->GetTarget(),
             /*usdMode=*/true))
-    , _clipCache(new Usd_ClipCache)
+    , _clipCache(new Usd_ClipCache(
+            // Listen for changes to clip layers as clips open them, since clip
+            // layers are not in general among the layers used by _cache.
+            [this](const SdfLayerHandle &layer) {
+                return TfNotice::Register(
+                    UsdStagePtr(this), &UsdStage::_HandleLayersDidChange, layer);
+            }))
     , _instanceCache(new Usd_InstanceCache)
     , _usedLayersRevision(0)
     , _interpolationType(UsdInterpolationTypeLinear)
@@ -4475,6 +4481,7 @@ UsdStage::_HandleLayersDidChange(
     _pendingChanges->pcpChanges.DidChange(_cache.get(), n.GetChangeListVec());
 
     _ComputePendingChanges(n.GetChangeListVec());
+    _ComputePendingClipChanges(n.GetChangeListVec());
 
     // It is possible that some additional computation may be necessary if
     // the changes contained sublayer operations such as layer muting / unmuting
@@ -4496,6 +4503,82 @@ UsdStage::_HandleLayersDidChange(
     // raw pointers to entries stored in the notice, so we must process these
     // changes immediately while the notice is still alive.
     _ProcessPendingChanges();
+}
+
+void
+UsdStage::_ComputePendingClipChanges(
+    const SdfLayerChangeListVec &changeListVec)
+{
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
+    }
+
+    Usd_ClipCache::ChangedSites sites;
+    for (const auto& layerAndChangeList : changeListVec) {
+        _clipCache->ComputeChangedSites(
+            layerAndChangeList.first, layerAndChangeList.second, &sites);
+    }
+    if (sites.empty()) {
+        return;
+    }
+
+    // Clips only supply attribute values, so changes to them are reported as
+    // info changes to the affected attributes, as for value edits in other
+    // layers.
+    const SdfChangeList::Entry *entry =
+        &Usd_ClipCache::GetClipValuesChangedEntry();
+    _PendingChanges::PathsToChangesMap &infoChanges =
+        _pendingChanges->otherInfoChanges;
+
+    const auto addAttribute = [&infoChanges, entry](const SdfPath &path) {
+        std::vector<const SdfChangeList::Entry*> &entries = infoChanges[path];
+        if (std::find(entries.begin(), entries.end(), entry) == entries.end()) {
+            entries.push_back(entry);
+        }
+    };
+
+    // Changes to clip prims that are not itemized by attribute may affect any
+    // attribute at or below the dependent stage prims.  Clips cannot introduce
+    // attributes, so these are all attributes on those prims.  Instance proxies
+    // are included here and remapped to prototypes during change processing
+    // like other changes beneath instances.
+    const auto addAttributesInSubtree = [this, &addAttribute](
+        const SdfPath &primPath) {
+        const UsdPrim root = GetPrimAtPath(primPath);
+        if (!root) {
+            return;
+        }
+        for (const UsdPrim &prim : UsdPrimRange(
+                 root, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate))) {
+            for (const UsdAttribute &attr : prim.GetAttributes()) {
+                addAttribute(attr.GetPath());
+            }
+        }
+    };
+
+    // Map each site to the stage objects that depend on it. Root dependencies
+    // are included since clip sets may be introduced in the stage's own layer
+    // stack.
+    const PcpDependencyFlags depTypes = PcpDependencyTypeAnyNonVirtual;
+    for (const Usd_ClipCache::ChangedSite &site : sites) {
+        const PcpDependencyVector deps = _cache->FindSiteDependencies(
+            site.layerStack, site.path, depTypes,
+            /* recurseOnSite */ false,
+            /* recurseOnIndex */ false,
+            /* filterForExistingCachesOnly */ false);
+        for (const PcpDependency &dep : deps) {
+            if (dep.indexPath.IsPrimPropertyPath()) {
+                addAttribute(dep.indexPath);
+            }
+            else if (dep.indexPath.IsPrimPath()) {
+                addAttributesInSubtree(dep.indexPath);
+            }
+        }
+
+        TF_DEBUG(USD_CHANGES).Msg(
+            "Clip values changed at <%s> in layer stack %s\n",
+            site.path.GetText(), TfStringify(site.layerStack).c_str());
+    }
 }
 
 void UsdStage::_ComputePendingChanges(

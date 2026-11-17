@@ -1823,6 +1823,10 @@ private:
     // Refer to _ProcessPendingChanges()
     void _ComputePendingChanges(const SdfLayerChangeListVec &);
 
+    // Add info changes to _pendingChanges for attributes whose values may
+    // have been changed by edits to value clip and manifest layers.
+    void _ComputePendingClipChanges(const SdfLayerChangeListVec &);
+
     // Update stage contents in response to changes to the asset resolver.
     void _HandleResolverDidChange(const ArNotice::ResolverChanged &);
 
