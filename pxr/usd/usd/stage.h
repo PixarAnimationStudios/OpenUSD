@@ -1832,6 +1832,10 @@ private:
     // UsdNotice::StageContentsChanged notices were sent during execution.
     bool _ProcessPendingChanges();
 
+    // Helper for _ProcessPendingChanges to update the stage's load rules and 
+    // population mask if needed as a response to namespace edits.
+    void _UpdateLoadRulesAndPopulationMask();
+
     // Remove scene description for the prim at \p fullPath in the current edit
     // target.
     bool _RemovePrim(const SdfPath& fullPath);

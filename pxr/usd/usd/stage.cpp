@@ -4735,6 +4735,117 @@ void UsdStage::_ComputePendingChanges(
 
 }
 
+void
+UsdStage::_UpdateLoadRulesAndPopulationMask()
+{
+    TRACE_FUNCTION();
+    
+    // We check the expected namespace edit changes to determine which paths on
+    // the stage need updating.
+    if (!TF_VERIFY(_pendingChanges) || 
+        _pendingChanges->expectedNamespaceEditChanges.empty()) {
+        return;
+    }
+
+    // Load rules that load everything and a mask that includes everything do 
+    // not need to be updated.
+    const bool updateLoadRules = !_loadRules.GetRules().empty();
+    const bool updatePopMask = _populationMask != UsdStagePopulationMask::All();
+    if (!updateLoadRules && !updatePopMask) {
+        return;
+    }
+
+    // Collect the prim moves from the list of expected namespace edits. We 
+    // explicitly leave deleted paths untouched in the load rules and 
+    // population mask.
+    std::vector<std::pair<SdfPath, SdfPath>> primMoves;
+    for (const auto &change : _pendingChanges->expectedNamespaceEditChanges) {
+        if (change.oldPath.IsPrimPath() && !change.newPath.IsEmpty() &&
+            change.oldPath != change.newPath) {
+            primMoves.emplace_back(change.oldPath, change.newPath);
+        }
+    }
+
+    if (primMoves.empty()) {
+        return;
+    }
+
+    // Determine whether the load rules/population mask state for the given path 
+    // needs to be clobbered by seeing whether it or any of its ancestors were 
+    // included in any prim move destinations.
+    auto isClobbered = [&primMoves](const SdfPath &path) {
+        return std::any_of(primMoves.begin(), primMoves.end(),
+            [&path](const auto &move) { return path.HasPrefix(move.second); });
+    };
+
+    // Update the given path with the first matching prefix from the list of
+    // prim moves. All of the expected changes come from a single namespace 
+    // edit, so any move containing the path gives the same result. 
+    auto movePath = [&primMoves](SdfPath *path) {
+        for (const auto &move : primMoves) {
+            if (path->HasPrefix(move.first)) {
+                *path = path->ReplacePrefix(move.first, move.second);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Update the load rules if needed.
+    if (updateLoadRules) {
+        std::vector<std::pair<SdfPath, UsdStageLoadRules::Rule>> rules =
+            _loadRules.GetRules();
+        const size_t numRules = rules.size();
+
+        // Remove existing load rules at newPath before we move the rules for
+        // oldPath over.
+        rules.erase(
+            std::remove_if(rules.begin(), rules.end(),
+                [&isClobbered](const auto &rule) {
+                    return isClobbered(rule.first);
+                }),
+            rules.end());
+
+        // Update paths in the load rules.
+        bool changed = rules.size() != numRules;
+        for (auto &rule : rules) {
+            changed |= movePath(&rule.first);
+        }
+
+        // If the load rules were changed, re-sort them. 
+        if (changed) {
+            std::sort(rules.begin(), rules.end(),
+                    [](const auto &l, const auto &r) {
+                        return l.first < r.first;
+                    });
+            _loadRules.SetRules(std::move(rules));
+        }
+    }
+
+    // Update the population mask if needed.
+    if (updatePopMask) {
+        std::vector<SdfPath> maskPaths = _populationMask.GetPaths();
+        const size_t numPaths = maskPaths.size();
+
+        // Remove existing population mask state at newPath before we move the 
+        // mask for oldPath over.
+        maskPaths.erase(
+            std::remove_if(maskPaths.begin(), maskPaths.end(), isClobbered),
+            maskPaths.end());
+
+        // Update population mask paths.
+        bool changed = maskPaths.size() != numPaths;
+        for (SdfPath &path : maskPaths) {
+            changed |= movePath(&path);
+        }
+
+        // Save the updated paths to the population mask.
+        if (changed) {
+            _populationMask = UsdStagePopulationMask(std::move(maskPaths));
+        }
+    }
+}
+
 bool
 UsdStage::_ProcessPendingChanges()
 {
@@ -4758,6 +4869,9 @@ UsdStage::_ProcessPendingChanges()
 
     UsdNotice::ObjectsChanged::_NamespaceEditsInfo namespaceEditsInfo;
 
+    // Before we recompose, we need to update the stage's load rules and 
+    // population mask if necessary. 
+    _UpdateLoadRulesAndPopulationMask();
     _Recompose(changes, &recomposeChanges);
 
     // Filter out all changes to objects beneath instances and remap
