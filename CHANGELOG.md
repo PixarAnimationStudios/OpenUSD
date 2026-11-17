@@ -1,5 +1,11 @@
 # Change Log
 
+## [27.02.0] - TBD
+
+### Build
+
+- Deprecated support for legacy TBB (all versions prior to oneTBB 2021.1)
+
 ## [26.11.1] - 2026-10-21
 
 - Fixed a GPU memory issue.
