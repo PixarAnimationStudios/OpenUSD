@@ -354,6 +354,49 @@ SubtreeRenameTest(Metrics &metrics,
         ArchTicksToNanoseconds(ticks));
 }
 
+// Same edits as SubtreeRenameTest, but issued as one batch of removes followed
+// by one batch of inserts.  The ratio of the two isolates the cost of handling
+// interleaved removes and inserts.
+static
+void
+SubtreeBatchedRenameTest(Metrics &metrics,
+                         SdfPath const &oldPrefix,
+                         SdfPath const &newPrefix)
+{
+    SdfPathVector oldPaths, newPaths;
+    for (SdfPath const &path: _GetInitPaths()) {
+        if (path.HasPrefix(oldPrefix)) {
+            oldPaths.push_back(path);
+            newPaths.push_back(path.ReplacePrefix(oldPrefix, newPrefix));
+        }
+    }
+
+    Hd_SortedIds ids = _GetPopulatedIds();
+
+    int64_t ticks =
+        ArchMeasureExecutionTime([&ids, &oldPaths, &newPaths]() {
+            for (SdfPath const &path: oldPaths) {
+                ids.Remove(path);
+            }
+            for (SdfPath const &path: newPaths) {
+                ids.Insert(path);
+            }
+            ids.GetIds(); // force sort.
+            for (SdfPath const &path: newPaths) {
+                ids.Remove(path);
+            }
+            for (SdfPath const &path: oldPaths) {
+                ids.Insert(path);
+            }
+            ids.GetIds(); // force sort.
+        });
+
+    metrics.emplace_back(
+        "rename_batched_" + _PathToLabel(oldPrefix) +
+        "_to_" + _PathToLabel(newPrefix),
+        ArchTicksToNanoseconds(ticks));
+}
+
 int main()
 {
     Metrics metrics;
@@ -380,6 +423,13 @@ int main()
     SubtreeRenameTest(metrics, SdfPath("/A/B/C"), SdfPath("/A/B/_C"));
     SubtreeRenameTest(metrics, SdfPath("/A/B"), SdfPath("/A/_B"));
     SubtreeRenameTest(metrics, SdfPath("/Z/Z"), SdfPath("/A/B/_Z"));
+    SubtreeRenameTest(metrics, SdfPath("/A"), SdfPath("/_A"));
+    SubtreeRenameTest(metrics, SdfPath("/Y"), SdfPath("/A/_Y"));
+    SubtreeBatchedRenameTest(metrics, SdfPath("/A/B/C"), SdfPath("/A/B/_C"));
+    SubtreeBatchedRenameTest(metrics, SdfPath("/A/B"), SdfPath("/A/_B"));
+    SubtreeBatchedRenameTest(metrics, SdfPath("/Z/Z"), SdfPath("/A/B/_Z"));
+    SubtreeBatchedRenameTest(metrics, SdfPath("/A"), SdfPath("/_A"));
+    SubtreeBatchedRenameTest(metrics, SdfPath("/Y"), SdfPath("/A/_Y"));
 
     FILE *statsFile = fopen("perfstats.raw", "w");
     for (const auto &[metricName, ns]: metrics) {
