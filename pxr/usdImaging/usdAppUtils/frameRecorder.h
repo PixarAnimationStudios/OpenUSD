@@ -14,6 +14,8 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -52,7 +54,8 @@ public:
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
         bool gpuEnabled = true,
-        bool enableUsdDrawModes = true);
+        bool enableUsdDrawModes = true,
+        const VtArray<std::string>& batchCommandLine = {});
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.

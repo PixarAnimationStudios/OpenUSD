@@ -27,11 +27,16 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/gf/camera.h"
 #include "pxr/base/tf/scoped.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (batchCommandLine));
 
 namespace {
 
@@ -40,13 +45,18 @@ _GetParams(
     const HdDriver& driver,
     const TfToken& rendererPluginId,
     bool gpuEnabled,
-    bool enableUsdDrawModes)
+    bool enableUsdDrawModes,
+    const VtArray<std::string>& batchCommandLine)
 {
     UsdImagingGLEngine::Parameters params;
     params.driver = driver;
     params.rendererPluginId = rendererPluginId;
     params.gpuEnabled = gpuEnabled;
     params.enableUsdDrawModes = enableUsdDrawModes;
+    if (!batchCommandLine.empty()) {
+        params.delegateCreationOptions[_tokens->batchCommandLine] =
+            VtValue(batchCommandLine);
+    }
     return params;
 }
 
@@ -55,9 +65,14 @@ _GetParams(
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
     bool gpuEnabled,
-    bool enableUsdDrawModes) :
+    bool enableUsdDrawModes,
+    const VtArray<std::string>& batchCommandLine) :
     _imagingEngine(_GetParams(
-        HdDriver(), rendererPluginId, gpuEnabled, enableUsdDrawModes)),
+        HdDriver(),
+        rendererPluginId,
+        gpuEnabled,
+        enableUsdDrawModes,
+        batchCommandLine)),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),

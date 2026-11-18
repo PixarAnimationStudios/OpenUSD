@@ -22,8 +22,10 @@
 //           UsdImagingGLEngine::UseUsdImagingSceneIndex().
 // 12 -> 13: Made private API UsdImagingGLEngine::_GetTerminalSceneIndex()
 //           protected.
+// 13 -> 14: UsdImagingGLEngine::Parameters and the long-form constructor
+//           gain delegateCreationOptions.
 
-#define USDIMAGINGGL_API_VERSION 13
+#define USDIMAGINGGL_API_VERSION 14
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 

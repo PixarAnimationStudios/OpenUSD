@@ -20,6 +20,7 @@
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -100,6 +101,7 @@ public:
         /// \p enableUsdDrawModes enables the UsdGeomModelAPI draw mode
         /// feature.
         bool enableUsdDrawModes = true;
+        HdRenderSettingsMap delegateCreationOptions;
     };
 
     // ---------------------------------------------------------------------
@@ -134,7 +136,8 @@ public:
                        const bool gpuEnabled = true,
                        const bool displayUnloadedPrimsWithBounds = false,
                        const bool allowAsynchronousSceneProcessing = false,
-                       const bool enableUsdDrawModes = true);
+                       const bool enableUsdDrawModes = true,
+                       const HdRenderSettingsMap& delegateCreationOptions = {});
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -448,7 +451,7 @@ public:
         SdfPath *outHitInstancerPath = NULL,
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
-    
+
     /// @}
 
     // ---------------------------------------------------------------------
@@ -790,7 +793,7 @@ protected:
         HdContainerDataSourceHandle const &sceneIndexCreateArgs,
         HdRendererPluginHandle const &plugin,
         const HdRendererCreateArgsSchema &rendererCreateArgs);
-    
+
     // Get the terminal scene index of the scene index graph that feeds
     // the renderer.
     USDIMAGINGGL_API
@@ -832,6 +835,7 @@ protected:
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
     bool _isPopulated;
+    HdRenderSettingsMap _delegateCreationOptions;
 
 private:
     HdLegacyRenderControlInterface * _GetLegacyRenderControl() const;
@@ -864,6 +868,8 @@ private:
     void _DestroyHydraObjects();
 
     SdfPath _GetInstancerForPrim(const SdfPath &sceneIndexPath) const;
+
+    HdRendererCreateArgsSchema _BuildRendererCreateArgs();
 
 private:
     // Scene indexes

@@ -77,7 +77,7 @@ _TestIntersection2(
         pickParams, viewMatrix, projectionMatrix, root, params, &result);
     return result;
 }
-    
+
 static
 pxr_boost::python::list
 _ToPyList(const HdInstancerContext &ctx)
@@ -88,7 +88,7 @@ _ToPyList(const HdInstancerContext &ctx)
     }
     return result;
 }
-    
+
 static void
 _SetLightingState(UsdImagingGLEngine &self, GlfSimpleLightVector const &lights,
                   GlfSimpleMaterial const &material, GfVec4f const &sceneAmbient)
@@ -113,7 +113,7 @@ void wrapEngine()
 {
     {
         using This = UsdImagingGLEngine;
-        
+
         using Parameters = This::Parameters;
         using PickParams = This::PickParams;
         using IntersectionResult = This::IntersectionResult;
@@ -209,6 +209,8 @@ void wrapEngine()
                 &Parameters::allowAsynchronousSceneProcessing)
             .def_readwrite("enableUsdDrawModes",
                 &Parameters::enableUsdDrawModes)
+            .def_readwrite("delegateCreationOptions",
+                &Parameters::delegateCreationOptions)
 
         ;
 

@@ -19,6 +19,7 @@
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdRender/tokens.h"
 #include "pxr/usd/usdRender/settings.h"
+#include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/cachingSceneIndex.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
@@ -28,6 +29,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateInfo.h"
 #include "pxr/imaging/hd/renderIndexAdapterSceneIndex.h"
 #include "pxr/imaging/hd/renderer.h"
@@ -61,6 +63,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
@@ -93,6 +96,10 @@ TF_DEFINE_ENV_SETTING(
 TF_DEFINE_ENV_SETTING(
     USDIMAGINGGL_ENGINE_ENABLE_PURPOSE_FILTERING_SCENE_INDEX, false,
     "Use purpose filtering scene index.");
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (delegateCreateArgs));
 
 namespace UsdImagingGLEngine_Impl
 {
@@ -180,7 +187,7 @@ private:
             TfGetEnvSetting(
                 USDIMAGINGGL_ENGINE_ENABLE_PURPOSE_FILTERING_SCENE_INDEX);
         if (enablePurposeFilteringSceneIndex) {
-            // The renderer plugin can configure the createArgs to specify 
+            // The renderer plugin can configure the createArgs to specify
             // the excludedPurposesHint via the HdSceneIndexCreateArgsSchema.
             // See HdStormRendererPlugin for an example.
             sceneIndex = purposeFilteringSceneIndex =
@@ -335,7 +342,8 @@ UsdImagingGLEngine::UsdImagingGLEngine(
       params.gpuEnabled,
       params.displayUnloadedPrimsWithBounds,
       params.allowAsynchronousSceneProcessing,
-      params.enableUsdDrawModes)
+      params.enableUsdDrawModes,
+      params.delegateCreationOptions)
 {
 }
 
@@ -363,7 +371,8 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const bool gpuEnabled,
     const bool displayUnloadedPrimsWithBounds,
     const bool allowAsynchronousSceneProcessing,
-    const bool enableUsdDrawModes)
+    const bool enableUsdDrawModes,
+    const HdRenderSettingsMap& delegateCreationOptions)
     : _hgi(nullptr)
     , _displayUnloadedPrimsWithBounds(displayUnloadedPrimsWithBounds)
     , _gpuEnabled(gpuEnabled)
@@ -375,6 +384,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
+    , _delegateCreationOptions(delegateCreationOptions)
     , _allowAsynchronousSceneProcessing(allowAsynchronousSceneProcessing)
     , _enableUsdDrawModes(enableUsdDrawModes)
 {
@@ -575,7 +585,7 @@ UsdImagingGLEngine::_UpdateDomeLightCameraVisibility()
     // as we move towards Hydra 2.0 render delegates and render settings are
     // communicated in-band through scene indices.
 
-    const VtValue v = 
+    const VtValue v =
         GetRendererSetting(HdRenderSettingsTokens->domeLightCameraVisibility);
 
     // The absence of a setting in the map is the same as camera visibility
@@ -1308,10 +1318,10 @@ UsdImagingGLEngine::GetCurrentRendererId() const
     return _renderer.GetPluginId();
 }
 
-bool
-UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
+HdRendererCreateArgsSchema
+UsdImagingGLEngine::_BuildRendererCreateArgs()
 {
-    const HdRendererCreateArgsSchema rendererCreateArgs(
+    HdContainerDataSourceHandle rendererCreateArgs =
         HdRendererCreateArgsSchema::Builder()
             .SetGpuEnabled(
                 HdRetainedTypedSampledDataSource<bool>::New(_gpuEnabled))
@@ -1320,7 +1330,23 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
                     HdRendererCreateArgsSchemaTokens->hgi,
                     HdRetainedTypedSampledDataSource<Hgi*>::New(
                         _GetOrCreateHgi())))
-            .Build());
+            .Build();
+    if (!_delegateCreationOptions.empty()) {
+        rendererCreateArgs = HdOverlayContainerDataSource::New(
+            HdRetainedContainerDataSource::New(
+                _tokens->delegateCreateArgs,
+                HdRetainedTypedSampledDataSource<HdRenderSettingsMap>::New(
+                    _delegateCreationOptions)),
+            rendererCreateArgs);
+    }
+    return HdRendererCreateArgsSchema(rendererCreateArgs);
+}
+
+bool
+UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
+{
+    const HdRendererCreateArgsSchema rendererCreateArgs =
+        _BuildRendererCreateArgs();
 
     HdRendererPluginRegistry &registry =
         HdRendererPluginRegistry::GetInstance();
@@ -1398,7 +1424,7 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(
     // and the renderer.
     _CreateSceneIndexChainAndRenderer(
         sceneIndexCreateArgs, plugin, rendererCreateArgs);
-    
+
     if (!_renderer) {
         return false;
     }
@@ -1576,12 +1602,12 @@ UsdImagingGLEngine::_CreateUsdImagingSceneIndices(
     sceneIndex =
         _displayStyleSceneIndex =
              HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndex);
-    
+
     if (!_sceneDelegateId.IsAbsoluteRootPath()) {
         sceneIndex =
             HdPrefixingSceneIndex::New(sceneIndex, _sceneDelegateId);
     }
-    
+
     return sceneIndex;
 }
 
@@ -1616,7 +1642,7 @@ UsdImagingGLEngine::_GetSceneIndexCreateArgsFromLegacyRenderControl()
         TF_CODING_ERROR("Need renderer to access render control.");
         return nullptr;
     }
-    
+
     HdLegacyRenderControlInterface * const renderControl =
         _GetLegacyRenderControl();
     if (!renderControl) {
@@ -1637,7 +1663,7 @@ UsdImagingGLEngine::_CreateSceneIndexChainAndRenderer(
     const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
     TRACE_FUNCTION();
-    
+
     HdSceneIndexBaseRefPtr sceneIndex =
         _mergingSceneIndex = HdMakeSceneAssemblyMergingSceneIndex();
 
@@ -1808,7 +1834,7 @@ _ComputeRendererSettingType(UsdImagingGLRendererSetting * const r)
     }
     return true;
 }
-    
+
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
@@ -1867,7 +1893,7 @@ UsdImagingGLEngine::GetRendererSettingsList() const
     }
 
     return ret;
-    
+
 }
 
 VtValue
