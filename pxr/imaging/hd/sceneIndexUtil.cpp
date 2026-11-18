@@ -8,6 +8,8 @@
 #include "pxr/imaging/hd/sceneIndexUtil.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -239,6 +241,76 @@ HdMakeEncapsulatingSceneIndex(
         return _EncapsulatingSceneIndex<Base>::New(
             inputScenes, encapsulatedScene);
     }
+}
+
+HdMergingSceneIndexRefPtr
+HdMakeSceneAssemblyMergingSceneIndex()
+{
+    HdMergingSceneIndexRefPtr result = HdMergingSceneIndex::New();
+    result->AddTag(HdSceneIndexTokens->sceneAssemblyMergingTag);
+    return result;
+}
+
+void
+HdVisitSceneIndexGraph(
+    const HdSceneIndexBaseRefPtr &sceneIndex,
+    const std::function<bool(const HdSceneIndexBaseRefPtr &)> &visitor)
+{
+    if (!sceneIndex) {
+        return;
+    }
+
+    std::vector<HdSceneIndexBaseRefPtr> queue = { sceneIndex };
+    _SceneIndexSet visited;
+
+    while (!queue.empty()) {
+        std::vector<HdSceneIndexBaseRefPtr> next;
+        for (const HdSceneIndexBaseRefPtr &current : queue) {
+            if (!current) {
+                continue;
+            }
+            if (!visited.insert(current).second) { // already visited
+                continue;
+            }
+            if (!visitor(current)) {
+                return;
+            }
+            if (const auto filtering =
+                    TfDynamic_cast<HdFilteringSceneIndexBasePtr>(current)) {
+                for (const HdSceneIndexBaseRefPtr &input
+                         : filtering->GetInputScenes()) {
+                    next.push_back(input);
+                }
+            }
+            if (const auto encapsulating =
+                    HdEncapsulatingSceneIndexBase::Cast(current)) {
+                for (HdSceneIndexBaseRefPtr const &inner
+                         : encapsulating->GetEncapsulatedScenes()) {
+                    next.push_back(inner);
+                }
+            }
+        }
+        queue = std::move(next);
+    }
+}
+
+HdMergingSceneIndexRefPtr
+HdFindSceneAssemblyMergingSceneIndex(
+    const HdSceneIndexBaseRefPtr &sceneIndex)
+{
+    HdMergingSceneIndexRefPtr result;
+
+    HdVisitSceneIndexGraph(sceneIndex,
+        [&result](const HdSceneIndexBaseRefPtr &current) {
+            if (current->HasTag(HdSceneIndexTokens->sceneAssemblyMergingTag)) {
+                result = TfDynamic_cast<HdMergingSceneIndexRefPtr>(current);
+                // Stop traversal if we successfully found a merging scene index
+                // with the sceneAssemblyMergingTag.
+                return !result;
+            }
+            return true;
+        });
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
