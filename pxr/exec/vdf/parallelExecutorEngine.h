@@ -11,6 +11,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/exec/vdf/debugCodes.h"
 #include "pxr/exec/vdf/parallelExecutorEngineBase.h"
 
 #include "pxr/base/work/isolatingDispatcher.h"
@@ -233,6 +234,10 @@ VdfParallelExecutorEngine<DataManagerType>::_FinalizeOutput(
     if (passToOutput && Base::_dataManager->HasInvalidationTimestampMismatch(
             dataHandle,
             Base::_dataManager->GetDataHandle(passToOutput->GetId()))) {
+        TF_DEBUG(VDF_MUNG_BUFFER_LOCKING)
+            .Msg("Mung buffer locking between outputs:\n  %s\nand:\n  %s.\n",
+                 output.GetDebugName().c_str(), 
+                 passToOutput->GetDebugName().c_str());
         _LockBuffer(state, outputId, dataHandle, invocationIndex);
     }
 }

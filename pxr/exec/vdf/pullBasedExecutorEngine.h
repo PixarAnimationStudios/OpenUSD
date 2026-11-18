@@ -484,10 +484,10 @@ VdfPullBasedExecutorEngine<DataManagerType>::_PassOrCopyBufferInternal(
             if (_dataManager->HasInvalidationTimestampMismatch(
                     sourceHandle, dataHandle)) {
                 TF_DEBUG(VDF_MUNG_BUFFER_LOCKING)
-                        .Msg("Mung buffer locking between outputs "
-                             "'%s' and '%s'.\n",
-                        source.GetDebugName().c_str(), 
-                        output.GetDebugName().c_str());
+                    .Msg("Mung buffer locking between outputs:\n"
+                         "%s\nand:\n  %s.\n",
+                         source.GetDebugName().c_str(), 
+                         output.GetDebugName().c_str());
             }
 
             // If mung buffers are not supposed to be locked, pass the buffer
