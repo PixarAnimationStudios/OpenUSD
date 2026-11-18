@@ -63,23 +63,37 @@ HdCollectionExpressionEvaluator::Match(
         return SdfPredicateFunctionResult::MakeConstant(false);
     }
 
-    // What we want below is simply:
+    // To test prim existence, we need to query the prim to invoke IsDefined().
+    // This gets expensive at scale, so for now, we only evaluate the expression
+    // without factoring in prim existence.
+    constexpr bool factorPrimExistence = false;
+
+    if (!factorPrimExistence) {
+        return _eval.Match(
+            path,
+            [sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
+                return sceneIndex->GetPrim(path);
+            });
+    }
+
+    // When factoring prim existence, what we want is simply:
     constexpr bool useSimpleImplementation = false;
     if (useSimpleImplementation) {
-        if (_sceneIndex->GetPrim(path).IsDefined()) {
-            return _eval.Match(
-                path,
-                [sceneIndex = get_pointer(_sceneIndex)](SdfPath const &path) {
-                    return sceneIndex->GetPrim(path);
-                });
+        const auto prim = _sceneIndex->GetPrim(path);
+        if (!prim.IsDefined()) {
+            return SdfPredicateFunctionResult::MakeConstant(false);
         }
-        return SdfPredicateFunctionResult::MakeConstant(false);
+
+        return _eval.Match(path,
+            [&prim](SdfPath const &) {
+                return prim;
+            });
     }
 
     // But, that would involve querying the prim _prior_ to evaluation.
     // Scene index prim queries get expensive at scale, so avoid a query if
-    // the path didn't match, or if we already queried the prim to handle
-    // predicate evaluation.
+    // the path didn't match the expression, or if we already queried the prim
+    // to handle predicate evaluation.
     //
     std::optional<HdSceneIndexPrim> optPrim;
     auto pathToObjFn =
