@@ -39,6 +39,7 @@
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexCreateArgsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/sceneIndexUtil.h"
 #include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/applicationRenderSettingsSceneIndex.h"
@@ -1638,8 +1639,7 @@ UsdImagingGLEngine::_CreateSceneIndexChainAndRenderer(
     TRACE_FUNCTION();
     
     HdSceneIndexBaseRefPtr sceneIndex =
-        _mergingSceneIndex =
-             HdMergingSceneIndex::New();
+        _mergingSceneIndex = HdMakeSceneAssemblyMergingSceneIndex();
 
     // Setup scene indices following HdMergingSceneIndex.
 
