@@ -223,7 +223,7 @@ def export(metricsList, outputPath, aggregations, traceDir, keepAllTraces):
         resultDict = collapsedDict
 
     if outputPath.endswith(".yaml"):
-        with open(outputPath, "w") as f:
+        with open(outputPath, "w", newline="\n") as f:
             yaml.dump(resultDict, f)
     else:
         raise ValueError("Internal error -- output path must be validated "
@@ -235,7 +235,7 @@ def export(metricsList, outputPath, aggregations, traceDir, keepAllTraces):
     if resultDict != dataDict:
         outputFileName, ext = os.path.splitext(outputPath)
         rawOutputPath = outputFileName + ".raw" + ext
-        with open(rawOutputPath, "w") as f:
+        with open(rawOutputPath, "w", newline="\n") as f:
             yaml.dump(dataDict, f)
 
     print(f"Performance metrics have been output to {outputPath}")

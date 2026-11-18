@@ -18,6 +18,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/scopeDescription.h"
+#include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -298,14 +299,23 @@ HdsiCoordSysPrimSceneIndex::_AddBindingsForPrim(
     const SdfPath &primPath,
     SdfPathSet * const addedCoordSysPrims)
 {
+    _AddBindings(
+        primPath, _ComputeBindingsForPrim(primPath), addedCoordSysPrims);
+}
+
+HdsiCoordSysPrimSceneIndex::_Bindings
+HdsiCoordSysPrimSceneIndex::_ComputeBindingsForPrim(
+    const SdfPath &primPath) const
+{
+    _Bindings bindings;
+
     HdCoordSysBindingSchema schema =
         HdCoordSysBindingSchema::GetFromParent(
             _GetInputSceneIndex()->GetPrim(primPath).dataSource);
     if (!schema) {
-        return;
+        return bindings;
     }
 
-    _Bindings bindings;
     for (const TfToken &name : schema.GetContainer()->GetNames()) {
         HdPathDataSourceHandle const ds = schema.GetCoordSysBinding(name);
         if (!ds) {
@@ -315,18 +325,32 @@ HdsiCoordSysPrimSceneIndex::_AddBindingsForPrim(
         if (_IgnoreBinding(targetedPrimPath)) {
             continue;
         }
+        bindings.push_back({name, targetedPrimPath});
+    }
 
+    return bindings;
+}
+
+void
+HdsiCoordSysPrimSceneIndex::_AddBindings(
+    const SdfPath &primPath,
+    _Bindings &&bindings,
+    SdfPathSet * const addedCoordSysPrims)
+{
+    if (bindings.empty()) {
+        return;
+    }
+
+    for (const _Binding &binding : bindings) {
         size_t &refCount =
-            _targetedPrimToNameToRefCount[targetedPrimPath][name];
+            _targetedPrimToNameToRefCount[binding.path][binding.name];
         if (refCount == 0) {
             if (addedCoordSysPrims) {
                 addedCoordSysPrims->insert(
-                    _PathForCoordSysPrim(targetedPrimPath, name));
+                    _PathForCoordSysPrim(binding.path, binding.name));
             }
         }
         refCount++;
-
-        bindings.push_back({name, targetedPrimPath});
     }
 
     _primToBindings.emplace(primPath, std::move(bindings));
@@ -416,17 +440,34 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
     SdfPathSet addedCoordSysPrims;
     SdfPathSet removedCoordSysPrims;
 
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+    // Querying the input scene for bindings is expensive, so compute the
+    // bindings of the added prims in parallel.
+    std::vector<_Bindings> bindings(entries.size());
+    WorkParallelForN(entries.size(), [&](size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            bindings[i] = _ComputeBindingsForPrim(entries[i].primPath);
+        }
+    }, /* grainSize = */ 16);
+
+    // Update the ref-counting data structures serially.
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const SdfPath &primPath = entries[i].primPath;
         _RemoveBindingsForPrim(
-            entry.primPath,
+            primPath,
             isObserved ? &removedCoordSysPrims : nullptr);
-        _AddBindingsForPrim(
-            entry.primPath,
+        _AddBindings(
+            primPath,
+            std::move(bindings[i]),
             isObserved ? &addedCoordSysPrims : nullptr);
     }
 
     if (!isObserved) {
         return;
+    }
+
+    // Skip removing coordinate systems that will be re-added.
+    for (SdfPath const& addedPath: addedCoordSysPrims) {
+        removedCoordSysPrims.erase(addedPath);
     }
 
     _SendPrimsAdded(entries);
@@ -466,6 +507,11 @@ HdsiCoordSysPrimSceneIndex::_PrimsDirtied(
     
     if (!isObserved) {
         return;
+    }
+
+    // Skip removing coordinate systems that will be re-added.
+    for (SdfPath const& addedPath: addedCoordSysPrims) {
+        removedCoordSysPrims.erase(addedPath);
     }
 
     _SendPrimsDirtied(entries);

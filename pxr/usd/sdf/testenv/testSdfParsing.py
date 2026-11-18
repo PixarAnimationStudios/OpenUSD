@@ -15,7 +15,6 @@
 # same.  This is to detect any accumulative error, such as quoting or
 # escaping errors.
 
-from __future__ import print_function
 import sys, os, difflib, unittest, platform
 from pxr import Tf, Sdf
 

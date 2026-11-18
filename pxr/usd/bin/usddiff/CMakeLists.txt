@@ -163,6 +163,67 @@ pxr_register_test(testUsdDiffComposedResults2
         ${CMAKE_INSTALL_PREFIX}/bin
 )
 
+# Look up programs needed for the edit-back tests, which stand in for an
+# interactive diff tool by editing both temporaries with sed.  usddiff splits
+# USD_DIFF on whitespace without interpreting quotes, so the sed expression
+# must not be quoted.  The backup suffix is attached to -i because BSD sed
+# requires one, and would otherwise consume the expression as the suffix.
+find_program(SEDBIN
+    NAMES sed
+)
+
+find_program(HEADBIN
+    NAMES head
+)
+
+if (NOT EXISTS ${SEDBIN})
+    message(STATUS "Skipping usddiff edit-back tests, could not find sed command.")
+elseif(NOT EXISTS ${HEADBIN})
+    message(STATUS "Skipping usddiff edit-back tests, could not find head command.")
+else()
+    pxr_register_test(testUsdDiffToolEditBack1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff crate.usd text.usd"
+        TESTENV testenv/testDiffToolEditBack
+        POST_COMMAND "${HEADBIN} -c8 crate.usd"
+        POST_COMMAND_STDOUT_REDIRECT crate_header.txt
+        EXPECTED_RETURN_CODE 0
+        DIFF_COMPARE crate_header.txt
+        ENV
+          "USD_DIFF=sed -i.bak s/World/Edited/"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_register_test(testUsdDiffToolEditBack2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff crate.usd text.usd"
+        TESTENV testenv/testDiffToolEditBack
+        POST_COMMAND "${HEADBIN} -c9 text.usd"
+        POST_COMMAND_STDOUT_REDIRECT text_header.txt
+        EXPECTED_RETURN_CODE 0
+        DIFF_COMPARE text_header.txt
+        ENV
+          "USD_DIFF=sed -i.bak s/World/Edited/"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_register_test(testUsdDiffToolEditBack3
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff crate.usd text.usd"
+        TESTENV testenv/testDiffToolEditBack
+        POST_COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat crate.usd text.usd"
+        POST_COMMAND_STDOUT_REDIRECT edited.usda
+        EXPECTED_RETURN_CODE 0
+        DIFF_COMPARE edited.usda
+        ENV
+          "USD_DIFF=sed -i.bak s/World/Edited/"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+endif()
+
 pxr_register_test(testUsdDiffWithDirectories1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff --noeffect a/ a/"

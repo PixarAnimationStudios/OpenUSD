@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "Inner" (
+    references = [@./light.usda@</Light>, @./asm.usda@</Asm>]
+)
+{
+    over "I"
+    {
+        over "rig"
+        {
+            over "lights"
+            {
+                over "L"
+                {
+                    double a = 3
+                }
+            }
+        }
+    }
+}

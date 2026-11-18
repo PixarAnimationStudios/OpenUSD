@@ -7,7 +7,6 @@
 
 # pylint: disable=unicode-builtin
 
-from __future__ import print_function
 import os, sys, time, json
 from glob import glob
 if os.name == "posix":

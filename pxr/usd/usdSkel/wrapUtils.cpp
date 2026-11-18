@@ -13,6 +13,7 @@
 #include "pxr/base/gf/range3f.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 

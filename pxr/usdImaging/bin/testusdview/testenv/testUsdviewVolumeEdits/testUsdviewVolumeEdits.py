@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 from pxr.Usdviewq.common import Sdf, Usd
 from pxr import Gf, UsdGeom, UsdVol
 

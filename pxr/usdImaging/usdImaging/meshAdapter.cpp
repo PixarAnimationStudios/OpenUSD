@@ -187,6 +187,27 @@ UsdImagingMeshAdapter::TrackVariability(UsdPrim const& prim,
         }
     }
 
+    // Subdivision tags are varying independently of points and topology.
+    // Stop at the first varying attribute: _IsVarying clears the dirty bit
+    // when its individual attribute is not varying.
+    if (((*timeVaryingBits) & HdChangeTracker::DirtySubdivTags) == 0) {
+        for (TfToken const &attribute : {
+                UsdGeomTokens->creaseIndices,
+                UsdGeomTokens->creaseLengths,
+                UsdGeomTokens->creaseSharpnesses,
+                UsdGeomTokens->cornerIndices,
+                UsdGeomTokens->cornerSharpnesses}) {
+            if (_IsVarying(prim,
+                           attribute,
+                           HdChangeTracker::DirtySubdivTags,
+                           UsdImagingTokens->usdVaryingTopology,
+                           timeVaryingBits,
+                           /*isInherited*/false)) {
+                break;
+            }
+        }
+    }
+
     // Discover time-varying topology.
     if (!_IsVarying(prim,
                        UsdGeomTokens->faceVertexCounts,

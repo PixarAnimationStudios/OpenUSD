@@ -180,6 +180,23 @@ private:
     };
     _SkelGuideDataCache _skelGuideDataCache;
 
+    // Number of blend shapes authored on each animation schema from
+    // GetAnimationSchema(). blendShapes is declared uniform in the UsdSkel
+    // schema, so this is time-invariant and can be shared by every
+    // blendShapeRanges computation.
+    class _BlendShapeCountsCache
+        : public UsdSkelImagingSharedPtrThunk<std::vector<size_t>>
+    {
+    public:
+        _BlendShapeCountsCache(
+            UsdSkelImagingDataSourceResolvedSkeletonPrim * resolvedSkeleton);
+    protected:
+        Handle _Compute() override;
+    private:
+        UsdSkelImagingDataSourceResolvedSkeletonPrim * const _resolvedSkeleton;
+    };
+    mutable _BlendShapeCountsCache _blendShapeCountsCache;
+
     // Converts rest transforms to VtArray<GfMatrix4f>.
     //
     // Note that rest transforms is only needed if there is no animation or the

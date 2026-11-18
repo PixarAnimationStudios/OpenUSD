@@ -1,0 +1,308 @@
+Loading @InstancingAndDeinstancedAncestors/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack>
+
+Prim Stack:
+    root.usda            /RootLayerStack
+    light.usda           /Light
+    asm.usda             /Asm
+
+Child names:
+     ['I']
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I>
+
+Prim Stack:
+    root.usda            /RootLayerStack/I
+    light.usda           /Light/I
+    asm.usda             /Asm/I
+    model.usda           /M
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I/rig>
+
+Prim Stack:
+    root.usda            /RootLayerStack/I/rig
+    light.usda           /Light/I/rig
+    model.usda           /M/rig
+
+Child names:
+     ['lights', 'propagated']
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I/rig/lights>
+
+Prim Stack:
+    root.usda            /RootLayerStack/I/rig/lights
+    light.usda           /Light/I/rig/lights
+    model.usda           /M/rig/lights
+
+Child names:
+     ['L']
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I/rig/lights/L>
+
+Prim Stack:
+    root.usda            /RootLayerStack/I/rig/lights/L
+    light.usda           /Light/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+
+Property names:
+     ['a']
+
+Property stacks:
+/RootLayerStack/I/rig/lights/L.a:
+    root.usda            /RootLayerStack/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I/rig/propagated>
+
+Prim Stack:
+    light.usda           /Light/I/rig/propagated
+
+Child names:
+     ['X']
+
+------------------------------------------------------------------------
+Results for composing </RootLayerStack/I/rig/propagated/X>
+
+Prim Stack:
+    root.usda            /RootLayerStack/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light.usda           /Light/I/rig/propagated/X
+    light.usda           /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/RootLayerStack/I/rig/propagated/X.a:
+    root.usda            /RootLayerStack/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light.usda           /Light/I/rig/propagated/X.a
+
+------------------------------------------------------------------------
+Results for composing </Nested>
+
+Prim Stack:
+    root.usda            /Nested
+    inner.usda           /Inner/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light.usda           /Light/I/rig/propagated/X
+    light.usda           /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/Nested.a:
+    inner.usda           /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light.usda           /Light/I/rig/propagated/X.a
+
+------------------------------------------------------------------------
+Results for composing </NestedPayload>
+
+Prim Stack:
+    root.usda            /NestedPayload
+    inner_payload.usda   /Inner/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light_payload.usda   /Light/I/rig/propagated/X
+    light_payload.usda   /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/NestedPayload.a:
+    inner_payload.usda   /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light_payload.usda   /Light/I/rig/propagated/X.a
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere>
+
+Prim Stack:
+    root.usda            /DeinstancedHere
+    inner_plain.usda     /Inner
+    light_plain.usda     /Light
+    asm.usda             /Asm
+
+Child names:
+     ['I']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I>
+
+Prim Stack:
+    root.usda            /DeinstancedHere/I
+    inner_plain.usda     /Inner/I
+    light_plain.usda     /Light/I
+    asm.usda             /Asm/I
+    model.usda           /M
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I/rig>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig
+    light_plain.usda     /Light/I/rig
+    model.usda           /M/rig
+
+Child names:
+     ['lights', 'propagated']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I/rig/lights>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights
+    light_plain.usda     /Light/I/rig/lights
+    model.usda           /M/rig/lights
+
+Child names:
+     ['L']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I/rig/lights/L>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights/L
+    light_plain.usda     /Light/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+
+Property names:
+     ['a']
+
+Property stacks:
+/DeinstancedHere/I/rig/lights/L.a:
+    inner_plain.usda     /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I/rig/propagated>
+
+Prim Stack:
+    light_plain.usda     /Light/I/rig/propagated
+
+Child names:
+     ['X']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedHere/I/rig/propagated/X>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light_plain.usda     /Light/I/rig/propagated/X
+    light_plain.usda     /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/DeinstancedHere/I/rig/propagated/X.a:
+    inner_plain.usda     /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light_plain.usda     /Light/I/rig/propagated/X.a
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance>
+
+Prim Stack:
+    root.usda            /DeinstancedInstance
+    inner_plain.usda     /Inner/I
+    light_plain.usda     /Light/I
+    asm.usda             /Asm/I
+    model.usda           /M
+
+Child names:
+     ['rig']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance/rig>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig
+    light_plain.usda     /Light/I/rig
+    model.usda           /M/rig
+
+Child names:
+     ['lights', 'propagated']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance/rig/lights>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights
+    light_plain.usda     /Light/I/rig/lights
+    model.usda           /M/rig/lights
+
+Child names:
+     ['L']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance/rig/lights/L>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights/L
+    light_plain.usda     /Light/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+
+Property names:
+     ['a']
+
+Property stacks:
+/DeinstancedInstance/rig/lights/L.a:
+    inner_plain.usda     /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance/rig/propagated>
+
+Prim Stack:
+    light_plain.usda     /Light/I/rig/propagated
+
+Child names:
+     ['X']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedInstance/rig/propagated/X>
+
+Prim Stack:
+    inner_plain.usda     /Inner/I/rig/lights/L
+    model.usda           /M/rig/lights/L
+    model.usda           /_class_L
+    light_plain.usda     /Light/I/rig/propagated/X
+    light_plain.usda     /Light/I/rig/lights/L
+
+Property names:
+     ['a']
+
+Property stacks:
+/DeinstancedInstance/rig/propagated/X.a:
+    inner_plain.usda     /Inner/I/rig/lights/L.a
+    model.usda           /M/rig/lights/L.a
+    light_plain.usda     /Light/I/rig/propagated/X.a
+

@@ -17,7 +17,8 @@
 #include "pxr/usd/usdPhysics/tokens.h"
 
 #include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/quatf.h" 
+#include "pxr/base/gf/quatf.h"
+#include <vector> 
 
 #include "pxr/base/vt/value.h"
 
@@ -321,6 +322,17 @@ public:
     USDPHYSICS_API
     float ComputeMassProperties(GfVec3f* diagonalInertia, GfVec3f* com, GfQuatf* principalAxes, 
         const MassInformationFn& massInfoFn) const;
+
+    /// Get the enabled colliders that belong to this rigid body.
+    ///
+    /// The body's subtree is traversed, including instance proxies. The
+    /// subtree of a nested enabled rigid body is skipped, since its colliders
+    /// belong to the nested rigid body. These are the colliders that
+    /// ComputeMassProperties() accumulates.
+    ///
+    /// \return The enabled collider prims belonging to this rigid body.
+    USDPHYSICS_API
+    std::vector<UsdPrim> GetCollisionPrims() const;
 
 };
 

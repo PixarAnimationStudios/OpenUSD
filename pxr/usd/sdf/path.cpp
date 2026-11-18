@@ -23,6 +23,8 @@
 #include "pxr/base/trace/trace.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <ostream>
 
 using std::pair;
@@ -768,8 +770,6 @@ struct _PerThreadPrimPathCache
 {
     static constexpr unsigned Shift = 14;
     static constexpr unsigned Size = 1 << Shift;
-    static constexpr unsigned ProbeShift = 1;
-    static constexpr unsigned Probes = 1 << ProbeShift;
 
     struct _Entry {
         Sdf_PathPrimNodeHandle parent;
@@ -780,24 +780,22 @@ struct _PerThreadPrimPathCache
     inline Sdf_PathPrimNodeHandle
     Find(Sdf_PathPrimNodeHandle const &parent, TfToken const &childName,
          int *outIndex) const {
-        // Hash and shift to find table index.
+        // Hash and mask to find table index.
         size_t h = childName.Hash();
         uint32_t parentAsInt;
         memcpy(&parentAsInt, &parent, sizeof(uint32_t));
         h = TfHash::Combine(h, parentAsInt >> 8);
         unsigned index = (h & (Size-1));
 
-        for (unsigned probe = 0; probe != Probes; ++probe) {
-            _Entry const &e = cache[(index + probe) & (Size - 1)];
-            if (e.parent == parent && e.childName == childName) {
-                // Cache hit.
-                return e.primPart;
-            }
-            if (!e.parent)
-                break;
+        // One slot per index.  Store() always writes at the index Find() hands
+        // back, so an entry only ever lives at its own hashed index.
+        _Entry const &e = cache[index];
+        if (e.parent == parent && e.childName == childName) {
+            // Cache hit.
+            return e.primPart;
         }
         
-        // Not found -- arrange to replace original hash index.
+        // Not found -- arrange to replace this index.
         *outIndex = index;
         return Sdf_PathPrimNodeHandle();
     }
@@ -897,8 +895,6 @@ struct _PerThreadPropertyPathCache
 {
     static constexpr unsigned Shift = 10;
     static constexpr unsigned Size = 1 << Shift;
-    static constexpr unsigned ProbeShift = 1;
-    static constexpr unsigned Probes = 1 << ProbeShift;
 
     struct _Entry {
         TfToken propName;
@@ -907,21 +903,20 @@ struct _PerThreadPropertyPathCache
 
     inline Sdf_PathPropNodeHandle
     Find(TfToken const &propName, int *outIndex) const {
-        // Hash and shift to find table index.
+        // Hash and mask to find table index.  Use the low bits, as the prim
+        // path cache above does: TfToken::Hash() is a byte-swapped multiply, so
+        // its entropy sits in the low bytes.
         size_t h = propName.Hash();
-        unsigned index = (h >> (8*sizeof(h) - Shift));
+        unsigned index = (h & (Size-1));
 
-        for (unsigned probe = 0; probe != Probes; ++probe) {
-            _Entry const &e = cache[(index + probe) & (Size - 1)];
-            if (e.propName == propName) {
-                // Cache hit.
-                return e.propPart;
-            }
-            if (e.propName.IsEmpty())
-                break;
+        // One slot per index.
+        _Entry const &e = cache[index];
+        if (e.propName == propName) {
+            // Cache hit.
+            return e.propPart;
         }
         
-        // Not found -- arrange to replace original hash index.
+        // Not found -- arrange to replace this index.
         *outIndex = index;
         return Sdf_PathPropNodeHandle();
     }
@@ -1822,16 +1817,11 @@ _IsValidIdentifierStart(const TfUtf8CodePoint codePoint)
            TfIsUtf8CodePointXidStart(codePoint);
 }
 
-static
-inline bool 
-_IsValidIdentifier(const std::string_view& name)
+// General identifier validation, decoding UTF-8 one code point at a time.  Only
+// reached for names containing a non-ASCII byte; see _IsValidIdentifier().
+static bool
+_IsValidIdentifierUtf8(const std::string_view& name)
 {
-    // empty strings are not valid identifiers
-    if (name.empty())
-    {
-        return false;
-    }
-
     auto it = TfUtf8CodePointIterator{std::cbegin(name), std::cend(name)};
     if (!_IsValidIdentifierStart(*it))
     {
@@ -1847,6 +1837,77 @@ _IsValidIdentifier(const std::string_view& name)
         }
     }
     return true;
+}
+
+// Byte classes for the ASCII fast path in _IsValidIdentifier().  _IdentStart
+// marks bytes accepted by _IsValidIdentifierStart(), _IdentContinue those
+// accepted by TfIsUtf8CodePointXidContinue(), and _IdentNonAscii every byte
+// with the high bit set, which sends the name to _IsValidIdentifierUtf8().
+enum : uint8_t {
+    _IdentStart    = 1 << 0,
+    _IdentContinue = 1 << 1,
+    _IdentNonAscii = 1 << 2,
+};
+
+// Over the ASCII range the two identifier classes are exactly [A-Za-z_] and
+// [A-Za-z0-9_].  This agrees with _IsValidIdentifierStart() and
+// TfIsUtf8CodePointXidContinue() at every code point below 0x80.  If the
+// Unicode tables behind those predicates are ever changed, this table needs to
+// be rechecked.
+static constexpr std::array<uint8_t, 256> _MakeIdentifierClassTable()
+{
+    std::array<uint8_t, 256> table {};
+    for (unsigned c = 0; c != 256; ++c) {
+        if (c >= 0x80) {
+            table[c] = _IdentNonAscii;
+        }
+        else if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
+            table[c] = _IdentStart | _IdentContinue;
+        }
+        else if (c >= '0' && c <= '9') {
+            table[c] = _IdentContinue;
+        }
+    }
+    return table;
+}
+
+static constexpr std::array<uint8_t, 256> _identifierClassTable =
+    _MakeIdentifierClassTable();
+
+static
+inline bool
+_IsValidIdentifier(const std::string_view& name)
+{
+    // Empty strings are not valid identifiers.
+    if (name.empty()) {
+        return false;
+    }
+
+    // Prim and property names are almost always wholly ASCII, and the general
+    // path costs an out-of-line call into a 136KB std::bitset per code point --
+    // measured as ~1000 instructions for a typical prim name, against ~100
+    // here.  Classify bytes from the table until we finish, reject, or reach a
+    // byte with the high bit set; only that last case needs UTF-8 decoding.
+    //
+    // A byte below 0x80 is always a complete UTF-8 code point, and we only
+    // advance past a byte by classifying it as ASCII, so byte i in this loop is
+    // always code point i.
+    const unsigned char *chars =
+        reinterpret_cast<const unsigned char *>(name.data());
+    const size_t numChars = name.size();
+
+    uint8_t flags = _identifierClassTable[chars[0]];
+
+    if (ARCH_LIKELY(flags & _IdentStart)) {
+        for (size_t i = 1; i != numChars; ++i) {
+            flags = _identifierClassTable[chars[i]];
+            if (ARCH_UNLIKELY(!(flags & _IdentContinue))) {
+                return (flags & _IdentNonAscii) && _IsValidIdentifierUtf8(name);
+            }
+        }
+        return true;
+    }
+    return (flags & _IdentNonAscii) && _IsValidIdentifierUtf8(name);
 }
 
 static

@@ -24,7 +24,10 @@ pxr_library(usdPhysics
         massProperties.h
         parseUtils.h
         parseDesc.h   
-        
+
+    PRIVATE_HEADERS
+        bodyResolution.h
+
     PYMODULE_CPPFILES
         wrapMetrics.cpp
         wrapParseUtils.cpp
@@ -49,6 +52,7 @@ pxr_test_scripts(
     testenv/testUsdPhysicsMetrics.py
     testenv/testUsdPhysicsRigidBodyAPI.py
     testenv/testUsdPhysicsCollisionGroupAPI.py
+    testenv/testUsdPhysicsJoint.py
     testenv/testUsdPhysicsParsing.py
 )
 
@@ -67,6 +71,12 @@ pxr_register_test(testUsdPhysicsRigidBodyAPI
 pxr_register_test(testUsdPhysicsCollisionGroupAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsCollisionGroupAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPhysicsJoint
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsJoint"
     EXPECTED_RETURN_CODE 0
 )
 

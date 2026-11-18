@@ -1,0 +1,504 @@
+Loading @InstancingAndArcsBeneathInstances/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Direct>
+
+Prim Stack:
+    root.usda            /Direct
+
+Child names:
+     ['Proto', 'Inst', 'Other', 'OtherRef']
+
+------------------------------------------------------------------------
+Results for composing </Direct/Proto>
+
+Prim Stack:
+    root.usda            /Direct/Proto
+
+------------------------------------------------------------------------
+Results for composing </Direct/Inst>
+
+Prim Stack:
+    root.usda            /Direct/Inst
+    root.usda            /Direct/Proto
+
+------------------------------------------------------------------------
+Results for composing </Direct/Other>
+
+Prim Stack:
+    root.usda            /Direct/Other
+    root.usda            /Direct/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </Direct/Other/extra>
+
+Prim Stack:
+    root.usda            /Direct/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </Direct/OtherRef>
+
+Prim Stack:
+    root.usda            /Direct/OtherRef
+    root.usda            /Direct/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </Direct/OtherRef/extra>
+
+Prim Stack:
+    root.usda            /Direct/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </ViaReference>
+
+Prim Stack:
+    root.usda            /ViaReference
+    set.usda             /Set
+
+Child names:
+     ['Inst', 'Other', 'OtherRef']
+
+------------------------------------------------------------------------
+Results for composing </ViaReference/Inst>
+
+Prim Stack:
+    set.usda             /Set/Inst
+    set.usda             /Proto
+
+------------------------------------------------------------------------
+Results for composing </ViaReference/Other>
+
+Prim Stack:
+    set.usda             /Set/Other
+    set.usda             /Set/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </ViaReference/Other/extra>
+
+Prim Stack:
+    set.usda             /Set/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </ViaReference/OtherRef>
+
+Prim Stack:
+    set.usda             /Set/OtherRef
+    set.usda             /Set/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </ViaReference/OtherRef/extra>
+
+Prim Stack:
+    set.usda             /Set/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </InstancedByStrongerLayer>
+
+Prim Stack:
+    root.usda            /InstancedByStrongerLayer
+    set_shot.usda        /Set
+
+Child names:
+     ['Inst', 'Other']
+
+------------------------------------------------------------------------
+Results for composing </InstancedByStrongerLayer/Inst>
+
+Prim Stack:
+    root.usda            /InstancedByStrongerLayer/Inst
+    root.usda            /_class_ShotInst
+    set_shot.usda        /Set/Inst
+    set_shot.usda        /_class_ShotInst
+    set_shot.usda        /Proto
+
+------------------------------------------------------------------------
+Results for composing </InstancedByStrongerLayer/Other>
+
+Prim Stack:
+    root.usda            /InstancedByStrongerLayer/Inst/cls
+    set_shot.usda        /Set/Other
+    set_shot.usda        /Set/Inst/cls
+
+Child names:
+     ['fromSet', 'fromShot']
+
+------------------------------------------------------------------------
+Results for composing </InstancedByStrongerLayer/Other/fromSet>
+
+Prim Stack:
+    set_shot.usda        /Set/Inst/cls/fromSet
+
+------------------------------------------------------------------------
+Results for composing </InstancedByStrongerLayer/Other/fromShot>
+
+Prim Stack:
+    root.usda            /InstancedByStrongerLayer/Inst/cls/fromShot
+
+------------------------------------------------------------------------
+Results for composing </_class_ShotInst>
+
+Prim Stack:
+    root.usda            /_class_ShotInst
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer>
+
+Prim Stack:
+    root.usda            /DeinstancedByStrongerLayer
+    set_deinst.usda      /Set
+
+Child names:
+     ['Inst', 'Other']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer/Inst>
+
+Prim Stack:
+    root.usda            /DeinstancedByStrongerLayer/Inst
+    set_deinst.usda      /Set/Inst
+    set_deinst.usda      /Proto
+
+Child names:
+     ['cls']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer/Inst/cls>
+
+Prim Stack:
+    set_deinst.usda      /Set/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer/Inst/cls/extra>
+
+Prim Stack:
+    set_deinst.usda      /Set/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer/Other>
+
+Prim Stack:
+    set_deinst.usda      /Set/Other
+    set_deinst.usda      /Set/Inst/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </DeinstancedByStrongerLayer/Other/extra>
+
+Prim Stack:
+    set_deinst.usda      /Set/Inst/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </Nested>
+
+Prim Stack:
+    root.usda            /Nested
+
+Child names:
+     ['A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Nested/A>
+
+Prim Stack:
+    root.usda            /Nested/A
+    nested.usda          /Proto
+
+Child names:
+     ['Nested', 'geom', 'geomRef']
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/Nested>
+
+Prim Stack:
+    nested.usda          /Proto/Nested
+    nested.usda          /Inner
+
+Child names:
+     ['cls']
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/Nested/cls>
+
+Prim Stack:
+    nested.usda          /Inner/cls
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/geom>
+
+Prim Stack:
+    nested.usda          /Proto/geom
+    nested.usda          /Proto/Nested/cls
+    nested.usda          /Inner/cls
+
+Child names:
+     ['fromProto']
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/geom/fromProto>
+
+Prim Stack:
+    nested.usda          /Proto/Nested/cls/fromProto
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/geomRef>
+
+Prim Stack:
+    nested.usda          /Proto/geomRef
+    nested.usda          /Proto/Nested/cls
+    nested.usda          /Inner/cls
+
+Child names:
+     ['fromProto']
+
+------------------------------------------------------------------------
+Results for composing </Nested/A/geomRef/fromProto>
+
+Prim Stack:
+    nested.usda          /Proto/Nested/cls/fromProto
+
+------------------------------------------------------------------------
+Results for composing </Nested/B>
+
+Prim Stack:
+    root.usda            /Nested/B
+    nested.usda          /Proto
+
+Child names:
+     ['Nested', 'geom', 'geomRef']
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/Nested>
+
+Prim Stack:
+    nested.usda          /Proto/Nested
+    nested.usda          /Inner
+
+Child names:
+     ['cls']
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/Nested/cls>
+
+Prim Stack:
+    nested.usda          /Inner/cls
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/geom>
+
+Prim Stack:
+    nested.usda          /Proto/geom
+    nested.usda          /Proto/Nested/cls
+    nested.usda          /Inner/cls
+
+Child names:
+     ['fromProto']
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/geom/fromProto>
+
+Prim Stack:
+    nested.usda          /Proto/Nested/cls/fromProto
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/geomRef>
+
+Prim Stack:
+    nested.usda          /Proto/geomRef
+    nested.usda          /Proto/Nested/cls
+    nested.usda          /Inner/cls
+
+Child names:
+     ['fromProto']
+
+------------------------------------------------------------------------
+Results for composing </Nested/B/geomRef/fromProto>
+
+Prim Stack:
+    nested.usda          /Proto/Nested/cls/fromProto
+
+------------------------------------------------------------------------
+Results for composing </Sibling>
+
+Prim Stack:
+    root.usda            /Sibling
+
+Child names:
+     ['Twin', 'A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/Twin>
+
+Prim Stack:
+    root.usda            /Sibling/Twin
+    sibling_lib.usda     /Lib
+
+Child names:
+     ['cls']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/Twin/cls>
+
+Prim Stack:
+    sibling_lib.usda     /Lib/cls
+
+------------------------------------------------------------------------
+Results for composing </Sibling/A>
+
+Prim Stack:
+    root.usda            /Sibling/A
+    sibling_proto.usda   /Proto
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/A/geom>
+
+Prim Stack:
+    root.usda            /Sibling/Twin/cls
+    sibling_lib.usda     /Lib/cls
+    sibling_proto.usda   /Proto/geom
+
+Child names:
+     ['fromTwin']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/A/geom/fromTwin>
+
+Prim Stack:
+    root.usda            /Sibling/Twin/cls/fromTwin
+
+------------------------------------------------------------------------
+Results for composing </Sibling/B>
+
+Prim Stack:
+    root.usda            /Sibling/B
+    sibling_proto.usda   /Proto
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/B/geom>
+
+Prim Stack:
+    root.usda            /Sibling/Twin/cls
+    sibling_lib.usda     /Lib/cls
+    sibling_proto.usda   /Proto/geom
+
+Child names:
+     ['fromTwin']
+
+------------------------------------------------------------------------
+Results for composing </Sibling/B/geom/fromTwin>
+
+Prim Stack:
+    root.usda            /Sibling/Twin/cls/fromTwin
+
+------------------------------------------------------------------------
+Results for composing </Backref>
+
+Prim Stack:
+    root.usda            /Backref
+
+Child names:
+     ['Proto', 'A', 'B']
+
+------------------------------------------------------------------------
+Results for composing </Backref/Proto>
+
+Prim Stack:
+    root.usda            /Backref/Proto
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Backref/Proto/geom>
+
+Prim Stack:
+    root.usda            /Backref/Proto/geom
+    root.usda            /Backref/A/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </Backref/Proto/geom/extra>
+
+Prim Stack:
+    root.usda            /Backref/A/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </Backref/A>
+
+Prim Stack:
+    root.usda            /Backref/A
+    root.usda            /Backref/Proto
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Backref/A/geom>
+
+Prim Stack:
+    root.usda            /Backref/Proto/geom
+    root.usda            /Backref/A/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </Backref/A/geom/extra>
+
+Prim Stack:
+    root.usda            /Backref/A/cls/extra
+
+------------------------------------------------------------------------
+Results for composing </Backref/B>
+
+Prim Stack:
+    root.usda            /Backref/B
+    root.usda            /Backref/Proto
+
+Child names:
+     ['geom']
+
+------------------------------------------------------------------------
+Results for composing </Backref/B/geom>
+
+Prim Stack:
+    root.usda            /Backref/Proto/geom
+    root.usda            /Backref/A/cls
+
+Child names:
+     ['extra']
+
+------------------------------------------------------------------------
+Results for composing </Backref/B/geom/extra>
+
+Prim Stack:
+    root.usda            /Backref/A/cls/extra
+

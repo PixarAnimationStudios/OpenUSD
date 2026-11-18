@@ -23,12 +23,20 @@
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/tf/stringUtils.h"
+
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/usd/sdf/path.h"
 
 #include <stdio.h>
 #include <stdarg.h>
 
 #include <fstream>
 #include <memory>
+#include <sstream>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -380,6 +388,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _shouldFrameAll(false)
     , _cullStyle(UsdImagingGLCullStyle::CULL_STYLE_NOTHING)
     , _rendererAov(HdAovTokens->color)
+    , _sceneIndexDumpMode(SceneIndexDumpMode::PathTypeAndDataSource)
     , _showGuides(UsdImagingGLRenderParams().showGuides)
     , _showRender(UsdImagingGLRenderParams().showRender)
     , _showProxy(UsdImagingGLRenderParams().showProxy)
@@ -471,6 +480,106 @@ UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
     return true;
 }
 
+////////////////////////////////////////////////////////////
+// Scene index dump helpers
+
+// Scrub pointer-address literals so the output is stable across runs.
+// Recognises "0x[0-9a-fA-F]*" and "@ [0-9a-fA-F]" patterns and replaces
+// the hex digits with 'X' padded to 16 characters.
+// Adapted from testUsdImagingStageSceneIndexContents.cpp.
+static bool
+_IsHexChar(char ch)
+{
+    return (ch >= '0' && ch <= '9')
+        || (ch >= 'a' && ch <= 'f')
+        || (ch >= 'A' && ch <= 'F')
+        || ch == 'x';
+}
+
+static std::string
+_CleanOutputForDiff(const std::string &inputStr)
+{
+    enum _Mode { DEFAULT, FOUND_0, FOUND_AT, PTR };
+
+    std::string outputStr;
+    size_t numPtrDigits = 0;
+    _Mode mode = DEFAULT;
+
+    for (char ch : inputStr) {
+        switch (mode) {
+        case DEFAULT:
+            if (ch == '0')      { mode = FOUND_0; }
+            else if (ch == '@') { mode = FOUND_AT; }
+            outputStr += ch;
+            break;
+        case FOUND_0:
+            mode = (ch == 'x') ? PTR : DEFAULT;
+            outputStr += ch;
+            break;
+        case FOUND_AT:
+            mode = (ch == ' ') ? PTR : DEFAULT;
+            outputStr += ch;
+            break;
+        case PTR:
+            if (_IsHexChar(ch)) {
+                outputStr += 'X';
+                numPtrDigits++;
+            } else {
+                outputStr.append(16 - numPtrDigits, 'X');
+                outputStr += ch;
+                numPtrDigits = 0;
+                mode = DEFAULT;
+            }
+            break;
+        }
+    }
+    return outputStr;
+}
+
+/* static */ void
+UsdImagingGL_UnitTestGLDrawing::WriteSceneIndexToFile(
+    UsdImagingGLEngine *engine,
+    std::string const &filename,
+    SceneIndexDumpMode mode)
+{
+    HdSceneIndexBaseRefPtr si = engine->_GetTerminalSceneIndex();
+    if (!si) {
+        TF_WARN("WriteSceneIndexToFile: terminal scene index is null");
+        return;
+    }
+
+    std::ostringstream ss;
+
+    HdSceneIndexPrimView view(
+        si, SdfPath::AbsoluteRootPath(), HdSceneIndexPrimView::Lexicographic);
+
+    // The task controller scene index inserts prims under a manufactured prim
+    // that contains the substring "_UsdImaging_", like
+    // </_UsdImaging_GL_0x...>. Skip these prims in the scene index dump.
+    // See UsdImagingGLEngine::_ComputeControllerPath().
+    const std::string controllerNameSubstr = "_UsdImaging_";
+    for (auto it = view.begin(); it != view.end(); ++it) {
+        const SdfPath &primPath = *it;
+        if (TfStringContains(primPath.GetString(), controllerNameSubstr)) {
+            continue;
+        }
+
+        HdSceneIndexPrim prim = si->GetPrim(primPath);
+        ss << "<" << primPath << "> type = " << prim.primType << "\n";
+        
+        if (mode == SceneIndexDumpMode::PathTypeAndDataSource) {
+            HdDebugPrintDataSource(ss, prim.dataSource, 1);
+        }
+    }
+
+    std::ofstream out(filename);
+    if (TF_VERIFY(out.is_open())) {
+        out << _CleanOutputForDiff(ss.str());
+    }
+}
+
+////////////////////////////////////////////////////////////
+
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
     _Args()
       : offscreen(false)
@@ -548,6 +657,8 @@ static void Usage(int argc, char *argv[])
 "                           [-rendererAov name]\n"
 "                           [-perfStatsFile path]\n"
 "                           [-traceFile path]\n"
+"                           [-writeSceneIndex filePath]\n"
+"                           [-writeSceneIndexMode pathAndType|pathTypeAndDataSource]\n"
 "                           [-skipTestPlugins] [...]\n"
 "\n"
 "  usdImaging basic drawing test\n"
@@ -586,6 +697,13 @@ static void Usage(int argc, char *argv[])
 "  -rendererAov name   Name of AOV to display or write out\n"
 "  -perfStatsFile path Path to file performance stats are written to\n"
 "  -traceFile path     Path to trace file to write\n"
+"  -writeSceneIndex filePath\n"
+"                      Dump terminal scene index (geometry prims) to text file\n"
+"  -writeSceneIndexMode pathAndType|pathTypeAndDataSource\n"
+"                      Controls detail level for -writeSceneIndex;\n"
+"                      pathAndType writes path and primType only;\n"
+"                      pathTypeAndDataSource also writes the full data source\n"
+"                      tree (default: pathTypeAndDataSource)\n"
 "  -renderSetting name type value\n"
 "                      Specifies a setting with given name, type (such as\n"
 "                      float) and value passed to renderer. -renderSetting\n"
@@ -837,6 +955,26 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-traceFile") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             _traceFile = argv[++i];
+        }
+        else if (strcmp(argv[i], "-writeSceneIndex") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _sceneIndexOutputFilePath = argv[++i];
+        }
+        else if (strcmp(argv[i], "-writeSceneIndexMode") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            const char *modeStr = argv[++i];
+            if (strcmp(modeStr, "pathAndType") == 0) {
+                _sceneIndexDumpMode =
+                    SceneIndexDumpMode::PathAndType;
+            } else if (strcmp(modeStr, "pathTypeAndDataSource") == 0) {
+                _sceneIndexDumpMode =
+                    SceneIndexDumpMode::PathTypeAndDataSource;
+            } else {
+                ParseError(argv[0],
+                    "unknown -writeSceneIndexMode value '%s'; "
+                    "expected pathAndType or pathTypeAndDataSource",
+                    modeStr);
+            }
         }
         else if (strcmp(argv[i], "-clipPlane") == 0) {
             CheckForMissingArguments(i, 4, argc, argv);

@@ -20,12 +20,16 @@ def Scope "Materials" {
     }
 }
 
-def Xform "lights" 
+def Camera "Camera"
 {
-    # Set the purpose for lights to "render" so that they're not included
-    # in the test's frameAll calculation.
-    uniform token purpose = "render"
-    
+    float focalLength = 18.147
+    float xformOp:rotateX:Zup = 90
+    double3 xformOp:translate = (0, 0, 3.46)
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup", "xformOp:translate"]
+}
+
+def Xform "lights"
+{
     def SphereLight "RedLight"
     {
         color3f inputs:color = (1.0, 0.0, 0.0)

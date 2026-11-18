@@ -170,6 +170,7 @@ pxr_register_test(testTraceThreading
 pxr_register_test(testTrace
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTrace"
+    LABELS $<$<PLATFORM_ID:Windows>:flaky>
 )
 
 pxr_register_test(testTraceRecursion1

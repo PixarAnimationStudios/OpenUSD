@@ -154,6 +154,12 @@ public:
         const SdfPathExpression srcExpr =
             _inputDataSource->GetTypedValue(shutterOffset);
 
+        // Don't alter trivial expressions; that way, they continue to
+        // match everything.
+        if (_IsTrivial(srcExpr)) {
+            return srcExpr;
+        }
+
         // Apply the path mapping to the expression. Iterate over each
         // source→target mapping and apply ReplacePrefix.
         SdfPathExpression result = srcExpr;
@@ -169,6 +175,14 @@ private:
         PcpMapFunction const& mapFn)
     : _inputDataSource(std::move(inputDataSource))
     , _mapFn(mapFn) {}
+
+    static bool
+    _IsTrivial(const SdfPathExpression &expr)
+    {
+        static const SdfPathExpression everythingButProperties("~//*.*");
+        return expr == SdfPathExpression::Everything() ||
+               expr == everythingButProperties;
+    }
 
     HdPathExpressionDataSourceHandle _inputDataSource;
     PcpMapFunction _mapFn;

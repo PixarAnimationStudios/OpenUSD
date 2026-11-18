@@ -34,15 +34,18 @@ public:
 
     /// Compress \p inputSize bytes in \p input and store the result in
     /// \p compressed.  The \p compressed buffer must point to at least
-    /// GetCompressedBufferSize(uncompressedSize) bytes.  Return the number of
-    /// bytes written to the \p compressed buffer.  Issue a runtime error and
-    /// return ~0 in case of an error.
+    /// GetCompressedBufferSize(inputSize) bytes.  Return the number of bytes
+    /// written to the \p compressed buffer.  Issue a coding error and return 0
+    /// if \p inputSize is larger than GetMaxInputSize().
     TF_API static size_t
     CompressToBuffer(char const *input, char *compressed, size_t inputSize);
                            
     /// Decompress \p compressedSize bytes in \p compressed and store the
     /// result in \p output.  No more than \p maxOutputSize bytes will be
-    /// written to \p output.
+    /// written to \p output.  Return the number of bytes written.  If the
+    /// compressed data is malformed, issue a runtime error and return 0.
+    /// Since valid data may also decompress to 0 bytes, callers that need to
+    /// distinguish these cases should use a TfErrorMark.
     TF_API static size_t
     DecompressFromBuffer(char const *compressed, char *output,
                          size_t compressedSize, size_t maxOutputSize);

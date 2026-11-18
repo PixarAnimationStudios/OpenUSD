@@ -130,3 +130,77 @@ vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
 {
     return ComputeSphereNormal(shape.sphere, pointShape.position);
 }
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Edge.Sphere
+
+// Computes the nearest distance in pixels to the three coordinate-plane
+// great circles.
+float ComputeSphereEdgeDist(const Sphere sphere,
+                            const Point pointShape,
+                            const MAT4 shapeToEye,
+                            const MAT4 shapeToPixelClip,
+                            const mat3 NshapeToNeye,
+                            const vec3 PrayDirEye)
+{
+    const vec3 Nshape = ComputeSphereNormal(sphere, pointShape.position);
+
+    const float Pfacing = ComputeFacing(NshapeToNeye,
+                                        Nshape,
+                                        PrayDirEye);
+
+    const vec2 Pscreen = TransformPoint(shapeToPixelClip,
+                                        pointShape.position).xy;
+
+    Ring ring;
+    ring.center = sphere.center;
+    ring.radius = abs(sphere.radius);
+
+    float minDist = INF;
+
+    HGI_COMPILER_ATTR_UNROLL
+    for (uint i = 0; i < 3; i++) {
+        ring.axis = i;
+
+        const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                        ring,
+                                        pointShape.position,
+                                        Pscreen,
+                                        shapeToPixelClip);
+
+        const vec3 ringPointNshape = ComputeSphereNormal(
+                                         sphere,
+                                         ringPointShape);
+
+        const float ringDist = ComputeFacingAwareScreenDist(Pscreen,
+                                                            ringPointShape,
+                                                            Pfacing,
+                                                            ringPointNshape,
+                                                            NshapeToNeye,
+                                                            shapeToEye,
+                                                            shapeToPixelClip);
+
+        minDist = min(minDist, ringDist);
+    }
+
+    return minDist;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Wire.Sphere
+
+// Computes the nearest distance in pixels to the wireframe edges.
+float ComputeWireDist(const Shape shape,
+                      const Point pointShape,
+                      const MAT4 shapeToEye,
+                      const MAT4 shapeToPixelClip,
+                      const mat3 NshapeToNeye,
+                      const vec3 PrayDirEye)
+{
+    return ComputeSphereEdgeDist(shape.sphere,
+                                 pointShape,
+                                 shapeToEye,
+                                 shapeToPixelClip,
+                                 NshapeToNeye,
+                                 PrayDirEye);
+}

@@ -471,6 +471,42 @@ vec4 ApplySelectionColor(vec4 color)
         }
     } // for each highlight mode
     
+#endif // HD_HAS_hdxSelectionBuffer
+    return color;
+}
+
+// Raises the alpha of selected or rolled-over prims/faces to at least
+// minSelectionOpacity so highlights on nearly transparent geometry stay
+// visible. Called after surface shading (from
+// ApplyColorOverridesPostLighting), so it also applies to opacity that comes
+// from the material.
+vec4 ApplySelectionOpacity(vec4 color)
+{
+#if defined(HD_HAS_hdxSelectionBuffer) && defined(HD_HAS_minSelectionOpacity)
+    const float minOpacity = clamp(HdGet_minSelectionOpacity(), 0.0, 1.0);
+    if (minOpacity <= 0.0) {
+        return color;
+    }
+
+    int elementId = GetElementID();
+    int edgeId    = GetPrimitiveEdgeId();
+    int pointId   = GetPointId();
+
+    const int numSelectionModes = GetNumSelectionHighlightModes();
+
+    for (int mode = 0; mode < numSelectionModes; mode++) {
+        SelectionResult res =
+            GetSelectionResult(mode, elementId, edgeId, pointId);
+
+        // Match ApplySelectionColor: selected element edges count as
+        // selected elements when drawing wireframe faces.
+        bool elementSelected = res.subprimSel.elementSelected ||
+            (SelectWireframeFaceEdges() && res.subprimSel.elementEdgeSelected);
+
+        if (res.primOrInstanceSel || elementSelected) {
+            color.a = max(color.a, minOpacity);
+        }
+    } // for each highlight mode
 #endif
     return color;
 }

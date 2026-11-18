@@ -277,3 +277,162 @@ vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
 
     return ComputeConicalFrustumNormal(shape.conicalFrustum, pointShape.position);
 }
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Wire.Capsule
+
+// Computes the nearest distance in pixels to the wireframe edges.
+float ComputeWireDist(const Shape shape,
+                      const Point pointShape,
+                      const MAT4 shapeToEye,
+                      const MAT4 shapeToPixelClip,
+                      const mat3 NshapeToNeye,
+                      const vec3 PrayDirEye)
+{
+    // Rings at the two ends of the conical frustum, where it meets the spheres.
+    const float halfH = 0.5 * shape.conicalFrustum.height;
+
+    Ring topRing;
+    topRing.center = vec3(0.0, 0.0, +halfH);
+    topRing.radius = abs(shape.conicalFrustum.radiusTop);
+    topRing.axis = RING_AXIS_Z;
+
+    Ring botRing;
+    botRing.center = vec3(0.0, 0.0, -halfH);
+    botRing.radius = abs(shape.conicalFrustum.radiusBot);
+    botRing.axis = RING_AXIS_Z;
+
+    const vec2 Pscreen = TransformPoint(shapeToPixelClip,
+                                        pointShape.position).xy;
+
+    // Degenerate height = 0 case, which produces an annular disc.
+    // In this case, we draw the disc's inner and outer rings.
+    if (pointShape.segment == CAPSULE_SEG_DISC) {
+        float minDist = INF;
+
+        HGI_COMPILER_ATTR_UNROLL
+        for (uint i = 0; i < 2; i++) {
+            const bool isTop = i == 0;
+            const Ring ring = isTop ? topRing : botRing;
+
+            const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                            ring,
+                                            pointShape.position,
+                                            Pscreen,
+                                            shapeToPixelClip);
+
+            // The rings share the disc's normal with the surface point,
+            // so no facing check is needed.
+            const float ringDist = ComputeScreenDist(Pscreen,
+                                                     ringPointShape,
+                                                     shapeToPixelClip);
+
+            minDist = min(minDist, ringDist);
+        }
+
+        return minDist;
+    }
+
+    const vec3 Nshape = ComputeNormalShape(shape, pointShape);
+    const float Pfacing = ComputeFacing(NshapeToNeye, Nshape, PrayDirEye);
+
+    // Sphere caps.
+    if (pointShape.segment == CAPSULE_SEG_TOP_CAP ||
+        pointShape.segment == CAPSULE_SEG_BOT_CAP) {
+        const bool isTop = pointShape.segment == CAPSULE_SEG_TOP_CAP;
+        const Sphere sphere = isTop ? shape.sphereTop : shape.sphereBot;
+
+        float minDist = INF;
+
+        // X and Y rings of the sphere cap.
+        HGI_COMPILER_ATTR_UNROLL
+        for (uint i = 0; i < 2; i++) {
+            Ring ring;
+            ring.axis = i;
+            ring.center = sphere.center;
+            ring.radius = abs(sphere.radius);
+
+            const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                            ring,
+                                            pointShape.position,
+                                            Pscreen,
+                                            shapeToPixelClip);
+
+            const vec3 ringPointNshape = ComputeSphereNormal(sphere,
+                                                             ringPointShape);
+
+            const float ringDist = ComputeFacingAwareScreenDist(
+                                       Pscreen,
+                                       ringPointShape,
+                                       Pfacing,
+                                       ringPointNshape,
+                                       NshapeToNeye,
+                                       shapeToEye,
+                                       shapeToPixelClip);
+
+            minDist = min(minDist, ringDist);
+        }
+
+        // The Z ring connects the sphere cap and the conical frustum.
+        const Ring zRing = isTop ? topRing : botRing;
+        const vec3 ringPointShape = ComputeNearestRingPointShape(
+                                        zRing,
+                                        pointShape.position,
+                                        Pscreen,
+                                        shapeToPixelClip);
+
+        const vec3 ringPointNshape = ComputeConicalFrustumNormal(
+                                           shape.conicalFrustum,
+                                           ringPointShape);
+
+        const float ringDist = ComputeFacingAwareScreenDist(
+                                    Pscreen,
+                                    ringPointShape,
+                                    Pfacing,
+                                    ringPointNshape,
+                                    NshapeToNeye,
+                                    shapeToEye,
+                                    shapeToPixelClip);
+
+        minDist = min(minDist, ringDist);
+
+        return minDist;
+    }
+
+    // Lateral segment.
+    Ring centerRing;
+    centerRing.axis = RING_AXIS_Z;
+    centerRing.center = vec3(0.0);
+    centerRing.radius = 0.5 * abs(shape.conicalFrustum.radiusTop +
+                                  shape.conicalFrustum.radiusBot);
+
+    const vec3 centerRingPointShape = ComputeNearestRingPointShape(
+                                          centerRing,
+                                          pointShape.position,
+                                          Pscreen,
+                                          shapeToPixelClip);
+
+    const vec3 centerRingPointNshape = ComputeConicalFrustumNormal(
+                                           shape.conicalFrustum,
+                                           centerRingPointShape);
+
+    const float centerRingDist = ComputeFacingAwareScreenDist(
+                                     Pscreen,
+                                     centerRingPointShape,
+                                     Pfacing,
+                                     centerRingPointNshape,
+                                     NshapeToNeye,
+                                     shapeToEye,
+                                     shapeToPixelClip);
+
+    const float frustumEdgeDist = ComputeConicalFrustumEdgeDist(
+                                      shape.conicalFrustum,
+                                      pointShape.position,
+                                      Pscreen,
+                                      shapeToEye,
+                                      shapeToPixelClip,
+                                      NshapeToNeye,
+                                      PrayDirEye);
+
+    return min(centerRingDist, frustumEdgeDist);
+}

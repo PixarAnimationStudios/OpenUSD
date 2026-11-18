@@ -82,7 +82,14 @@ protected:
                HdDirtyBits* dirtyBits) override;
 
     HDX_API
-    HdRenderPassStateSharedPtr _GetRenderPassState(HdTaskContext *ctx) const;
+    HdRenderPassStateSharedPtr _GetRenderPassState() const;
+
+    HDX_API
+    HdRenderPassSharedPtr _GetRenderPass() const;
+
+    HDX_API
+    void _PrepareRenderPassState(HdTaskContext* ctx,
+                                 HdRenderIndex* renderIndex);
 
     // XXX: Storm specific API
     // While HdDrawItem is currently a core-Hydra concept, it'll be moved
@@ -100,12 +107,21 @@ protected:
     // Binds the selection highlight buffers published by HdxSelectionTask onto
     // the given render pass shader.
     HDX_API
-    void _SetHdStSelectionBindings(
+    void _AddStormSelectionBindings(
         HdTaskContext* ctx,
-        const HdStRenderPassShaderSharedPtr& renderPassShader);
+        HdStRenderPassShaderSharedPtr passShader);
+
+    // XXX: Storm specific API
+    // Binds the lighting shader published by HdxSimpleLightTask onto
+    // the given render pass state.
+    HDX_API
+    void _AddStormLightingShader(
+        HdTaskContext* ctx,
+        HdStRenderPassStateSharedPtr passState);
 
 private:
     HdRenderPassSharedPtr _pass;
+    HdRenderPassStateSharedPtr _passState;
     TfTokenVector _renderTags;
 
     // Optional internal render setup task, for params unpacking.

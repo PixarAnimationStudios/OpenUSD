@@ -86,10 +86,10 @@
                         "priority": 0,
                         "displayName": "Scene Index to turn implicit surfaces into prims suitable for Storm",
 
-                        # phase=0, InsertionOrderAtStart
-                        "tags": ["hdSt:phase0"],
+                        # phase=3, InsertionOrderAtStart
+                        "tags": ["hdSt:phase3", "hdSt:implicitSurfaces"],
                         "ordering": {
-                            "after": "hd:sceneAssembly",
+                            "after": "hdGp:proceduralResolution",
                             "position": "firstAfter"
                         }
                     },

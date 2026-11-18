@@ -1,0 +1,33 @@
+#usda 1.0
+class "_class_Root"
+{
+}
+
+def "World"
+{
+    def "classes"
+    {
+        class "Widget"
+        {
+        }
+    }
+}
+
+def "A"
+{
+    def "rootClassUser" (
+        inherits = </_class_Root>
+    )
+    {
+    }
+
+    def "worldClassUser" (
+        inherits = </World/classes/Widget>
+    )
+    {
+    }
+
+    def "plain"
+    {
+    }
+}

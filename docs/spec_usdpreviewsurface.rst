@@ -74,8 +74,9 @@ This preview surface supports both "workflows", *specular* and *metalness*.
 
 .. _straightAlphaPreviewSurface:
 
-All color inputs to the :usda:`UsdPreviewSurface` are straight alpha (no
-pre-multiplication).
+All color inputs to the :usda:`UsdPreviewSurface` have unassociated alpha if
+they have an alpha component. In other words, the color channels are not
+premultiplied with the alpha channel.
 
 In USD's high performance rasterizing renderer, Storm, we decided to
 pre-multiply before lighting computations when opacity is authored. The current

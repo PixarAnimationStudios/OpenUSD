@@ -202,7 +202,9 @@ Results for composing </SubrootReferences/Instanced>
 
 Prim Stack:
     root.usda            /SubrootReferences/Instanced
+    root.usda            /Set_1/InstancedProp/geom
     root.usda            /_class_Prop/geom
+    set.usda             /Set/InstancedProp/geom
     set.usda             /_class_Prop/geom
     prop.usda            /Prop/geom
 
@@ -211,7 +213,9 @@ Property names:
 
 Property stacks:
 /SubrootReferences/Instanced.x:
+    root.usda            /Set_1/InstancedProp/geom.x
     root.usda            /_class_Prop/geom.x
+    set.usda             /Set/InstancedProp/geom.x
     set.usda             /_class_Prop/geom.x
     prop.usda            /Prop/geom.x
 

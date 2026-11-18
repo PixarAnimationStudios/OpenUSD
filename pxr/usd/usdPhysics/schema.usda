@@ -121,7 +121,8 @@ class "PhysicsRigidBodyAPI"
         string className = "RigidBodyAPI"
         string extraIncludes = """
 #include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/quatf.h" """
+#include "pxr/base/gf/quatf.h"
+#include <vector> """
     }
     doc = """Applies physics body attributes to any UsdGeomXformable prim and
     marks that prim to be driven by a simulation. If a simulation is running
@@ -484,6 +485,9 @@ class PhysicsJoint "PhysicsJoint"
 (
     customData = {
         string className = "Joint"
+        string extraIncludes = """
+#include "pxr/base/gf/quatf.h"
+#include "pxr/usd/usdGeom/xformCache.h" """
     }
     doc = """A joint constrains the movement of rigid bodies. Joint can be 
     created between two rigid bodies or between one rigid body and world.

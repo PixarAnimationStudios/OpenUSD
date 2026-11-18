@@ -19,11 +19,11 @@ Agreement (CLA). At the root of the `repository
 CLAs:
 
     #. `USD_CLA_Corporate.pdf
-       <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/USD_CLA_Corporate.pdf>`_
+       <https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/USD_CLA_Corporate.pdf>`__
        : please sign this one for corporate use
 
     #. `USD_CLA_Individual.pdf
-       <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/USD_CLA_Individual.pdf>`_
+       <https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/USD_CLA_Individual.pdf>`__
        : please sign this one if you're an individual contributor
 
 Once your CLA is signed, send it to `usd-cla@pixar.com

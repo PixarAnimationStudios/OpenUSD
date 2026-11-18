@@ -1,0 +1,11 @@
+#usda 1.0
+def "A"
+{
+    def "widget" (
+        TestPcp_depth = 2
+        TestPcp_num = 1
+        payload = @./cone.testpcpdynamic@
+    )
+    {
+    }
+}

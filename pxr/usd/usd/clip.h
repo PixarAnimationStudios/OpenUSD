@@ -16,6 +16,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/ts/spline.h"
 
+#include <atomic>
 #include <iosfwd>
 #include <memory>
 #include <mutex>
@@ -25,6 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
+class Usd_ClipCache;
 class Usd_Interpolator;
 class UsdTimeCode;
 
@@ -254,6 +256,7 @@ public:
 
 private:
     friend class UsdStage;
+    friend class Usd_ClipCache;
 
     // Helpers for retrieving time sample information from within
     // clip layers and translating them to external times.
@@ -289,9 +292,17 @@ private:
         TimeMapping* m1Out = nullptr, TimeMapping* m2Out = nullptr) const;
 
 private:
-    mutable bool _hasLayer;
+    // Set, with release ordering, after _layer is assigned under
+    // _layerMutex.  Readers that see it set with acquire ordering may read
+    // _layer without locking; _layer is never changed after it is set.
+    mutable std::atomic<bool> _hasLayer;
     mutable std::mutex _layerMutex;
     mutable SdfLayerRefPtr _layer;
+
+    // The cache that owns the clip set containing this clip, if any.  Set by
+    // the cache before the clip set is published, so the cache can be told when
+    // this clip lazily opens its layer.
+    Usd_ClipCache *_cache = nullptr;
 };
 
 typedef std::shared_ptr<Usd_Clip> Usd_ClipRefPtr;

@@ -6,6 +6,7 @@
 # https://openusd.org/license/.
 #
 
+import array
 import unittest
 from pxr import Gf
 
@@ -117,6 +118,32 @@ class TestGfColor(unittest.TestCase):
         # Convert a raw color space to a regular color space.
         cBack = Gf.Color(cRaw, self.csSRGB)
         self.assertEqual(cBack.GetRGB(), rgb)
+
+    def test_ConvertSpans(self):
+        # Writable float buffers are converted in place.  Note that these
+        # convert from self to the argument, unlike Convert().
+        src = self.mauveLinear.GetRGB()
+        expected = self.mauveGamma.GetRGB()
+        rgb = array.array('f', list(src) * 2)
+        self.csLinearRec709.ConvertRGBSpan(self.csG22Rec709, rgb)
+        for i in range(2):
+            self.assertTrue(Gf.IsClose(
+                Gf.Vec3f(*rgb[3*i:3*i+3]), expected, 1e-5))
+
+        # Alpha is unchanged.
+        rgba = array.array('f', list(src) + [0.75])
+        self.csLinearRec709.ConvertRGBASpan(self.csG22Rec709, rgba)
+        self.assertTrue(Gf.IsClose(Gf.Vec3f(*rgba[:3]), expected, 1e-5))
+        self.assertEqual(rgba[3], 0.75)
+
+        # Sequences would be converted as a temporary copy, discarding the
+        # result, so they are rejected.
+        for arg in (list(src), tuple(src)):
+            with self.assertRaises(TypeError):
+                self.csLinearRec709.ConvertRGBSpan(self.csG22Rec709, arg)
+            with self.assertRaises(TypeError):
+                self.csLinearRec709.ConvertRGBASpan(
+                    self.csG22Rec709, list(arg) + [1.0])
 
 if __name__ == '__main__':
     unittest.main()

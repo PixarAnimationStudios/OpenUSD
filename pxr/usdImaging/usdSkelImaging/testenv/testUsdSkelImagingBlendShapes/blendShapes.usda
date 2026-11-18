@@ -1,0 +1,14 @@
+#usda 1.0
+
+def SkelAnimation "Animation"
+{
+    uniform token[] blendShapes = ["smile", "blink"]
+    float[] blendShapeWeights = [0.25, 0.75]
+}
+
+def Skeleton "Skeleton" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    rel skel:animationSource = </Animation>
+}

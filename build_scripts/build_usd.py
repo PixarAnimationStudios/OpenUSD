@@ -2377,9 +2377,9 @@ group = parser.add_argument_group(title="TBB Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
                       default=True,
-                      help="Build using oneTBB instead of TBB")
+                      help="Build using oneTBB (default)")
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
-                      help="Build using TBB (default)")
+                      help="Build using TBB2020 instead of oneTBB")
 
 group = parser.add_argument_group(title="AOMedia Polygonal Mesh Coding Options")
 subgroup = group.add_mutually_exclusive_group()

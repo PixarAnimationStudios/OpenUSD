@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 import sys
 import pxr.Usdviewq as Usdviewq
 

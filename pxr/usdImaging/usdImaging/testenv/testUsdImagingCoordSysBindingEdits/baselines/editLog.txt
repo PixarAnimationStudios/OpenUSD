@@ -1,0 +1,14 @@
+Checking initial state.
+Change proj1 binding to camR.
+    ADDED   /camR/__coordSys_proj1
+    REMOVED /camL/__coordSys_proj1
+Add proj2 binding to camL.
+    ADDED   /camL/__coordSys_proj2
+    ADDED   /camR/__coordSys_proj1
+Remove proj1 binding.
+    ADDED   /camL/__coordSys_proj2
+    REMOVED /camR/__coordSys_proj1
+Set proj1 binding to camL.
+    ADDED   /camL/__coordSys_proj1
+    ADDED   /camL/__coordSys_proj2
+All tests passed.

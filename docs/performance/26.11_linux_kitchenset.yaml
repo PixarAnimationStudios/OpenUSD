@@ -1,0 +1,40 @@
+bring_up_the_ui:
+  max: 0.548515
+  mean: 0.5281090900000001
+  min: 0.512051
+close_stage:
+  max: 0.023343
+  mean: 0.01068377
+  min: 0.008909
+configure_and_load_plugins:
+  max: 0.000142
+  mean: 3.073e-05
+  min: 2.4e-05
+create_first_image:
+  max: 0.25887
+  mean: 0.23255547
+  min: 0.224114
+open_and_close_usdview:
+  max: 0.959122
+  mean: 0.91016302
+  min: 0.888217
+open_stage:
+  max: 0.079116
+  mean: 0.05933257
+  min: 0.052111
+reset_prim_browser:
+  max: 0.001242
+  mean: 0.00115668
+  min: 0.001111
+shut_down_hydra:
+  max: 0.023304
+  mean: 0.0201556
+  min: 0.019148
+tear_down_the_ui:
+  max: 0.004622
+  mean: 0.00178296
+  min: 0.001633
+traverse_stage:
+  max: 0.000731
+  mean: 0.00062555
+  min: 0.000585

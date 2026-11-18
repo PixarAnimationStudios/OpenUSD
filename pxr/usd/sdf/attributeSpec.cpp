@@ -179,13 +179,23 @@ SdfAttributeSpec::SetSpline(const TsSpline& spline)
     }
 
     if (spline.GetValueType() != valueType) {
-        TF_CODING_ERROR("Cannot set spline on spec <%s> because the value "
-                        "type '%s' does not match the attribute value type "
-                        "'%s'",
-                        GetPath().GetText(),
-                        spline.GetValueType().GetTypeName().c_str(),
-                        valueType.GetTypeName().c_str());
-        return;
+        if (!spline.CanSetValueType(valueType)) {
+            TF_CODING_ERROR("Cannot set spline on spec <%s> because the value "
+                            "type '%s' does not match the attribute value type "
+                            "'%s'",
+                            GetPath().GetText(),
+                            spline.GetValueType().GetTypeName().c_str(),
+                            valueType.GetTypeName().c_str());
+            return;
+        }
+
+        // Copy the spline (it has no knots or we wouldn't be here) and set its
+        // valueType.
+        TsSpline retypedSpline(spline);
+        retypedSpline.SetValueType(valueType);
+
+        return GetLayer()->SetField(GetPath(), SdfFieldKeys->Spline,
+                                    retypedSpline);
     }
 
     return GetLayer()->SetField(GetPath(), SdfFieldKeys->Spline, spline);

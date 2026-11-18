@@ -12,7 +12,6 @@ that represent interesting cases that it needs to handle.
 It cherry picks particular examples from the Pcp museum
 to exercise.
 '''
-from __future__ import print_function
 
 from pxr import Sdf, Pcp, Tf
 import functools, os, unittest
@@ -155,6 +154,39 @@ class TestPcpDependencies(unittest.TestCase):
                 '/A/B',
                 Pcp.MapFunction({
                     '/A': '/A'})
+                )
+            ])
+
+        ########################################################################
+        # A subroot reference into a referenced prim, whose target has its own
+        # reference.  /ViaMid reaches /Leaf through the ancestral reference
+        # from /Mid to /Inner, so the dependency is partly direct.  The
+        # reference to /Leaf is added while indexing /Inner/X in a recursive
+        # call, which used to leave its ancestral flag unset (USD-12864).
+        #
+        self._AssertDepsEqual( self._FindSiteDeps(
+             'SubrootReferenceIntoReferencedPrim/root.usda',
+             'SubrootReferenceIntoReferencedPrim/root.usda',
+             '/Leaf',
+             depMask = Pcp.DependencyTypePartlyDirect |
+                Pcp.DependencyTypeNonVirtual
+             ),
+            [
+            Pcp.Dependency(
+                '/Mid/X',
+                '/Leaf',
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/Inner': '/Mid',
+                    '/Leaf': '/Mid/X'})
+                ),
+            Pcp.Dependency(
+                '/ViaMid',
+                '/Leaf',
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/Inner': '/Mid',
+                    '/Leaf': '/ViaMid'})
                 )
             ])
 

@@ -1945,5 +1945,404 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             '/PrimWithReference/RelocatedFromRef2', 
             '/PrimWithReference/ChildInRef2')
 
+    def test_LoadRules(self):
+        """Verifies that the stage's load rules are updated when a path specified
+        in the rules is namespace edited."""
+
+        # Create an empty payload layer
+        payloadLayer = Sdf.Layer.CreateAnonymous()
+        payloadLayer.ImportFromString('''#usda 1.0
+            def "Payload"
+            {
+                def "Child"
+                {
+                }
+            }
+        ''')
+
+        # The root layer just has a nested prim with a payload
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#usda 1.0
+        def "World" 
+        {
+            def "Model" ( payload = @''' + payloadLayer.identifier + '''@</Payload>
+            ) {
+
+            }
+        }
+        ''')
+
+        # Load the payload on prim /Model
+        stage = Usd.Stage.Open(rootLayer, Usd.Stage.LoadNone)
+        stage.Load('/World/Model')
+
+        # Verify that the prim was loaded
+        self.assertEqual(stage.GetLoadRules().GetRules(), 
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule), 
+            (Sdf.Path('/World/Model'), Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage.GetPrimAtPath('/World/Model').IsLoaded())
+        self.assertTrue(stage.GetPrimAtPath('/World/Model/Child'))
+
+        # Rename /Model to /RenamedModel
+        editor = Usd.NamespaceEditor(stage)
+        self.assertTrue(editor.MovePrimAtPath("/World/Model", "/World/RenamedModel"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/World/Model' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/World/RenamedModel')),
+                '/World/RenamedModel' : (self.PrimResyncType.RenameDestination, 
+                                Sdf.Path('/World/Model'))})
+
+        # Verify the rename succeeded
+        self.assertFalse(stage.GetPrimAtPath('/World/Model'))
+        self.assertTrue(stage.GetPrimAtPath('/World/RenamedModel'))
+
+        # Verify the stage's load rules were updated to use the prim's new name
+        self.assertEqual(stage.GetLoadRules().GetRules(), 
+                    [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule), 
+                    (Sdf.Path('/World/RenamedModel'), Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage.GetPrimAtPath('/World/RenamedModel').IsLoaded())
+        self.assertTrue(stage.GetPrimAtPath('/World/RenamedModel/Child'))
+
+        # Try renaming the parent prim from /World to /NewWorld
+        editor = Usd.NamespaceEditor(stage)
+        self.assertTrue(editor.MovePrimAtPath("/World", "/NewWorld"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/World' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/NewWorld')),
+                '/NewWorld' : (self.PrimResyncType.RenameDestination, 
+                                Sdf.Path('/World'))})
+
+        # Verify the rename succeeded
+        self.assertFalse(stage.GetPrimAtPath('/World'))
+        self.assertTrue(stage.GetPrimAtPath('/NewWorld'))
+
+        # Verify the stage's load rules were updated to use the prim's new name
+        self.assertEqual(stage.GetLoadRules().GetRules(), 
+                    [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule), 
+                    (Sdf.Path('/NewWorld/RenamedModel'), Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage.GetPrimAtPath('/NewWorld/RenamedModel').IsLoaded())
+        self.assertTrue(stage.GetPrimAtPath('/NewWorld/RenamedModel/Child'))
+
+        # Try to reparent the loaded prim from /NewWorld/RenamedModel to /MovedModel
+        self.assertTrue(editor.MovePrimAtPath("/NewWorld/RenamedModel", "/MovedModel"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/NewWorld/RenamedModel' : (self.PrimResyncType.RenameAndReparentSource, 
+                            Sdf.Path('/MovedModel')),
+                '/MovedModel' : (self.PrimResyncType.RenameAndReparentDestination, 
+                                Sdf.Path('/NewWorld/RenamedModel'))})
+
+        # Verify the move succeeded
+        self.assertFalse(stage.GetPrimAtPath('/NewWorld/RenamedModel'))
+        self.assertTrue(stage.GetPrimAtPath('/MovedModel'))
+
+        # Verify the stage's load rules were updated to use the prim's new path
+        self.assertEqual(stage.GetLoadRules().GetRules(), 
+                    [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule), 
+                    (Sdf.Path('/MovedModel'), Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage.GetPrimAtPath('/MovedModel').IsLoaded())
+        self.assertTrue(stage.GetPrimAtPath('/MovedModel/Child'))
+
+        # Delete the loaded prim
+        self.assertTrue(editor.DeletePrimAtPath("/MovedModel"))
+        self._ApplyEditWithVerification(editor, 
+                        expectedResyncNotices = {
+                            '/MovedModel' : (self.PrimResyncType.Delete, 
+                                        Sdf.Path())})
+
+        # Verify the delete succeeded
+        self.assertFalse(stage.GetPrimAtPath('/MovedModel'))
+
+        # Verify the stage's load rules were not updated - if a loaded prim is
+        # deleted, we do not remove it from the stage's load rules.
+        self.assertEqual(stage.GetLoadRules().GetRules(), 
+                    [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule), 
+                    (Sdf.Path('/MovedModel'), Usd.StageLoadRules.AllRule)])
+
+        # This means that if a prim is created at the path /MovedModel, it will
+        # automatically be loaded.
+        prim = stage.DefinePrim('/MovedModel')
+        prim.GetPayloads().AddPayload(payloadLayer.identifier, '/Payload')
+        self.assertTrue(prim.IsLoaded())
+        self.assertTrue(stage.GetPrimAtPath('/MovedModel/Child'))
+
+        # A move discards any stale load rules at and under its destination.
+        # Load /B/C, delete it and its parent, then move /A to /B. The stale
+        # /B/C rule must not apply to a prim later created at /B/C.
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#usda 1.0
+        def "A"
+        {
+        }
+        def "B"
+        {
+            def "C" ( payload = @''' + payloadLayer.identifier + '''@</Payload>
+            ) {
+            }
+        }
+        ''')
+        stage = Usd.Stage.Open(rootLayer, Usd.Stage.LoadNone)
+        stage.Load('/B/C')
+        self.assertEqual(stage.GetLoadRules().GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+            (Sdf.Path('/B/C'), Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage.GetPrimAtPath('/B/C/Child'))
+
+        editor = Usd.NamespaceEditor(stage)
+        self.assertTrue(editor.DeletePrimAtPath('/B/C'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/B/C' : (self.PrimResyncType.Delete, Sdf.Path())})
+        self.assertTrue(editor.DeletePrimAtPath('/B'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/B' : (self.PrimResyncType.Delete, Sdf.Path())})
+
+        # The stale /B/C rule is still present after the deletes.
+        self.assertEqual(stage.GetLoadRules().GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+            (Sdf.Path('/B/C'), Usd.StageLoadRules.AllRule)])
+
+        # Move /A to /B; the stale rule under /B is discarded.
+        self.assertTrue(editor.MovePrimAtPath('/A', '/B'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/A' : (self.PrimResyncType.RenameSource, Sdf.Path('/B')),
+                '/B' : (self.PrimResyncType.RenameDestination, Sdf.Path('/A'))})
+        self.assertEqual(stage.GetLoadRules().GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule)])
+
+        # A prim re-created at /B/C falls under the root NoneRule and is not
+        # loaded.
+        prim = stage.DefinePrim('/B/C')
+        prim.GetPayloads().AddPayload(payloadLayer.identifier, '/Payload')
+        self.assertFalse(prim.IsLoaded())
+        self.assertFalse(stage.GetPrimAtPath('/B/C/Child'))
+
+    def test_PopulationMask(self):
+        """Verifies that the stage's population mask is updated when a path it 
+        includes is namespace edited."""
+
+        # The root layer has two sibling prims, only one of which will be 
+        # included in the population mask
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#usda 1.0
+        def "World" 
+        {
+            def "A"
+            {
+
+            }
+            def  "B"
+            {
+
+            }
+        }
+        ''')
+
+        # Open a stage, including only /World/A in the population mask
+        mask = Usd.StagePopulationMask().Add('/World/A')
+        stage = Usd.Stage.OpenMasked(rootLayer, mask)
+        editor = Usd.NamespaceEditor(stage)
+
+        # Verify the initial population mask
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/World/A'])
+        self.assertTrue(stage.GetPrimAtPath('/World'))
+        self.assertTrue(stage.GetPrimAtPath('/World/A'))
+        self.assertFalse(stage.GetPrimAtPath('/World/B'))
+
+        # Rename /World/A to /World/RenamedA
+        self.assertTrue(editor.MovePrimAtPath("/World/A", "/World/RenamedA"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/World/A' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/World/RenamedA')),
+                '/World/RenamedA' : (self.PrimResyncType.RenameDestination, 
+                                Sdf.Path('/World/A'))})
+
+        # Verify that the population mask was updated
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/World/RenamedA'])
+        self.assertTrue(stage.GetPrimAtPath('/World/RenamedA'))
+
+        # Rename /World to /NewWorld
+        self.assertTrue(editor.MovePrimAtPath("/World", "/NewWorld"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/World' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/NewWorld')),
+                '/NewWorld' : (self.PrimResyncType.RenameDestination, 
+                                Sdf.Path('/World'))})
+
+        # Verify that the population mask was updated
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/NewWorld/RenamedA'])
+        self.assertTrue(stage.GetPrimAtPath('/NewWorld/RenamedA'))
+
+        # Move /NewWorld/RenamedA to /MovedA
+        self.assertTrue(editor.MovePrimAtPath("/NewWorld/RenamedA", "/MovedA"))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/NewWorld/RenamedA' : (self.PrimResyncType.RenameAndReparentSource, 
+                            Sdf.Path('/MovedA')),
+                '/MovedA' : (self.PrimResyncType.RenameAndReparentDestination, 
+                                Sdf.Path('/NewWorld/RenamedA'))})
+
+        # Verify that the population mask was updated. Now that /MovedA is no
+        # longer a child of /World, /World does not get loaded anymore.
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/MovedA'])
+        self.assertTrue(stage.GetPrimAtPath('/MovedA'))
+        self.assertFalse(stage.GetPrimAtPath('/NewWorld'))
+
+        # Delete /MovedA
+        self.assertTrue(editor.DeletePrimAtPath('/MovedA'))
+        self._ApplyEditWithVerification(editor, 
+            expectedResyncNotices = {
+                '/MovedA' : (self.PrimResyncType.Delete, 
+                            Sdf.Path())})
+
+        # /MovedA does not get deleted from the stage's population mask
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/MovedA'])
+        self.assertFalse(stage.GetPrimAtPath('/MovedA'))
+
+        # This means that if a prim is created at the path /MovedA, it will
+        # automatically be loaded.
+        stage.DefinePrim('/MovedA')
+        self.assertTrue(stage.GetPrimAtPath('/MovedA'))
+
+        # A move discards any stale mask paths at and under its destination.
+        # Mask /A/X and /B/C, delete /B/C and its parent, then move /A to /B.
+        # The stale /B/C path must not include a prim later created at /B/C.
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#usda 1.0
+        def "A"
+        {
+            def "X"
+            {
+            }
+        }
+        def "B"
+        {
+            def "C"
+            {
+            }
+        }
+        ''')
+        mask = Usd.StagePopulationMask().Add('/A/X').Add('/B/C')
+        stage = Usd.Stage.OpenMasked(rootLayer, mask)
+        editor = Usd.NamespaceEditor(stage)
+        self.assertTrue(stage.GetPrimAtPath('/B/C'))
+
+        self.assertTrue(editor.DeletePrimAtPath('/B/C'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/B/C' : (self.PrimResyncType.Delete, Sdf.Path())})
+        self.assertTrue(editor.DeletePrimAtPath('/B'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/B' : (self.PrimResyncType.Delete, Sdf.Path())})
+
+        # The stale /B/C path is still in the mask after the deletes.
+        self.assertEqual(stage.GetPopulationMask().GetPaths(),
+                         ['/A/X', '/B/C'])
+
+        # Move /A to /B; /A/X moves to /B/X and the stale /B/C is discarded.
+        self.assertTrue(editor.MovePrimAtPath('/A', '/B'))
+        self._ApplyEditWithVerification(editor,
+            expectedResyncNotices = {
+                '/A' : (self.PrimResyncType.RenameSource, Sdf.Path('/B')),
+                '/B' : (self.PrimResyncType.RenameDestination, Sdf.Path('/A'))})
+        self.assertEqual(stage.GetPopulationMask().GetPaths(), ['/B/X'])
+        self.assertTrue(stage.GetPrimAtPath('/B/X'))
+
+        # A prim re-created at /B/C is outside the mask and not populated.
+        Sdf.CreatePrimInLayer(rootLayer, '/B/C').specifier = Sdf.SpecifierDef
+        self.assertFalse(stage.GetPrimAtPath('/B/C'))
+
+    def test_LoadRulesAndMaskWithNestedDependentEdits(self):
+        """Verifies that a dependent stage's load rules and population mask are
+        updated correctly when the namespace edit's expected changes include
+        both a moved prim and a descendant of it, as happens with implied
+        class arcs."""
+
+        # /Instance3 and /Instance4 inherit /Class/Child and
+        # /Class/Child/GrandChild respectively.
+        layer1 = Sdf.Layer.CreateAnonymous('layer1.usda')
+        layer1.ImportFromString('''#usda 1.0
+        def "Class"
+        {
+            def "Child"
+            {
+                def "GrandChild"
+                {
+                }
+            }
+        }
+        def "Instance3" ( inherits = </Class/Child> )
+        {
+        }
+        def "Instance4" ( inherits = </Class/Child/GrandChild> )
+        {
+        }
+        ''')
+
+        # Referencing both instances gives layer5's local /Class specs an
+        # implied class arc from /Class/Child and another from
+        # /Class/Child/GrandChild. Moving /Class/Child then produces expected
+        # changes for both /Class/Child and /Class/Child/GrandChild on stage5.
+        layer5 = Sdf.Layer.CreateAnonymous('layer5.usda')
+        layer5.ImportFromString('''#usda 1.0
+        def "Prim3" ( references = @''' + layer1.identifier + '''@</Instance3> )
+        {
+        }
+        def "Prim4" ( references = @''' + layer1.identifier + '''@</Instance4> )
+        {
+        }
+        over "Class"
+        {
+            over "Child"
+            {
+                over "GrandChild"
+                {
+                }
+            }
+        }
+        ''')
+
+        stage1 = Usd.Stage.Open(layer1)
+
+        # /Prim3 and /Prim4 must be in the mask so that their dependencies on
+        # the implied class specs are found.
+        mask = Usd.StagePopulationMask().Add('/Prim3').Add('/Prim4').Add(
+            '/Class/Child/GrandChild')
+        stage5 = Usd.Stage.OpenMasked(layer5, mask, Usd.Stage.LoadNone)
+        stage5.Load('/Class/Child/GrandChild')
+
+        self.assertEqual(stage5.GetPopulationMask().GetPaths(),
+            ['/Class/Child/GrandChild', '/Prim3', '/Prim4'])
+        self.assertEqual(stage5.GetLoadRules().GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+            (Sdf.Path('/Class/Child/GrandChild'),
+             Usd.StageLoadRules.AllRule)])
+        self.assertTrue(stage5.GetPrimAtPath('/Class/Child/GrandChild'))
+
+        # Rename /Class/Child on stage1, with stage5 as a dependent stage.
+        editor = Usd.NamespaceEditor(stage1)
+        editor.AddDependentStage(stage5)
+        self.assertTrue(editor.MovePrimAtPath(
+            '/Class/Child', '/Class/RenamedChild'))
+        self.assertTrue(editor.ApplyEdits())
+
+        # The GrandChild mask path and load rule move with the rename instead
+        # of being clobbered by the descendant's expected change.
+        self.assertEqual(stage5.GetPopulationMask().GetPaths(),
+            ['/Class/RenamedChild/GrandChild', '/Prim3', '/Prim4'])
+        self.assertEqual(stage5.GetLoadRules().GetRules(),
+            [(Sdf.Path('/'), Usd.StageLoadRules.NoneRule),
+            (Sdf.Path('/Class/RenamedChild/GrandChild'),
+             Usd.StageLoadRules.AllRule)])
+        self.assertFalse(stage5.GetPrimAtPath('/Class/Child/GrandChild'))
+        self.assertTrue(stage5.GetPrimAtPath('/Class/RenamedChild/GrandChild'))
+
 if __name__ == '__main__':
     unittest.main()

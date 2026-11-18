@@ -368,17 +368,12 @@
                         "priority": 0,
                         "displayName": "Translates Color attributes from their Source Color Space to the Rendering Color Space.",
 
-                        # phase=5, InsertionOrderAtStart
+                        # phase=101, InsertionOrderAtStart
                         "tags": ["hdPrman:colorSpace"],
                         # XXX Unclear if this has a dependency on other
                         # plugins that manipulate material networks on lights.
-                        # XXX Preseving existing order. This should come after
-                        # mat filt plugins, but that doesn't correctly handle
-                        # lama materials. See HYD-3581.
-                        # i.e. it should be:
-                        #"after": ["hdPrman:phase4", "hdPrman:matFilt"],
                         "ordering": {
-                            "after": ["hdPrman:phase4"],
+                            "after": ["hdPrman:phase4", "hdPrman:matFilt"],
                             "position": "firstAfter"
                         }
                     },

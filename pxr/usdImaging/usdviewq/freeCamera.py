@@ -5,8 +5,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import division
-from __future__ import print_function
 
 from math import atan, radians as rad
 from pxr import Gf, Tf

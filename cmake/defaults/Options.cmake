@@ -142,6 +142,11 @@ set(PXR_STATIC_LIBS ""
     INTERNAL
     "Aggregation of all built explicitly static libraries."
 )
+set(PXR_TEST_LIBS ""
+    CACHE
+    INTERNAL
+    "Aggregation of all built test-only libraries."
+)
 set(PXR_CORE_LIBS ""
     CACHE
     INTERNAL

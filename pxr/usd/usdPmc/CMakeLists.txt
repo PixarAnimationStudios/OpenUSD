@@ -38,12 +38,19 @@ pxr_library(usdPmc
 
 pxr_test_scripts(
     testenv/testUsdPmc.py
+    testenv/testUsdPmcMeshEncoder.py
 )
 
 pxr_register_test(testUsdPmc
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPmc"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+pxr_register_test(testUsdPmcMeshEncoderRelativePaths
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPmcMeshEncoder relativePaths/asset.usda relativePathsEncoded.usda"
+    TESTENV testenv/testUsdPmcMeshEncoder
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE relativePathsEncoded.usda
 )

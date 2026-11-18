@@ -1,0 +1,33 @@
+#usda 1.0
+
+def "Proto"
+{
+}
+
+def "Set"
+{
+    def "Inst" (
+        instanceable = true
+        references = </Proto>
+    )
+    {
+        over "cls"
+        {
+            def "extra"
+            {
+            }
+        }
+    }
+
+    def "Other" (
+        inherits = </Set/Inst/cls>
+    )
+    {
+    }
+
+    def "OtherRef" (
+        references = </Set/Inst/cls>
+    )
+    {
+    }
+}

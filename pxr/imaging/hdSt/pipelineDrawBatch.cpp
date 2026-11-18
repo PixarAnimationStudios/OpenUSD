@@ -939,6 +939,17 @@ HdSt_PipelineDrawBatch::Validate(bool deepValidation)
             return ValidationResult::RebuildBatch;
         }
 
+        // Check if the geometric shader has been updated; even if
+        // everything still aggregates, a geometric shader update can
+        // change dispatch buffer layout (e.g. if we switch from tris to
+        // patches...)
+        if (_GeometricShaderChanged()) {
+             TF_DEBUG(HDST_DRAW_BATCH).Msg(
+                "   Deep validation: Geometric shader changed."
+                "   Rebuilding batch.\n");
+            return ValidationResult::RebuildBatch;
+        }
+
     }
 
     TF_DEBUG(HDST_DRAW_BATCH).Msg(

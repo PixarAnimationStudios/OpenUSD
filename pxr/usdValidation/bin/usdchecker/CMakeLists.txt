@@ -19,7 +19,7 @@ if (NOT BUILD_SHARED_LIBS)
 endif()
 
 pxr_register_test(testUsdCheckerListValidators
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdLuxValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdLodValidators,UsdLuxValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
     TESTENV testenv/testUsdChecker
     STDOUT_REDIRECT baseRules_validationFramework.txt
     DIFF_COMPARE baseRules_validationFramework.txt

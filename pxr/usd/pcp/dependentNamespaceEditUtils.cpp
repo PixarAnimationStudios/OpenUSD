@@ -94,8 +94,7 @@ _GetUnpropagatedSpecializesNode(const PcpNodeRef &node)
     // propagated to the root so the "unpropagated" node IS the "propagated" 
     // node.
     const PcpNodeRef originNode = node.GetOriginNode();
-    if (originNode == node.GetParentNode() ||
-            originNode.GetSite() != node.GetSite()) {
+    if (originNode == node.GetParentNode() || !originNode.HasSameSiteAs(node)) {
         return node;
     }
 

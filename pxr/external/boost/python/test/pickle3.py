@@ -34,7 +34,6 @@ r'''>>> import pickle3_ext
     Hello from California! 0 84 yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 126.0
 '''
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

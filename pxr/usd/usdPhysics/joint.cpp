@@ -313,3 +313,191 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/bodyResolution.h"
+#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformCache.h"
+#include "pxr/base/gf/transform.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdPrim
+UsdPhysics_FindEnclosingRigidBody(const UsdPrim& prim)
+{
+    UsdPrim cur = prim;
+    while (cur && !cur.IsPseudoRoot())
+    {
+        const UsdPhysicsRigidBodyAPI rigidBodyAPI(cur);
+        if (rigidBodyAPI)
+        {
+            bool rigidBodyEnabled = true;
+            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
+            if (rigidBodyEnabled)
+            {
+                return cur;
+            }
+        }
+        cur = cur.GetParent();
+    }
+
+    return UsdPrim();
+}
+
+UsdPrim
+UsdPhysics_GetJointBodyTarget(const UsdRelationship& bodyRel,
+                              SdfPath* targetPath)
+{
+    SdfPathVector targets;
+    if (bodyRel)
+    {
+        bodyRel.GetTargets(&targets);
+    }
+    const SdfPath path = targets.empty() ? SdfPath() : targets.front();
+    if (targetPath)
+    {
+        *targetPath = path;
+    }
+    if (path.IsEmpty())
+    {
+        return UsdPrim();
+    }
+    return bodyRel.GetPrim().GetStage()->GetPrimAtPath(path);
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody0() const
+{
+    return UsdPhysics_FindEnclosingRigidBody(
+        UsdPhysics_GetJointBodyTarget(GetBody0Rel()));
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody1() const
+{
+    return UsdPhysics_FindEnclosingRigidBody(
+        UsdPhysics_GetJointBodyTarget(GetBody1Rel()));
+}
+
+static GfMatrix4d
+_LocalToWorld(const UsdPrim& prim, UsdGeomXformCache* cache)
+{
+    if (!prim)
+    {
+        return GfMatrix4d(1.0);
+    }
+    if (cache)
+    {
+        return cache->GetLocalToWorldTransform(prim);
+    }
+    return UsdGeomXformable(prim).ComputeLocalToWorldTransform(
+        UsdTimeCode::Default());
+}
+
+UsdPrim
+UsdPhysics_ResolveJointAttachment(const UsdPrim& target,
+                                  const GfVec3f& authoredPosition,
+                                  const GfQuatf& authoredOrientation,
+                                  UsdGeomXformCache* xformCache,
+                                  GfVec3f* outPosition,
+                                  GfQuatf* outOrientation)
+{
+    GfVec3f position = authoredPosition;
+    GfQuatf orientation = authoredOrientation;
+    orientation.Normalize();
+
+    if (!target)
+    {
+        *outPosition = position;
+        *outOrientation = orientation;
+        return UsdPrim();
+    }
+
+    const UsdPrim body = UsdPhysics_FindEnclosingRigidBody(target);
+
+    GfVec3f scale;
+    if (body != target)
+    {
+        // The authored pose is relative to the target, so rebase it into the
+        // body's frame, or into world space when there is no body.
+        const GfMatrix4d worldRel = _LocalToWorld(target, xformCache);
+        const GfMatrix4d bodyMat =
+            body ? _LocalToWorld(body, xformCache) : GfMatrix4d(1.0);
+
+        GfMatrix4d localAnchor;
+        localAnchor.SetIdentity();
+        localAnchor.SetTranslate(GfVec3d(position));
+        localAnchor.SetRotateOnly(GfQuatd(orientation));
+
+        const GfMatrix4d worldAnchor = localAnchor * worldRel;
+        GfMatrix4d bodyLocalAnchor = worldAnchor * bodyMat.GetInverse();
+        bodyLocalAnchor = bodyLocalAnchor.RemoveScaleShear();
+
+        position = GfVec3f(bodyLocalAnchor.ExtractTranslation());
+        orientation = GfQuatf(bodyLocalAnchor.ExtractRotationQuat());
+        orientation.Normalize();
+
+        scale = GfVec3f(GfTransform(bodyMat).GetScale());
+    }
+    else
+    {
+        scale = GfVec3f(
+            GfTransform(_LocalToWorld(target, xformCache)).GetScale());
+    }
+
+    // rigid body poses carry no scale, so apply it to the position
+    for (int i = 0; i < 3; ++i)
+    {
+        position[i] *= scale[i];
+    }
+
+    *outPosition = position;
+    *outOrientation = orientation;
+    return body;
+}
+
+static bool
+_ComputeJointLocalPose(const UsdRelationship& bodyRel,
+                       const GfVec3f& authoredPosition,
+                       const GfQuatf& authoredOrientation,
+                       UsdGeomXformCache* cache,
+                       GfVec3f* outPosition,
+                       GfQuatf* outOrientation)
+{
+    SdfPath targetPath;
+    const UsdPrim target = UsdPhysics_GetJointBodyTarget(bodyRel, &targetPath);
+    UsdPhysics_ResolveJointAttachment(target, authoredPosition,
+                                      authoredOrientation, cache,
+                                      outPosition, outOrientation);
+
+    // an unset relationship attaches to the world; a dangling one is an error
+    return targetPath.IsEmpty() || target;
+}
+
+bool
+UsdPhysicsJoint::ComputeLocalPose0(GfVec3f* position, GfQuatf* orientation,
+                                   UsdGeomXformCache* xformCache) const
+{
+    GfVec3f authoredPosition(0.0f);
+    GfQuatf authoredOrientation(1.0f);
+    GetLocalPos0Attr().Get(&authoredPosition);
+    GetLocalRot0Attr().Get(&authoredOrientation);
+    return _ComputeJointLocalPose(GetBody0Rel(), authoredPosition,
+                                  authoredOrientation, xformCache,
+                                  position, orientation);
+}
+
+bool
+UsdPhysicsJoint::ComputeLocalPose1(GfVec3f* position, GfQuatf* orientation,
+                                   UsdGeomXformCache* xformCache) const
+{
+    GfVec3f authoredPosition(0.0f);
+    GfQuatf authoredOrientation(1.0f);
+    GetLocalPos1Attr().Get(&authoredPosition);
+    GetLocalRot1Attr().Get(&authoredOrientation);
+    return _ComputeJointLocalPose(GetBody1Rel(), authoredPosition,
+                                  authoredOrientation, xformCache,
+                                  position, orientation);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -7,7 +7,6 @@
 #
 # pylint: disable=range-builtin-not-iterating
 #
-from __future__ import division
 
 import logging
 from math import pi

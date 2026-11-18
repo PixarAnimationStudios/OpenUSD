@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import print_function
 import difflib, os, sys
 from subprocess import call
 from pxr.UsdUtils.toolPaths import FindUsdBinary, RunUsdBinary
@@ -128,6 +127,17 @@ def _getFileFormat(path):
 
     return None
 
+# A .usd file may hold either text or crate data. Returns the format id of the
+# one that can read path, so that writing back preserves it, or None if neither
+# can (e.g. the file is empty), leaving usdcat to use its default.
+def _getUnderlyingUsdFormat(path):
+    from pxr import Sdf
+    for formatId in ('usdc', 'usda'):
+        fileFormat = Sdf.FileFormat.FindById(formatId)
+        if fileFormat and fileFormat.CanRead(path):
+            return formatId
+    return None
+
 def _convertTo(inPath, outPath, flatten=None, fmt=None):
     # Just copy empty files -- we want something to diff against but
     # the file isn't valid usd.
@@ -157,7 +167,11 @@ def _tryEdit(fileName, tempFileName, fileType, flattened):
     if not os.access(fileName, os.W_OK):
         _exit('Error: Cannot write to %s, insufficient permissions' % fileName,
               ERROR_EXIT_CODE)
-    
+
+    # usdcat's --usdFormat takes the underlying format, not 'usd' itself.
+    if fileType == 'usd':
+        fileType = _getUnderlyingUsdFormat(fileName)
+
     return _convertTo(tempFileName, fileName, flatten=None, fmt=fileType)
 
 class FileManager(object):

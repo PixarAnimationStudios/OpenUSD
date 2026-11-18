@@ -1,0 +1,14 @@
+#usda 1.0
+class "_class_Prop"
+{
+    double x = 2.0
+}
+
+def "Set"
+{
+    def "PropGroup" (
+        references = @./prop_group.usda@</PropGroup>
+    )
+    {
+    }
+}

@@ -32,6 +32,9 @@ HdStPtexMipmapTextureLoader::Block::guttering(
 
     for (int edge = 0; edge < numEdges; edge++) {
         int len = (edge == 0 || edge == 2) ? wid : hei;
+        // Clear lineBuffer in case sampleNeighbor() fails to fill data,
+        // ex: if there is missing edge data.
+        memset(lineBuffer, 0, lineBufferSize);
         loader->sampleNeighbor(lineBuffer, this->index, edge, len, bpp);
 
         unsigned char *s = lineBuffer, *d;
@@ -504,12 +507,19 @@ HdStPtexMipmapTextureLoader::resampleBorder(int face, int edgeId,
                                             int dstLength, int bpp,
                                             float srcStart, float srcEnd)
 {
-    TF_VERIFY(static_cast<size_t>(face) < _blocks.size());
+    if (!TF_VERIFY(static_cast<size_t>(face) < _blocks.size())) {
+        return 0;
+    }
     Ptex::Res res(_blocks[face].ulog2, _blocks[face].vlog2);
 
     int edgeLength = (edgeId == 0 || edgeId == 2) ? res.u() : res.v();
-    int srcOffset = (int)(srcStart*edgeLength);
-    int srcLength = (int)((srcEnd-srcStart)*edgeLength);
+
+    // Sample at least one texel, even if given range [0, 0.5]
+    // of a single-texel edge.
+    int srcLength =
+        std::max(1, (int)((srcEnd-srcStart)*edgeLength));
+    int srcOffset =
+        std::min((int)(srcStart*edgeLength), edgeLength - srcLength);
 
     if (dstLength >= srcLength) {
         PtexFaceData * data = _ptex->getData(face, res);

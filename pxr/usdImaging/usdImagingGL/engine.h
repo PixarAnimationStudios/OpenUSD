@@ -15,44 +15,32 @@
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/version.h"
 #include "pxr/usdImaging/usdImaging/version.h"
-
 #include "pxr/usdImaging/usdImagingGL/renderParams.h"
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
-
 #include "pxr/imaging/cameraUtil/conformWindow.h"
-
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
-
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
-
 #include "pxr/imaging/hgi/hgi.h"
-
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
-
 #include "pxr/imaging/hgi/hgi.h"
-
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
-
 #include "pxr/base/gf/frustum.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
-
 #include "pxr/base/vt/dictionary.h"
-
 #include "pxr/base/tf/declarePtrs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
-class UsdImagingDelegate;
 class HdRendererCreateArgsSchema;
 class HdLegacyRenderControlInterface;
 
@@ -60,10 +48,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 TF_DECLARE_REF_PTRS(UsdImagingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(HdCachingSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiApplicationRenderSettingsSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypeAndPathPruningSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiPurposeFilteringSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
-TF_DECLARE_REF_PTRS(HdsiApplicationRenderSettingsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 TF_DECLARE_REF_PTRS(HdMergingSceneIndex);
 TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
@@ -489,8 +478,8 @@ public:
     USDIMAGINGGL_API
     TfToken GetCurrentRendererId() const;
 
-    /// Set the current render-graph delegate to \p id.
-    /// the plugin will be loaded if it's not yet.
+    /// Set the current renderer plugin.
+    /// This will load the plugin if needed.
     USDIMAGINGGL_API
     bool SetRendererPlugin(TfToken const &id);
 
@@ -730,17 +719,6 @@ public:
 
     /// @}
 
-
-    // ---------------------------------------------------------------------
-    /// \name Miscellaneous
-    /// @{
-    // ---------------------------------------------------------------------
-
-    /// Returns true if using the UsdImaging scene index.
-    USDIMAGINGGL_API
-    static bool UseUsdImagingSceneIndex();
-    /// @}
-
 protected:
 
     /// Open some protected methods for whitebox testing.
@@ -749,20 +727,14 @@ protected:
     USDIMAGINGGL_API
     void _Execute(const UsdImagingGLRenderParams &params,
                   const SdfPathVector &taskPaths);
-
     USDIMAGINGGL_API
     bool _CanPrepare(const UsdPrim& root);
     USDIMAGINGGL_API
     void _PreSetTime(const UsdImagingGLRenderParams& params);
     USDIMAGINGGL_API
     void _PostSetTime(const UsdImagingGLRenderParams& params);
-
     USDIMAGINGGL_API
     void _PrepareRender(const UsdImagingGLRenderParams& params);
-
-    USDIMAGINGGL_API
-    void _SetActiveRenderSettingsPrimFromStageMetadata(UsdStageWeakPtr stage);
-
     USDIMAGINGGL_API
     void _SetSceneGlobalsCurrentFrame(UsdTimeCode const &time);
 
@@ -796,18 +768,6 @@ protected:
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
 
-    /// Get a direct pointer to the scene delegate.
-    /// \deprecated Existing instances of this call will be replaced with new
-    ///             APIs on this class, to support multiplexing between the
-    ///             scene delegate and scene index. This API is scheduled for
-    ///             deletion.
-    USDIMAGINGGL_API
-    UsdImagingDelegate *_GetSceneDelegate() const;
-
-    /// \deprecated Hydra 1.0
-    USDIMAGINGGL_API
-    HdSelectionSharedPtr _GetSelection() const;
-
     USDIMAGINGGL_API
     HdContainerDataSourceHandle
     _GetSceneIndexCreateArgs(
@@ -830,6 +790,12 @@ protected:
         HdContainerDataSourceHandle const &sceneIndexCreateArgs,
         HdRendererPluginHandle const &plugin,
         const HdRendererCreateArgsSchema &rendererCreateArgs);
+    
+    // Get the terminal scene index of the scene index graph that feeds
+    // the renderer.
+    USDIMAGINGGL_API
+    HdSceneIndexBaseRefPtr
+    _GetTerminalSceneIndex() const;
 
     Hgi *
     _GetOrCreateHgi();
@@ -844,12 +810,11 @@ protected:
 
     VtValue _userFramebuffer;
 
-protected:
     bool _displayUnloadedPrimsWithBounds;
     bool _gpuEnabled;
 
-    HdPluginRendererUniqueHandle _renderer; // Hydra 2.0
-    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex; // Hydra 2.0
+    HdPluginRendererUniqueHandle _renderer;
+    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex;
 
     SdfPath const _sceneDelegateId;
 
@@ -869,8 +834,6 @@ protected:
     bool _isPopulated;
 
 private:
-    HdSceneIndexBaseRefPtr _GetTerminalSceneIndex() const;
-
     HdLegacyRenderControlInterface * _GetLegacyRenderControl() const;
 
     // The application-managed render settings scene index, if the renderer
@@ -878,6 +841,9 @@ private:
     // otherwise (in which case callers fall back to the legacy render control).
     HdsiApplicationRenderSettingsSceneIndexRefPtr
     _GetApplicationRenderSettingsSceneIndex() const;
+
+    HdsiPurposeFilteringSceneIndexRefPtr
+    _GetPurposeFilteringSceneIndex() const;
 
     SdfPath _GetSceneIndexPrimPathFromPrimId(int primId) const;
 
@@ -899,19 +865,16 @@ private:
 
     SdfPath _GetInstancerForPrim(const SdfPath &sceneIndexPath) const;
 
-    // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
-    // at a time.
+private:
+    // Scene indexes
     UsdImagingStageSceneIndexInterfaceRefPtr _execStageSceneIndex;
     HdNoticeBatchingSceneIndexRefPtr _noticeBatchingStageSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
-    UsdImagingLegacyRenderSettingsSceneIndexRefPtr _legacyRenderSettingsSceneIndex;
+    UsdImagingLegacyRenderSettingsSceneIndexRefPtr
+        _legacyRenderSettingsSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
     HdsiPrimTypeAndPathPruningSceneIndexRefPtr _lightPruningSceneIndex;
-    // State of the _lightPruningSceneIndex.
-    bool _lightPruningSceneIndexEnableSceneLights;
-
     UsdImagingSceneIndexRefPtr _usdImagingSceneIndex;
-
     HdMergingSceneIndexRefPtr _mergingSceneIndex;
     HdCachingSceneIndexRefPtr _cachingSceneIndex;
     HdSceneIndexBaseRefPtr _terminalSceneIndex;
@@ -921,26 +884,11 @@ private:
     // GetRendererSettingsList() can source the render settings from it.
     HdContainerDataSourceHandle _sceneIndexCreateArgs;
 
-    /* Hydra 1.0 */
-    std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
+    // State of the _lightPruningSceneIndex.
+    bool _lightPruningSceneIndexEnableSceneLights;
 
     bool _allowAsynchronousSceneProcessing = false;
     bool _enableUsdDrawModes = true;
-
-    /* Hydra 1.0 */
-    // A flag indicating whether the active render pass prim path
-    // on the scene globals scene index was set.
-    //
-    // Explanation: The active render passs prim path can be set by a
-    // client of UsdImagingGLEngine through SetActiveRenderSettingsPrimPath
-    // and or by reading the stage metadata when using the UsdImagingDelegate.
-    //
-    // Thus, we could get into a situation where a user explicitly sets it
-    // through the UsdImagingGLEngine API first and then we wrongfully change
-    // it later by reading the stage metadata.
-    //
-    // This flag is here to prevent this.
-    bool _setActiveRenderSettingsPrimPathCalled = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

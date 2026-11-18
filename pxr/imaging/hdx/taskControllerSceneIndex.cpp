@@ -1168,6 +1168,10 @@ HdxTaskControllerSceneIndex::_CreateStormTasks()
             _params.prefix,
             HdStMaterialTagTokens->translucent,
             _StormRenderTaskParamsTranslucent()),
+        _StormRenderTaskAddEntry<HdxOitRenderTask>(
+            _params.prefix,
+            HdStMaterialTagTokens->translucentWithCustomDepth,
+            _StormRenderTaskParamsTranslucent()),
         _StormRenderTaskAddEntry<HdxOitVolumeRenderTask>(
             _params.prefix,
             HdStMaterialTagTokens->volume,
@@ -1288,8 +1292,12 @@ HdxTaskControllerSceneIndex::_GetRenderingTaskPathsForStorm() const
     paths.push_back(_TaskPrimPath<HdxAovInputTask>(_params.prefix));
     paths.push_back(_TaskPrimPath<HdxBoundingBoxTask>(_params.prefix));
 
-    // The volume render pass needs to read the (resolved) depth AOV (with
-    // the opaque geometry) and thus runs after the HdxAovInputTask.
+    // The volume and translucentWithCustomDepth render passes need to read
+    // the (resolved) depth AOV (with the opaque geometry) and thus run after
+    // the HdxAovInputTask.
+    paths.push_back(
+        _StormRenderTaskPath(
+            _params.prefix, HdStMaterialTagTokens->translucentWithCustomDepth));
     paths.push_back(
         _StormRenderTaskPath(
             _params.prefix, HdStMaterialTagTokens->volume));
@@ -1570,6 +1578,9 @@ HdxTaskControllerSceneIndex::_SetRenderOutputs(
 
     const SdfPath volumeId =
         _StormRenderTaskPath(_params.prefix, HdStMaterialTagTokens->volume);
+    const SdfPath translucentWithCustomDepthId =
+        _StormRenderTaskPath(
+            _params.prefix, HdStMaterialTagTokens->translucentWithCustomDepth);
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrimEntries;
 
@@ -1584,8 +1595,9 @@ HdxTaskControllerSceneIndex::_SetRenderOutputs(
         }
 
         params->aovBindings = aovBindings;
-        if (taskPath == volumeId) {
-            // The Storm Volume tasks reads the depth AOV.
+        if (taskPath == volumeId || taskPath == translucentWithCustomDepthId) {
+            // The Storm Volume task and translucentWithCustomDepth OIT task
+            // read the depth AOV.
             if (depthAovBindingIndex >= 0) {
                 params->aovInputBindings = { aovBindings[depthAovBindingIndex] };
             }

@@ -1,0 +1,199 @@
+#usda 1.0
+(
+    """
+    This museum case exercises arcs that target paths beneath an
+    instance.  Instancing applies to prims on the stage, not to sites
+    reached by arcs, so such an arc composes its target as if the
+    instance were not instanceable.  Overrides on the instance's
+    descendants that the instance itself ignores apply through the arc.
+    Prims beneath an instance on the stage still ignore them.
+
+    /Direct: Other inherits, and OtherRef references, Direct/Inst/cls,
+    beneath the instance Inst.  Both get the child "extra" from the
+    override on Inst/cls, which Inst itself ignores.
+
+    /ViaReference: as /Direct, but the set is reached by a reference to
+    set.usda, so the arcs' targets are composed in set.usda's layer
+    stack.
+
+    /InstancedByStrongerLayer: Inst is not instanceable in
+    set_shot.usda.  This layer makes it instanceable through its class.
+    Other gets the children added under Inst/cls by both layers.
+
+    /DeinstancedByStrongerLayer: Inst is instanceable in
+    set_deinst.usda and this layer overrides it to false.  Other gets
+    "extra" as it would if Inst were never instanceable.
+
+    /Nested: the prototype content in nested.usda inherits, and
+    references, a class beneath the nested instance Proto/Nested.  geom
+    and geomRef get the prototype's override "fromProto".  The override
+    "fromB" beneath the instance B is ignored.
+
+    /Sibling: the prototype content in sibling_proto.usda inherits a
+    class beneath the sibling instance Sibling/Twin.  geom in both A and
+    B gets Twin's override "fromTwin".
+
+    /Backref: the prototype content references a class beneath one of
+    the instances that share the prototype.  geom gets the override
+    "extra" authored beneath A, in both A and B, so A and B still
+    compose the same prototype.  A/cls itself ignores "extra".
+    """
+)
+
+def "Direct"
+{
+    def "Proto"
+    {
+    }
+
+    def "Inst" (
+        instanceable = true
+        references = </Direct/Proto>
+    )
+    {
+        over "cls"
+        {
+            def "extra"
+            {
+            }
+        }
+    }
+
+    def "Other" (
+        inherits = </Direct/Inst/cls>
+    )
+    {
+    }
+
+    def "OtherRef" (
+        references = </Direct/Inst/cls>
+    )
+    {
+    }
+}
+
+def "ViaReference" (
+    references = @./set.usda@</Set>
+)
+{
+}
+
+def "InstancedByStrongerLayer" (
+    references = @./set_shot.usda@</Set>
+)
+{
+    over "Inst"
+    {
+        over "cls"
+        {
+            def "fromShot"
+            {
+            }
+        }
+    }
+}
+
+class "_class_ShotInst" (
+    instanceable = true
+)
+{
+}
+
+def "DeinstancedByStrongerLayer" (
+    references = @./set_deinst.usda@</Set>
+)
+{
+    over "Inst" (
+        instanceable = false
+    )
+    {
+    }
+}
+
+def "Nested"
+{
+    def "A" (
+        instanceable = true
+        references = @./nested.usda@</Proto>
+    )
+    {
+    }
+
+    def "B" (
+        instanceable = true
+        references = @./nested.usda@</Proto>
+    )
+    {
+        over "Nested"
+        {
+            over "cls"
+            {
+                def "fromB"
+                {
+                }
+            }
+        }
+    }
+}
+
+def "Sibling"
+{
+    def "Twin" (
+        instanceable = true
+        references = @./sibling_lib.usda@</Lib>
+    )
+    {
+        over "cls"
+        {
+            def "fromTwin"
+            {
+            }
+        }
+    }
+
+    def "A" (
+        instanceable = true
+        references = @./sibling_proto.usda@</Proto>
+    )
+    {
+    }
+
+    def "B" (
+        instanceable = true
+        references = @./sibling_proto.usda@</Proto>
+    )
+    {
+    }
+}
+
+def "Backref"
+{
+    def "Proto"
+    {
+        def "geom" (
+            references = </Backref/A/cls>
+        )
+        {
+        }
+    }
+
+    def "A" (
+        instanceable = true
+        references = </Backref/Proto>
+    )
+    {
+        over "cls"
+        {
+            def "extra"
+            {
+            }
+        }
+    }
+
+    def "B" (
+        instanceable = true
+        references = </Backref/Proto>
+    )
+    {
+    }
+}

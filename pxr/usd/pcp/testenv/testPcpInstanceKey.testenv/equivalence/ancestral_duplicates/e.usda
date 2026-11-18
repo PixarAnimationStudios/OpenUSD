@@ -1,0 +1,10 @@
+#usda 1.0
+def "E"
+{
+    def "Inst"
+    {
+        def "fromE"
+        {
+        }
+    }
+}

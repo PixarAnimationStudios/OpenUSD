@@ -493,6 +493,7 @@ def Xform "Prim"
         6: 5,
     }
     int e
+    float f
 }
 ''')
         # Test HasSpline, GetSpline, SetSpline and ClearSpline works on
@@ -564,6 +565,30 @@ def Xform "Prim"
         # No spline was set on e
         self.assertFalse(e.HasInfo('spline'))
         self.assertFalse(e.HasSpline())
+
+        # Test that SetSpline with an untyped spline stores an empty spline
+        # of the attribute type.
+        f = splineLayer.GetAttributeAtPath('/Prim.f')
+        self.assertTrue(f)
+        self.assertFalse(f.HasInfo('spline'))
+        self.assertFalse(f.HasSpline())
+        self.assertTrue(f.GetSpline().IsEmpty())
+
+        # Create an empty untyped spline.
+        untypedSpline = Ts.Spline()
+        # Store an extrapolation setting on it so we can verify a round trip
+        untypedSpline.SetPreExtrapolation(Ts.Extrapolation(Ts.ExtrapLinear))
+        self.assertEqual(untypedSpline.GetValueTypeName(), '')
+        self.assertTrue(untypedSpline.IsEmpty())
+
+        f.SetSpline(untypedSpline)
+        self.assertTrue(f.HasInfo('spline'))
+        self.assertTrue(f.HasSpline())
+        fSpline = f.GetSpline()
+        self.assertEqual(fSpline.GetValueTypeName(), 'float')
+        self.assertTrue(fSpline.IsEmpty())
+        self.assertEqual(fSpline.GetPreExtrapolation().mode, Ts.ExtrapLinear)
+        self.assertEqual(fSpline.GetPostExtrapolation().mode, Ts.ExtrapHeld)
 
     def test_SplineRoundTrip(self):
         layer = self.CreateAnonymous()

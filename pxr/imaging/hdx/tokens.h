@@ -26,6 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (imagerVersion) /* \deprecated */ \
     (lightingContext)           \
     (lightingShader)            \
+    (minSelectionOpacity)       \
     (occludedSelectionOpacity)  \
     (oitCounter)                \
     (oitJointBuffer)            \
@@ -37,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (oitUniformBar)             \
     (oitRenderPassState)        \
     (oitScreenSize)             \
+    (oitMaxDataBufferSize)      \
     (oitRequestFlag)            \
     (oitClearedFlag)            \
     (renderPassState)           \

@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <mutex>
+#include <set>
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
@@ -454,6 +455,101 @@ InsertRemoveDupesTest()
     return true;
 }
 
+// Apply random sequences of Insert(), Remove(), RemoveRange(), Clear(), and
+// copies to Hd_SortedIds and to a std::multiset reference that applies each
+// operation immediately, and check that GetIds() matches the reference.  The
+// bursts of edits between checks vary from a few to a few thousand, with
+// varying mixes of inserts and removes over a small set of paths, so that
+// duplicates, removes of absent ids, and interleaved inserts & removes of the
+// same ids are all common.
+static bool
+RandomizedTest()
+{
+    std::cout << "\n\nRandomizedTest():\n";
+
+    SdfPathVector paths;
+    const char *names[] = { "a", "b", "c", "d", "e" };
+    for (const char *x: names) {
+        const SdfPath p = SdfPath::AbsoluteRootPath().AppendChild(TfToken(x));
+        paths.push_back(p);
+        for (const char *y: names) {
+            const SdfPath q = p.AppendChild(TfToken(y));
+            paths.push_back(q);
+            for (const char *z: names) {
+                paths.push_back(q.AppendChild(TfToken(z)));
+            }
+        }
+    }
+
+    // Use the generator's output directly rather than a distribution, since
+    // distributions are not portable across standard library implementations.
+    std::mt19937 gen(9223000);
+    auto rand = [&gen](size_t n) { return size_t(gen() % n); };
+
+    Hd_SortedIds sortedIds;
+    std::multiset<SdfPath> ref;
+
+    auto check = [&sortedIds, &ref](int iter) {
+        const SdfPathVector expected(ref.begin(), ref.end());
+        if (sortedIds.GetIds() != expected) {
+            std::cout << "Mismatch at iteration " << iter << ": got "
+                      << sortedIds.GetIds().size() << " ids, expected "
+                      << expected.size() << "\n";
+            return false;
+        }
+        return true;
+    };
+
+    for (int iter = 0; iter != 500; ++iter) {
+        const size_t burst = rand(4) == 0 ? rand(3000) : rand(20);
+        const size_t insertPct = rand(101);
+        const size_t numPaths = 1 + rand(paths.size());
+        for (size_t i = 0; i != burst; ++i) {
+            SdfPath const &p = paths[rand(numPaths)];
+            if (rand(100) < insertPct) {
+                sortedIds.Insert(p);
+                ref.insert(p);
+            }
+            else {
+                sortedIds.Remove(p);
+                const auto it = ref.find(p);
+                if (it != ref.end()) {
+                    ref.erase(it);
+                }
+            }
+            if (rand(1000) == 0) {
+                // Copy with pending edits, and continue with the copy.
+                Hd_SortedIds copy(sortedIds);
+                sortedIds = std::move(copy);
+            }
+        }
+
+        const size_t action = rand(20);
+        if (action == 0) {
+            sortedIds.Clear();
+            ref.clear();
+        }
+        else if (action == 1 && !ref.empty()) {
+            if (!check(iter)) {
+                return false;
+            }
+            const size_t n = ref.size();
+            const size_t start = rand(n);
+            const size_t end = start + rand(n - start);
+            sortedIds.RemoveRange(start, end);
+            ref.erase(std::next(ref.begin(), start),
+                      std::next(ref.begin(), end + 1));
+        }
+        else if (action < 15) {
+            if (!check(iter)) {
+                return false;
+            }
+        }
+        // Otherwise leave edits pending into the next burst.
+    }
+    return check(500);
+}
+
 int main()
 {
     TfErrorMark mark;
@@ -470,6 +566,7 @@ int main()
         && RemoveAfterInsertNoSync()
         && RemoveLastItemTest()
         && InsertRemoveDupesTest()
+        && RandomizedTest()
         ;
 
     TF_VERIFY(mark.IsClean());

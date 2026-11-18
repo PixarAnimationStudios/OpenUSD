@@ -1,0 +1,17 @@
+#usda 1.0
+def "World" (
+    references = @./w.usda@</Set>
+)
+{
+    over "Y" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+
+    over "Z" (
+        references = @./set.usda@</Set>
+    )
+    {
+    }
+}

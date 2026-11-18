@@ -45,6 +45,8 @@ class UsdPrim;
 /// - keywords: Keywords associated with this validator.
 /// - doc: Doc string explaining the purpose of the validator.
 /// - schemaTypes: If the validator is associated with specific schemaTypes.
+///   Only PrimValidators can provide schemaTypes; validator suites cannot,
+///   as a suite's contained validators provide their own.
 /// - isTimeDependent: If the validator is testing rules which are time
 ///   dependent. Note that only PrimValidators and StageValidators can be time 
 ///   dependent, as these are the ones which can evaluate time dependent 
@@ -263,11 +265,6 @@ public:
         const UsdValidationTimeRange &timeRange = {}) const;
 
 private:
-    // To make sure registry can query task types on a validator.
-    // Registry needs access to _GetValidatorPrimTasks, in order to determine if
-    // the contained validators in a suite, which provides schemaTypes metadata
-    // are compliant.
-    friend class UsdValidationRegistry;
     // In order to distribute validators into different sets based on the type
     // of validation to be performed, ValidationContext needs to access
     // _GetValidateLayerTask, _GetValidateStageTask and _GetValidatePrimTask.
@@ -305,7 +302,9 @@ private:
 ///
 /// If client failed to provide isSuite metadata for a
 /// UsdValidationValidatorSuite instance then the validatorSuite will not be
-/// registered, and client will appropriately be warned.
+/// registered, and client will appropriately be warned. Similarly, a suite
+/// which provides schemaTypes metadata will not be registered, as only its
+/// contained validators' schemaTypes are used when validating.
 ///
 /// UsdValidationValidatorSuite instances are immutable and non-copyable. Note
 /// that all validator suites which are registered with the

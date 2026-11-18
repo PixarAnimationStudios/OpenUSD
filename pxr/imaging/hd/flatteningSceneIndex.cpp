@@ -403,30 +403,32 @@ HdFlatteningSceneIndex::_PrimsAdded(
     _ConsolidateRecentPrims();
 
     _AdditionalDirtiedVector dirtyEntries;
-    // Check the hierarchy for cached prims to dirty
-    {
-        TRACE_SCOPE("Dirty hierarchy");
 
-        WorkParallelForN(entries.size(),
-        [&](size_t begin, size_t end) {
-        for (size_t i = begin; i < end; ++i) {
-            const HdSceneIndexObserver::AddedPrimEntry &entry = entries[i];
-            _DirtyHierarchy(
-                entry.primPath,
-                _relativeDataSourceLocators,
-                _dataSourceLocatorSet,
-                &dirtyEntries);
-        }});
-    }
+    if (!_prims.empty()) {
+        // Check the hierarchy for cached prims to dirty
+        {
+            TRACE_SCOPE("Dirty hierarchy");
 
-    // Clear out any cached dataSources for prims that have been re-added.
-    // They will get updated dataSources in the next call to GetPrim().
-    {
-        TRACE_SCOPE("Async destroy prim table entries");
-        for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-            const _PrimTable::iterator i = _prims.find(entry.primPath);
-            if (i != _prims.end()) {
-                WorkSwapDestroyAsync(i->second.dataSource);
+            WorkParallelForN(
+                entries.size(),
+                [&](size_t begin, size_t end) {
+                    for (size_t i = begin; i < end; ++i) {
+                        _DirtyHierarchy(
+                            entries[i].primPath,
+                            _relativeDataSourceLocators,
+                            _dataSourceLocatorSet,
+                            &dirtyEntries); }});
+        }
+
+        // Clear out any cached dataSources for prims that have been re-added.
+        // They will get updated dataSources in the next call to GetPrim().
+        {
+            TRACE_SCOPE("Async destroy prim table entries");
+            for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+                const _PrimTable::iterator i = _prims.find(entry.primPath);
+                if (i != _prims.end()) {
+                    WorkSwapDestroyAsync(i->second.dataSource);
+                }
             }
         }
     }
@@ -448,13 +450,16 @@ HdFlatteningSceneIndex::_PrimsRemoved(
 
     _ConsolidateRecentPrims();
 
-    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        if (entry.primPath.IsAbsoluteRootPath()) {
-            // Special case removing the whole scene, since this is a common
-            // shutdown operation.
-            _prims.ClearInParallel();
-            TfReset(_prims);
-        } else {
+    if (!_prims.empty()) {
+        for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+            if (entry.primPath.IsAbsoluteRootPath()) {
+                // Special case removing the whole scene, since this is a common
+                // shutdown operation.
+                _prims.ClearInParallel();
+                TfReset(_prims);
+                break;
+            }
+
             auto startEndIt = _prims.FindSubtreeRange(entry.primPath);
             for (auto it = startEndIt.first; it != startEndIt.second; ++it) {
                 WorkSwapDestroyAsync(it->second.dataSource);
@@ -464,6 +469,7 @@ HdFlatteningSceneIndex::_PrimsRemoved(
             }
         }
     }
+
     _SendPrimsRemoved(entries);
 }
 
@@ -472,6 +478,8 @@ HdFlatteningSceneIndex::_PrimDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntry &entry,
     _AdditionalDirtiedVector *additionalDirty) const
 {
+    TRACE_FUNCTION();
+
     // Used to invalidate the data sources stored in the
     // _PrimLevelWrappingDataSource.
     _DataSourceLocatorSetVector relativeDirtyLocators(
@@ -551,15 +559,17 @@ HdFlatteningSceneIndex::_PrimsDirtied(
     _ConsolidateRecentPrims();
 
     _AdditionalDirtiedVector dirtyEntries;
-    {
-        TRACE_SCOPE("Dirty hierarchy");
 
-        WorkParallelForN(entries.size(),
-        [&](size_t begin, size_t end) {
-        for (size_t i = begin; i < end; ++i) {
-            const HdSceneIndexObserver::DirtiedPrimEntry &entry = entries[i];
-            _PrimDirtied(entry, &dirtyEntries);
-        }});
+    if (!_prims.empty()) {
+        {
+            TRACE_SCOPE("Dirty hierarchy");
+
+            WorkParallelForN(
+                entries.size(),
+                [&](size_t begin, size_t end) {
+                    for (size_t i = begin; i < end; ++i) {
+                        _PrimDirtied(entries[i], &dirtyEntries); }});
+        }
     }
 
     if (dirtyEntries.empty()) {
@@ -578,8 +588,8 @@ HdFlatteningSceneIndex::_ConsolidateRecentPrims()
 {
     TRACE_FUNCTION();
 
-    for (auto &entry: _recentPrims) {
-        std::swap(_prims[entry.first], entry.second);
+    for (auto & [path, prim]: _recentPrims) {
+        _prims[path] = std::move(prim);
     }
     _recentPrims.clear();
 }

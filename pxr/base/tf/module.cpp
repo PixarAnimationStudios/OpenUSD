@@ -43,6 +43,7 @@ TF_WRAP_MODULE {
     TF_WRAP( Type );
     TF_WRAP( Tf_TestPyAnnotatedBoolResult );
     TF_WRAP( Tf_TestPyContainerConversions );
+    TF_WRAP( Tf_TestPySpan );
     TF_WRAP( Tf_TestPyStaticTokens );
     TF_WRAP( Tf_TestTfPython );
     TF_WRAP( Tf_TestTfPyOptional );

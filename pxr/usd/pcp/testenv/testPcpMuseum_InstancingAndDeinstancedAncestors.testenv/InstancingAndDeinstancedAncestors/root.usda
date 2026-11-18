@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    """
+    This museum case exercises instances whose instanceable opinion is
+    overridden to false, so that overrides on their descendants apply.
+
+    In each case, X inherits L from within I, which references model.usda
+    and is marked instanceable in asm.usda.  The implied inherit of L
+    beneath X requires an ancestral index for I that skips the arc
+    carrying X's opinions as a duplicate.  When that arc also carries the
+    instanceable = false opinion on I, the ancestral index alone would
+    find I to be an instance, and the opinions about L that should apply
+    to X (a = 3) would be ignored.
+
+    /RootLayerStack: I is deinstanced by light.usda, which X's opinions
+    come from.  The ancestral index for I is in the root layer stack.
+
+    /Nested: as /RootLayerStack, but inside inner.usda, reached by a
+    subroot reference to X.  The ancestral index for I is in inner.usda's
+    layer stack.
+
+    /NestedPayload: as /Nested, but the instanceable = false opinion
+    comes from a payload on I in light_payload.usda.  Because the payload
+    is ancestral to the subroot reference, it is always included.
+
+    The remaining cases deinstance I from outside the layer stack that
+    instances it, so the ancestral index for I in that layer stack
+    correctly finds I to be an instance, and the opinions about L reach X
+    through the deinstancing layer stack:
+
+    /DeinstancedHere: deinstances I in this layer stack.
+
+    /DeinstancedInstance: references I itself and is not instanceable.
+
+    viaMid.usda has a further case of this kind, in which mid.usda
+    deinstances I.
+    """
+)
+
+def "RootLayerStack" (
+    references = [@./light.usda@</Light>, @./asm.usda@</Asm>]
+)
+{
+    over "I"
+    {
+        over "rig"
+        {
+            over "lights"
+            {
+                over "L"
+                {
+                    double a = 3
+                }
+            }
+        }
+    }
+}
+
+def "Nested" (
+    references = @./inner.usda@</Inner/I/rig/propagated/X>
+)
+{
+}
+
+def "NestedPayload" (
+    references = @./inner_payload.usda@</Inner/I/rig/propagated/X>
+)
+{
+}
+
+def "DeinstancedHere" (
+    references = @./inner_plain.usda@</Inner>
+)
+{
+    over "I" (
+        instanceable = false
+    )
+    {
+    }
+}
+
+def "DeinstancedInstance" (
+    instanceable = false
+    references = @./inner_plain.usda@</Inner/I>
+)
+{
+}

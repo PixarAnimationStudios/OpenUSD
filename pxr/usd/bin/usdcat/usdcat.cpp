@@ -56,10 +56,12 @@ static void Configure(CLI::App *app, Args &args) {
     app->add_option(
         "--usdFormat", args.usdFormat,
         "Use this underlying file format for output files\n"
-        "with the extension 'usd'. For example, passing\n"
-        "'-o output.usd --usdformat usda' will create\n"
-        "output.usd as a text file. The USD_DEFAULT_FILE_FORMAT\n"
-        "environment variable is another way to achieve this.")
+        "with the extension 'usd', or with no or an unknown\n"
+        "extension. For example, passing '-o output.usd\n"
+        "--usdformat usda' will create output.usd as a text\n"
+        "file. The USD_DEFAULT_FILE_FORMAT environment\n"
+        "variable is another way to achieve this for .usd\n"
+        "files.")
         ->check(CLI::IsMember({"usda", "usdc"}, CLI::ignore_case))
         ->option_text("usda|usdc");
 
@@ -121,8 +123,9 @@ static void Quarantine(const std::string &filepath) {
 
 static int UsdCat(const Args &args) {
     // If --out was specified, it must either not exist or must be writable, the
-    // extension must correspond to a known Sdf file format, and we must have
-    // exactly one input file.
+    // extension must correspond to a known Sdf file format unless --usdFormat
+    // was given, and we must have exactly one input file.
+    SdfFileFormatConstPtr unrecognizedExtFormat;
     if (!args.output.empty()) {
         if (TfPathExists(args.output) && !TfIsWritable(args.output)) {
             std::cerr << "error: no write permission for existing output file "
@@ -136,18 +139,31 @@ static int UsdCat(const Args &args) {
             return 1;
         }
 
+        // FindByExtension issues a coding error for an empty extension.
         const std::string ext = TfGetExtension(args.output);
-        if (!args.usdFormat.empty() && ext != "usd") {
-            std::cerr << "error: use of --usdFormat requires output "
-                      << "file end with '.usd' extension.\n";
+        const bool recognizedExt =
+            !ext.empty() && SdfFileFormat::FindByExtension(ext);
+        if (!recognizedExt) {
+            if (args.usdFormat.empty()) {
+                std::cerr << "error: unknown output file extension; specify "
+                          << "--usdFormat to write it anyway.\n";
+                return 1;
+            }
+            unrecognizedExtFormat = SdfFileFormat::FindById(
+                TfToken(TfStringToLower(args.usdFormat)));
+            if (!unrecognizedExtFormat) {
+                std::cerr << "error: cannot find file format "
+                          << std::quoted(args.usdFormat, '\'') << ".\n";
+                return 1;
+            }
+        }
+        else if (!args.usdFormat.empty() && ext != "usd") {
+            std::cerr << "error: use of --usdFormat requires output file end "
+                      << "with '.usd' extension or one not associated with "
+                      << "any file format.\n";
             return 1;
         }
-
-        if (!SdfFileFormat::FindByExtension(ext)) {
-            std::cerr << "error: unknown output file extension.\n";
-            return 1;
-        }
-    } 
+    }
     // If --out was not specified, then --usdFormat must be unspecified or must
     // be 'usda'.
     else if (!args.usdFormat.empty() && args.usdFormat != "usda") {
@@ -264,6 +280,21 @@ static int UsdCat(const Args &args) {
 
         // Write to either stdout or the specified output file
         if (!args.output.empty()) {
+            // Sdf writes a file whose extension it does not recognize in the
+            // layer's own format, so transfer the content to a layer of the
+            // requested format if needed.
+            if (unrecognizedExtFormat) {
+                if (!layer) {
+                    layer = stage->Flatten(!args.skipSourceFileComment);
+                }
+                if (layer && layer->GetFileFormat() != unrecognizedExtFormat) {
+                    SdfLayerRefPtr converted = SdfLayer::CreateAnonymous(
+                        "usdcat", unrecognizedExtFormat);
+                    converted->TransferContent(layer);
+                    layer = converted;
+                }
+            }
+
             if (layer) {
                 layer->Export(args.output, std::string(), formatArgs);
             }

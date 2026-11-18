@@ -12,9 +12,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdImagingDataSourceSubdivisionTags::UsdImagingDataSourceSubdivisionTags(
+        const SdfPath &sceneIndexPath,
         UsdGeomMesh usdMesh,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
-    : _usdMesh(usdMesh)
+    : _sceneIndexPath(sceneIndexPath)
+    , _usdMesh(usdMesh)
     , _stageGlobals(stageGlobals)
 {
 }
@@ -37,6 +39,9 @@ UsdImagingDataSourceSubdivisionTags::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceSubdivisionTags::Get(const TfToken &name)
 {
+    const HdDataSourceLocator locator =
+        HdMeshSchema::GetSubdivisionTagsLocator().Append(name);
+
     if (name == HdSubdivisionTagsSchemaTokens->faceVaryingLinearInterpolation) {
         return UsdImagingDataSourceAttribute<TfToken>::New(
             _usdMesh.GetFaceVaryingLinearInterpolationAttr(), _stageGlobals);
@@ -48,19 +53,24 @@ UsdImagingDataSourceSubdivisionTags::Get(const TfToken &name)
             _usdMesh.GetTriangleSubdivisionRuleAttr(), _stageGlobals);
     } else if (name == HdSubdivisionTagsSchemaTokens->cornerIndices) {
         return UsdImagingDataSourceAttribute<VtIntArray>::New(
-            _usdMesh.GetCornerIndicesAttr(), _stageGlobals);
+            _usdMesh.GetCornerIndicesAttr(), _stageGlobals,
+            _sceneIndexPath, locator);
     } else if (name == HdSubdivisionTagsSchemaTokens->cornerSharpnesses) {
         return UsdImagingDataSourceAttribute<VtFloatArray>::New(
-            _usdMesh.GetCornerSharpnessesAttr(), _stageGlobals);
+            _usdMesh.GetCornerSharpnessesAttr(), _stageGlobals,
+            _sceneIndexPath, locator);
     } else if (name == HdSubdivisionTagsSchemaTokens->creaseIndices) {
         return UsdImagingDataSourceAttribute<VtIntArray>::New(
-            _usdMesh.GetCreaseIndicesAttr(), _stageGlobals);
+            _usdMesh.GetCreaseIndicesAttr(), _stageGlobals,
+            _sceneIndexPath, locator);
     } else if (name == HdSubdivisionTagsSchemaTokens->creaseLengths) {
         return UsdImagingDataSourceAttribute<VtIntArray>::New(
-            _usdMesh.GetCreaseLengthsAttr(), _stageGlobals);
+            _usdMesh.GetCreaseLengthsAttr(), _stageGlobals,
+            _sceneIndexPath, locator);
     } else if (name == HdSubdivisionTagsSchemaTokens->creaseSharpnesses) {
         return UsdImagingDataSourceAttribute<VtFloatArray>::New(
-            _usdMesh.GetCreaseSharpnessesAttr(), _stageGlobals);
+            _usdMesh.GetCreaseSharpnessesAttr(), _stageGlobals,
+            _sceneIndexPath, locator);
     }
 
     return nullptr;
@@ -160,7 +170,7 @@ UsdImagingDataSourceMesh::Get(const TfToken &name)
 
     if (name == HdMeshSchemaTokens->subdivisionTags) {
         return UsdImagingDataSourceSubdivisionTags::New(
-            _usdMesh, _stageGlobals);
+            _sceneIndexPath, _usdMesh, _stageGlobals);
     }
 
     return nullptr;

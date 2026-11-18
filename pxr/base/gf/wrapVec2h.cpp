@@ -27,6 +27,7 @@
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -271,16 +272,6 @@ static bool __contains__(const GfVec2h &self, GfHalf value) {
     return false;
 }
 
-static GfVec2h __truediv__(const GfVec2h &self, GfHalf value)
-{
-    return self / value;
-}
-
-static GfVec2h& __itruediv__(GfVec2h &self, GfHalf value)
-{
-    return self /= value;
-}
-
 template <class V>
 static V *__init__() {
     // Default contstructor zero-initializes from python.
@@ -479,18 +470,8 @@ void wrapVec2h()
         std::vector<GfVec2h>,
         TfPyContainerConversions::variable_capacity_policy >();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>{});
-    }
+    // Let C-contiguous buffers of shape (N, 2) be passed to wrapped
+    // functions taking TfSpan<GfVec2h>.
+    TfPyRegisterSpanBufferLayout<GfVec2h>(
+        Gf_GetPyBufferFmtFor<GfHalf>()[0], { 2 });
 }

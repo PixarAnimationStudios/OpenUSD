@@ -1,0 +1,104 @@
+#usda 1.0
+
+def Xform "Model"  
+{
+    def Scope "Looks"
+    {
+        def Material "Material" (
+            prepend apiSchemas = ["RiMaterialAPI"]
+        )
+        {
+            token outputs:ri:surface.connect = </Model/Looks/Material/Constant.outputs:out>
+
+            def Shader "Constant"
+            {
+                uniform token info:id = "PxrConstant"
+                color3f inputs:emitColor.connect = </Model/Looks/Material/Group.outputs:RGB>
+                float inputs:presence.connect = </Model/Looks/Material/SharedFloat.outputs:ResultFloat>
+                token outputs:out
+            }
+
+            def Shader "SharedFloat"
+            {
+                uniform token info:id = "SharedFloat_1"
+                float inputs:FloatValue = 0.5
+                token outputs:ResultFloat
+            }
+
+            def NodeGraph "Group" (
+                displayGroupOrder = ["Advanced:Outputs"]
+            )
+            {
+                custom float inputs:mixer (
+                    displayName = "mixer"
+                )
+
+                custom color3f outputs:RGB (
+                    displayGroup = "Advanced:Outputs"
+                    displayName = "RGB"
+                    hidden = true
+                )
+
+                color3f outputs:RGB.connect = </Model/Looks/Material/Group/InnerGroup.outputs:RGB>
+
+                def NodeGraph "InnerGroup" (
+                    displayGroupOrder = ["Advanced:Outputs"]
+                )
+                {
+                    custom float inputs:mixer (
+                        displayName = "mixer"
+                    )
+                    float inputs:mixer.connect = </Model/Looks/Material/Group.inputs:mixer>
+
+                    custom color3f outputs:RGB (
+                        displayGroup = "Advanced:Outputs"
+                        displayName = "RGB"
+                        hidden = true
+                    )
+                    color3f outputs:RGB.connect = </Model/Looks/Material/Group/InnerGroup/FinalMix.outputs:resultRGB>
+
+                    def Shader "SharedColor"
+                    {
+                        uniform token info:id = "SharedColor_3"
+                        color3f inputs:inputRGB = (0.18, 0.9390244, 0.18)
+                        color3f outputs:resultRGB
+                    }
+
+                    def Shader "SharedColor_1"
+                    {
+                        uniform token info:id = "SharedColor_3"
+                        color3f inputs:inputRGB = (0.70731705, 0.18, 0.18)
+                        color3f outputs:resultRGB
+                    }
+
+                    def Shader "MixColor"
+                    {
+                        uniform token info:id = "MixColor_3"
+                        color3f inputs:inputRGB_A.connect = </Model/Looks/Material/Group/InnerGroup/SharedColor.outputs:resultRGB>
+                        color3f inputs:inputRGB_B.connect = </Model/Looks/Material/Group/InnerGroup/SharedColor_1.outputs:resultRGB>
+                        float inputs:mixer = 0
+                        float inputs:mixer.connect = </Model/Looks/Material/Group/InnerGroup.inputs:mixer>
+                        color3f outputs:resultRGB
+                    }
+
+                    def Shader "AnotherMixColor"
+                    {
+                        uniform token info:id = "MixColor_3"
+                        color3f inputs:inputRGB_A.connect = </Model/Looks/Material/Group/InnerGroup/SharedColor.outputs:resultRGB>
+                        color3f inputs:inputRGB_B.connect = </Model/Looks/Material/Group/InnerGroup/SharedColor_1.outputs:resultRGB>
+                        float inputs:mixer.connect = </Model/Looks/Material/Group/InnerGroup.inputs:mixer>
+                        color3f outputs:resultRGB
+                    }
+
+                    def Shader "FinalMix"
+                    {
+                        uniform token info:id = "MixColor_3"
+                        color3f inputs:inputRGB_A.connect = </Model/Looks/Material/Group/InnerGroup/AnotherMixColor.outputs:resultRGB>
+                        color3f inputs:inputRGB_B.connect = </Model/Looks/Material/Group/InnerGroup/MixColor.outputs:resultRGB>
+                        color3f outputs:resultRGB
+                    }
+                }
+            }
+        }
+    }
+}

@@ -58,6 +58,7 @@
 #include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
+#include "pxr/imaging/hd/surfaceSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
@@ -2385,6 +2386,44 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_DataSourceSurface : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceSurface);
+
+    Hd_DataSourceSurface(const SdfPath &id, HdSceneDelegate *sceneDelegate)
+    : _id(id)
+    , _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        static const TfTokenVector names = {
+            HdSurfaceSchemaTokens->doubleSided
+        };
+        
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdSurfaceSchemaTokens->doubleSided) {
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                            _sceneDelegate->GetDoubleSided(_id));
+        }
+
+        return nullptr;
+    }
+
+private:
+    SdfPath _id;
+    HdSceneDelegate *_sceneDelegate;
+};
+
+// ----------------------------------------------------------------------------
+
 TfToken _InterpolationAsToken(HdInterpolation interpolation)
 {
     switch (interpolation) {
@@ -2513,6 +2552,7 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdCategoriesSchemaTokens->categories);
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdExtentSchemaTokens->extent);
+        result.push_back(HdSurfaceSchema::GetSchemaToken());
     }
 
     if (_IsLight() || _type == HdPrimTypeTokens->lightFilter) {
@@ -3052,6 +3092,10 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         if (_type == HdPrimTypeTokens->lightFilter) {
             return Hd_DataSourceLightFilterCollections::New(
                 _id, _sceneDelegate);
+        }
+    } else if (name == HdSurfaceSchema::GetSchemaToken()) {
+        if (HdPrimTypeIsGprim(_type)) {
+            return Hd_DataSourceSurface::New(_id, _sceneDelegate);
         }
     }
 

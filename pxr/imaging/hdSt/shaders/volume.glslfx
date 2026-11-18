@@ -468,7 +468,7 @@ void main(void)
     const vec3 rayStartEye = computeRayStartEye(inData.Peye, rayDirectionEye);
 
     // Use z-value from depth buffer to compute length for ray marching
-    const float opaqueZ = SampleZBuffer(gl_FragCoord.xy);
+    const float opaqueZ = SampleZBufferEye(gl_FragCoord.xy);
     const float rayLength = computeRayLength(
         rayStartEye, rayDirectionEye, inData.Peye, opaqueZ);
 

@@ -2282,11 +2282,21 @@ vec4 ApplySelectionColor(vec4 color)
     return color;
 }
 
+// No-op stub for passes without selection highlighting (e.g. pick and
+// shadow passes). It satisfies the forward declaration called from
+// ApplyColorOverridesPostLighting. The real minimum selection opacity floor
+// is in hdx/shaders/selection.glslfx.
+vec4 ApplySelectionOpacity(vec4 color)
+{
+    return color;
+}
+
 
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
 FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -2319,7 +2329,7 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
         vec4 indicatorColor = GetIndicatorColor();
         color.rgb = ApplyMaskColor(color.rgb, indicatorWeight, indicatorColor);
     #endif
-    return color;
+    return ApplySelectionOpacity(color);
 }
 
 
@@ -2715,6 +2725,7 @@ FORWARD_DECL(ScalarOverride GetScalarOverride());
 FORWARD_DECL(
     vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
 FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -2731,7 +2742,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         vec4 colorOverride = ApplyColorOverrides(result);
         result = reprStyle.applyColorOverride ? colorOverride : result;
 
-        return result;
+        // This path skips ApplyColorOverridesPostLighting, so apply the
+        // selection opacity floor here.
+        return ApplySelectionOpacity(result);
     }
 
     // Draw mode can override face color
@@ -5365,11 +5378,21 @@ vec4 ApplySelectionColor(vec4 color)
     return color;
 }
 
+// No-op stub for passes without selection highlighting (e.g. pick and
+// shadow passes). It satisfies the forward declaration called from
+// ApplyColorOverridesPostLighting. The real minimum selection opacity floor
+// is in hdx/shaders/selection.glslfx.
+vec4 ApplySelectionOpacity(vec4 color)
+{
+    return color;
+}
+
 
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
 FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -5402,7 +5425,7 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
         vec4 indicatorColor = GetIndicatorColor();
         color.rgb = ApplyMaskColor(color.rgb, indicatorWeight, indicatorColor);
     #endif
-    return color;
+    return ApplySelectionOpacity(color);
 }
 
 
@@ -5798,6 +5821,7 @@ FORWARD_DECL(ScalarOverride GetScalarOverride());
 FORWARD_DECL(
     vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
 FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -5814,7 +5838,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         vec4 colorOverride = ApplyColorOverrides(result);
         result = reprStyle.applyColorOverride ? colorOverride : result;
 
-        return result;
+        // This path skips ApplyColorOverridesPostLighting, so apply the
+        // selection opacity floor here.
+        return ApplySelectionOpacity(result);
     }
 
     // Draw mode can override face color

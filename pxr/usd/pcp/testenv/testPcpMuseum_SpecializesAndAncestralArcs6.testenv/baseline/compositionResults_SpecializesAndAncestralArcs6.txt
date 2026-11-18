@@ -1,0 +1,115 @@
+Loading @SpecializesAndAncestralArcs6/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    asset.usda           /Asset
+    root.usda            /_class_Asset
+    asset.usda           /_class_Asset
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    asset.usda           /Asset/Looks
+    root.usda            /_class_Asset/Looks
+    asset.usda           /_class_Asset/Looks
+
+Child names:
+     ['Base', 'Derived']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Base>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Base
+    root.usda            /_class_Asset/Looks/Base
+    asset.usda           /_class_Asset/Looks/Base
+
+Child names:
+     ['Mat', 'MatBase']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Base/Mat>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Base/Mat
+    asset.usda           /Asset/Looks/Base/MatBase
+    root.usda            /_class_Asset/Looks/Base/Mat
+    asset.usda           /_class_Asset/Looks/Base/Mat
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Base/MatBase>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Base/MatBase
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Derived>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Derived
+    asset.usda           /Asset/Looks/Base
+    root.usda            /_class_Asset/Looks/Base
+    asset.usda           /_class_Asset/Looks/Base
+
+Child names:
+     ['Mat', 'MatBase']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Derived/Mat>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Base/Mat
+    asset.usda           /Asset/Looks/Base/MatBase
+    root.usda            /_class_Asset/Looks/Base/Mat
+    asset.usda           /_class_Asset/Looks/Base/Mat
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Derived/MatBase>
+
+Prim Stack:
+    asset.usda           /Asset/Looks/Base/MatBase
+
+------------------------------------------------------------------------
+Results for composing </_class_Asset>
+
+Prim Stack:
+    root.usda            /_class_Asset
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </_class_Asset/Looks>
+
+Prim Stack:
+    root.usda            /_class_Asset/Looks
+
+Child names:
+     ['Base']
+
+------------------------------------------------------------------------
+Results for composing </_class_Asset/Looks/Base>
+
+Prim Stack:
+    root.usda            /_class_Asset/Looks/Base
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </_class_Asset/Looks/Base/Mat>
+
+Prim Stack:
+    root.usda            /_class_Asset/Looks/Base/Mat
+

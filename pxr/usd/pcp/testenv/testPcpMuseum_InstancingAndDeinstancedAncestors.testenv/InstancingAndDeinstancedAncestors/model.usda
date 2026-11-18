@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "M"
+{
+    def "rig"
+    {
+        def "lights"
+        {
+            def "L" (
+                inherits = </_class_L>
+            )
+            {
+                double a = 2
+            }
+        }
+    }
+}
+
+class "_class_L"
+{
+}

@@ -165,9 +165,24 @@ public:
         SdfPathExpression result =
             _inputDataSource->GetTypedValue(shutterOffset);
 
+        // Don't alter trivial expressions; that way, they continue to
+        // match everything.
+        if (_IsTrivial(result)) {
+            return result;
+        }
+
         return result.ReplacePrefix(
             SdfPath::AbsoluteRootPath(),
             _si.AddPrefix(SdfPath::AbsoluteRootPath()));
+    }
+
+private:
+    static bool
+    _IsTrivial(const SdfPathExpression &expr)
+    {
+        static const SdfPathExpression everythingButProperties("~//*.*");
+        return expr == SdfPathExpression::Everything() ||
+               expr == everythingButProperties;
     }
 
 private:

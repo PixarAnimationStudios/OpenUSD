@@ -56,8 +56,8 @@ private:
     // Change tracking state.
     // XXX: This is necessary only when not using the draw items cache.
 
-    // The version number of the currently held collection.
-    int _collectionVersion;
+    // The version number of the renderIndex rprim set.
+    int _rprimIndexVersion;
 
     // The version number of the render tag opinion of rprims
     int _rprimRenderTagVersion;
@@ -77,8 +77,8 @@ private:
     // A flag indicating that the held collection changed since this renderPass
     // was last drawn.
     //
-    // When _collectionChanged is true, it indicates that _collectionVersion is
-    // no longer accurate, because _collectionVersion was stored for the
+    // When _collectionChanged is true, it indicates that _rprimIndexVersion is
+    // no longer accurate, because _rprimIndexVersion was stored for the
     // previously held collection.
     bool _collectionChanged;
 

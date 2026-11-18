@@ -7,6 +7,7 @@
 #include "pxr/usd/usdSkel/blendShapeQuery.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/usd/usdSkel/bindingAPI.h"
 

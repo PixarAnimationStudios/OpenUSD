@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    relocates = {
+        </World/one/widget>: </World/one/moved>
+    }
+)
+def "World"
+{
+    def "one" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+    }
+    def "two" (
+        instanceable = true
+        references = @./a.usda@</A>
+    )
+    {
+    }
+}

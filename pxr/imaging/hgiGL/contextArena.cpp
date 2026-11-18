@@ -178,6 +178,7 @@ _CreateFramebuffer(
 
         const uint32_t textureName = glTexture->GetTextureId();
 
+        glTexture->AddFramebuffer(cacheItem, arena);
         attachments->emplace_back(glTexture);
 
         if (TF_VERIFY(glIsTexture(textureName), "Attachment not a texture")) {

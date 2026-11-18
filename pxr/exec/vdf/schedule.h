@@ -21,6 +21,7 @@
 
 #include "pxr/base/tf/bits.h"
 
+#include <atomic>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -170,7 +171,7 @@ public:
     /// execution.
     ///
     bool IsValid() const {
-        return _isValid;
+        return _isValid.load(std::memory_order_relaxed);
     }
 
     /// Returns the network for this schedule.
@@ -606,7 +607,7 @@ private:
     TfBits _scheduledNodes;
 
     // Flag as to whether or not the schedule is valid.
-    bool _isValid;
+    std::atomic_bool _isValid;
 
     // A flag that determines whether this schedule's query methods will
     // use the small schedule optimization, which is to assume there is no

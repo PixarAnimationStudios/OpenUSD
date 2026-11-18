@@ -151,12 +151,15 @@ def Scope "Scene" (
         }
     }
 
+    def Camera "Camera"
+    {
+        float focalLength = 18.147
+        double3 xformOp:translate = (3.75, 0, 9.91)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
     def Xform "Lights"
     {
-        # Set the purpose for lights to "render" so that they're not included
-        # in the test's frameAll calculation.
-        uniform token purpose = "render"
-        
         def SphereLight "Light"
         {
             float inputs:intensity = 16

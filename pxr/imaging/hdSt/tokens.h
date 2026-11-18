@@ -105,7 +105,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 //                            to show through
 //    additive : transparent geometry (cheap OIT solution w/o sorting)
 //    translucent: transparent geometry (OIT solution w/ sorted fragment lists)
-//    volume : transparent geoometry (raymarched)
+//    volume : transparent geometry (raymarched)
+//    translucentWithCustomDepth : translucent geometry that overwrites depth
+//                                 (and needs a manual depth test alongside OIT)
 #define HDST_MATERIAL_TAG_TOKENS                \
     (defaultMaterialTag)                        \
     (masked)                                    \
@@ -113,7 +115,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (translucentToSelection)                    \
     (additive)                                  \
     (translucent)                               \
-    (volume)
+    (volume)                                    \
+    (translucentWithCustomDepth)
 
 #define HDST_SDR_METADATA_TOKENS                \
     (swizzle)

@@ -23,15 +23,24 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
-#include "pxr/base/vt/typeHeaders.h"
-#include "pxr/base/vt/visitValue.h"
+
+#include "pxr/usd/ar/resolverScopedCache.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
+#include "pxr/base/work/loops.h"
 
+
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1202,12 +1211,38 @@ _InstanceObserver::PrimsAdded(const HdSceneIndexBase &sender,
                               const AddedPrimEntries &entries)
 {
     TRACE_FUNCTION();
-    _RetainedSceneIndexOperations
-        retainedSceneIndexOperations(_retainedSceneIndex);
+    std::optional<_RetainedSceneIndexOperations>
+        retainedSceneIndexOperations(std::in_place, _retainedSceneIndex);
 
-    for (const AddedPrimEntry &entry : entries) {
-        const SdfPath &path = entry.primPath;
-        _ResyncPrim(path, &retainedSceneIndexOperations);
+    {
+        TRACE_SCOPE("Resync prims");
+
+        std::vector<_InstanceInfo> infos(entries.size());
+        {
+            TRACE_SCOPE("Compute instance infos");
+            ArResolverScopedCache parentCache;
+            WorkParallelForN(
+                entries.size(),
+                [&](const size_t begin, const size_t end) {
+                    ArResolverScopedCache taskCache(&parentCache);
+                    for (size_t i = begin; i < end; ++i) {
+                        infos[i] = _GetInfo(entries[i].primPath);
+                    }
+                });
+        }
+
+        for (size_t i = 0; i < entries.size(); ++i) {
+            const SdfPath& path = entries[i].primPath;
+            _RemovePrim(path, &*retainedSceneIndexOperations);
+            if (infos[i].IsInstance()) {
+                _AddInstance(path, infos[i], &*retainedSceneIndexOperations);
+            }
+        }
+    }
+
+    {
+        TRACE_SCOPE("Apply retained scene index operations");
+        retainedSceneIndexOperations.reset();
     }
 }
 

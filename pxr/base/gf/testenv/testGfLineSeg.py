@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import division
 
 import sys
 import unittest
@@ -50,10 +49,20 @@ class TestGfLineSeg(unittest.TestCase):
         self.assertTrue(Gf.IsClose(t, 0, 0.0001), err("FindClosestPoint"))
 
         # seg on seg
-        # (parallel case)
+        # (parallel overlapping case)
         l1 = Gf.LineSeg(Gf.Vec3d(0, 0, 0), Gf.Vec3d(1, 1, 1))
-        l2 = Gf.LineSeg(Gf.Vec3d(1, 0, 0), Gf.Vec3d(2, 1, 1))
-        self.assertEqual(Gf.FindClosestPoints(l1, l2)[0], False, err("FindClosestPoints"))
+        l2 = Gf.LineSeg(Gf.Vec3d(1, 1, 0), Gf.Vec3d(2, 2, 1))
+        self.assertFalse(Gf.FindClosestPoints(l1, l2)[0], err("FindClosestPoints"))
+
+        # (parallel non-overlapping case)
+        l1 = Gf.LineSeg(Gf.Vec3d(0, 0, 0), Gf.Vec3d(1, 1, 1))
+        l2 = Gf.LineSeg(Gf.Vec3d(3, 3, 0), Gf.Vec3d(4, 4, 1))
+        (intersects, p1, p2, t1, t2) = Gf.FindClosestPoints(l1, l2)
+        self.assertTrue(intersects, err("FindClosestPoints"))
+        self.assertEqual(p1, Gf.Vec3d(1, 1, 1), err("FindClosestPoints"))
+        self.assertEqual(p2, Gf.Vec3d(3, 3, 0), err("FindClosestPoints"))
+        self.assertEqual(t1, 1.0)
+        self.assertEqual(t2, 0.0)
 
         l1 = Gf.LineSeg(Gf.Vec3d(0, 0, 0), Gf.Vec3d(1, 1, 1))
         l2 = Gf.LineSeg(Gf.Vec3d(1, 0, 0), Gf.Vec3d(1, -1, 1))
@@ -64,20 +73,22 @@ class TestGfLineSeg(unittest.TestCase):
         self.assertTrue(Gf.IsClose(t1, 1./3, 0.00001))
         self.assertTrue(Gf.IsClose(t2, 0, 0.00001))
 
+        # the lines containing the segments do not have closest points but the
+        # segments do.
         l1 = Gf.LineSeg(Gf.Vec3d(), Gf.Vec3d())
         l2 = Gf.LineSeg(Gf.Vec3d(1,1,1), Gf.Vec3d(1,1,1))
         (intersects, p1, p2, t1, t2) = Gf.FindClosestPoints(l1, l2)
-        self.assertFalse(intersects, err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(p1, Gf.Vec3d(), 0.00001), err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(p2, Gf.Vec3d(), 0.00001), err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(t1, 0, 0.00001))
-        self.assertTrue(Gf.IsClose(t2, 0, 0.00001))
+        self.assertTrue(intersects, err("FindClosestPoints"))
+        self.assertEqual(p1, Gf.Vec3d(0, 0, 0), err("FindClosestPoints"))
+        self.assertEqual(p2, Gf.Vec3d(1, 1, 1), err("FindClosestPoints"))
+        self.assertEqual(t1, 0.0)
+        self.assertEqual(t2, 0.0)
         (intersects, p1, p2, t1, t2) = Gf.FindClosestPoints(l2, l1)
-        self.assertFalse(intersects, err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(p1, Gf.Vec3d(), 0.00001), err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(p2, Gf.Vec3d(), 0.00001), err("FindClosestPoints"))
-        self.assertTrue(Gf.IsClose(t1, 0, 0.00001))
-        self.assertTrue(Gf.IsClose(t2, 0, 0.00001))
+        self.assertTrue(intersects, err("FindClosestPoints"))
+        self.assertEqual(p1, Gf.Vec3d(1, 1, 1), err("FindClosestPoints"))
+        self.assertEqual(p2, Gf.Vec3d(0, 0, 0), err("FindClosestPoints"))
+        self.assertEqual(t1, 0.0)
+        self.assertEqual(t2, 0.0)
 
         # line on seg
         # (parallel case)
@@ -115,6 +126,26 @@ class TestGfLineSeg(unittest.TestCase):
         self.assertEqual(l1, eval(repr(l1)), err("repr"))
 
         self.assertTrue(len(str(Gf.LineSeg())), err("str"))
+
+    def test_FindClosestPointsClamped(self):
+        # Both parameters out of range: the closest points are a segment
+        # endpoint and its projection onto the other segment.
+        a = Gf.LineSeg(Gf.Vec3d(0, 0, 0), Gf.Vec3d(2, 0, 0))
+        b = Gf.LineSeg(Gf.Vec3d(-1, -2, 0), Gf.Vec3d(0, -1, 0))
+        (intersects, p1, p2, t1, t2) = Gf.FindClosestPoints(a, b)
+        self.assertTrue(intersects)
+        self.assertTrue(Gf.IsClose(p1, Gf.Vec3d(0, 0, 0), 0.00001))
+        self.assertTrue(Gf.IsClose(p2, Gf.Vec3d(0, -1, 0), 0.00001))
+        self.assertTrue(Gf.IsClose(t1, 0, 0.00001))
+        self.assertTrue(Gf.IsClose(t2, 1, 0.00001))
+
+        # Only one parameter out of range.
+        a = Gf.LineSeg(Gf.Vec3d(0, 0, 0), Gf.Vec3d(2, 0, 0))
+        b = Gf.LineSeg(Gf.Vec3d(1, 1, -1), Gf.Vec3d(1, 3, 1))
+        (intersects, p1, p2, t1, t2) = Gf.FindClosestPoints(a, b)
+        self.assertTrue(intersects)
+        self.assertTrue(Gf.IsClose(p1, Gf.Vec3d(1, 0, 0), 0.00001))
+        self.assertTrue(Gf.IsClose(p2, Gf.Vec3d(1, 1, -1), 0.00001))
 
 if __name__ == '__main__':
     unittest.main()

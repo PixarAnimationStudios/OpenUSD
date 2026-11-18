@@ -107,7 +107,6 @@ reverse sorted:
 ['y', 'x', 'o', 'l', 'l', 'h', 'e', '.']
 '''
 
-from __future__ import print_function
 
 def run(args = None):
     import sys

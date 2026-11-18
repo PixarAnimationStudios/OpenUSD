@@ -85,6 +85,9 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
     // as the render delegate. For example some tasks use Hgi.
     _taskContext[HdTokens->drivers] = VtValue(index->GetDrivers());
 
+    HdRenderDelegate *renderDelegate = index->GetRenderDelegate();
+    renderDelegate->BeginExecute();
+
     // --------------------------------------------------------------------- //
     // DATA DISCOVERY PHASE
     // --------------------------------------------------------------------- //
@@ -146,7 +149,6 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
             "==============================================================\n"
             " HdEngine [Data Commit Phase](RenderDelegate::CommitResources)\n"
             "--------------------------------------------------------------\n");
-    HdRenderDelegate *renderDelegate = index->GetRenderDelegate();
     renderDelegate->CommitResources(&index->GetChangeTracker());
 
     // --------------------------------------------------------------------- //
@@ -168,6 +170,8 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
             task->Execute(&_taskContext);
         }
     }
+
+    renderDelegate->EndExecute();
 }
 
 void

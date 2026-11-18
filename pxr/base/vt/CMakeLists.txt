@@ -85,11 +85,16 @@ pxr_build_test(testVtArrayEditCpp
 pxr_test_scripts(
     testenv/testVtArray.py
     testenv/testVtArrayEdit.py
+    testenv/testVtArraySpan.py
     testenv/testVtValue.py
 )
 pxr_register_test(testVtValue
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtValue"
+)
+pxr_register_test(testVtArraySpan
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArraySpan"
 )
 pxr_register_test(testVtArray
     PYTHON

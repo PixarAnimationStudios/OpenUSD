@@ -8,8 +8,6 @@
 #define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONE_H
 
 #include "pxr/pxr.h"
-#if PXR_VERSION >= 2208
-
 #include "hdPrman/gprim.h"
 #include "pxr/imaging/hd/rprim.h"
 
@@ -42,7 +40,5 @@ protected:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // PXR_VERSION >= 2208
 
 #endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CONE_H

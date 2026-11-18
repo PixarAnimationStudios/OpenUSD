@@ -70,11 +70,9 @@
 #include "pxr/imaging/hd/renderCapabilitiesSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #endif
-#if PXR_VERSION >= 2208
 #include "hdPrman/cone.h"
 #include "hdPrman/cylinder.h"
 #include "hdPrman/sphere.h"
-#endif
 #if PXR_VERSION >= 2308
 #include "hdPrman/displayFilter.h"
 #if _PRMANAPI_VERSION_MAJOR_ >= 27
@@ -239,11 +237,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens,
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
-#if PXR_VERSION >= 2208
     HdPrimTypeTokens->cone,
     HdPrimTypeTokens->cylinder,
     HdPrimTypeTokens->sphere,
-#endif
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
@@ -571,14 +567,12 @@ HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdPrman_Mesh(rprimId, false /* isMeshLight */);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
-#if PXR_VERSION >= 2208
     } if (typeId == HdPrimTypeTokens->cone) {
         return new HdPrman_Cone(rprimId);
     } if (typeId == HdPrimTypeTokens->cylinder) {
         return new HdPrman_Cylinder(rprimId);
     } if (typeId == HdPrimTypeTokens->sphere) {
         return new HdPrman_Sphere(rprimId);
-#endif
     } else if (typeId == HdPrimTypeTokens->points) {
         return new HdPrman_Points(rprimId);
     } else if (typeId == HdPrimTypeTokens->volume) {

@@ -343,6 +343,64 @@ class TestUsdPmc(unittest.TestCase):
                 f"output")
 
 
+    def test_CrushUsdaToUsdzBundlesTextures(self):
+        """
+        Regression for texture resources being dropped when encoding a plain
+        (non-usdz) input to a .usdz output. Since there is no source archive
+        to extract, dependencies live next to the input file on disk and must
+        be discovered and copied into the package rather than silently
+        omitted. The relative directory structure of the dependency (e.g.
+        'textures/checker.png') must be preserved inside the output archive,
+        and the layer's asset path must be rewritten to match.
+        """
+        work_dir = tempfile.mkdtemp()
+        sphere_usda = os.path.join(work_dir, 'sphere.usda')
+        textures_dir = os.path.join(work_dir, 'textures')
+        os.makedirs(textures_dir)
+        texture_png = os.path.join(textures_dir, 'checker.png')
+
+        # A minimal valid 1x1 PNG.
+        with open(texture_png, 'wb') as f:
+            f.write(base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4'
+                '2mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='))
+
+        # Build a sphere that references the texture via a UsdUVTexture
+        # shader using a path relative to the input .usda.
+        stage = self._make_sphere_stage(sphere_usda)
+        shader = UsdShade.Shader.Define(stage, '/Sphere/Texture')
+        shader.CreateIdAttr('UsdUVTexture')
+        shader.CreateInput('file', Sdf.ValueTypeNames.Asset).Set(
+            './textures/checker.png')
+        stage.Save()
+
+        out_usdz = os.path.join(work_dir, 'sphere_crushed.usdz')
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        self.assertTrue(encoder.EncodeStage(sphere_usda, out_usdz),
+                        "UsdPmcMeshEncoder.EncodeStage failed")
+        self.assertTrue(os.path.exists(out_usdz),
+                        "Output .usdz file should exist")
+
+        with zipfile.ZipFile(out_usdz, 'r') as zf:
+            file_list = zf.namelist()
+            self.assertIn('textures/checker.png', file_list,
+                          f"Texture should be packaged preserving its "
+                          f"relative directory structure. Got: {file_list}")
+
+        # Re-open the packaged layer directly from the archive to verify the
+        # asset path resolves to the packaged texture.
+        stage = Usd.Stage.Open(out_usdz)
+        self.assertIsNotNone(stage, "Output usdz stage should be openable")
+        shader_prim = stage.GetPrimAtPath('/Sphere/Texture')
+        self.assertTrue(shader_prim.IsValid(),
+                        "/Sphere/Texture prim should exist")
+        file_input = UsdShade.Shader(shader_prim).GetInput('file')
+        resolved_path = file_input.Get().resolvedPath
+        self.assertTrue(resolved_path,
+                        "Texture asset path should resolve inside the "
+                        "packaged usdz")
+
+
     def test_InvalidTopologySkipped(self):
         """
         A mesh whose topology fails UsdGeomMesh.ValidateTopology (e.g. a face

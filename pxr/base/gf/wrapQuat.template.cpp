@@ -13,9 +13,12 @@
 #include "pxr/base/gf/quat{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -40,16 +43,6 @@ static string __repr__({{ QUAT }} const &self) {
     return TF_PY_REPR_PREFIX + "Quat{{ SUFFIX }}(" +
         TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
-}
-
-static {{ QUAT }} __truediv__(const {{ QUAT }} &self, {{ SCL }} value)
-{
-    return self / value;
-}
-
-static {{ QUAT }}& __itruediv__({{ QUAT }} &self, {{ SCL }} value)
-{
-    return self /= value;
 }
 
 static size_t __hash__({{ QUAT }} const &self) {
@@ -154,18 +147,9 @@ void wrapQuat{{ SUFFIX }}()
     to_python_converter<std::vector<{{ QUAT }}>,
         TfPySequenceToPython<std::vector<{{ QUAT }}> > >();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= {{ SCL }}() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
+    // Let C-contiguous buffers of shape (N, 4), with each quaternion's
+    // imaginary part followed by its real part, be passed to wrapped functions
+    // taking TfSpan<{{ QUAT }}>.
+    TfPyRegisterSpanBufferLayout<{{ QUAT }}>(
+        Gf_GetPyBufferFmtFor<{{ SCL }}>()[0], { 4 });
 }

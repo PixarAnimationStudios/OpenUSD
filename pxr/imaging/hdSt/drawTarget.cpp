@@ -96,20 +96,6 @@ HdStDrawTarget::Sync(HdSceneDelegate *sceneDelegate,
 
         const HdRprimCollection collection = vtValue.Get<HdRprimCollection>();
 
-        TfToken const &collectionName = collection.GetName();
-
-        HdChangeTracker& changeTracker =
-                         sceneDelegate->GetRenderIndex().GetChangeTracker();
-
-        if (_collection.GetName() != collectionName) {
-            // Make sure collection has been added to change tracker
-            changeTracker.AddCollection(collectionName);
-        }
-
-        // Always mark collection dirty even if added - as we don't
-        // know if this is a re-add.
-        changeTracker.MarkCollectionDirty(collectionName);
-
         _drawTargetRenderPassState.SetRprimCollection(collection);
         _collection = collection;
     }

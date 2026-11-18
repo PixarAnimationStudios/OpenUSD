@@ -211,8 +211,9 @@ HdStRenderPassShader::AddBufferBinding(HdStBindingRequest const& req)
 void
 HdStRenderPassShader::RemoveBufferBinding(TfToken const &name)
 {
-    _customBuffers.erase(name);
-    _hashValid = false;
+    if (_customBuffers.erase(name) > 0) {
+        _hashValid = false;
+    }
 }
 
 void

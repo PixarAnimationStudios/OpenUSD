@@ -1,0 +1,40 @@
+#usda 1.0
+
+class "_class_Root"
+{
+}
+
+def "Asset"
+{
+    class "_class_Inherited"
+    {
+    }
+
+    class "_class_Specialized"
+    {
+    }
+
+    def "InheritsSubroot" (
+        inherits = </Asset/_class_Inherited>
+    )
+    {
+    }
+
+    def "SpecializesSubroot" (
+        specializes = </Asset/_class_Specialized>
+    )
+    {
+    }
+
+    def "InheritsRoot" (
+        inherits = </_class_Root>
+    )
+    {
+    }
+
+    def "InheritsWorldClass" (
+        inherits = </World/Classes/_class_World>
+    )
+    {
+    }
+}

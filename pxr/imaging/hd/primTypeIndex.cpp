@@ -13,6 +13,8 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sprim.h"
 
+#include "pxr/base/arch/demangle.h"
+
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
@@ -380,6 +382,7 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
 {
     TRACE_FUNCTION();
     size_t numTypes = _entries.size();
+    size_t totalNumPrimsSynced = 0;
 
     _dirtyPrimDelegates.clear();
     HdSceneDelegate *prevDelegate = nullptr;
@@ -393,6 +396,8 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
             Hd_PrimTypeIndex<PrimType>::_TrackerMarkPrimClean};
         psyncHelper.syncVector.reserve(typeEntry.primMap.size());
 
+        size_t numPrimTypePrimsSynced = 0;
+
         // Populate data for parallel sync and update dirty prim delegates
         for (auto primIt  = typeEntry.primMap.begin();
              primIt != typeEntry.primMap.end(); ++primIt) {
@@ -400,6 +405,8 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
             HdDirtyBits dirtyBits =
                 _TrackerGetPrimDirtyBits(tracker, primPath);
             if (dirtyBits != HdChangeTracker::Clean) {
+                ++totalNumPrimsSynced;
+                ++numPrimTypePrimsSynced;
                 _PrimInfo &primInfo = primIt->second;
                 if (parallelSyncEnabled) {
                     psyncHelper.syncVector.emplace_back(
@@ -427,8 +434,19 @@ Hd_PrimTypeIndex<PrimType>::SyncPrims(HdChangeTracker  &tracker,
                                            std::placeholders::_1,
                                            std::placeholders::_2));
             });
-        }        
+        }
+
+        if (TfDebug::IsEnabled(HD_SYNC_ALL)) {
+            if (numPrimTypePrimsSynced > 0) {
+                TfDebug::Helper().Msg("[%s] Number of %s prims synced: %zu\n",
+                    ArchGetDemangled<PrimType>().c_str(),
+                    _primTypeNames[typeIdx].GetText(), numPrimTypePrimsSynced);
+            }
+        }
     }
+
+    TF_DEBUG(HD_SYNC_ALL).Msg("[%s] Total: %zu\n",
+        ArchGetDemangled<PrimType>().c_str(), totalNumPrimsSynced);
 }
 
 template <class PrimType>

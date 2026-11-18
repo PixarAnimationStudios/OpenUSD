@@ -97,6 +97,9 @@ struct HdInstanceProxyViewSceneIndex::_Impl
     bool
     IsInstancer(const SdfPath &primPath) const;
 
+    std::optional<SdfPath>
+    GetInstancerPrimPath(const SdfPath &outermostInstancePath) const;
+
     SdfPathVector
     ComputeRemappedChildPrimPaths(
         const SdfPath &sourcePath,
@@ -235,6 +238,17 @@ bool
 HdInstanceProxyViewSceneIndex::_Impl::IsInstancer(const SdfPath &primPath) const
 {
     return _instancerPrimPaths.count(primPath) > 0;
+}
+
+std::optional<SdfPath>
+HdInstanceProxyViewSceneIndex::_Impl::GetInstancerPrimPath(
+    const SdfPath &outermostInstancePath) const
+{
+    const auto it = _instanceInfoMap.find(outermostInstancePath);
+    if (it == _instanceInfoMap.end()) {
+        return std::nullopt;
+    }
+    return it->second.instancerPath;
 }
 
 SdfPathVector
@@ -572,6 +586,13 @@ const SdfPathSet &
 HdInstanceProxyViewSceneIndex::GetAllOutermostInstancePrimPaths() const
 {
     return _impl->GetOutermostInstancePrimPaths();
+}
+
+std::optional<SdfPath>
+HdInstanceProxyViewSceneIndex::GetInstancerPrimPath(
+    const SdfPath &outermostInstancePath) const
+{
+    return _impl->GetInstancerPrimPath(outermostInstancePath);
 }
 
 bool
