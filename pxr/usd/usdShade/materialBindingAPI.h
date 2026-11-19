@@ -826,6 +826,11 @@ public:
     /// material bindings for a vector of UsdPrims, \p prims for the 
     /// given \p materialPurpose.
     /// 
+    /// All prims in \p prims must belong to the same UsdStage, because
+    /// bindings are cached by prim path across the whole call. If they span
+    /// more than one stage, a coding error is issued and every returned
+    /// material is invalid. Invalid prims are ignored for this check.
+    ///
     /// The size of the returned vector always matches the size of the input 
     /// vector, \p prims. If a prim is not bound to any material, an invalid 
     /// or empty UsdShadeMaterial is returned at the index corresponding to it.
