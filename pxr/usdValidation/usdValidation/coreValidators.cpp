@@ -13,9 +13,13 @@
 
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/collectionAPI.h"
+#include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usd/tokens.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -232,6 +236,131 @@ _GetAttributeSpecValueTypeMismatchErrors(const SdfLayerHandle &layer)
     return errors;
 }
 
+// Report each reference in \p collection's membershipExpression to a collection
+// in relationship-mode.
+static void
+_ReportExpressionReferencesToRelationshipModeCollections(
+    const UsdCollectionAPI &collection,
+    UsdValidationErrorVector *errors)
+{
+    // A relationship-mode collection's membershipExpression is ignored.
+    if (collection.IsInRelationshipsMode()) {
+        return;
+    }
+    const UsdAttribute exprAttr = collection.GetMembershipExpressionAttr();
+    SdfPathExpression expr;
+    if (!exprAttr.Get(&expr) || !expr.ContainsExpressionReferences()) {
+        return;
+    }
+
+    // Collect the references, leaving the expression unchanged.
+    std::vector<SdfPathExpression::ExpressionReference> refs;
+    auto collectRef =
+        [&refs](SdfPathExpression::ExpressionReference const &ref) {
+            refs.push_back(ref);
+            return SdfPathExpression::MakeAtom(ref);
+        };
+    expr.ResolveReferences(collectRef);
+
+    const UsdPrim prim = collection.GetPrim();
+    for (const SdfPathExpression::ExpressionReference &ref : refs) {
+        if (ref.name.empty() ||
+            ref == SdfPathExpression::ExpressionReference::Weaker()) {
+            continue;
+        }
+        const UsdPrim refPrim = ref.path.IsEmpty()
+            ? prim
+            : prim.GetStage()->GetPrimAtPath(ref.path);
+        const UsdCollectionAPI refCollection(refPrim, TfToken(ref.name));
+        if (!refCollection || !refCollection.IsInRelationshipsMode()) {
+            continue;
+        }
+        errors->emplace_back(
+            UsdValidationErrorNameTokens->referenceToRelationshipModeCollection,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites {
+                UsdValidationErrorSite(prim.GetStage(), exprAttr.GetPath()) },
+            TfStringPrintf(
+                "The membershipExpression of collection '%s' on prim <%s> "
+                "references collection '%s' on prim <%s>, which is in "
+                "relationship-mode. Expressions cannot reference "
+                "relationship-mode collections, so the reference matches "
+                "nothing.",
+                collection.GetName().GetText(),
+                prim.GetPath().GetText(),
+                refCollection.GetName().GetText(),
+                refPrim.GetPath().GetText()));
+    }
+}
+
+// Report each target of \p collection's includes that is a collection whose
+// membership comes from its membershipExpression.
+static void
+_ReportIncludesOfExpressionModeCollections(
+    const UsdCollectionAPI &collection,
+    UsdValidationErrorVector *errors)
+{
+    // An expression-mode collection's includes are ignored.
+    TfToken mode;
+    collection.GetModeAttr().Get(&mode);
+    if (mode == UsdTokens->expression) {
+        return;
+    }
+    const UsdRelationship includesRel = collection.GetIncludesRel();
+    SdfPathVector includes;
+    if (!includesRel.GetTargets(&includes)) {
+        return;
+    }
+
+    const UsdPrim prim = collection.GetPrim();
+    for (const SdfPath &includedPath : includes) {
+        TfToken includedName;
+        if (!UsdCollectionAPI::IsCollectionAPIPath(
+                includedPath, &includedName)) {
+            continue;
+        }
+        const UsdPrim includedPrim =
+            prim.GetStage()->GetPrimAtPath(includedPath.GetPrimPath());
+        const UsdCollectionAPI included(includedPrim, includedName);
+        SdfPathExpression includedExpr;
+        if (!included || included.IsInRelationshipsMode() ||
+            !included.GetMembershipExpressionAttr().Get(&includedExpr) ||
+            includedExpr.IsEmpty()) {
+            continue;
+        }
+        errors->emplace_back(
+            UsdValidationErrorNameTokens->includeOfExpressionModeCollection,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites {
+                UsdValidationErrorSite(
+                    prim.GetStage(), includesRel.GetPath()) },
+            TfStringPrintf(
+                "The includes of collection '%s' on prim <%s> target "
+                "collection '%s' on prim <%s>, which is in expression-mode. "
+                "Only relationship-mode collections can be included, so its "
+                "membershipExpression is ignored.",
+                collection.GetName().GetText(),
+                prim.GetPath().GetText(),
+                included.GetName().GetText(),
+                includedPrim.GetPath().GetText()));
+    }
+}
+
+static UsdValidationErrorVector
+_GetCollectionCrossModeReferenceErrors(
+    const UsdPrim &usdPrim,
+    const UsdValidationTimeRange &/*timeRange*/)
+{
+    UsdValidationErrorVector errors;
+    for (const UsdCollectionAPI &collection :
+             UsdCollectionAPI::GetAllCollections(usdPrim)) {
+        _ReportExpressionReferencesToRelationshipModeCollections(
+            collection, &errors);
+        _ReportIncludesOfExpressionModeCollections(collection, &errors);
+    }
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -245,6 +374,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdValidatorNameTokens->attributeSpecValueTypeMismatch,
         _GetAttributeSpecValueTypeMismatchErrors);
+    registry.RegisterPluginValidator(
+        UsdValidatorNameTokens->collectionCrossModeReferences,
+        _GetCollectionCrossModeReferenceErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

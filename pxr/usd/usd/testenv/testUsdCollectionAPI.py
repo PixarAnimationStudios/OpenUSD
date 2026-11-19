@@ -860,6 +860,15 @@ class TestUsdCollectionAPI(unittest.TestCase):
         mQuery = coll.ComputeMembershipQuery();
         self.assertFalse(mQuery.IsPathIncluded('/rel'))
         self.assertTrue(mQuery.IsPathIncluded('/expr'))
+
+        # Explicit `relationship`-mode with no rules is still in
+        # relationships mode, so its `membershipExpression` is still ignored.
+        self.assertTrue(coll.GetModeAttr().Set(Usd.Tokens.relationship))
+        self.assertTrue(coll.IsInRelationshipsMode())
+        self.assertFalse(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertFalse(mQuery.IsPathIncluded('/rel'))
+        self.assertFalse(mQuery.IsPathIncluded('/expr'))
         
         
     def test_HashMembershipQuery(self):
