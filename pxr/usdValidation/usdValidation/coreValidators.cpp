@@ -16,6 +16,9 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primTypeInfo.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -232,6 +235,56 @@ _GetAttributeSpecValueTypeMismatchErrors(const SdfLayerHandle &layer)
     return errors;
 }
 
+// Validates that each API schema authored on the prim can be applied to it, as
+// UsdPrim::CanApplyAPI determines. Only the authored API schemas are
+// validated, since content does not choose the ones built into the prim's
+// type or into other API schemas, nor the auto-applied ones. Schemas that are
+// not registered applied API schemas, and malformed instance names, are
+// skipped, as the prim definition ignores them.
+static UsdValidationErrorVector
+_GetAPISchemaApplicabilityErrors(const UsdPrim &usdPrim,
+                                 const UsdValidationTimeRange &/*timeRange*/)
+{
+    UsdValidationErrorVector errors;
+    for (const TfToken &apiSchema :
+            usdPrim.GetPrimTypeInfo().GetAppliedAPISchemas()) {
+        const std::pair<TfToken, TfToken> typeAndInstance =
+            UsdSchemaRegistry::GetTypeNameAndInstance(apiSchema);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(typeAndInstance.first);
+        if (!schemaInfo) {
+            continue;
+        }
+
+        std::string whyNot;
+        if (schemaInfo->kind == UsdSchemaKind::SingleApplyAPI &&
+                typeAndInstance.second.IsEmpty()) {
+            if (usdPrim.CanApplyAPI(schemaInfo->type, &whyNot)) {
+                continue;
+            }
+        } else if (schemaInfo->kind == UsdSchemaKind::MultipleApplyAPI &&
+                !typeAndInstance.second.IsEmpty()) {
+            if (usdPrim.CanApplyAPI(
+                    schemaInfo->type, typeAndInstance.second, &whyNot)) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        const UsdValidationErrorSites primErrorSites = {
+            UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath()) };
+        errors.emplace_back(
+            UsdValidationErrorNameTokens->apiSchemaNotApplicable,
+            UsdValidationErrorType::Error, primErrorSites,
+            TfStringPrintf("API schema '%s' is applied to prim <%s>, but "
+                           "cannot be applied to it. %s",
+                           apiSchema.GetText(), usdPrim.GetPath().GetText(),
+                           whyNot.c_str()));
+    }
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -245,6 +298,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdValidatorNameTokens->attributeSpecValueTypeMismatch,
         _GetAttributeSpecValueTypeMismatchErrors);
+    registry.RegisterPluginValidator(
+        UsdValidatorNameTokens->apiSchemaApplicability,
+        _GetAPISchemaApplicabilityErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
