@@ -49,6 +49,9 @@ protected:
     virtual void _Execute(std::ostream &ss) = 0;
 
     HGI_API
+    const char *_GetShaderCodeExtensions() const;
+
+    HGI_API
     const char *_GetShaderCodeDeclarations() const;
 
     HGI_API
