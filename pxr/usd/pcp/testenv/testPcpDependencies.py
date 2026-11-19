@@ -14,7 +14,7 @@ to exercise.
 '''
 
 from pxr import Sdf, Pcp, Tf
-import functools, os, unittest
+import os, unittest
 
 class TestPcpDependencies(unittest.TestCase):
     # Fully populate a PcpCache so we can examine its full dependencies.
@@ -50,25 +50,11 @@ class TestPcpDependencies(unittest.TestCase):
 
     # Helper to compare dep results and print diffs.
     def _AssertDepsEqual(self, deps_lhs, deps_rhs):
-        def _LessThan(a, b):
-            if a.indexPath < b.indexPath:
-                return -1
-            if a.indexPath > b.indexPath:
-                return 1
-            if a.sitePath < b.sitePath:
-                return -1
-            if a.sitePath > b.sitePath:
-                return 1
-            if id(a.mapFunc) < id(b.mapFunc):
-                return -1
-            if id(a.mapFunc) > id(b.mapFunc):
-                return 1
-            return 0
-        # functools is used here to support python 2 and 3. In Python 3 there
-        # is no cmp parameter, only a function that gives a key value. This
-        # functools function exists to convert a cmp function to a key function.
-        a = sorted(deps_lhs, key = functools.cmp_to_key(_LessThan))
-        b = sorted(deps_rhs, key = functools.cmp_to_key(_LessThan))
+        def sortKey(d):
+            return (d.indexPath, d.sitePath, id(d.mapFunc))
+
+        a = sorted(deps_lhs, key = sortKey)
+        b = sorted(deps_rhs, key = sortKey)
         if a != b:
             print('Only in a:')
             for i in a:
