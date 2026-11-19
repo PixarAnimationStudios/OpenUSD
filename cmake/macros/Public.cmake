@@ -1451,6 +1451,7 @@ function(pxr_toplevel_epilogue)
                     ${PXR_THREAD_LIBS}
             )
 
+            _get_install_dir("lib" libInstallPrefix)
             _pxr_init_rpath(rpath "${libInstallPrefix}")
             _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib")
             _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
