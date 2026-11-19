@@ -243,6 +243,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _mgr(nullptr),
     _statsSession(nullptr),
     _progressMode(0),
+    _attemptRecovery(0),
     _startTime(0),
     _stopTime(0),
     _riley(nullptr),
@@ -2192,6 +2193,16 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
                    extraArgs.end(),
                    "-progress") != extraArgs.end() ? 2 : 0);
 
+    auto recoverIter = std::find(extraArgs.begin(), extraArgs.end(), "-recover");
+    if (recoverIter != extraArgs.end())
+    {
+        ++recoverIter;
+        if (recoverIter != extraArgs.end())
+        {
+            _attemptRecovery = (*recoverIter == "1") ? 1 : 0;
+        }
+    }
+
 #if _PRMANAPI_VERSION_MAJOR_ >= 26
     // Initialize internals of PRMan system
     _PRManSystemBegin(extraArgs);
@@ -3203,6 +3214,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
     static RtUString const US_RENDERMODE = RtUString("renderMode");
     static RtUString const US_INTERACTIVE = RtUString("interactive");
     static RtUString const US_PROGRESSMODE = RtUString("progressMode");
+    static RtUString const US_ATTEMPTRECOVERY = RtUString("attemptRecovery");
 
     RtUString const &defaultReferenceCamera =
         GetCameraContext().GetActiveCameraName();
@@ -3213,6 +3225,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
         RixStr.k_dice_referencecamera,
         defaultReferenceCamera);
     renderOptions.SetInteger(US_PROGRESSMODE, _progressMode);
+    renderOptions.SetInteger(US_ATTEMPTRECOVERY, _attemptRecovery);
 
     HdPrman_RenderViewContext &ctx = GetRenderViewContext();
     const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };

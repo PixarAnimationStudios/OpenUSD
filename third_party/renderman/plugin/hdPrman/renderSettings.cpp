@@ -364,9 +364,12 @@ _SetOptionsAndRender(
         static RtUString const US_RENDERMODE("renderMode");
         static RtUString const US_BATCH("batch");
         static RtUString const US_INTERACTIVE = RtUString("interactive");
+        static RtUString const US_ATTEMPTRECOVERY("attemptRecovery");
 
         renderOptions.SetString(
             US_RENDERMODE, interactive? US_INTERACTIVE : US_BATCH);
+        renderOptions.SetInteger(
+            US_ATTEMPTRECOVERY, param->GetAttemptRecovery());
         param->AcquireRiley()->Render(
             {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
             renderOptions);

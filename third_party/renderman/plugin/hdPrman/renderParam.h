@@ -511,6 +511,11 @@ public:
     // batched/offline mode).
     bool IsInteractive() const;
 
+    // Returns 1 if render recovery was requested through the husk-style
+    // "-recover 1" delegate option, 0 otherwise. Used to set the Riley
+    // "attemptRecovery" render option for both interactive and batch renders.
+    int GetAttemptRecovery() const { return _attemptRecovery; }
+
     bool UsingHusk() const;
 
 #if HD_API_VERSION >= 76
@@ -616,6 +621,7 @@ private:
         _lightPathFactory;
 #endif
     int _progressMode;
+    int _attemptRecovery;
     uint64_t _startTime;
     uint64_t _stopTime;
 

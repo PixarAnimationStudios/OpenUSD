@@ -487,6 +487,22 @@ AddVisualizerStyle(
     }
 }
 
+// Forward a husk-style delegate options string (e.g. "-recover 1") to the
+// render delegate through the batchCommandLine render setting, so that the
+// delegate's own "--delegate-options" parsing is what gets exercised.
+void
+AddDelegateOptions(
+    const std::string& delegateOptions, HdRenderSettingsMap* settingsMap)
+{
+    if (!delegateOptions.empty()) {
+        VtArray<std::string> batchCommandLine;
+        batchCommandLine.push_back("--delegate-options");
+        batchCommandLine.push_back(delegateOptions);
+        (*settingsMap)[HdPrmanRenderSettingsTokens->batchCommandLine] =
+            batchCommandLine;
+    }
+}
+
 // Add the Namespaced Settings to the settingsMap making sure to add the
 // fallback settings specific to testHdPrman
 void
@@ -852,7 +868,8 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "[--out|-o OUTPUT] [--frame|-f FRAME] [--env|-e NAME=VALUE]"
             "[--sceneCamPath|-c CAM_PATH] [--settings|-s RENDERSETTINGS_PATH] "
             "[--sceneCamAspect|-a aspectRatio] [--cullStyle|-k CULL_STYLE] "
-            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE]\n"
+            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE] "
+            "[--delegateOptions|-d OPTIONS]\n"
             "Single-hyphen options still need a space before the value!\n"
             "VARIANT defaults to ris and may be: %s.\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
@@ -865,6 +882,8 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "the default integrator\n"
             "PERF indicates a json file to record performance measurements\n"
             "TRACE indicates a text file to record trace measurements\n"
+            "OPTIONS is a husk-style --delegate-options string passed to the "
+            "render delegate, e.g. -d \"-recover 1\"\n"
             "CULL_STYLE selects the fallback cull style and may be one of: "
             "none|back|front|backUnlessDoubleSided|frontUnlessDoubleSided\n",
             cmd, variants.c_str());
@@ -892,6 +911,7 @@ int main(int argc, char *argv[])
     std::string perfOutput, traceOutput;
     std::string cullStyle;
     std::string variant("ris");
+    std::string delegateOptions;
 
     int frameNum = 0;
     SdfPath sceneCamPath, renderSettingsPath;
@@ -924,6 +944,8 @@ int main(int argc, char *argv[])
             env.push_back({parts[0], parts[1]});
         } else if (arg == "--variant" || arg == "-v") {
             variant = TfStringToLower(argv[++i]);
+        } else if (arg == "--delegateOptions" || arg == "-d") {
+            delegateOptions = argv[++i];
         }
     }
 
@@ -1022,6 +1044,7 @@ int main(int argc, char *argv[])
         HdRenderSettingsMap settingsMap;
 
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
+        AddDelegateOptions(delegateOptions, &settingsMap);
 
         HydraSetupAndRender(
             variant,
@@ -1063,6 +1086,7 @@ int main(int argc, char *argv[])
             AddVisualizerStyle(visualizerStyle, &settingsMap);
             AddNamespacedSettings(product.namespacedSettings, &settingsMap);
             settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
+            AddDelegateOptions(delegateOptions, &settingsMap);
 
             HydraSetupAndRender(
                 variant, settingsMap,
