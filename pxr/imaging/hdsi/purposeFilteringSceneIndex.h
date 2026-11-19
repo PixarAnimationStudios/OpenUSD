@@ -145,9 +145,11 @@ protected:
 private:
     bool _IsFilteringActive() const;
 
-    // Returns true if the prim represented by dataSource should be pruned
-    // based on the current state (_purposes or _excludedPurposesHint).
-    bool _ShouldPrune(const HdContainerDataSourceHandle &dataSource) const;
+    // Returns true if the prim should be pruned based on the current state
+    // (_purposes or _excludedPurposesHint). Instancer prims are never pruned;
+    // instead, the prototype descendants are considered for pruning.
+    bool _ShouldPrune(const HdContainerDataSourceHandle &dataSource,
+                      const TfToken &primType) const;
 
     // nullopt = hint mode (purposes not provided at c'tor time and SetPurposes
     // has not been called).

@@ -846,9 +846,6 @@ private:
     HdsiApplicationRenderSettingsSceneIndexRefPtr
     _GetApplicationRenderSettingsSceneIndex() const;
 
-    HdsiPurposeFilteringSceneIndexRefPtr
-    _GetPurposeFilteringSceneIndex() const;
-
     SdfPath _GetSceneIndexPrimPathFromPrimId(int primId) const;
 
     HdSceneIndexBaseRefPtr

@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexCreateArgsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/registryManager.h"
@@ -195,9 +196,11 @@ HdsiPurposeFilteringSceneIndex::SetPurposes(VtArray<TfToken> const &purposes)
                 _GetInputSceneIndex()->GetPrim(primPaths[i]);
             const std::optional<TfToken> purpose =
                 _GetPurpose(prim.dataSource);
-            const bool wasPruned = _ComputeShouldPrune(
+            const bool isInstancer =
+                prim.primType == HdPrimTypeTokens->instancer;
+            const bool wasPruned = !isInstancer && _ComputeShouldPrune(
                 purpose, oldPurposes, _excludedPurposesHint);
-            const bool isPruned = _ComputeShouldPrune(
+            const bool isPruned = !isInstancer && _ComputeShouldPrune(
                 purpose, _purposes, _excludedPurposesHint);
             if (wasPruned != isPruned) {
                 results[i].changed = true;
@@ -213,6 +216,10 @@ HdsiPurposeFilteringSceneIndex::SetPurposes(VtArray<TfToken> const &purposes)
             addedEntries.emplace_back(primPaths[i], results[i].primType);
         }
     }
+
+    TF_DEBUG(HDSI_PURPOSE_FILTERING_SCENE_INDEX).Msg(
+        "Finished full scene traversal to update pruning state.\n"
+        "Pruning status updated for %zu prims.\n", addedEntries.size());
 
     _SendPrimsAdded(addedEntries);
 }
@@ -234,7 +241,7 @@ HdsiPurposeFilteringSceneIndex::GetPrim(const SdfPath &primPath) const
 
     // XXX Since this scene index is stateless, need to fetch the purpose data
     // source on each query to determine if the prim should be pruned.
-    if (_ShouldPrune(prim.dataSource)) {
+    if (_ShouldPrune(prim.dataSource, prim.primType)) {
         // Only nuke the prim type.
         prim.primType = TfToken();
 
@@ -283,7 +290,7 @@ HdsiPurposeFilteringSceneIndex::_PrimsAdded(
             }
             const HdSceneIndexPrim prim =
                 _GetInputSceneIndex()->GetPrim(entries[i].primPath);
-            if (_ShouldPrune(prim.dataSource)) {
+            if (_ShouldPrune(prim.dataSource, prim.primType)) {
                 pruned[i] = true;
                 anythingPruned.store(true, std::memory_order_relaxed);
             }
@@ -378,7 +385,7 @@ HdsiPurposeFilteringSceneIndex::_PrimsDirtied(
             const HdSceneIndexPrim prim =
                 _GetInputSceneIndex()->GetPrim(entries[purposeIdx[j]].primPath);
             primTypes[j] =
-                _ShouldPrune(prim.dataSource) ? TfToken() : prim.primType;
+                _ShouldPrune(prim.dataSource, prim.primType) ? TfToken() : prim.primType;
         }
     });
 
@@ -423,8 +430,14 @@ HdsiPurposeFilteringSceneIndex::_IsFilteringActive() const
 
 bool
 HdsiPurposeFilteringSceneIndex::_ShouldPrune(
-    const HdContainerDataSourceHandle &dataSource) const
+    const HdContainerDataSourceHandle &dataSource,
+    const TfToken &primType) const
 {
+    // The purpose on the instancer's prototype descendants are considered
+    // for pruning, but the instancer itself is never pruned.
+    if (primType == HdPrimTypeTokens->instancer) {
+        return false;
+    }
     return _ComputeShouldPrune(
         _GetPurpose(dataSource), _purposes, _excludedPurposesHint);
 }

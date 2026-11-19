@@ -20,6 +20,7 @@ pxr_library(usdImagingGL
         garch
         glf
         hd
+        hdGp
         hdsi
         hdx
         pxOsd

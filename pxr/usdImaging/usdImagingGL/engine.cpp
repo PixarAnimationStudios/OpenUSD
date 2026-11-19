@@ -44,6 +44,7 @@
 #include "pxr/imaging/hd/sceneIndexUtil.h"
 #include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hdGp/sceneIndexPlugin.h"
 #include "pxr/imaging/hdsi/applicationRenderSettingsSceneIndex.h"
 #include "pxr/imaging/hdsi/domeLightCameraVisibilitySceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
@@ -155,7 +156,7 @@ private:
         return tracker;
     }
 
-    HdSceneIndexBaseRefPtr _Append(
+    HdSceneIndexBaseRefPtr _AppendAtPhase0(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &createArgs)
     {
@@ -183,9 +184,25 @@ private:
                         sceneIndex, createArgs);
         }
 
+        return sceneIndex;
+    }
+
+    HdSceneIndexBaseRefPtr _AppendAfterProceduralExpansion(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &createArgs)
+    {
+        HdSceneIndexBaseRefPtr sceneIndex = inputScene;
+
         static const bool enablePurposeFilteringSceneIndex =
             TfGetEnvSetting(
                 USDIMAGINGGL_ENGINE_ENABLE_PURPOSE_FILTERING_SCENE_INDEX);
+
+        // Ideally, we want purpose filtering to happen as soon as possible.
+        // However, we have an interesting scenario internally where a
+        // procedural with purpose 'render' has a relationship to another prim
+        // with purpose 'guide' and relies on it not being pruned prematurely
+        // prior to procedural expansion (when e.g. only 'default' and 'render'
+        // purposes are displayed).
         if (enablePurposeFilteringSceneIndex) {
             // The renderer plugin can configure the createArgs to specify
             // the excludedPurposesHint via the HdSceneIndexCreateArgsSchema.
@@ -193,11 +210,10 @@ private:
             sceneIndex = purposeFilteringSceneIndex =
                 HdsiPurposeFilteringSceneIndex::New(sceneIndex, createArgs);
         }
-
         return sceneIndex;
     }
 
-    static HdSceneIndexBaseRefPtr _AppendCallback(
+    static HdSceneIndexBaseRefPtr _AppendPhase0Callback(
         const std::string &renderInstanceId,
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &createArgs)
@@ -209,31 +225,48 @@ private:
                             renderInstanceId.c_str());
             return inputScene;
         }
-        return instance->_Append(inputScene, createArgs);
+        return instance->_AppendAtPhase0(inputScene, createArgs);
+    }
+
+    static HdSceneIndexBaseRefPtr _AppendAfterProceduralExpansionCallback(
+        const std::string &renderInstanceId,
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &createArgs)
+    {
+        _AppSceneIndicesSharedPtr const instance =
+            _GetTracker().GetInstance(renderInstanceId);
+        if (!instance) {
+            TF_CODING_ERROR("Did not find appSceneIndices instance for %s,",
+                            renderInstanceId.c_str());
+            return inputScene;
+        }
+        return instance->_AppendAfterProceduralExpansion(
+            inputScene, createArgs);
     }
 
     static void _Register()
     {
-        // Insert earlier so downstream scene indices can query and be notified
-        // of changes and also declare their dependencies (e.g., to support
-        // rendering color spaces).
-        const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
-
         // Note:
         // The pattern used below registers the static member fn as a callback,
         // which retreives the scene index instance using the
         // renderInstanceId argument of the callback.
 
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            std::string(), // empty string implies all renderers
-            &_AppendCallback,
+            HdSceneIndexPluginRegistryTokens->allRenderers,
+            &_AppendPhase0Callback,
             /* inputArgs = */ nullptr,
-            insertionPhase,
+            /* phase = */0, 
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart
+        );
+
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            HdSceneIndexPluginRegistryTokens->allRenderers,
+            &_AppendAfterProceduralExpansionCallback,
+            /* inputArgs = */ nullptr,
+            HdGpSceneIndexPlugin::GetInsertionPhase() + 1,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart
         );
     }
-
-
 };
 
 }
@@ -503,6 +536,15 @@ UsdImagingGLEngine::PrepareBatch(
                 _appSceneIndices->sceneMaterialPruningSceneIndex) {
             si->SetEnabled(!params.enableSceneMaterials);
         }
+
+        if (const auto &si = _appSceneIndices->purposeFilteringSceneIndex) {
+            // Note: Render tags are also computed in _PrepareRender() for the
+            // task controller scene index.
+             TfTokenVector renderTags;
+            _ComputeRenderTags(params, &renderTags);
+            si->SetPurposes(
+                VtArray<TfToken>(renderTags.begin(), renderTags.end()));
+        }
     }
     if (_lightPruningSceneIndex) {
         if (_lightPruningSceneIndexEnableSceneLights !=
@@ -552,10 +594,6 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams &params)
 
     _taskControllerSceneIndex->SetFreeCameraClipPlanes(params.clipPlanes);
     _taskControllerSceneIndex->SetRenderTags(renderTags);
-    if (const auto si = _GetPurposeFilteringSceneIndex()) {
-        si->SetPurposes(
-            VtArray<TfToken>(renderTags.begin(), renderTags.end()));
-    }
     _taskControllerSceneIndex->SetRenderParams(
         _MakeHydraUsdImagingGLRenderParams(params));
 }
@@ -2584,15 +2622,6 @@ UsdImagingGLEngine::_GetApplicationRenderSettingsSceneIndex() const
         return nullptr;
     }
     return _appSceneIndices->applicationRenderSettingsSceneIndex;
-}
-
-HdsiPurposeFilteringSceneIndexRefPtr
-UsdImagingGLEngine::_GetPurposeFilteringSceneIndex() const
-{
-    if (!_appSceneIndices) {
-        return nullptr;
-    }
-    return _appSceneIndices->purposeFilteringSceneIndex;
 }
 
 SdfPath
