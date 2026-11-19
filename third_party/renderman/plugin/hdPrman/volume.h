@@ -133,7 +133,7 @@ private:
     bool _isMeshLight;
 
 #if _PRMANAPI_VERSION_MAJOR_ >= 27 && HD_API_VERSION >= 93
-    SdfPathVector _volumeFilterPaths;
+    VtArray<SdfPath> _volumeFilterPaths;
     std::vector<RtUString> _volumeFilterNodeNames;
     std::vector<riley::VolumeFilterId> _volumeFilterIds;
     std::vector<riley::CoordinateSystemId> _volumeFilterCoordSysIds;

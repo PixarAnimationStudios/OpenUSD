@@ -432,8 +432,8 @@ public:
 
     // Paths to the Sample Filters from the Render Settings Prim
     void SetSampleFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& sampleFilterPaths);
-    SdfPathVector GetSampleFilterPaths() {
+        const VtArray<SdfPath>& sampleFilterPaths);
+    VtArray<SdfPath> GetSampleFilterPaths() {
         return _sampleFilterPaths;
     }
 
@@ -447,8 +447,8 @@ public:
 
     // Paths to the Display Filters from the Render Settings Prim
     void SetDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& displayFilterPaths);
-    SdfPathVector GetDisplayFilterPaths() {
+        const VtArray<SdfPath>& displayFilterPaths);
+    VtArray<SdfPath> GetDisplayFilterPaths() {
         return _displayFilterPaths;
     }
 
@@ -463,8 +463,8 @@ public:
 #if _PRMANAPI_VERSION_MAJOR_ >= 27
     // Riley Data from the Energy Filter Prim
     void SetEnergyFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& energyFilterPaths);
-    SdfPathVector GetEnergyFilterPaths() {
+        const VtArray<SdfPath>& energyFilterPaths);
+    VtArray<SdfPath> GetEnergyFilterPaths() {
         return _energyFilterPaths;
     }
     void AddEnergyFilter(
@@ -730,11 +730,11 @@ private:
     HdMaterialNode2 _renderSettingsIntegratorNode;
     riley::IntegratorId _integratorId;
 
-    SdfPathVector _sampleFilterPaths;
+    VtArray<SdfPath> _sampleFilterPaths;
     _PathToRileyFilterMap _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
 
-    SdfPathVector _displayFilterPaths;
+    VtArray<SdfPath> _displayFilterPaths;
     _PathToRileyFilterMap _displayFilterNodes;
     riley::DisplayFilterId _displayFiltersId;
 
@@ -747,7 +747,7 @@ private:
     using _PathToEnergyFilterDataMap =
         std::unordered_map<SdfPath, _EnergyFilterData, SdfPath::Hash>;
 
-    SdfPathVector _energyFilterPaths;
+    VtArray<SdfPath> _energyFilterPaths;
     _PathToEnergyFilterDataMap _energyFilterNodes;
 #endif // _PRMANAPI_VERSION_MAJOR_ >= 27
     /// ------------------------------------------------------------------------

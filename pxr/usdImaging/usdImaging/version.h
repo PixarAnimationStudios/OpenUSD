@@ -54,8 +54,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 26 - Added UsdImagingRenderPassPruneSceneIndexPlugin that is
 //              registered for all renderers.
 // Version 27 - Added UsdImagingSceneIndex::SceneIndexAppendCallbacks.
+// Version 28 - Light filter lists, light portal lists, and certain render prim
+//              namespaced settings that were populated as SdfPathVector are
+//              now populated as VtArray<SdfPath>.
 
-#define USD_IMAGING_API_VERSION 27
+#define USD_IMAGING_API_VERSION 28
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

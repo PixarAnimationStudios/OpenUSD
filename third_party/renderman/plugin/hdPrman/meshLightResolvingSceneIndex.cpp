@@ -49,6 +49,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/loops.h"
 
@@ -289,18 +290,18 @@ _GetBoundMaterialPath(
     return SdfPath();
 }
 
-SdfPathVector
+VtArray<SdfPath>
 _GetLightFilterPaths(
     const HdContainerDataSourceHandle &inputContainer)
 {
     if (HdLightSchema lightSchema =
             HdLightSchema::GetFromParent(inputContainer)) {
-        if (auto dataSource = HdTypedSampledDataSource<SdfPathVector>::Cast(
+        if (auto dataSource = HdPathArrayDataSource::Cast(
                 lightSchema.GetContainer()->Get(HdTokens->filters))) {
             return dataSource->GetTypedValue(0.0f);
         }
     }
-    return SdfPathVector();
+    return { };
 }
 
 HdContainerDataSourceHandle

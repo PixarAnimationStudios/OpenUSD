@@ -11,12 +11,15 @@
 #include "pxr/base/gf/matrix3d.h"
 #if PXR_VERSION >= 2311
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/vt/array.h"
+
 #endif
-#include "pxr/base/tf/staticTokens.h"
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
-#include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
+#include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/lightSchema.h"
@@ -28,8 +31,11 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
 #include "pxr/usd/sdf/assetPath.h"
-#include "hdPrman/tokens.h"
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/staticTokens.h"
 
 #if PXR_VERSION <= 2308
 #include <boost/functional/hash.hpp>
@@ -182,16 +188,16 @@ _ResolveLinking(
     return linking;
 }
 
-SdfPathVector
+VtArray<SdfPath>
 _GetPortalPaths(const HdContainerDataSourceHandle& primDataSource)
 {
-    return _GetLightData<SdfPathVector>(primDataSource, HdTokens->portals);
+    return _GetLightData<VtArray<SdfPath>>(primDataSource, HdTokens->portals);
 }
 
-SdfPathVector
+VtArray<SdfPath>
 _GetLightFilterPaths(const HdContainerDataSourceHandle& primDataSource)
 {
-    return _GetLightData<SdfPathVector>(primDataSource, HdTokens->filters);
+    return _GetLightData<VtArray<SdfPath>>(primDataSource, HdTokens->filters);
 }
 
 std::string
@@ -202,7 +208,7 @@ _GetPortalName(
 {
 #if PXR_VERSION >= 2311
     size_t hashValue = TfHash::Combine(
-        domeColorMap, 
+        domeColorMap,
         domeXform.ExtractRotationMatrix(),
         portalXform.ExtractRotationMatrix());
 #else
@@ -546,13 +552,13 @@ HdPrman_PortalLightDataSource::_GetLight()
     // This means that the filter prims will still just exist under the dome
     // and filter xforms will be relative to the dome, not the portal. That
     // xform behavior is expected; it matches what happens in Katana.
-    SdfPathVector domeFilters = _GetLightFilterPaths(_domePrimDataSource);
-    SdfPathVector allFilters  = _GetLightFilterPaths(_portalPrimDataSource);
+    VtArray<SdfPath> domeFilters = _GetLightFilterPaths(_domePrimDataSource);
+    VtArray<SdfPath> allFilters  = _GetLightFilterPaths(_portalPrimDataSource);
     allFilters.insert(allFilters.end(),
                       std::make_move_iterator(domeFilters.begin()),
                       std::make_move_iterator(domeFilters.end()));
     const auto computedFiltersDataSource =
-        HdRetainedTypedSampledDataSource<SdfPathVector>::New(allFilters);
+        HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(allFilters);
 
     // Resolve light and shadow linking.
     const auto lightLink = _ResolveLinking(
@@ -638,8 +644,8 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries& entries) override;
 
 private:
-    SdfPathVector _AddMappingsForDome(const SdfPath& domePrimPath);
-    SdfPathVector _RemoveMappingsForDome(const SdfPath& domePrimPath);
+    VtArray<SdfPath> _AddMappingsForDome(const SdfPath& domePrimPath);
+    VtArray<SdfPath> _RemoveMappingsForDome(const SdfPath& domePrimPath);
 
 private:
     // Map dome light paths to flag indicating presence of associated portals.
@@ -669,7 +675,7 @@ _PortalLightResolvingSceneIndex::_PortalLightResolvingSceneIndex(
 _PortalLightResolvingSceneIndex::
 ~_PortalLightResolvingSceneIndex() = default;
 
-HdSceneIndexPrim 
+HdSceneIndexPrim
 _PortalLightResolvingSceneIndex::GetPrim(
     const SdfPath& primPath) const
 {
@@ -699,7 +705,7 @@ _PortalLightResolvingSceneIndex::GetPrim(
     return prim;
 }
 
-SdfPathVector 
+SdfPathVector
 _PortalLightResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath& primPath) const
 {
@@ -710,7 +716,7 @@ void
 _PortalLightResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase& sender,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
-{    
+{
     if (!_IsObserved()) {
         return;
     }
@@ -724,7 +730,7 @@ _PortalLightResolvingSceneIndex::_PrimsAdded(
     _SendPrimsAdded(entries);
 }
 
-void 
+void
 _PortalLightResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase& sender,
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
@@ -754,7 +760,7 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
     static const auto& lightLocator    = HdLightSchema::GetDefaultLocator();
     static const auto& materialLocator = HdMaterialSchema::GetDefaultLocator();
     static const auto& xformLocator    = HdXformSchema::GetDefaultLocator();
-    static const HdDataSourceLocatorSet portalLocators =    
+    static const HdDataSourceLocatorSet portalLocators =
         {materialLocator, lightLocator, xformLocator};
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtied;
@@ -814,7 +820,7 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
     _SendPrimsDirtied(dirtied);
 }
 
-SdfPathVector
+VtArray<SdfPath>
 _PortalLightResolvingSceneIndex::_AddMappingsForDome(
     const SdfPath& domePrimPath)
 {
@@ -824,10 +830,10 @@ _PortalLightResolvingSceneIndex::_AddMappingsForDome(
         // Caller should have already confirmed this is a dome.
         TF_CODING_ERROR("_AddMappingsForDome invoked for non-"
                         "domeLight path <%s>", domePrimPath.GetText());
-        return SdfPathVector();
+        return { };
     }
-    
-    SdfPathVector portalPaths = _GetPortalPaths(domePrim.dataSource);
+
+    VtArray<SdfPath> portalPaths = _GetPortalPaths(domePrim.dataSource);
 
     _domesWithPortals[domePrimPath] = !portalPaths.empty();
 
@@ -844,11 +850,11 @@ _PortalLightResolvingSceneIndex::_AddMappingsForDome(
     return portalPaths;
 }
 
-SdfPathVector
+VtArray<SdfPath>
 _PortalLightResolvingSceneIndex::_RemoveMappingsForDome(
     const SdfPath& domePrimPath)
 {
-    SdfPathVector portalPaths;
+    VtArray<SdfPath> portalPaths;
     auto domeIt = _domesWithPortals.find(domePrimPath);
     if (domeIt != _domesWithPortals.end()) {
         const bool domeHasPortals = domeIt->second;

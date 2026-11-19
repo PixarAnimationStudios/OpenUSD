@@ -13,6 +13,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/vt/array.h"
 #include "pxr/base/tf/token.h"
 
 #include "pxr/pxr.h"
@@ -56,11 +57,11 @@ private:
     riley::LightShaderId _shaderId;
     riley::LightInstanceId _instanceId;
     bool _visibleToCamera;
-    
+
     RtUString _lightShaderType;
     TfToken _lightLink;
     TfToken _shadowLink;
-    SdfPathVector _lightFilterPaths;
+    VtArray<SdfPath> _lightFilterPaths;
     std::vector<TfToken> _lightFilterLinks;
     std::vector<riley::CoordinateSystemId> _lightFilterCoordSysIds;
     riley::CoordinateSystemId _lightFilterParentCoordSysId;

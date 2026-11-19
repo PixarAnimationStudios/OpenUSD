@@ -177,7 +177,7 @@ HdPrman_EnergyFilter::Sync(
         id.GetText(), (unsigned)*dirtyBits);
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
-        const SdfPathVector& filters = param->GetEnergyFilterPaths();
+        const VtArray<SdfPath>& filters = param->GetEnergyFilterPaths();
         const bool inPaths = std::find(filters.begin(), filters.end(), id)
             != filters.end();
         TF_DEBUG(HDPRMAN_ENERGY_FILTER).Msg(

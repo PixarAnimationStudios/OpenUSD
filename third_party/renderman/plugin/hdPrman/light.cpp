@@ -50,9 +50,11 @@
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/array.h"
 
 #include "pxr/pxr.h"
 
+#include <prmanapi.h>
 #include <Riley.h>
 #include <RileyIds.h>
 #include <RiTypesHelper.h>
@@ -242,7 +244,7 @@ static void
 _PopulateLightFilterNodes(
         const SdfPath &lightId,
         const RtUString &lightShaderType,
-        const SdfPathVector &lightFilterPaths,
+        const VtArray<SdfPath> &lightFilterPaths,
         HdSceneDelegate *sceneDelegate,
         HdRenderParam *renderParam,
         riley::Riley *riley,
@@ -625,8 +627,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // affect both the shader and the instance, the latter due to potential
         // changes in the relevant coordinate systems.
         val = sceneDelegate->GetLightParamValue(id, HdTokens->filters);
-        if (val.IsHolding<SdfPathVector>()) {
-            const auto& lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+        if (val.IsHolding<VtArray<SdfPath>>()) {
+            const auto& lightFilterPaths = val.UncheckedGet<VtArray<SdfPath>>();
             if (lightFilterPaths != _lightFilterPaths) {
                 // light filter paths have changed
                 dirtyLightShader = true;
@@ -754,7 +756,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
 #if _PRMANAPI_VERSION_MAJOR_ >= 28
         if (_hdLightType == HdPrimTypeTokens->distantLight) {
-            // We need to use different normalization math by default for the UsdLux Schema 
+            // We need to use different normalization math by default for the UsdLux Schema
             // (if the user doesn't explicitly author sphericalAreaNormalization).
             static const RtUString k_sphericalAreaNormalization("sphericalAreaNormalization");
             int sphericalAreaNormalization = -1;
@@ -775,7 +777,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         || _hdLightType == HdPrimTypeTokens->rectLight
         || _hdLightType == HdPrimTypeTokens->sphereLight
         || _hdLightType == HdPrimTypeTokens->cylinderLight) {
-            // If cone angle is not present make sure we set 180 degrees for double sided 
+            // If cone angle is not present make sure we set 180 degrees for double sided
             // lights (sphere and cylinder) which will produce a cone with the default 90 degrees
             static const RtUString k_coneAngle("coneAngle");
             float coneAngle = 90.f;
@@ -783,7 +785,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                 lightNode.params.SetFloat(k_coneAngle, 180.f);
             }
 
-            // We need to use different cone attenuation math by default for the UsdLux Schema 
+            // We need to use different cone attenuation math by default for the UsdLux Schema
             // (if the user doesn't explicitly author directionalConeAttenuation).
             static const RtUString k_directionalConeAttenuation("directionalConeAttenuation");
             int directionalConeAttenuation = -1;
@@ -808,11 +810,11 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         }
 
         // Light Filters
-        SdfPathVector filters;
+        VtArray<SdfPath> filters;
         VtValue filtersVal = sceneDelegate->GetLightParamValue(
             id, HdTokens->filters);
-        if (filtersVal.IsHolding<SdfPathVector>()) {
-            filters = filtersVal.UncheckedGet<SdfPathVector>();
+        if (filtersVal.IsHolding<VtArray<SdfPath>>()) {
+            filters = filtersVal.UncheckedGet<VtArray<SdfPath>>();
         }
         if (filters != _lightFilterPaths) {
             // clear and recreate dependencies
@@ -879,8 +881,9 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // that recompose the full list below. Clear before calling
         // _PopulateLightFilterNodes, which only appends.
         _lightFilterCoordSysIds.clear();
-        _PopulateLightFilterNodes(id, _lightShaderType, filters, sceneDelegate, renderParam,
-            riley, &filterNodes, &_lightFilterCoordSysIds, &_lightFilterLinks);
+        _PopulateLightFilterNodes(id, _lightShaderType, filters, sceneDelegate,
+            renderParam, riley, &filterNodes, &_lightFilterCoordSysIds,
+            &_lightFilterLinks);
 
         const riley::ShadingNetwork light {
             static_cast<uint32_t>(lightNodes.size()),

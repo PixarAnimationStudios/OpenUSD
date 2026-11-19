@@ -98,7 +98,7 @@ _PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
 // XXX -- This is similar to _PopulateLightFilterNodes() in hdPrman/light.cpp.
 static void
 _PopulateVolumeFilterNodes(
-    const SdfPathVector &volumeFilterPaths,
+    const VtArray<SdfPath> &volumeFilterPaths,
     HdSceneDelegate *sceneDelegate,
     HdRenderParam *renderParam,
     riley::Riley *riley,
@@ -226,10 +226,10 @@ HdPrman_Volume::Sync(HdSceneDelegate *sceneDelegate,
     const SdfPath& id = GetId();
 
     bool dirtyFilters = false;
-    SdfPathVector volumeFilterPaths;
+    VtArray<SdfPath> volumeFilterPaths;
     VtValue val = sceneDelegate->GetVolumeParamValue(id, HdTokens->filters);
-    if (val.IsHolding<SdfPathVector>()) {
-        volumeFilterPaths = val.UncheckedGet<SdfPathVector>();
+    if (val.IsHolding<VtArray<SdfPath>>()) {
+        volumeFilterPaths = val.UncheckedGet<VtArray<SdfPath>>();
         // XXX -- How do we know if the actual filters changed?
         //        We will just assume they did for now.
         dirtyFilters = true;
@@ -243,7 +243,7 @@ HdPrman_Volume::Sync(HdSceneDelegate *sceneDelegate,
         riley::Riley* riley = param->AcquireRiley();
         HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
         HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
-    
+
         // Clear and recreate dependencies.
         if (volumeFilterPaths != _volumeFilterPaths) {
             for (const SdfPath& filterPath : _volumeFilterPaths) {

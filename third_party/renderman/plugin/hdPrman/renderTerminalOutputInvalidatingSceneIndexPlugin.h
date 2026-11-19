@@ -18,14 +18,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin
 ///
 /// Plugin adds a filtering scene index to the Prman render delegate to
-/// dirty the Integrator, Sample and Display Filters connected to the 
-/// Render Settings Prim when changed.
+/// dirty the Integrator, Sample and Display Filters connected to the
+/// Render Settings Prim when changed. This is necessary because hdPrman
+/// currently only syncs these prim types if they are actually connected
+/// to the active renderSettings prim.
 ///
 class HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin
     : public HdSceneIndexPlugin
 {
 public:
-    HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin();    
+    HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin();
 
 protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(

@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/domeLightAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -28,49 +29,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-namespace {
-
-// An HdTypedSampledDataSource that determines the list of portals
-class _PortalsDataSource : public HdTypedSampledDataSource<SdfPathVector>
-{
-public:
-    HD_DECLARE_DATASOURCE(_PortalsDataSource);
-
-    _PortalsDataSource(const UsdPrim& prim)
-    : _prim(prim)
-    {
-    }
-
-    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
-    {
-        return VtValue(GetTypedValue(shutterOffset));
-    }
-
-    SdfPathVector GetTypedValue(HdSampledDataSource::Time shutterOffset) override
-    {
-        UsdRelationship portalsRel = UsdLuxDomeLight(_prim).GetPortalsRel();
-        SdfPathVector portalPaths;
-        if (portalsRel) {
-            portalsRel.GetForwardedTargets(&portalPaths);
-        }
-        return portalPaths;
-    }
-
-    bool GetContributingSampleTimesForInterval(
-        HdSampledDataSource::Time startTime,
-        HdSampledDataSource::Time endTime,
-        std::vector<HdSampledDataSource::Time>* outSampleTimes) override
-    {
-        return false;
-    }
-
-private:
-    UsdPrim _prim;
-};
-
-} // namespace
-
-UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter() 
+UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter()
 {
 }
 
@@ -102,7 +61,8 @@ UsdImagingDomeLightAdapter::GetImagingSubprimData(
             HdLightSchema::GetSchemaToken(),
             HdRetainedContainerDataSource::New(
                 HdTokens->portals,
-                _PortalsDataSource::New(prim))),
+                UsdImagingDataSourceRelationship::New(
+                    UsdLuxDomeLight(prim).GetPortalsRel(), stageGlobals))),
         UsdImagingLightAdapter::GetImagingSubprimData(
             prim, subprim, stageGlobals));
 }
@@ -135,7 +95,7 @@ UsdImagingDomeLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 }
 
 SdfPath
-UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim, 
+UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {

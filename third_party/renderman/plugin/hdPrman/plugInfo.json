@@ -392,6 +392,17 @@
                             "after": ["hdPrman:phase4"],
                             "position": "firstAfter"
                         }
+                    },
+                    "HdPrmanRelationshipPathVectorConvertingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer":  ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Converts SdfPathVectors to VtArray<SdfPath>s on certain relationship-derived data sources, for compatibility with USD < 27.02.",
+                        "tags": ["hdPrman:relArrays", "hdPrman:phase0"],
+                        "ordering": {
+                            "after": ["hd:sceneAssembly"],
+                            "position": "doesNotMatter"
+                        }
                     }
                 }
             },

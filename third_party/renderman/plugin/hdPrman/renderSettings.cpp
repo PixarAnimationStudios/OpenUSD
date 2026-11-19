@@ -377,6 +377,16 @@ _SetOptionsAndRender(
     }
 }
 
+const SdfPath&
+_FirstNonEmptyPath(const VtArray<SdfPath>& paths) {
+    for (const SdfPath& path : paths) {
+        if (!path.IsEmpty()) {
+            return path;
+        }
+    }
+    return SdfPath::EmptyPath();
+}
+
 } // end anonymous namespace
 
 
@@ -767,104 +777,33 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 {
     const VtDictionary& namespacedSettings = GetNamespacedSettings();
 
-#if _PRMANAPI_VERSION_MAJOR_ <= 26
-    const bool rsSchemaHasRelationships = false;
-#else
-    const bool rsSchemaHasRelationships = true;
-#endif
-
-#if PXR_VERSION >= 2505
-    const bool terminalsWarn =
-        TfGetEnvSetting(LEGACY_PXR_RENDER_TERMINALS_API_ALLOWED_AND_WARN);
-#else
-    const bool terminalsWarn = true;
-#endif
-
     // Set the integrator on this Render Settings prim
     {
-        // XXX Should use SdfPath rather than a vector.
-        SdfPathVector paths;
-        if (rsSchemaHasRelationships) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->riIntegrator.GetString(),
-                VtDefault = SdfPathVector());
-        }
+        const auto& paths = VtDictionaryGet<VtArray<SdfPath>>(
+            namespacedSettings,
+            _renderTerminalTokens->riIntegrator.GetString(),
+            VtDefault = VtArray<SdfPath>());
 
-        // Fallback to legacy terminal connection
-        // (Remove in a future USD version)
-        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->outputsRiIntegrator.GetString(),
-                VtDefault = SdfPathVector());
-
-#if PXR_VERSION >= 2505
-            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
-                TF_WARN("outputs:ri:integrator on RenderSettings is "
-                        "deprecated in favor of ri:integrator.");
-            }
-#endif
-        }
-
-        param->SetRenderSettingsIntegratorPath(sceneDelegate,
-            paths.empty()? SdfPath::EmptyPath() : paths.front());
+        param->SetRenderSettingsIntegratorPath(
+            sceneDelegate, _FirstNonEmptyPath(paths));
     }
 
     // Set the SampleFilters on this Render Settings prim
     {
-        SdfPathVector paths;
-        if (rsSchemaHasRelationships) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->riSampleFilters.GetString(),
-                VtDefault = SdfPathVector());
-        }
-
-        // Fallback to legacy terminal connection
-        // (Remove in a future USD version)
-        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->outputsRiSampleFilters.GetString(),
-                VtDefault = SdfPathVector());
-
-#if PXR_VERSION >= 2505
-            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
-                TF_WARN("outputs:ri:sampleFilters on RenderSettings is "
-                        "deprecated in favor of ri:sampleFilters.");
-            }
-#endif
-        }
+        const auto& paths = VtDictionaryGet<VtArray<SdfPath>>(
+            namespacedSettings,
+            _renderTerminalTokens->riSampleFilters.GetString(),
+            VtDefault = VtArray<SdfPath>());
 
         param->SetSampleFilterPaths(sceneDelegate, paths);
     }
 
     // Set the DisplayFilters on this Render Settings prim
     {
-        SdfPathVector paths;
-        if (rsSchemaHasRelationships) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->riDisplayFilters.GetString(),
-                VtDefault = SdfPathVector());
-        }
-
-        // Fallback to legacy terminal connection
-        // (Remove in a future USD version)
-        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->outputsRiDisplayFilters.GetString(),
-                VtDefault = SdfPathVector());
-
-#if PXR_VERSION >= 2505
-            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
-                TF_WARN("outputs:ri:displayFilters on RenderSettings is "
-                        "deprecated in favor of ri:displayFilters.");
-            }
-#endif
-        }
+        const auto& paths = VtDictionaryGet<VtArray<SdfPath>>(
+            namespacedSettings,
+            _renderTerminalTokens->riDisplayFilters.GetString(),
+            VtDefault = VtArray<SdfPath>());
 
         param->SetDisplayFilterPaths(sceneDelegate, paths);
     }
@@ -872,13 +811,11 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 #if _PRMANAPI_VERSION_MAJOR_ >= 27
     // Set the EnergyFilters on this Render Settings prim
     {
-        SdfPathVector paths;
-        if (rsSchemaHasRelationships) {
-            paths = VtDictionaryGet<SdfPathVector>(
-                namespacedSettings,
-                _renderTerminalTokens->riEnergyFilters.GetString(),
-                VtDefault = SdfPathVector());
-        }
+        const auto& paths = VtDictionaryGet<VtArray<SdfPath>>(
+            namespacedSettings,
+            _renderTerminalTokens->riEnergyFilters.GetString(),
+            VtDefault = VtArray<SdfPath>());
+
         param->SetEnergyFilterPaths(sceneDelegate, paths);
     }
 #endif // _PRMANAPI_VERSION_MAJOR_ >= 27

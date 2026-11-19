@@ -4813,7 +4813,7 @@ HdPrman_RenderParam::SetRenderSettingsIntegratorNode(
 void
 HdPrman_RenderParam::SetSampleFilterPaths(
     HdSceneDelegate *sceneDelegate,
-    SdfPathVector const &sampleFilterPaths)
+    const VtArray<SdfPath>& sampleFilterPaths)
 {
     if (_sampleFilterPaths != sampleFilterPaths) {
         // Reset the Filter Shading Nodes and update the paths
@@ -4843,7 +4843,7 @@ HdPrman_RenderParam::SetSampleFilterPaths(
 void
 HdPrman_RenderParam::SetDisplayFilterPaths(
     HdSceneDelegate *sceneDelegate,
-    SdfPathVector const &displayFilterPaths)
+    const VtArray<SdfPath>& displayFilterPaths)
 {
     if (_displayFilterPaths != displayFilterPaths) {
         // Reset the Filter Shading Nodes and update the paths
@@ -5025,7 +5025,7 @@ HdPrman_RenderParam::AddDisplayFilter(
 void
 HdPrman_RenderParam::SetEnergyFilterPaths(
     HdSceneDelegate *sceneDelegate,
-    SdfPathVector const &energyFilterPaths)
+    const VtArray<SdfPath>& energyFilterPaths)
 {
     if (_energyFilterPaths != energyFilterPaths) {
         // Delete existing Riley energy filters and reset state

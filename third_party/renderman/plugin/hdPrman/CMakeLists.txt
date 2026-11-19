@@ -197,6 +197,7 @@ pxr_plugin(${PXR_PACKAGE}
         pinnedCurveExpandingSceneIndexPlugin
         pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex
         previewSurfacePrimvarsSceneIndexPlugin
+        relationshipPathVectorConvertingSceneIndexPlugin
         renderBuffer
         renderParam
         renderPass

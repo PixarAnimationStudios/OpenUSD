@@ -7,6 +7,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourceRenderPrims.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 #include "pxr/usdImaging/usdImaging/usdRenderProductSchema.h"
 #include "pxr/usdImaging/usdImaging/usdRenderSettingsSchema.h"
 #include "pxr/usdImaging/usdImaging/usdRenderVarSchema.h"
@@ -106,13 +107,8 @@ public:
                 _tokens->riEnergyFilters}) {
             if (name == relName) {
                 if (UsdRelationship rel = _prim.GetRelationship(name)) {
-                    SdfPathVector targets;
-                    rel.GetTargets(&targets);
-                    // XXX Surprisingly, these settings come through as
-                    // std::vector even though VtArray is what is typically
-                    // used in the scene index.
-                    return HdRetainedTypedSampledDataSource<SdfPathVector>
-                        ::New(targets);
+                    return UsdImagingDataSourceRelationship::New(
+                        rel, _stageGlobals);
                 }
                 return nullptr;
             }
@@ -187,7 +183,7 @@ public:
         } else if (name == UsdRenderTokens->renderSource) {
             if (UsdRelationship renderSourceRel =
                 _usdRenderPass.GetRenderSourceRel()) {
-                SdfPathVector targets; 
+                SdfPathVector targets;
                 renderSourceRel.GetForwardedTargets(&targets);
                 if (!targets.empty()) {
                     return HdRetainedTypedSampledDataSource<SdfPath>::New(
@@ -229,14 +225,14 @@ UsdImagingDataSourceRenderPassPrim::UsdImagingDataSourceRenderPassPrim(
 {
 }
 
-TfTokenVector 
+TfTokenVector
 UsdImagingDataSourceRenderPassPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return { HdRenderPassSchema::GetSchemaToken() };
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 UsdImagingDataSourceRenderPassPrim::Get(const TfToken & name)
 {
     if (name == HdRenderPassSchema::GetSchemaToken()) {
@@ -244,7 +240,7 @@ UsdImagingDataSourceRenderPassPrim::Get(const TfToken & name)
                     _GetSceneIndexPath(),
                     UsdRenderPass(_GetUsdPrim()),
                     _GetStageGlobals());
-    } 
+    }
 
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return nullptr;
@@ -300,7 +296,7 @@ public:
                 // Relationships need to be explicitly specified.
                 UsdImagingUsdRenderSettingsSchemaTokens->camera,
                 UsdImagingUsdRenderSettingsSchemaTokens->products });
-        
+
         return names;
     }
 
@@ -321,7 +317,7 @@ public:
         }
 
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->camera) {
-            SdfPathVector targets; 
+            SdfPathVector targets;
             _usdRenderSettings.GetCameraRel().GetForwardedTargets(&targets);
             if (!targets.empty()) {
                 return HdRetainedTypedSampledDataSource<SdfPath>::New(
@@ -331,7 +327,7 @@ public:
         }
 
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->products) {
-            SdfPathVector targets; 
+            SdfPathVector targets;
             _usdRenderSettings.GetProductsRel().GetForwardedTargets(&targets);
 
             VtArray<SdfPath> vTargets(targets.begin(), targets.end());
@@ -385,14 +381,14 @@ UsdImagingDataSourceRenderSettingsPrim::UsdImagingDataSourceRenderSettingsPrim(
 {
 }
 
-TfTokenVector 
+TfTokenVector
 UsdImagingDataSourceRenderSettingsPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return { UsdImagingUsdRenderSettingsSchema::GetSchemaToken() };
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 UsdImagingDataSourceRenderSettingsPrim::Get(const TfToken & name)
 {
     if (name == UsdImagingUsdRenderSettingsSchema::GetSchemaToken()) {
@@ -400,7 +396,7 @@ UsdImagingDataSourceRenderSettingsPrim::Get(const TfToken & name)
                     _GetSceneIndexPath(),
                     UsdRenderSettings(_GetUsdPrim()),
                     _GetStageGlobals());
-    } 
+    }
 
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return nullptr;
@@ -484,7 +480,7 @@ public:
         }
 
         if (name == UsdImagingUsdRenderProductSchemaTokens->camera) {
-            SdfPathVector targets; 
+            SdfPathVector targets;
             _usdRenderProduct.GetCameraRel().GetForwardedTargets(&targets);
             if (!targets.empty()) {
                 return HdRetainedTypedSampledDataSource<SdfPath>::New(
@@ -494,7 +490,7 @@ public:
         }
 
         if (name == UsdImagingUsdRenderProductSchemaTokens->orderedVars) {
-            SdfPathVector targets; 
+            SdfPathVector targets;
             _usdRenderProduct.GetOrderedVarsRel().GetForwardedTargets(&targets);
 
             VtArray<SdfPath> vTargets(targets.begin(), targets.end());
@@ -563,14 +559,14 @@ UsdImagingDataSourceRenderProductPrim::UsdImagingDataSourceRenderProductPrim(
 {
 }
 
-TfTokenVector 
+TfTokenVector
 UsdImagingDataSourceRenderProductPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return { UsdImagingUsdRenderProductSchema::GetSchemaToken() };
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 UsdImagingDataSourceRenderProductPrim::Get(const TfToken & name)
 {
     if (name == UsdImagingUsdRenderProductSchema::GetSchemaToken()) {
@@ -578,7 +574,7 @@ UsdImagingDataSourceRenderProductPrim::Get(const TfToken & name)
                     _GetSceneIndexPath(),
                     UsdRenderProduct(_GetUsdPrim()),
                     _GetStageGlobals());
-    } 
+    }
 
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return nullptr;
@@ -705,14 +701,14 @@ UsdImagingDataSourceRenderVarPrim::UsdImagingDataSourceRenderVarPrim(
 {
 }
 
-TfTokenVector 
+TfTokenVector
 UsdImagingDataSourceRenderVarPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return { UsdImagingUsdRenderVarSchema::GetSchemaToken() };
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 UsdImagingDataSourceRenderVarPrim::Get(const TfToken & name)
 {
     if (name == UsdImagingUsdRenderVarSchema::GetSchemaToken()) {
@@ -720,7 +716,7 @@ UsdImagingDataSourceRenderVarPrim::Get(const TfToken & name)
                     _GetSceneIndexPath(),
                     UsdRenderVar(_GetUsdPrim()),
                     _GetStageGlobals());
-    } 
+    }
 
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return nullptr;
