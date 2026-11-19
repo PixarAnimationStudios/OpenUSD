@@ -1,0 +1,93 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "Lights"
+{
+    def DomeLight "DomeLight"
+    {
+    }
+}
+
+def Scope "World" (
+    kind = "component"
+)
+{
+    def Scope "Materials"
+    {
+        def Material "UvMaterial"
+        {
+            token inputs:coords = "st"
+            token outputs:displacement.connect = </World/Materials/UvMaterial/PbrPreview.outputs:displacement>
+            token outputs:surface.connect = </World/Materials/UvMaterial/PbrPreview.outputs:surface>
+
+            def Shader "PbrPreview"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                color3f inputs:diffuseColor.connect = </World/Materials/UvMaterial/Diffuse.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "Diffuse"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @texture.png@
+                float2 inputs:st.connect = </World/Materials/UvMaterial/Primvar.outputs:result>
+                float3 outputs:rgb
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float2"
+                token inputs:varname.connect = </World/Materials/UvMaterial.inputs:coords>
+                float2 outputs:result
+            }
+        }
+    }
+
+    def Mesh "TestMesh" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        double xformOp:rotateX = -45
+        Vec3d xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+
+        int[] creaseLengths = [3, 3]
+        int[] creaseIndices = [2, 9, 10, 10, 4, 2]
+        float[] creaseSharpnesses = [10, 10]
+
+        rel material:binding = </World/Materials/UvMaterial>
+
+        uniform token faceVaryingLinearInterpolation = "none"
+
+        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4]
+        PointIndex[] faceVertexIndices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 1, 8, 9, 2, 2, 9, 10, 4, 4, 10, 11, 6, 8, 12, 13, 9, 9, 13, 14, 10, 10, 14, 15, 11]
+        uniform token interpolateBoundary = "edgeAndCorner"
+        point3f[] points = [(-4, 0.464466, -1.25), (-2.82149, 1.64298, -1.25), (-4, 2.82149, 1.25), (-5.17851, 1.64298, -1.25), (-5.17851, 4, 1.25), (-6.35702, 2.82149, -1.25), (-6.35702, 5.17851, -1.25), (-7.53553, 4, -1.25), (-1.64298, 2.82149, -1.25), (-2.82149, 4, 1.25), (-4, 5.17851, 1.25), (-5.17851, 6.35702, -1.25), (-0.464466, 4, -1.25), (-1.64298, 5.17851, -1.25), (-2.82149, 6.35702, -1.25), (-4, 7.53553, -1.25)]
+        float2[] primvars:st = [(0, 0), (0.333333, 0), (0.333333, 0.333333), (0, 0.333333), (0.333333, 0.666667), (0, 0.666667), (0.333333, 1), (0, 1), (0.666667, 0), (0.666667, 0.333333), (0.666667, 0.666667), (0.666667, 1), (1, 0), (1, 0.333333), (1, 0.666667), (1, 1)] (
+            interpolation = "faceVarying"
+        )
+        int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 1, 8, 9, 2, 2, 9, 10, 4, 4, 10, 11, 6, 8, 12, 13, 9, 9, 13, 14, 10, 10, 14, 15, 11]
+        uniform token subdivisionScheme = "catmullClark"
+    }
+
+    def Camera "main_cam"
+    {
+        float4[] clippingPlanes = []
+        float2 clippingRange = (1, 2000000)
+        float focalLength = 18.147562
+        float focusDistance = 19.46538
+        float fStop = 0
+        float horizontalAperture = 25.567736
+        float horizontalApertureOffset = 0
+        token projection = "perspective"
+        float verticalAperture = 20.955
+        float verticalApertureOffset = 0
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 2.8, 16, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
