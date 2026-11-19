@@ -92,20 +92,10 @@ _add_define("_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING")
 # will conflict with std::min() and std::max().
 _add_define("NOMINMAX")
 
-# Forces all libraries that have separate source to be linked as
-# DLL's rather than static libraries on Microsoft Windows, unless
-# explicitly told otherwise.
-if (NOT Boost_USE_STATIC_LIBS)
-    _add_define("BOOST_ALL_DYN_LINK")
-endif()
-
-# Suppress automatic boost linking via pragmas, as we must not rely on
-# a heuristic, but upon the tool set we have specified in our build.
-_add_define("BOOST_ALL_NO_LIB")
-
+# Must define this when building against a debug Python library so
+# pxr_boost::python does not suppress debug mode.
 if(${PXR_USE_DEBUG_PYTHON})
     _add_define("BOOST_DEBUG_PYTHON")
-    _add_define("BOOST_LINKING_PYTHON")
 endif()
 
 # Need half::_toFloat and half::_eLut.

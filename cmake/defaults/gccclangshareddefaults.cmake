@@ -27,6 +27,11 @@ _disable_warning("deprecated")
 _disable_warning("deprecated-declarations")
 
 # Suppress unused typedef warnings emanating from boost.
+#
+# XXX:
+# Although we no longer have a boost dependency, we still
+# trip this warning in various places in the code and need to
+# fix those up before we can remove this.
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6)
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR

@@ -24,17 +24,6 @@ endif()
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)
 
-# Parts of boost (in particular, boost::hash) rely on deprecated features
-# of the STL that have been removed from some implementations under C++17.
-# This define tells boost not to use those features.
-#
-# Under Visual Studio, boost automatically detects that this flag is
-# needed so we don't need to define it ourselves. Otherwise, we'll get a
-# C4005 macro redefinition warning.
-if (NOT MSVC)
-    _add_define(BOOST_NO_CXX98_FUNCTION_BASE)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     _add_define(BUILD_OPTLEVEL_DEV)
 endif()
