@@ -75,6 +75,9 @@ private:
         const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
         const std::string &qualifier);
 
+    void _WriteWorkGroupLocals(
+        const HgiShaderFunctionParamDescVector &parameters);
+
     void _AddDescriptorSetLayoutBinding(
         uint32_t bindingIndex,
         VkDescriptorType descriptorType,

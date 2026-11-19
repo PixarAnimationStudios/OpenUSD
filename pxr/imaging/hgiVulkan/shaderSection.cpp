@@ -95,6 +95,12 @@ HgiVulkanShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     return false;
 }
 
+bool
+HgiVulkanShaderSection::VisitWorkGroupLocalDeclarations(std::ostream &ss)
+{
+    return false;
+}
+
 HgiVulkanMacroShaderSection::HgiVulkanMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
@@ -599,6 +605,40 @@ HgiVulkanInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
     WriteBlockInstanceIdentifier(ss);
     WriteArraySize(ss);
     ss << ";\n";
+    return true;
+}
+
+HgiVulkanWorkGroupLocalShaderSection::HgiVulkanWorkGroupLocalShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &arraySize)
+    : HgiVulkanShaderSection(identifier,
+                         HgiShaderSectionAttributeVector(),
+                         std::string(),
+                         std::string(),
+                         arraySize,
+                         std::string())
+    , _type(type)
+{
+}
+
+HgiVulkanWorkGroupLocalShaderSection::~HgiVulkanWorkGroupLocalShaderSection() = default;
+
+void
+HgiVulkanWorkGroupLocalShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _type;
+}
+
+bool HgiVulkanWorkGroupLocalShaderSection::VisitWorkGroupLocalDeclarations(std::ostream &ss)
+{
+    ss << "shared ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << GetArraySize();
+    ss << ";\n";
+
     return true;
 }
 

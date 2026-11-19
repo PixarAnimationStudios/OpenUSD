@@ -67,7 +67,10 @@ private:
     void _WriteInOutBlocks(
         const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
         const std::string &qualifier);
-    
+
+    void _WriteWorkGroupLocals(
+        const HgiShaderFunctionParamDescVector &parameters);
+
     Hgi const *_hgi;
     HgiGLShaderSectionUniquePtrVector _shaderSections;
     std::vector<std::string> _shaderLayoutAttributes;

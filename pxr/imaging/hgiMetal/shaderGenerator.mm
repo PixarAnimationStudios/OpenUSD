@@ -86,6 +86,9 @@ public:
     HgiMetalShaderSectionPtrVector AccumulateBufferBindings(
         const HgiShaderFunctionBufferDescVector &buffers,
         HgiMetalShaderGenerator *generator);
+    HgiMetalShaderSectionPtrVector AccumulateWorkGroupLocalBindings(
+        const HgiShaderFunctionParamDescVector &buffers,
+        HgiMetalShaderGenerator *generator);
     HgiMetalShaderSectionPtrVector AccumulateTextureBindings(
         const HgiShaderFunctionTextureDescVector &textures,
         HgiMetalShaderGenerator *generator);
@@ -111,6 +114,7 @@ private:
     const HgiMetalShaderSectionPtrVector _inputs;
     const HgiMetalShaderSectionPtrVector _outputs;
     const HgiMetalShaderSectionPtrVector _bufferBindings;
+    const HgiMetalShaderSectionPtrVector _workGroupLocals;
     HgiMetalShaderSectionPtrVector _samplerBindings;
     HgiMetalShaderSectionPtrVector _textureBindings;
 };
@@ -707,6 +711,10 @@ ShaderStageData::ShaderStageData(
         AccumulateBufferBindings(
             descriptor.buffers,
             generator))
+    , _workGroupLocals(
+        AccumulateWorkGroupLocalBindings(
+            descriptor.stageWorkGroupLocalMembers,
+            generator))
 {
     // Also populates _samplerBindings
     _textureBindings = AccumulateTextureBindings(
@@ -895,6 +903,28 @@ ShaderStageData::AccumulateBufferBindings(
         }
         stageShaderSections.push_back(section);
     }
+    return stageShaderSections;
+}
+
+HgiMetalShaderSectionPtrVector
+ShaderStageData::AccumulateWorkGroupLocalBindings(
+    const HgiShaderFunctionParamDescVector &paramDescs,
+    HgiMetalShaderGenerator *generator)
+{
+    HgiMetalShaderSectionPtrVector stageShaderSections;
+
+    for(const HgiShaderFunctionParamDesc &paramDesc : paramDescs) {
+        const HgiShaderSectionAttributeVector attributes = {};
+        HgiMetalWorkGroupLocalShaderSection * const paramSection =
+            generator->CreateShaderSection<
+                HgiMetalWorkGroupLocalShaderSection>(
+                    paramDesc.nameInShader,
+                    paramDesc.type,
+                    paramDesc.arraySize,
+                    attributes);
+        stageShaderSections.push_back(paramSection);
+    }
+
     return stageShaderSections;
 }
 
@@ -1594,6 +1624,17 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         }
     }
     ss <<"){\n";
+
+    ss << "\n// //////// Work Group Local Parameter Declarations ////////\n";
+    for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
+        std::stringstream paramDecl;
+        if (section->VisitWorkGroupLocalDeclarations(paramDecl)) {
+            ss << paramDecl.str() << ";\n";
+        }
+    }
+    ss << "\n";
+
+    ss << "\n// //////// Scope  ////////\n";
     ss << _generatorShaderSections->GetScopeTypeName() << " "
        << _generatorShaderSections->GetScopeInstanceName();
     

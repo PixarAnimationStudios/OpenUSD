@@ -171,6 +171,7 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     _WriteInOutBlocks(descriptor.stageInputBlocks, "in");
     _WriteInOuts(descriptor.stageOutputs, "out");
     _WriteInOutBlocks(descriptor.stageOutputBlocks, "out");
+    _WriteWorkGroupLocals(descriptor.stageWorkGroupLocalMembers);
 }
 
 void
@@ -374,6 +375,22 @@ HgiVulkanShaderGenerator::_WriteBuffers(
 
         _AddDescriptorSetLayoutBinding(
             bindIndex, descriptorType, descriptorCount);
+    }
+}
+
+void
+HgiVulkanShaderGenerator::_WriteWorkGroupLocals(
+    const HgiShaderFunctionParamDescVector &parameters)
+{
+    if (parameters.size() < 1) {
+        return;
+    }
+
+    for(const HgiShaderFunctionParamDesc &param : parameters) {
+        CreateShaderSection<HgiVulkanWorkGroupLocalShaderSection>(
+            param.nameInShader,
+            param.type,
+            param.arraySize);
     }
 }
 
@@ -604,6 +621,12 @@ HgiVulkanShaderGenerator::_Execute(std::ostream &ss)
     for (const std::unique_ptr<HgiVulkanShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
+    }
+
+    ss << "\n// //////// WorkGroup Shared Declarations ////////\n";
+    for (const std::unique_ptr<HgiVulkanShaderSection>
+            &shaderSection : *shaderSections) {
+        shaderSection->VisitWorkGroupLocalDeclarations(ss);
     }
 
     ss << "\n// //////// Global Function Definitions ////////\n";
