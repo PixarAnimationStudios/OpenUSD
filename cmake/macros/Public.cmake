@@ -568,13 +568,38 @@ function(pxr_build_test_plugin LIBRARY_NAME)
     if (NOT bt_SOURCE_DIR)
         set(bt_SOURCE_DIR testenv)
     endif()
-    set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
-        # XXX -- We shouldn't have to install to run tests.
+    set(installResourceFiles)
+
+    # Find an optional plugInfo.json named LIBNAME_plugInfo.json, or
+    # LIBNAME/plugInfo.json in that order.
+    set(testPlugInfoSrcPath1
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json")
+    set(testPlugInfoSrcPath2
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}/plugInfo.json")
+    if (EXISTS "${testPlugInfoSrcPath1}")
+        list(APPEND installResourceFiles "${testPlugInfoSrcPath1}")
+    elseif (EXISTS "${testPlugInfoSrcPath2}")
+        list(APPEND installResourceFiles "${testPlugInfoSrcPath2}")
+    endif()
+
+    # Find an optional generatedSchema.usda named LIBNAME_generatedSchema.usda,
+    # or LIBNAME/generatedSchema.usda in that order.
+    set(testGeneratedSchemaSrcPath1
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}_generatedSchema.usda")
+    set(testGeneratedSchemaSrcPath2
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}/generatedSchema.usda")
+    if (EXISTS "${testGeneratedSchemaSrcPath1}")
+        list(APPEND installResourceFiles "${testGeneratedSchemaSrcPath1}")
+    elseif (EXISTS "${testGeneratedSchemaSrcPath2}")
+        list(APPEND installResourceFiles "${testGeneratedSchemaSrcPath2}")
+    endif()
+
+    # XXX -- We shouldn't have to install to run tests.
+    if (installResourceFiles)
         _install_test_resource_files(${LIBRARY_NAME}
             INSTALL_PREFIX ${bt_INSTALL_PREFIX}
-            FILES "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
+            FILES ${installResourceFiles})
     endif()
 
     # We always want this test to build after the package it's under, even if
