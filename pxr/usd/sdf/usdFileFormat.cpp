@@ -183,12 +183,12 @@ SdfUsdFileFormat::_InitDetachedData(const FileFormatArguments& args) const
 }
 
 bool
-SdfUsdFileFormat::CanRead(const string& filePath) const
+SdfUsdFileFormat::CanRead(const string& resolvedPath) const
 {
-    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+    auto asset = ArGetResolver().OpenAsset(ArResolvedPath(resolvedPath));
     return asset &&
-        (_GetUsdcFileFormat()->_CanReadFromAsset(filePath, asset) ||
-         _GetUsdaFileFormat()->_CanReadFromAsset(filePath, asset));
+        (_GetUsdcFileFormat()->_CanReadFromAsset(resolvedPath, asset) ||
+         _GetUsdaFileFormat()->_CanReadFromAsset(resolvedPath, asset));
 }
 
 bool
