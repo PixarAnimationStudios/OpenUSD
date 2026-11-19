@@ -32,6 +32,12 @@ HdBufferSource::ComputeHash() const
 }
 
 bool
+HdBufferSource::IsGpuBacked() const
+{
+    return false;
+}
+
+bool
 HdBufferSource::HasPreChainedBuffer() const
 {
     return false;

@@ -17,6 +17,7 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     , _bufferId(0)
     , _cpuStaging(nullptr)
     , _bindlessGPUAddress(0)
+    , _ownsBufferId(true)
 {
     glCreateBuffers(1, &_bufferId);
 
@@ -38,12 +39,24 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 
+HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc, uint32_t bufferId)
+    : HgiBuffer(desc)
+    , _bufferId(bufferId)
+    , _cpuStaging(nullptr)
+    , _bindlessGPUAddress(0)
+    , _ownsBufferId(false)
+{
+    // Nothing to create: the buffer already exists and belongs to whoever
+    // gave us the name. Do not label it either -- it is not ours to rename.
+    _descriptor.initialData = nullptr;
+}
+
 HgiGLBuffer::~HgiGLBuffer()
 {
-    if (_bufferId > 0) {
+    if (_ownsBufferId && _bufferId > 0) {
         glDeleteBuffers(1, &_bufferId);
-        _bufferId = 0;
     }
+    _bufferId = 0;
 
     if (_cpuStaging) {
         free(_cpuStaging);
@@ -68,6 +81,12 @@ HgiGLBuffer::GetRawResource() const
 void*
 HgiGLBuffer::GetCPUStagingAddress()
 {
+    if (!_ownsBufferId) {
+        TF_CODING_ERROR("CPU staging is not available for a buffer Hgi does "
+                        "not own");
+        return nullptr;
+    }
+
     if (!_cpuStaging) {
         _cpuStaging = malloc(_descriptor.byteSize);
     }
