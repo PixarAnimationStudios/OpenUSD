@@ -90,6 +90,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsStitch.py
     testenv/testUsdUtilsStitchClips.py
     testenv/testUsdUtilsTimeCodeRange.py
+    testenv/testUsdUtilsToolPaths.py
     testenv/testUsdUtilsUpdateSchemaWithSdrNode.py
     testenv/testUsdUtilsUsdzUtils.py
     testenv/testUsdUtilsUserProcessingFunc.py
@@ -590,6 +591,12 @@ pxr_register_test(testUsdUtilsStitchCpp
 pxr_register_test(testUsdUtilsTimeCodeRange
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsTimeCodeRange"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsToolPaths
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsToolPaths"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -8,19 +8,7 @@
 
 
 import os, subprocess, sys
-from pxr.UsdUtils.toolPaths import RunUsdBinary
-
-# Splits an editor command from the environment into an argument list. The
-# value may name a bare executable or carry arguments, as in
-# USD_EDITOR="emacs -nw", so it is split the way a shell would. Windows paths
-# contain backslashes that POSIX-mode splitting would treat as escapes, so
-# quoting is handled in the platform's own style.
-def _splitEditorCommand(editorCmd):
-    import shlex
-    if os.name == 'nt':
-        # posix=False doesn't strip quotes, so do it manually.
-        return [arg.strip('"') for arg in shlex.split(editorCmd, posix=False)]
-    return shlex.split(editorCmd)
+from pxr.UsdUtils.toolPaths import RunUsdBinary, SplitCommandLine
 
 # lookup a suitable text editor. if none is available, this will cause the
 # program to abort with a suitable error message.
@@ -38,7 +26,7 @@ def _findEditor(usdFileName, readOnly):
                  "$USD_EDITOR or $EDITOR to be set, or emacs/vim/notepad to "
                  "be installed and available in PATH.")
 
-    editorArgs = _splitEditorCommand(editorCmd)
+    editorArgs = SplitCommandLine(editorCmd)
 
     # special handling for emacs users
     if 'emacs' in editorCmd:
