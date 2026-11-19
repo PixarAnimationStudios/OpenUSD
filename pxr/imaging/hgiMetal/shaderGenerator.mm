@@ -338,6 +338,8 @@ _GetDeclarationDefinitions()
         // MSL does not have control flow attributes for branches
         "#define HGI_COMPILER_ATTR_FLATTEN\n"
         "#define HGI_COMPILER_ATTR_DONT_FLATTEN\n"
+
+        "#define barrier() threadgroup_barrier(metal::mem_flags::mem_none) \n"
         "\n";
 }
 
