@@ -17,4 +17,8 @@ def Xform "ScaledTimeTest"
         0: 10,
         1: 20,
     }
+    double Spline.spline = {
+        0: 10; post linear,
+        1: 20; post linear,
+    }
 }
