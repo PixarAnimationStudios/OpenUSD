@@ -90,6 +90,15 @@ pxr_register_test(testUsdCatUnrecognizedExtension5
     EXPECTED_RETURN_CODE 1
 )
 
+pxr_register_test(testUsdCatKeepExistingOnError
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat input.usda --out existing.usdz"
+    TESTENV testenv/testUsdCatKeepExistingOnError
+    FILES_EXIST existing.usdz
+    FILES_DONT_EXIST existing.usdz.quarantine
+    DIFF_COMPARE existing.usdz
+    EXPECTED_RETURN_CODE 1
+)
+
 # Look up programs needed for checking the format of extensionless output.
 find_program(HEADBIN
     NAMES head

@@ -295,6 +295,7 @@ static int UsdCat(const Args &args) {
                 }
             }
 
+            const bool outputExisted = TfPathExists(args.output);
             if (layer) {
                 layer->Export(args.output, std::string(), formatArgs);
             }
@@ -313,9 +314,16 @@ static int UsdCat(const Args &args) {
                     std::cerr << err.GetCommentary() << "\n";
                 }
 
-                // If the output file exists, let's try to rename it with
-                // '.quarantine' appended and let the user know.
-                Quarantine(args.output);
+                // If this export created the output file, let's try to rename
+                // it with '.quarantine' appended and let the user know.  Leave
+                // a file that existed beforehand in place: the filesystem
+                // resolver replaces files atomically, so if the export failed
+                // before writing, that file is the untouched original, and we
+                // cannot cheaply tell that apart from a file the export
+                // replaced.
+                if (!outputExisted) {
+                    Quarantine(args.output);
+                }
             }
         }
         else {
