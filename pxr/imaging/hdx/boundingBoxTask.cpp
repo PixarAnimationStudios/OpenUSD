@@ -400,7 +400,6 @@ HdxBoundingBoxTask::_UpdateShaderConstants(
 
     HgiBlitCmdsUniquePtr blitCmds = _GetHgi()->CreateBlitCmds();
     blitCmds->CopyBufferCpuToGpu(transformsBlit);
-    blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     _GetHgi()->SubmitCmds(blitCmds.get());
 
     // Update and upload the other constant data.
