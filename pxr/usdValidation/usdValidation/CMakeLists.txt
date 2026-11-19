@@ -119,6 +119,7 @@ pxr_build_test(testUsdValidationRegistry
 
 pxr_register_test(testUsdCoreValidators
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCoreValidators"
+        TESTENV testenv/testUsdCoreValidators
         EXPECTED_RETURN_CODE 0
 )
 

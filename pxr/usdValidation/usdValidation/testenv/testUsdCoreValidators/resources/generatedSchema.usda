@@ -1,0 +1,28 @@
+#usda 1.0
+class testApplicabilityBaseType "ApplicabilityTestBase"
+{
+}
+
+class testApplicabilityDerivedType "ApplicabilityTestDerived"
+{
+}
+
+class testApplicabilityOtherType "ApplicabilityTestOther"
+{
+}
+
+class "ApplicabilityTestBaseOnlyAPI"
+{
+}
+
+class "ApplicabilityTestTargetAPI"
+{
+}
+
+class "ApplicabilityTestRequiresTargetAPI"
+{
+}
+
+class "ApplicabilityTestInstancesAPI"
+{
+}

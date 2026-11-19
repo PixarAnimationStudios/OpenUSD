@@ -12,10 +12,17 @@
 
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usd/stage.h"
 
+#include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/base/ts/spline.h"
 
 #include <iostream>
+#include <set>
+#include <string>
+#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -33,7 +40,7 @@ TestUsdValidators()
     // this keyword this unit test will have to be updated.
     const UsdValidationValidatorMetadataVector coreValidatorMetadata
         = registry.GetValidatorMetadataForPlugin(_tokens->usdValidationPlugin);
-    TF_AXIOM(coreValidatorMetadata.size() == 4);
+    TF_AXIOM(coreValidatorMetadata.size() == 5);
 
     std::set<TfToken> validatorMetadataNameSet;
     for (const UsdValidationValidatorMetadata &metadata :
@@ -45,7 +52,8 @@ TestUsdValidators()
         = { UsdValidatorNameTokens->compositionErrorTest,
             UsdValidatorNameTokens->stageMetadataChecker,
             UsdValidatorNameTokens->attributeTypeMismatch,
-            UsdValidatorNameTokens->attributeSpecValueTypeMismatch };
+            UsdValidatorNameTokens->attributeSpecValueTypeMismatch,
+            UsdValidatorNameTokens->apiSchemaApplicability };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -403,14 +411,169 @@ TestUsdAttributeValueTypeMismatch()
     TF_AXIOM(messages == expectedMessages);
 }
 
+static void
+TestUsdAPISchemaApplicability()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *const validator
+        = registry.GetOrLoadValidatorByName(
+            UsdValidatorNameTokens->apiSchemaApplicability);
+    TF_AXIOM(validator);
+
+    // The test schemas in resources/ cover each restriction that
+    // UsdPrim::CanApplyAPI checks: ApplicabilityTestBaseOnlyAPI can only be
+    // applied to an ApplicabilityTestBase prim or a derived type,
+    // ApplicabilityTestRequiresTargetAPI only to a prim with
+    // ApplicabilityTestTargetAPI applied, and the multiple-apply
+    // ApplicabilityTestInstancesAPI only allows the instance names "left" and
+    // "right".
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(R"usda(#usda 1.0
+        def ApplicabilityTestBase "Base" (
+            prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI"]
+        )
+        {
+        }
+        def ApplicabilityTestDerived "Derived" (
+            prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI"]
+        )
+        {
+        }
+        def ApplicabilityTestOther "Other" (
+            prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI"]
+        )
+        {
+        }
+        def "Typeless" (
+            prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI"]
+        )
+        {
+        }
+        def "WithTarget" (
+            prepend apiSchemas = ["ApplicabilityTestTargetAPI",
+                                  "ApplicabilityTestRequiresTargetAPI"]
+        )
+        {
+        }
+        def "WithoutTarget" (
+            prepend apiSchemas = ["ApplicabilityTestRequiresTargetAPI"]
+        )
+        {
+        }
+        def "AllowedInstance" (
+            prepend apiSchemas = ["ApplicabilityTestInstancesAPI:left"]
+        )
+        {
+        }
+        def "DisallowedInstance" (
+            prepend apiSchemas = ["ApplicabilityTestInstancesAPI:up"]
+        )
+        {
+        }
+        def "Unvalidated" (
+            prepend apiSchemas = ["UnregisteredAPI", "CollectionAPI:things"]
+        )
+        {
+        }
+        def "Several" (
+            prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI",
+                                  "ApplicabilityTestTargetAPI",
+                                  "ApplicabilityTestRequiresTargetAPI",
+                                  "ApplicabilityTestInstancesAPI:down"]
+        )
+        {
+        }
+        def ApplicabilityTestBase "Prototype"
+        {
+            def ApplicabilityTestOther "Child" (
+                prepend apiSchemas = ["ApplicabilityTestBaseOnlyAPI"]
+            )
+            {
+            }
+        }
+        def "Instance" (
+            instanceable = true
+            prepend references = </Prototype>
+        )
+        {
+        }
+    )usda");
+    UsdStageRefPtr stage = UsdStage::Open(layer);
+
+    const std::string baseOnlyWhyNot =
+        "API schema 'ApplicabilityTestBaseOnlyAPI' can only be applied to "
+        "prims that are of following type, or have following API schema "
+        "applied: ApplicabilityTestBase.";
+    const auto baseOnlyError = [&baseOnlyWhyNot](const char *primPath) {
+        return std::make_pair(
+            SdfPath(primPath),
+            TfStringPrintf("API schema 'ApplicabilityTestBaseOnlyAPI' is "
+                           "applied to prim <%s>, but cannot be applied to "
+                           "it. %s", primPath, baseOnlyWhyNot.c_str()));
+    };
+    const auto instancesError = [](const char *primPath,
+                                   const char *instanceName) {
+        return std::make_pair(
+            SdfPath(primPath),
+            TfStringPrintf("API schema 'ApplicabilityTestInstancesAPI:%s' is "
+                           "applied to prim <%s>, but cannot be applied to "
+                           "it. '%s' is not an allowed instance name for "
+                           "multiple apply API schema "
+                           "'ApplicabilityTestInstancesAPI'.",
+                           instanceName, primPath, instanceName));
+    };
+    const std::set<std::pair<SdfPath, std::string>> expectedErrors = {
+        baseOnlyError("/Other"),
+        baseOnlyError("/Typeless"),
+        std::make_pair(
+            SdfPath("/WithoutTarget"),
+            std::string(
+                "API schema 'ApplicabilityTestRequiresTargetAPI' is applied "
+                "to prim </WithoutTarget>, but cannot be applied to it. API "
+                "schema 'ApplicabilityTestRequiresTargetAPI' can only be "
+                "applied to prims that are of following type, or have "
+                "following API schema applied: ApplicabilityTestTargetAPI.")),
+        instancesError("/DisallowedInstance", "up"),
+        baseOnlyError("/Several"),
+        instancesError("/Several", "down"),
+        baseOnlyError("/Prototype/Child"),
+        baseOnlyError("/Instance/Child"),
+    };
+
+    const TfToken expectedErrorIdentifier = TfToken(
+        UsdValidatorNameTokens->apiSchemaApplicability.GetString() + "." +
+        UsdValidationErrorNameTokens->apiSchemaNotApplicable.GetString());
+    std::set<std::pair<SdfPath, std::string>> errors;
+    for (const UsdPrim &prim :
+            stage->Traverse(UsdTraverseInstanceProxies())) {
+        for (const UsdValidationError &error : validator->Validate(prim)) {
+            TF_AXIOM(error.GetValidator() == validator);
+            TF_AXIOM(error.GetIdentifier() == expectedErrorIdentifier);
+            TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+            TF_AXIOM(error.GetSites().size() == 1);
+            TF_AXIOM(error.GetSites()[0].IsPrim());
+            errors.emplace(error.GetSites()[0].GetPrim().GetPath(),
+                           error.GetMessage());
+        }
+    }
+    TF_AXIOM(errors == expectedErrors);
+}
+
 int
 main()
 {
+    // The test schemas must be registered before the schema registry is
+    // first used.
+    const std::string testSchemaPluginPath = ArchGetCwd() + "/resources";
+    TF_AXIOM(!PlugRegistry::GetInstance()
+                  .RegisterPlugins(testSchemaPluginPath).empty());
+
     TestUsdValidators();
     TestCoreUsdStageMetadata();
     TestUsdCompositionErrorTest();
     TestUsdAttributeTypeMismatch();
     TestUsdAttributeValueTypeMismatch();
+    TestUsdAPISchemaApplicability();
 
     std::cout << "OK\n";
 }
