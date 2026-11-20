@@ -786,7 +786,7 @@ HdStResourceRegistry::GetGlobalBlitCmds()
 }
 
 HgiComputeCmds*
-HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod)
+HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod, bool forceCreate)
 {
     // If the HGI device isn't capable of concurrent dispatch then
     // only specify serial.
@@ -802,7 +802,7 @@ HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod)
         _computeCmds.reset();
     }
 
-    if (!_computeCmds) {
+    if (!_computeCmds && forceCreate) {
         HgiComputeCmdsDesc desc;
         desc.dispatchMethod = dispatchMethod;
         _computeCmds = _hgi->CreateComputeCmds(desc);
