@@ -7,7 +7,8 @@
 #
 import difflib, os, sys
 from subprocess import call
-from pxr.UsdUtils.toolPaths import FindUsdBinary, RunUsdBinary
+from pxr.UsdUtils.toolPaths import (
+    FindUsdBinary, RunUsdBinary, SplitCommandLine)
 
 import platform
 isWindows = (platform.system() == 'Windows')
@@ -35,17 +36,19 @@ def _generateCatOptions(outPath, flatten=None, fmt=None):
 
     return options
 
-def _splitDiffCommand(diffCmd):
-    diffCmdArgs = list()
+# returns the program and arguments of the command named by the first of
+# envVarNames that is set to anything but whitespace, or (None, []) if none is.
+def _splitDiffCommand(*envVarNames):
+    for envVarName in envVarNames:
+        try:
+            diffCmdList = SplitCommandLine(os.environ.get(envVarName, ''))
+        except ValueError as e:
+            _exit("Error: Failed to parse $%s: %s" % (envVarName, e),
+                  ERROR_EXIT_CODE)
+        if diffCmdList:
+            return (diffCmdList[0], diffCmdList[1:])
 
-    if diffCmd is not None:
-        diffCmdList = diffCmd.split()
-        diffCmd = diffCmdList[0]
-        
-        if diffCmdList[1:]:
-            diffCmdArgs = diffCmdList[1:]
-
-    return (diffCmd, diffCmdArgs)
+    return (None, [])
 
 # looks up a suitable diff tool, and verifies usdcat is available
 def _findDiffTools():
@@ -54,8 +57,7 @@ def _findDiffTools():
               ERROR_EXIT_CODE)
 
     # prefer USD_DIFF, then DIFF, else use the internal unified diff.
-    diffCmd, diffCmdArgs = _splitDiffCommand(
-        os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
+    diffCmd, diffCmdArgs = _splitDiffCommand('USD_DIFF', 'DIFF')
 
     if diffCmd and not FindUsdBinary(diffCmd):
         _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
@@ -66,8 +68,7 @@ def _findDiffTools():
 
 def _findImageDiffTools():
     # prefer USD_IMAGE_DIFF, else use the internal filecmp.
-    imageDiffCommand, imageDiffCmdArgs = _splitDiffCommand(
-        os.environ.get('USD_IMAGE_DIFF'))
+    imageDiffCommand, imageDiffCmdArgs = _splitDiffCommand('USD_IMAGE_DIFF')
 
     if imageDiffCommand and not FindUsdBinary(imageDiffCommand):
         _exit("Error: Failed to find image diff tool %s." % (imageDiffCommand),
@@ -236,9 +237,9 @@ class FileManager(object):
 def _launchDiffTool(diffCmd, diffCmdArgs, baseline, comparison, brief):
     if diffCmd:
         # Run the external diff tool.
-        if brief:
-            diffCmdArgs.append("--brief")
-        return call([diffCmd] + diffCmdArgs + [baseline, comparison])
+        briefArgs = ["--brief"] if brief else []
+        return call([diffCmd] + diffCmdArgs + briefArgs +
+                    [baseline, comparison])
 
     else:
         # Read the files.

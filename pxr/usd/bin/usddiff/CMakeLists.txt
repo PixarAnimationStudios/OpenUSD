@@ -163,11 +163,34 @@ pxr_register_test(testUsdDiffComposedResults2
         ${CMAKE_INSTALL_PREFIX}/bin
 )
 
+pxr_register_test(testUsdDiffToolCommandParsing1
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda a.usda --noeffect"
+    TESTENV testenv/testDiffToolCommandParsing
+    EXPECTED_RETURN_CODE 0
+    ENV
+      "USD_DIFF= "
+      "DIFF= "
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
+pxr_register_test(testUsdDiffToolCommandParsing2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a.usda a.usda --noeffect"
+    TESTENV testenv/testDiffToolCommandParsing
+    EXPECTED_RETURN_CODE 2
+    ENV
+      "USD_DIFF=\"diff"
+      "DIFF=diff"
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)
+
 # Look up programs needed for the edit-back tests, which stand in for an
-# interactive diff tool by editing both temporaries with sed.  usddiff splits
-# USD_DIFF on whitespace without interpreting quotes, so the sed expression
-# must not be quoted.  The backup suffix is attached to -i because BSD sed
-# requires one, and would otherwise consume the expression as the suffix.
+# interactive diff tool by editing both temporaries with sed.  The backup
+# suffix is attached to -i because BSD sed requires one, and would otherwise
+# consume the expression as the suffix.
 find_program(SEDBIN
     NAMES sed
 )
@@ -190,7 +213,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE crate_header.txt
         ENV
-          "USD_DIFF=sed -i.bak s/World/Edited/"
+          "USD_DIFF=sed -i.bak 's/World/Edited/'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -204,7 +227,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE text_header.txt
         ENV
-          "USD_DIFF=sed -i.bak s/World/Edited/"
+          "USD_DIFF=sed -i.bak 's/World/Edited/'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -218,7 +241,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE edited.usda
         ENV
-          "USD_DIFF=sed -i.bak s/World/Edited/"
+          "USD_DIFF=sed -i.bak 's/World/Edited/'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )

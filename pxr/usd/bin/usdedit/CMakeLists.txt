@@ -113,4 +113,28 @@ else()
             ${CMAKE_INSTALL_PREFIX}/bin
     )
 
+    pxr_register_test(testUsdEditCommandParsing1
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -n input.usda"
+        TESTENV testenv/testUsdEditCommandParsing
+        EXPECTED_RETURN_CODE 0
+        ENV
+          "USD_EDITOR= "
+          "EDITOR=${HEADBIN}"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_register_test(testUsdEditCommandParsing2
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdedit -n input.usda"
+        TESTENV testenv/testUsdEditCommandParsing
+        EXPECTED_RETURN_CODE 1
+        ENV
+          "USD_EDITOR=\"${HEADBIN}"
+          "EDITOR=${HEADBIN}"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
 endif()
