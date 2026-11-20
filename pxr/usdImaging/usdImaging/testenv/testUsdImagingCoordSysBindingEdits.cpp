@@ -120,7 +120,7 @@ TestCoordSysBindingEdits()
     Logger logger;
     coordSysSi->AddObserver(HdSceneIndexObserverPtr(&logger));
 
-    const SdfPath camL("/camL"), camR("/camR");
+    const SdfPath camLPath("/camL"), camRPath("/camR");
     const TfToken proj1Binding("proj1");
     const TfToken proj2Binding("proj2");
     UsdRelationship proj1BindingRel =
@@ -129,16 +129,16 @@ TestCoordSysBindingEdits()
 
     // Confirm initial state.
     printf("Checking initial state.\n");
-    _CheckBinding(usdSi, proj1Binding, camL);
+    _CheckBinding(usdSi, proj1Binding, camLPath);
     _CheckBinding(coordSysSi, proj1Binding,
         SdfPath("/camL/__coordSys_proj1"));
     TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj1")));
 
     // Change the binding target.
     printf("Change proj1 binding to camR.\n");
-    proj1BindingRel.SetTargets({ camR });
+    proj1BindingRel.SetTargets({ camRPath });
     sceneIndices.stageSceneIndex->ApplyPendingUpdates();
-    _CheckBinding(usdSi, proj1Binding, camR);
+    _CheckBinding(usdSi, proj1Binding, camRPath);
     _CheckBinding(coordSysSi, proj1Binding,
         SdfPath("/camR/__coordSys_proj1"));
     TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camR/__coordSys_proj1")));
@@ -149,10 +149,10 @@ TestCoordSysBindingEdits()
         UsdShadeCoordSysAPI::Apply(mesh, proj2Binding);
     UsdRelationship proj2BindingRel =
         proj2API.GetBindingRel();
-    proj2BindingRel.SetTargets({ camL });
+    proj2BindingRel.SetTargets({ camLPath });
     sceneIndices.stageSceneIndex->ApplyPendingUpdates();
-    _CheckBinding(usdSi, proj1Binding, camR);
-    _CheckBinding(usdSi, proj2Binding, camL);
+    _CheckBinding(usdSi, proj1Binding, camRPath);
+    _CheckBinding(usdSi, proj2Binding, camLPath);
     _CheckBinding(coordSysSi, proj1Binding,
         SdfPath("/camR/__coordSys_proj1"));
     _CheckBinding(coordSysSi, proj2Binding,
@@ -165,7 +165,7 @@ TestCoordSysBindingEdits()
     proj1BindingRel.ClearTargets(/* removeSpec = */ false);
     sceneIndices.stageSceneIndex->ApplyPendingUpdates();
     _CheckBinding(usdSi, proj1Binding, SdfPath());
-    _CheckBinding(usdSi, proj2Binding, camL);
+    _CheckBinding(usdSi, proj2Binding, camLPath);
     _CheckBinding(coordSysSi, proj1Binding,
         SdfPath());
     _CheckBinding(coordSysSi, proj2Binding,
@@ -175,9 +175,24 @@ TestCoordSysBindingEdits()
 
     // Set 1st binding target back to camL.
     printf("Set proj1 binding to camL.\n");
-    proj1BindingRel.AddTarget(camL);
+    proj1BindingRel.AddTarget(camLPath);
     sceneIndices.stageSceneIndex->ApplyPendingUpdates();
-    _CheckBinding(usdSi, proj1Binding, camL);
+    _CheckBinding(usdSi, proj1Binding, camLPath);
+    TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj1")));
+    TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj2")));
+
+    // Deactivate the target of the bindings.
+    UsdPrim camLPrim = stage->GetPrimAtPath(camLPath);
+    camLPrim.SetActive(false);
+    sceneIndices.stageSceneIndex->ApplyPendingUpdates();
+    TF_VERIFY(!coordSysSi->GetPrim(SdfPath("/camL")));
+    TF_VERIFY(!coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj1")));
+    TF_VERIFY(!coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj2")));
+
+    // Re-activate the target.  This should re-create the coordSys prims.
+    camLPrim.SetActive(true);
+    sceneIndices.stageSceneIndex->ApplyPendingUpdates();
+    TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL")));
     TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj1")));
     TF_VERIFY(coordSysSi->GetPrim(SdfPath("/camL/__coordSys_proj2")));
 }

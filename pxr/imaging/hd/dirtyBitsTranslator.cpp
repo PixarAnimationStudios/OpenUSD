@@ -646,7 +646,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     }
 
     if (primType == HdPrimTypeTokens->basisCurves) {
-
         // Locator (*): basisCurves > topology
         if (_FindLocator(HdBasisCurvesTopologySchema::GetDefaultLocator(),
                          end, &it)) {
@@ -662,7 +661,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     }
 
     // Locator (*): categories
-
     if (_FindLocator(HdCategoriesSchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyCategories;
     }
@@ -672,6 +670,16 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         if (_FindLocator(HdConeSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyPrimvar;
         }
+    }
+
+    // Locator (*): coordSysBinding
+    if (_FindLocator(HdCoordSysBindingSchema::GetDefaultLocator(), end, &it)) {
+        // XXX: We don't have a dirty bit for coordinate system bindings.
+        // As a first step, treat this as a transform-invalidation, but
+        // this seems wrong and hacky.  We hope to migrate to a full Hydra 2
+        // pipeline before too long, in which case all  this code will be
+        // deprecated anyway.
+        bits |= HdChangeTracker::DirtyTransform;
     }
 
     if (primType == HdPrimTypeTokens->cube) {

@@ -1,0 +1,184 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+class "RowOfBoxes"
+{
+    def "Box1" (
+        references = @box.usda@
+    )
+    {
+        float xformOp:rotateX = 25
+        float xformOp:rotateZ = 30
+        double3 xformOp:scale = (0.1, 0.1, 0.1)
+        double3 xformOp:translate = (-0.2, -0.01, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Box2" (
+        references = @box.usda@
+    )
+    {
+        float xformOp:rotateX = 25
+        float xformOp:rotateY = 20
+        float xformOp:rotateZ = 30
+        double3 xformOp:scale = (0.1, 0.1, 0.1)
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+    }
+
+    def "Box3" (
+        references = @box.usda@
+    )
+    {
+        float xformOp:rotateX = 25
+        float xformOp:rotateY = 40
+        float xformOp:rotateZ = 30
+        double3 xformOp:scale = (0.1, 0.1, 0.1)
+        double3 xformOp:translate = (0.2, 0.01, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateY"]
+    }
+}
+
+def Xform "World" (
+    kind = "group"
+    prepend apiSchemas = ["CoordSysAPI:Missing", "CoordSysAPI:World"]
+)
+{
+    rel coordSys:Missing:binding = </BogusPathThatDoesNotExist>
+    rel coordSys:World:binding = </World>
+    float xformOp:rotateX = 90
+    double3 xformOp:scale = (10, -10, 10)
+    token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateX"]
+
+    def Xform "ObjectSpaceRow" (
+        inherits = </RowOfBoxes>
+        kind = "model"
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0.3)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "WorldSpaceRow" (
+        inherits = </RowOfBoxes>
+        kind = "model"
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        over "Box1"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.6, 0.9)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "World"
+            }
+        }
+
+        over "Box2"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.6, 0.9)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "World"
+            }
+        }
+
+        over "Box3"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.6, 0.9)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "World"
+            }
+        }
+    }
+
+    def Xform "CustomRow" (
+        inherits = </RowOfBoxes>
+        kind = "model"
+        prepend apiSchemas = ["CoordSysAPI:Custom"]
+    )
+    {
+        rel coordSys:Custom:binding = </World/CoordSystems/Custom>
+        double3 xformOp:translate = (0, 0, -0.3)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        over "Box1"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.9, 0.6)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "Custom"
+            }
+        }
+
+        over "Box2"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.9, 0.6)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "Custom"
+            }
+        }
+
+        over "Box3"
+        {
+            over "Material"
+            {
+                color3f inputs:Base_Color = (0.8, 0.9, 0.6)
+                float inputs:Noise_Frequency = 15
+                token inputs:NoiseCoordSys = "Custom"
+            }
+        }
+    }
+
+    def "BoxWithMissingCoordSysTarget" (
+        references = @box.usda@
+    )
+    {
+        double3 xformOp:translate = (-0.6, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        over "Material"
+        {
+            color3f inputs:Base_Color = (1, 0.2, 0.2)
+            token inputs:NoiseCoordSys = "Missing"
+        }
+    }
+
+    # Coordinate system binding targets live under a common parent so that
+    # the test can deactivate and reactivate them without affecting geometry.
+    def Xform "CoordSystems"
+    {
+        def Xform "Custom"
+        {
+            float xformOp:rotateX = 90
+            token[] xformOpOrder = ["xformOp:rotateX"]
+        }
+
+        def Xform "Alternate"
+        {
+            float xformOp:rotateX = 0
+            float xformOp:rotateZ = 45
+            double3 xformOp:scale = (0.5, 0.5, 0.5)
+            token[] xformOpOrder = ["xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+        }
+    }
+
+    def Xform "Lights"
+    {
+        def DomeLight "DomeLight"
+        {
+        }
+    }
+}
+

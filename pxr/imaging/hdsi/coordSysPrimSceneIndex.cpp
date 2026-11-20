@@ -12,6 +12,7 @@
 #include "pxr/imaging/hd/xformSchema.h"
 
 #include "pxr/imaging/hd/mapContainerDataSource.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -20,12 +21,16 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/work/loops.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((coordSysPrimPrefix, "__coordSys_"))
     (xformDependency)
+    ((coordSysBindingDependencyPrefix, "coordSysBinding_"))
+    (coordSysBindingDependenciesDependency)
 );
 
 namespace
@@ -54,6 +59,23 @@ _PathForCoordSysPrim(const SdfPath &targetedPrimPath,
     const TfToken childPrimName(
         _tokens->coordSysPrimPrefix.GetString() + name.GetString());
     return targetedPrimPath.AppendChild(childPrimName);
+}
+
+// Name of entry in __dependencies for coord sys binding with given name.
+TfToken
+_DependencyNameForBinding(const TfToken &name)
+{
+    return TfToken(
+        _tokens->coordSysBindingDependencyPrefix.GetString() +
+        name.GetString());
+}
+
+void
+_AddIfNecessary(const TfToken &name, TfTokenVector * const names)
+{
+    if (std::find(names->begin(), names->end(), name) == names->end()) {
+        names->push_back(name);
+    }
 }
 
 // Data source for locator coordSys:FOO on a prim
@@ -161,15 +183,115 @@ private:
     HdContainerDataSourceHandle const _inputSource;
 };
 
+// Data source for locator __dependencies on a prim with coord sys bindings.
+//
+// For each coord sys binding, lists a dependency of the binding on
+// the coordSys locator of the coord sys prim this scene index is adding.
+// Also lists a dependency of these dependencies on the bindings
+// themselves.
+class _CoordSysBindingDependenciesDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_CoordSysBindingDependenciesDataSource);
+
+private:
+    _CoordSysBindingDependenciesDataSource(
+        const HdContainerDataSourceHandle &inputSource)
+     : _inputSource(inputSource)
+    {
+    }
+
+    TfTokenVector GetNames() override {
+        TfTokenVector result;
+        for (const TfToken &name : _inputSource->GetNames()) {
+            if (!_GetTargetedPrimPath(name).IsEmpty()) {
+                result.push_back(_DependencyNameForBinding(name));
+            }
+        }
+        result.push_back(_tokens->coordSysBindingDependenciesDependency);
+        return result;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        static HdLocatorDataSourceHandle const bindingLocatorDs =
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdCoordSysBindingSchema::GetDefaultLocator());
+
+        // The dependencies we compute depend themselves on the
+        // coordinate system bindings.
+        if (name == _tokens->coordSysBindingDependenciesDependency) {
+            static HdLocatorDataSourceHandle const dependenciesLocatorDs =
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdDependenciesSchema::GetDefaultLocator());
+            static HdDataSourceBaseHandle const dependencyDs =
+                HdDependencySchema::Builder()
+                    // The dependencies depend on the coord sys bindings
+                    // on this same prim.
+                    .SetDependedOnDataSourceLocator(bindingLocatorDs)
+                    .SetAffectedDataSourceLocator(dependenciesLocatorDs)
+                    .Build();
+            return dependencyDs;
+        }
+
+        // For each coordinate system binding on this prim, we include
+        // a dependency on the target prim.
+        const std::string &prefix =
+            _tokens->coordSysBindingDependencyPrefix.GetString();
+        if (!TfStringStartsWith(name.GetString(), prefix)) {
+            return nullptr;
+        }
+        const TfToken bindingName(name.GetString().substr(prefix.size()));
+        const SdfPath targetedPrimPath = _GetTargetedPrimPath(bindingName);
+        if (targetedPrimPath.IsEmpty()) {
+            return nullptr;
+        }
+        static HdLocatorDataSourceHandle const coordSysLocatorDs =
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdCoordSysSchema::GetDefaultLocator());
+        return
+            HdDependencySchema::Builder()
+                .SetDependedOnPrimPath(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        _PathForCoordSysPrim(targetedPrimPath, bindingName)))
+                .SetDependedOnDataSourceLocator(coordSysLocatorDs)
+                .SetAffectedDataSourceLocator(bindingLocatorDs)
+                .Build();
+    }
+
+    // Path of prim targeted by binding with given name or empty path
+    // if binding is ignored.
+    SdfPath _GetTargetedPrimPath(const TfToken &name) const {
+        HdPathDataSourceHandle const ds =
+            HdPathDataSource::Cast(_inputSource->Get(name));
+        if (!ds) {
+            return SdfPath();
+        }
+        const SdfPath targetedPrimPath = ds->GetTypedValue(0.0f);
+        if (_IgnoreBinding(targetedPrimPath)) {
+            return SdfPath();
+        }
+        return targetedPrimPath;
+    }
+
+    HdContainerDataSourceHandle const _inputSource;
+};
+
 // Prim data source rewriting coord sys bindings to point to
-// coord sys prim this scene index is adding.
+// coord sys prim this scene index is adding and adding dependencies
+// of the bindings on these coord sys prims.
 class _PrimDataSource : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_PrimDataSource);
 
     TfTokenVector GetNames() override {
-        return _inputSource->GetNames();
+        TfTokenVector result = _inputSource->GetNames();
+        if (std::find(result.begin(), result.end(),
+                      HdCoordSysBindingSchema::GetSchemaToken())
+                != result.end()) {
+            _AddIfNecessary(HdDependenciesSchema::GetSchemaToken(), &result);
+        }
+        return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
@@ -181,6 +303,19 @@ public:
                 return nullptr;
             }
             return _CoordSysBindingDataSource::New(containerDs);
+        }
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
+            HdContainerDataSourceHandle const bindingDs =
+                HdContainerDataSource::Cast(
+                    _inputSource->Get(
+                        HdCoordSysBindingSchema::GetSchemaToken()));
+            if (!bindingDs) {
+                return ds;
+            }
+            return
+                HdCreateOverlayContainerDataSource(
+                    HdContainerDataSource::Cast(ds),
+                    _CoordSysBindingDependenciesDataSource::New(bindingDs));
         }
         return ds;
     }
@@ -194,8 +329,9 @@ private:
     HdContainerDataSourceHandle const _inputSource;
 };
 
+
 HdSceneIndexObserver::AddedPrimEntries
-_ToAddedPrimEntries(const SdfPathSet &paths)
+_AddedCoordSysEntries(const SdfPathSet &paths)
 {
     HdSceneIndexObserver::AddedPrimEntries entries;
     entries.reserve(paths.size());
@@ -206,7 +342,7 @@ _ToAddedPrimEntries(const SdfPathSet &paths)
 }
 
 HdSceneIndexObserver::RemovedPrimEntries
-_ToRemovedPrimEntries(const SdfPathSet &paths)
+_RemovedCoordSysEntries(const SdfPathSet &paths)
 {
     HdSceneIndexObserver::RemovedPrimEntries entries;
     entries.reserve(paths.size());
@@ -246,8 +382,8 @@ HdsiCoordSysPrimSceneIndex::_GetCoordSysPrimSource(
 
     const SdfPath parentPrimPath = primPath.GetParentPath();
 
-    const auto it = _targetedPrimToNameToRefCount.find(parentPrimPath);
-    if (it == _targetedPrimToNameToRefCount.end()) {
+    const auto it = _targetedPrimToNameToSourcePrims.find(parentPrimPath);
+    if (it == _targetedPrimToNameToSourcePrims.end()) {
         return nullptr;
     }
     
@@ -255,6 +391,15 @@ HdsiCoordSysPrimSceneIndex::_GetCoordSysPrimSource(
         primName.substr( _tokens->coordSysPrimPrefix.size() ));
     const auto it2 = it->second.find(coordSysName);
     if (it2 == it->second.end()) {
+        return nullptr;
+    }
+
+    // Require that the parent prim exists in order to generate
+    // a child coordinate system prim.  This ensures that if we
+    // subsequently remove the target prim of a coordinate system
+    // binding, or any of its ancestors, that we no longer return
+    // that coordinate system prim.
+    if (!_GetInputSceneIndex()->GetPrim(parentPrimPath)) {
         return nullptr;
     }
     
@@ -266,7 +411,7 @@ HdSceneIndexPrim
 HdsiCoordSysPrimSceneIndex::GetPrim(const SdfPath &primPath) const
 {
     if (HdContainerDataSourceHandle const coordSysPrimSource =
-                _GetCoordSysPrimSource(primPath)) {
+        _GetCoordSysPrimSource(primPath)) {
         return { HdSprimTypeTokens->coordSys, coordSysPrimSource };
     }
 
@@ -282,12 +427,12 @@ HdsiCoordSysPrimSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
 {
     SdfPathVector result = _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 
-    const auto it = _targetedPrimToNameToRefCount.find(primPath);
-    if (it == _targetedPrimToNameToRefCount.end()) {
+    const auto it = _targetedPrimToNameToSourcePrims.find(primPath);
+    if (it == _targetedPrimToNameToSourcePrims.end()) {
         return result;
     }
-    for (const auto &nameAndRefCount : it->second) {
-        const TfToken &coordSysName = nameAndRefCount.first;
+    for (const auto &nameAndSourcePrims : it->second) {
+        const TfToken &coordSysName = nameAndSourcePrims.first;
         result.push_back(_PathForCoordSysPrim(primPath, coordSysName));
     }
 
@@ -342,15 +487,19 @@ HdsiCoordSysPrimSceneIndex::_AddBindings(
     }
 
     for (const _Binding &binding : bindings) {
-        size_t &refCount =
-            _targetedPrimToNameToRefCount[binding.path][binding.name];
-        if (refCount == 0) {
+        SdfPathSet &sourcePrims =
+            _targetedPrimToNameToSourcePrims[binding.path][binding.name];
+        if (sourcePrims.empty()) {
             if (addedCoordSysPrims) {
+                // XXX Should we be confirming that the binding.path
+                // actually exists in the scene before generating
+                // children below it?  Consider the case of coordinate
+                // system bindings to non-existent prims.
                 addedCoordSysPrims->insert(
                     _PathForCoordSysPrim(binding.path, binding.name));
             }
         }
-        refCount++;
+        sourcePrims.insert(primPath);
     }
 
     _primToBindings.emplace(primPath, std::move(bindings));
@@ -358,45 +507,56 @@ HdsiCoordSysPrimSceneIndex::_AddBindings(
 
 void
 HdsiCoordSysPrimSceneIndex::_RemoveBindings(
+    const SdfPath &primPath,
     const _Bindings &bindings,
     SdfPathSet * const removedCoordSysPrims)
 {
     for (const _Binding &binding : bindings) {
-        auto primIt = _targetedPrimToNameToRefCount.find(binding.path);
-        if (primIt == _targetedPrimToNameToRefCount.end()) {
+        auto primIt = _targetedPrimToNameToSourcePrims.find(binding.path);
+        if (primIt == _targetedPrimToNameToSourcePrims.end()) {
             TF_CODING_ERROR(
-                "No ref-counting entry for targeted prim "
-                "when deleting binding.");
+                "No entry for targeted prim when deleting binding.");
             continue;
         }
-        auto refCountIt = primIt->second.find(binding.name);
-        if (refCountIt == primIt->second.end()) {
+        auto sourcePrimsIt = primIt->second.find(binding.name);
+        if (sourcePrimsIt == primIt->second.end()) {
             TF_CODING_ERROR(
-                "No ref-counting entry for target prim and binding name "
+                "No entry for target prim and binding name "
                 "when deleting binding.");
             continue;
         }
 
-        size_t &refCount = refCountIt->second;
-        if (refCount == 0) {
+        SdfPathSet &sourcePrims = sourcePrimsIt->second;
+        if (sourcePrims.erase(primPath) == 0) {
             TF_CODING_ERROR(
-                "Zero ref count for target prim and binding name "
-                "when deleting binding.");
+                "Prim not recorded as source for target prim and "
+                "binding name when deleting binding.");
             continue;
         }
-        refCount--;
-        if (refCount > 0) {
+        if (!sourcePrims.empty()) {
             continue;
         }
         if (removedCoordSysPrims) {
             removedCoordSysPrims->insert(
                 _PathForCoordSysPrim(binding.path, binding.name));
         }
-        primIt->second.erase(refCountIt);
+        primIt->second.erase(sourcePrimsIt);
         if (!primIt->second.empty()) {
             continue;
         }
-        _targetedPrimToNameToRefCount.erase(primIt);
+
+        // Tidy up disused SdfPathTable entries.  SdfPathTable implicitly
+        // adds entries for ancestors, so walk up, removing empty entries.
+        SdfPath path = binding.path;
+        while (!path.IsEmpty()) {
+            const auto it = _targetedPrimToNameToSourcePrims.find(path);
+            if (it == _targetedPrimToNameToSourcePrims.end() ||
+                !it->second.empty() || it.HasChild()) {
+                break;
+            }
+            _targetedPrimToNameToSourcePrims.erase(it);
+            path = path.GetParentPath();
+        }
     }
 }
 
@@ -410,7 +570,7 @@ HdsiCoordSysPrimSceneIndex::_RemoveBindingsForPrim(
         return;
     }
 
-    _RemoveBindings(it->second, removedCoordSysPrims);
+    _RemoveBindings(primPath, it->second, removedCoordSysPrims);
 
     _primToBindings.erase(it);
 }
@@ -422,7 +582,7 @@ HdsiCoordSysPrimSceneIndex::_RemoveBindingsForSubtree(
 {
     auto it = _primToBindings.lower_bound(primPath);
     while (it != _primToBindings.end() && it->first.HasPrefix(primPath)) {
-        _RemoveBindings(it->second, removedCoordSysPrims);
+        _RemoveBindings(it->first, it->second, removedCoordSysPrims);
         it = _primToBindings.erase(it);
     }
 }    
@@ -449,7 +609,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
         }
     }, /* grainSize = */ 16);
 
-    // Update the ref-counting data structures serially.
+    // Update the binding data structures serially.
     for (size_t i = 0; i < entries.size(); ++i) {
         const SdfPath &primPath = entries[i].primPath;
         _RemoveBindingsForPrim(
@@ -465,6 +625,20 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
         return;
     }
 
+    // If we added prims that were previously discovered to be the target
+    // of a coordinate system binding, add the generated coordSys prims.
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const SdfPath &primPath = entries[i].primPath;
+        const auto coordSysIt =
+            _targetedPrimToNameToSourcePrims.find(primPath);
+        if (coordSysIt != _targetedPrimToNameToSourcePrims.end()) {
+            for (const auto& entry: coordSysIt->second) {
+                addedCoordSysPrims.insert(
+                    _PathForCoordSysPrim(primPath, entry.first));
+            }
+        }
+    }
+
     // Skip removing coordinate systems that will be re-added.
     for (SdfPath const& addedPath: addedCoordSysPrims) {
         removedCoordSysPrims.erase(addedPath);
@@ -473,10 +647,10 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
     _SendPrimsAdded(entries);
 
     if (!addedCoordSysPrims.empty()) {
-        _SendPrimsAdded(_ToAddedPrimEntries(addedCoordSysPrims));
+        _SendPrimsAdded(_AddedCoordSysEntries(addedCoordSysPrims));
     }
     if (!removedCoordSysPrims.empty()) {
-        _SendPrimsRemoved(_ToRemovedPrimEntries(removedCoordSysPrims));
+        _SendPrimsRemoved(_RemovedCoordSysEntries(removedCoordSysPrims));
     }
 }
 
@@ -517,10 +691,10 @@ HdsiCoordSysPrimSceneIndex::_PrimsDirtied(
     _SendPrimsDirtied(entries);
 
     if (!addedCoordSysPrims.empty()) {
-        _SendPrimsAdded(_ToAddedPrimEntries(addedCoordSysPrims));
+        _SendPrimsAdded(_AddedCoordSysEntries(addedCoordSysPrims));
     }
     if (!removedCoordSysPrims.empty()) {
-        _SendPrimsRemoved(_ToRemovedPrimEntries(removedCoordSysPrims));
+        _SendPrimsRemoved(_RemovedCoordSysEntries(removedCoordSysPrims));
     }
 }
    
@@ -550,7 +724,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsRemoved(
     _SendPrimsRemoved(entries);
 
     if (!removedCoordSysPrims.empty()) {
-        _SendPrimsRemoved(_ToRemovedPrimEntries(removedCoordSysPrims));
+        _SendPrimsRemoved(_RemovedCoordSysEntries(removedCoordSysPrims));
     }
 }
 

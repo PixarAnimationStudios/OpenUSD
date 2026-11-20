@@ -11,4 +11,6 @@ Remove proj1 binding.
 Set proj1 binding to camL.
     ADDED   /camL/__coordSys_proj1
     ADDED   /camL/__coordSys_proj2
+    ADDED   /camL/__coordSys_proj1
+    ADDED   /camL/__coordSys_proj2
 All tests passed.
