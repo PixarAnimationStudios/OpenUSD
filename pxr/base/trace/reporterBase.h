@@ -38,7 +38,7 @@ public:
     using This = TraceReporterBase;
     using ThisPtr = TraceReporterBasePtr;
     using ThisRefPtr = TraceReporterBaseRefPtr;
-    using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using CollectionPtr = std::shared_ptr<const TraceCollection>;
     using DataSourcePtr = std::unique_ptr<TraceReporterDataSourceBase>;
 
     /// Constructor taking ownership of \p dataSource.

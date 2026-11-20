@@ -26,7 +26,8 @@ class TraceCollectionAvailable : public TfNotice
 {
 public:
     /// Constructor.
-    TraceCollectionAvailable(const std::shared_ptr<TraceCollection>& collection)
+    TraceCollectionAvailable(
+        const std::shared_ptr<const TraceCollection>& collection)
         : _collection(collection)
     {}
 
@@ -34,12 +35,12 @@ public:
     TRACE_API virtual ~TraceCollectionAvailable();
 
     /// Returns the TraceCollection which was produced.
-    const std::shared_ptr<TraceCollection>& GetCollection() const {
+    const std::shared_ptr<const TraceCollection>& GetCollection() const {
         return _collection;
     }
 
 private:
-    std::shared_ptr<TraceCollection> _collection;
+    std::shared_ptr<const TraceCollection> _collection;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
