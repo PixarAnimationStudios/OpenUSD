@@ -50,6 +50,11 @@ using FixerCanApplyFn =
 /// - The \p FixerCanApplyFn is the function that will be called to determine
 /// if the fixer can be applied to a given error.
 ///
+/// A \p FixerImplFn must author its fix to the UsdEditTarget it is given,
+/// which need not be the current edit target of the stage the error was
+/// reported on. When authoring through UsdPrim or UsdProperty API, use a
+/// UsdEditContext to make it the stage's edit target while applying the fix.
+///
 /// Note that the Validation framework will not apply any fixers automatically.
 /// It's the responsibility of the client to pick and apply a fix for a given
 /// error, by specifically calling the ApplyFix() method on an appropriate

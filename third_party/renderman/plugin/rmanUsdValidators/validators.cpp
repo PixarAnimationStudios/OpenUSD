@@ -10,9 +10,11 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/property.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/schemaRegistry.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdRender/settings.h"
 #include "pxr/usd/usdRi/tokens.h"
@@ -41,8 +43,21 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((OutputsRiSampleFiltersAttr, "outputs:ri:sampleFilters"))
 );
 
+// Returns true if editTarget can be made the current edit target of stage.
+// This mirrors the check in UsdStage::SetEditTarget(), which requires an edit
+// target with an identity mapping to refer to a layer in the stage's local
+// layer stack.
+static bool
+_IsValidEditTargetForStage(
+    const UsdEditTarget &editTarget, const UsdStageWeakPtr &stage)
+{
+    return editTarget.IsValid() && stage &&
+        (!editTarget.GetMapFunction().IsIdentity() ||
+         stage->HasLocalLayer(editTarget.GetLayer()));
+}
+
 const std::vector<UsdValidationFixer>
-_PxrRenderTerminalsApiRelationshipsFixers() 
+_PxrRenderTerminalsApiRelationshipsFixers()
 {
     std::vector<UsdValidationFixer> fixers;
 
@@ -61,7 +76,8 @@ _PxrRenderTerminalsApiRelationshipsFixers()
                 return false;
             }
             UsdPrim prim = site.GetPrim();
-            return prim.IsA<UsdRenderSettings>()
+            return _IsValidEditTargetForStage(editTarget, prim.GetStage())
+                && prim.IsA<UsdRenderSettings>()
                 && prim.HasAPI(_terminalsTokens->PxrRenderTerminalsAPI);
         };
 
@@ -80,6 +96,12 @@ _PxrRenderTerminalsApiRelationshipsFixers()
                 return false;
             }
             UsdPrim prim = site.GetPrim();
+            if (!_IsValidEditTargetForStage(editTarget, prim.GetStage())) {
+                return false;
+            }
+            // Author the fix to the given edit target, which need not be the
+            // stage's current edit target.
+            UsdEditContext editContext(prim.GetStage(), editTarget);
 
             const std::vector<TfToken> unsupportedTerminalsAttrs = {
                 _terminalsTokens->OutputsRiIntegratorAttr,
@@ -177,7 +199,8 @@ _PxrCameraProjectionApiRelationshipsFixers()
                 return false;
             }
             UsdPrim prim = site.GetPrim();
-            return prim.IsA<UsdGeomCamera>() &&
+            return _IsValidEditTargetForStage(editTarget, prim.GetStage()) &&
+                prim.IsA<UsdGeomCamera>() &&
                 prim.HasAPI(_terminalsTokens->PxrCameraProjectionAPI);
         };
 
@@ -195,6 +218,12 @@ _PxrCameraProjectionApiRelationshipsFixers()
                 return false;
             }
             UsdPrim prim = site.GetPrim();
+            if (!_IsValidEditTargetForStage(editTarget, prim.GetStage())) {
+                return false;
+            }
+            // Author the fix to the given edit target, which need not be the
+            // stage's current edit target.
+            UsdEditContext editContext(prim.GetStage(), editTarget);
 
             UsdAttribute attr = prim.GetAttribute(
                 TfToken(UsdShadeTokens->outputs.GetString() +
