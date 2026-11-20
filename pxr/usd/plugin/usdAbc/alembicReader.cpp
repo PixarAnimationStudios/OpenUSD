@@ -2086,6 +2086,30 @@ _PrimReaderContext::AddUniformProperty(
     }
 }
 
+/// Returns true if \p property is the ".indices" of an indexed GeomParam.
+static
+bool
+_IsGeomParamIndices(const AlembicProperty& property)
+{
+    if (property.GetName() != ".indices") {
+        return false;
+    }
+    const ICompoundProperty parent = property.GetParent();
+    return parent.valid() && parent.getPropertyHeader(".vals");
+}
+
+/// Returns true if \p property is the ".vals" of a uv GeomParam.
+static
+bool
+_IsUVGeomParamValues(const AlembicProperty& property)
+{
+    if (property.GetName() != ".vals") {
+        return false;
+    }
+    const ICompoundProperty parent = property.GetParent();
+    return parent.valid() && isUV(parent.getHeader());
+}
+
 void
 _PrimReaderContext::AddOutOfSchemaProperty(
     const std::string& name,
@@ -2140,8 +2164,20 @@ _PrimReaderContext::AddOutOfSchemaProperty(
     // Get the converter and add the property.
     const bool isOutOfSchema = true;
     const UsdAbc_AlembicType alembicType(*header);
-    const SdfValueTypeName usdTypeName =
+    SdfValueTypeName usdTypeName =
         _context.GetSchema().GetConversions().FindConverter(alembicType);
+
+    // Indices of a GeomParam are uint32, but UsdGeomPrimvar needs int[].
+    if (usdTypeName == SdfValueTypeNames->UIntArray &&
+        _IsGeomParamIndices(property)) {
+        usdTypeName = SdfValueTypeNames->IntArray;
+    }
+    // Additional uv sets use the primary uv set's type.
+    else if (usdTypeName == SdfValueTypeNames->Float2Array &&
+             _IsUVGeomParamValues(property)) {
+        usdTypeName = _GetUVTypeName();
+    }
+
     if (usdTypeName) {
         _PrimReaderContext::Property &prop = 
             (TfGetEnvSetting(USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY) && 
