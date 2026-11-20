@@ -133,6 +133,7 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
     // XXX: To show volumes that intersect the far clipping plane, we might
     // consider calling glEnable(GL_DEPTH_CLAMP) here.
     renderPassState->SetEnableDepthMask(false);
+    renderPassState->SetColorMaskUseDefault(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
 }
 
