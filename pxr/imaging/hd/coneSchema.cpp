@@ -32,6 +32,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdConeSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
+HdBoolDataSourceHandle
+HdConeSchema::GetDoubleSided() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdConeSchemaTokens->doubleSided);
+}
+
 HdDoubleDataSourceHandle
 HdConeSchema::GetHeight() const
 {
@@ -56,15 +63,21 @@ HdConeSchema::GetAxis() const
 /*static*/
 HdContainerDataSourceHandle
 HdConeSchema::BuildRetained(
+        const HdBoolDataSourceHandle &doubleSided,
         const HdDoubleDataSourceHandle &height,
         const HdDoubleDataSourceHandle &radius,
         const HdTokenDataSourceHandle &axis
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
+
+    if (doubleSided) {
+        _names[_count] = HdConeSchemaTokens->doubleSided;
+        _values[_count++] = doubleSided;
+    }
 
     if (height) {
         _names[_count] = HdConeSchemaTokens->height;
@@ -81,6 +94,14 @@ HdConeSchema::BuildRetained(
         _values[_count++] = axis;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdConeSchema::Builder &
+HdConeSchema::Builder::SetDoubleSided(
+    const HdBoolDataSourceHandle &doubleSided)
+{
+    _doubleSided = doubleSided;
+    return *this;
 }
 
 HdConeSchema::Builder &
@@ -111,6 +132,7 @@ HdContainerDataSourceHandle
 HdConeSchema::Builder::Build()
 {
     return HdConeSchema::BuildRetained(
+        _doubleSided,
         _height,
         _radius,
         _axis
