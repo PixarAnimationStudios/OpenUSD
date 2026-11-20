@@ -38,13 +38,6 @@ pxr_plugin(usdAbc
         alembicUtil
         alembicWriter
 
-    PRIVATE_HEADERS
-        api.h
-
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapAlembicTest.cpp
-
     PYMODULE_FILES
         __init__.py
 
