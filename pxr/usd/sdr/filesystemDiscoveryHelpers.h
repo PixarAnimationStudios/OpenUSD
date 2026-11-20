@@ -13,7 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
-#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
 #include <functional>
