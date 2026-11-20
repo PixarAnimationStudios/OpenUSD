@@ -265,14 +265,11 @@ pxr_plugin(${PXR_PACKAGE}
 )
 
 # Include paths to hdPrman headers within hdPrman itself look like
-# #include "hdPrman/...", so we need to add include/pxr/imaging
-# to the include paths for this library. We use PROJECT_BINARY_DIR
-# to include headers out of the build directory, which is what
-# normally happens in the USD build.
+# #include "hdPrman/...", so we need to augment the include paths for this library.
 if(TARGET hdPrman)
     target_include_directories(${PXR_PACKAGE}
         PRIVATE
-            "${PROJECT_BINARY_DIR}/include/pxr/imaging"
+            "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
     )
 endif()
 
