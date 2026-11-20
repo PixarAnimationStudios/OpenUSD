@@ -136,7 +136,7 @@ pxr_library(usd
         codegenTemplates/generatedSchema.module.h
         codegenTemplates/module.cpp
         codegenTemplates/moduleDeps.cpp
-        codegenTemplates/plugInfo.json:no_subst
+        codegenTemplates/plugInfo.json.jinja
         codegenTemplates/schema.usda
         codegenTemplates/schemaUserDoc.usda
         codegenTemplates/schemaClass.cpp
