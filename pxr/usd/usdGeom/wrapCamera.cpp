@@ -89,6 +89,13 @@ _CreateClippingPlanesAttr(UsdGeomCamera &self,
 }
         
 static UsdAttribute
+_CreateUnitsAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateUnitsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateFStopAttr(UsdGeomCamera &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateFStopAttr(
@@ -253,6 +260,13 @@ void wrapUsdGeomCamera()
              &This::GetClippingPlanesAttr)
         .def("CreateClippingPlanesAttr",
              &_CreateClippingPlanesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetUnitsAttr",
+             &This::GetUnitsAttr)
+        .def("CreateUnitsAttr",
+             &_CreateUnitsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
