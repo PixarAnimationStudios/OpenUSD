@@ -64,10 +64,19 @@ foreach(property IN ITEMS
 endforeach()
 
 configure_file(pxrConfig.cmake.in
-  "${PROJECT_BINARY_DIR}/pxrConfig.cmake" @ONLY)
+               "${PROJECT_BINARY_DIR}/lib/cmake/pxr/pxrConfig.cmake" @ONLY)
 install(FILES
-  "${PROJECT_BINARY_DIR}/pxrConfig.cmake"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
-)
+       "${PROJECT_BINARY_DIR}/lib/cmake/pxr/pxrConfig.cmake"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/pxr")
+install(EXPORT pxrTargets DESTINATION "lib/cmake/pxr")
 
-install(EXPORT pxrTargets DESTINATION "cmake")
+if (PXR_ENABLE_ROOT_PXRCONFIG)
+    message(DEPRECATION "Package root `pxrConfig.cmake` is deprecated.")
+    # Deprecated forwarding config that references `lib/cmake/pxr/pxrConfig.cmake
+    # for compatability
+    configure_file(pxrConfig.forwarding.cmake
+                   "${PROJECT_BINARY_DIR}/pxrConfig.cmake" COPYONLY)
+    install(FILES
+        "${PROJECT_BINARY_DIR}/pxrConfig.cmake"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}")
+endif()
