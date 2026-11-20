@@ -7,9 +7,18 @@
 
 #include "pxr/usdValidation/usdValidation/fixer.h"
 #include "pxr/usdValidation/usdValidation/error.h"
-#include "pxr/usd/usd/editTarget.h" 
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/enum.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/usd/editTarget.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdValidationFixerSaveMode::Save, "Save");
+    TF_ADD_ENUM_NAME(UsdValidationFixerSaveMode::DoNotSave, "DoNotSave");
+}
 
 UsdValidationFixer::UsdValidationFixer(
     const TfToken &name, const std::string &description, 
@@ -58,7 +67,7 @@ UsdValidationFixer::CanApplyFix(
 bool
 UsdValidationFixer::ApplyFix(
     const UsdValidationError& error, const UsdEditTarget &editTarget,
-    const UsdTimeCode &timeCode) const
+    const UsdTimeCode &timeCode, UsdValidationFixerSaveMode saveMode) const
 {
     if (!IsAssociatedWithErrorName(error.GetName())) {
         return false;
@@ -72,9 +81,27 @@ UsdValidationFixer::ApplyFix(
         return false;
     }
 
-    bool fixApplied = _fixerImplFn(error, editTarget, timeCode);
+    if (!_fixerImplFn(error, editTarget, timeCode)) {
+        return false;
+    }
 
-    return fixApplied ? editTarget.GetLayer()->Save() : false;
+    if (saveMode == UsdValidationFixerSaveMode::DoNotSave) {
+        return true;
+    }
+
+    const SdfLayerHandle &layer = editTarget.GetLayer();
+    if (!TF_VERIFY(layer, "Fixer '%s' released its edit target's layer",
+                   _name.GetText())) {
+        return false;
+    }
+
+    // Anonymous layers have no backing asset to save to, so the fix is
+    // complete once it has been authored.
+    if (layer->IsAnonymous()) {
+        return true;
+    }
+
+    return layer->Save();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

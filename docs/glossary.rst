@@ -3701,20 +3701,25 @@ with a given validator, and must be applied by the client. Validation tests
 will not automatically apply any fixers.
 
 The following simple Python example creates a validation context with all
-registered validators, uses this context to validate an opened stage, and 
-prints any errors and also applies any applicable fixes.
+registered validators, uses this context to validate an opened stage, and
+prints any errors and also applies any applicable fixes. By default, a fixer
+saves the edit target's layer after each fix it applies; this example skips
+those saves and saves the layer once after all fixes have been applied.
 
 .. code-block:: python
 
     allValidators = UsdValidation.ValidationRegistry().GetOrLoadAllValidators()
     allValidationContext = UsdValidation.ValidationContext(allValidators)
     errors = allValidationContext.Validate(stage)
+    doNotSave = UsdValidation.ValidationFixerSaveMode.DoNotSave
     for error in errors:
         print(" Error name: ", error.GetName())
         print(" Error msg: ", error.GetMessage())
         for fixer in error.GetFixers():
             if fixer.CanApplyFix(error, stage.GetEditTarget(), Usd.TimeCode.Default()):
-                fixer.ApplyFix(error, stage.GetEditTarget(), Usd.TimeCode.Default())
+                fixer.ApplyFix(error, stage.GetEditTarget(),
+                               Usd.TimeCode.Default(), doNotSave)
+    stage.GetEditTarget().GetLayer().Save()
 
 Note that the code for :ref:`usdchecker <toolset:usdchecker>` has been updated 
 to use validators and provides additional examples for using the validation
