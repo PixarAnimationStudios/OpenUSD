@@ -225,6 +225,8 @@ Test_TfHash()
 
     std::string str("hello world");
     printf("hash(std::string): %zu\n", h(str));
+    printf("hash(std::string_view): %zu\n", h(std::string_view(str)));
+    TF_AXIOM(h(str) == h(std::string_view(str)));
 
     printf("hash(float zero): %zu\n", h(-0.0f));
     printf("hash(float neg zero): %zu\n", h(0.0f));
