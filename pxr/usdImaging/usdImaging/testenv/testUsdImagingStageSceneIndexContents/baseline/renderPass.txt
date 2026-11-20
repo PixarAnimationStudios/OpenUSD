@@ -1,0 +1,79 @@
+</> type = 
+	[__usdUpAxis]
+		[upAxis]
+			Y
+	[sceneGlobals]
+		[endTimeCode]
+			0
+		[startTimeCode]
+			0
+		[timeCodesPerSecond]
+			24
+	[system]
+		[assetResolution]
+			[resolverContext]
+				<'ArResolverContext' @ XXXXXXXXXXXXXXXX>
+</Render> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Scope
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Render)
+</Render/Pass> type = renderPass
+	[collections]
+		[cameraVisibility]
+			[membershipExpression]
+				~//*.*
+		[matte]
+			[membershipExpression]
+				
+		[prune]
+			[membershipExpression]
+				
+		[renderVisibility]
+			[membershipExpression]
+				~//*.*
+	[renderPass]
+		[namespacedSettings]
+			[collection:renderVisibility:includeRoot]
+				1
+			[myRenderer:pass:animated]
+				1
+			[myRenderer:pass:emissionScale]
+				0.5
+			[myRenderer:pass:samples]
+				4
+			[myRenderer:pass:shadowsOnly]
+				1
+		[renderSource]
+			/Render/Settings
+</Render/Settings> type = renderSettings
+	[__usdRenderSettings]
+		[aspectRatioConformPolicy]
+			expandAperture
+		[dataWindowNDC]
+			(0, 0, 1, 1)
+		[disableDepthOfField]
+			0
+		[disableMotionBlur]
+			0
+		[includedPurposes]
+			[default, render]
+		[instantaneousShutter]
+			0
+		[materialBindingPurposes]
+			[full, ]
+		[namespacedSettings]
+		[pixelAspectRatio]
+			1
+		[products]
+			[]
+		[renderingColorSpace]
+			
+		[resolution]
+			(2048, 1080)
