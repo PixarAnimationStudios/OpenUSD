@@ -15,7 +15,6 @@
 
 #include <iosfwd>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -73,8 +72,9 @@ public:
         bool isLiteral = false;
 
         friend bool operator==(Component const &l, Component const &r) {
-            return std::tie(l.text, l.predicateIndex, l.isLiteral) ==
-                std::tie(r.text, r.predicateIndex, r.isLiteral);
+            return l.text == r.text &&
+                l.predicateIndex == r.predicateIndex &&
+                l.isLiteral == r.isLiteral;
         }
         
         friend bool operator!=(Component const &l, Component const &r) {
@@ -87,9 +87,10 @@ public:
         }
 
         friend void swap(Component &l, Component &r) {
-            auto lt = std::tie(l.text, l.predicateIndex, l.isLiteral);
-            auto rt = std::tie(r.text, r.predicateIndex, r.isLiteral);
-            swap(lt, rt);
+            using std::swap;
+            swap(l.text, r.text);
+            swap(l.predicateIndex, r.predicateIndex);
+            swap(l.isLiteral, r.isLiteral);
         }
     };
 
@@ -264,10 +265,10 @@ private:
 
     friend bool
     operator==(SdfPathPattern const &l, SdfPathPattern const &r) {
-        return std::tie(l._prefix, l._components,
-                        l._predExprs, l._isProperty) ==
-               std::tie(r._prefix, r._components,
-                        r._predExprs, r._isProperty);
+        return l._prefix == r._prefix &&
+            l._components == r._components &&
+            l._predExprs == r._predExprs &&
+            l._isProperty == r._isProperty;
     }
 
     friend bool
@@ -276,11 +277,11 @@ private:
     }
 
     friend void swap(SdfPathPattern &l, SdfPathPattern &r) {
-        auto lt = std::tie(
-            l._prefix, l._components, l._predExprs, l._isProperty);
-        auto rt = std::tie(
-            r._prefix, r._components, r._predExprs, r._isProperty);
-        swap(lt, rt);
+        using std::swap;
+        swap(l._prefix, r._prefix);
+        swap(l._components, r._components);
+        swap(l._predExprs, r._predExprs);
+        swap(l._isProperty, r._isProperty);
     }
     
     SdfPath _prefix;

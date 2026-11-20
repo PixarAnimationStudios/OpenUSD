@@ -14,7 +14,6 @@
 
 #include <iosfwd>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -88,7 +87,7 @@ public:
         }
 
         friend bool operator==(FnArg const &l, FnArg const &r) {
-            return std::tie(l.argName, l.value) == std::tie(r.argName, r.value);
+            return l.argName == r.argName && l.value == r.value;
         }
         friend bool operator!=(FnArg const &l, FnArg const &r) {
             return !(l == r);
@@ -121,16 +120,18 @@ public:
         }
 
         friend bool operator==(FnCall const &l, FnCall const &r) {
-            return std::tie(l.kind, l.funcName, l.args) ==
-                std::tie(r.kind, r.funcName, r.args);
+            return l.kind == r.kind &&
+                l.funcName == r.funcName &&
+                l.args == r.args;
         }
         friend bool operator!=(FnCall const &l, FnCall const &r) {
             return !(l == r);
         }
         friend void swap(FnCall &l, FnCall &r) {
-            auto lt = std::tie(l.kind, l.funcName, l.args);
-            auto rt = std::tie(r.kind, r.funcName, r.args);
-            swap(lt, rt);
+            using std::swap;
+            swap(l.kind, r.kind);
+            swap(l.funcName, r.funcName);
+            swap(l.args, r.args);
         }        
     };
 
@@ -259,8 +260,9 @@ private:
     friend bool
     operator==(SdfPredicateExpression const &l,
                SdfPredicateExpression const &r) {
-        return std::tie(l._ops, l._calls, l._parseError) ==
-               std::tie(r._ops, r._calls, r._parseError);
+        return l._ops == r._ops &&
+            l._calls == r._calls &&
+            l._parseError == r._parseError;
     }
 
     friend bool

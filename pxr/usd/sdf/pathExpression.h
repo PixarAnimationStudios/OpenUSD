@@ -17,7 +17,6 @@
 
 #include <iosfwd>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -86,7 +85,7 @@ public:
 
         friend bool
         operator==(ExpressionReference const &l, ExpressionReference const &r) {
-            return std::tie(l.path, l.name) == std::tie(r.path, r.name);
+            return l.path == r.path && l.name == r.name;
         }
         
         friend bool
@@ -95,9 +94,9 @@ public:
         }
 
         friend void swap(ExpressionReference &l, ExpressionReference &r) {
-            auto lt = std::tie(l.path, l.name);
-            auto rt = std::tie(r.path, r.name);
-            swap(lt, rt);
+            using std::swap;
+            swap(l.path, r.path);
+            swap(l.name, r.name);
         }
     };
 
@@ -388,8 +387,10 @@ private:
 
     friend bool
     operator==(SdfPathExpression const &l, SdfPathExpression const &r) {
-        return std::tie(l._ops, l._refs, l._patterns, l._parseError) ==
-               std::tie(r._ops, r._refs, r._patterns, r._parseError);
+        return l._ops == r._ops &&
+            l._refs == r._refs &&
+            l._patterns == r._patterns &&
+            l._parseError == r._parseError;
     }
 
     friend bool
@@ -398,9 +399,11 @@ private:
     }
 
     friend void swap(SdfPathExpression &l, SdfPathExpression &r) {
-        auto lt = std::tie(l._ops, l._refs, l._patterns, l._parseError);
-        auto rt = std::tie(r._ops, r._refs, r._patterns, r._parseError);
-        swap(lt, rt);
+        using std::swap;
+        swap(l._ops, r._ops);
+        swap(l._refs, r._refs);
+        swap(l._patterns, r._patterns);
+        swap(l._parseError, r._parseError);
     }
 
     std::vector<Op> _ops;
