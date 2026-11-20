@@ -862,6 +862,51 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertTrue(mQuery.IsPathIncluded('/expr'))
         
         
+    def test_IncludeOfExpressionModeCollection(self):
+        stage = Usd.Stage.CreateInMemory()
+        for path in ('/World/A', '/World/B', '/World/C'):
+            stage.DefinePrim(path)
+        sets = stage.DefinePrim('/Sets')
+
+        def includedPaths(query):
+            return Usd.ComputeIncludedPathsFromCollection(query, stage)
+
+        rel = Usd.CollectionAPI.Apply(sets, 'rel')
+        rel.CreateIncludesRel().AddTarget('/World/C')
+
+        # An expression-mode collection that also authors relationship-mode
+        # properties, which it ignores.
+        expr = Usd.CollectionAPI.Apply(sets, 'expr')
+        expr.CreateModeAttr(Usd.Tokens.expression)
+        expr.CreateMembershipExpressionAttr(Sdf.PathExpression('/World/B'))
+        expr.CreateIncludesRel().SetTargets(
+            ['/World/B', rel.GetCollectionPath()])
+        expr.CreateExcludesRel().AddTarget('/World/A')
+        self.assertEqual(includedPaths(expr.ComputeMembershipQuery()),
+                         [Sdf.Path('/World/B')])
+
+        # Including expr merges none of its ignored rules, so /World/A stays
+        # included and neither /World/B nor rel's /World/C is added.  expr is
+        # still an included collection, but rel, which only expr's ignored
+        # includes target, is not.
+        includer = Usd.CollectionAPI.Apply(sets, 'includer')
+        includer.CreateIncludesRel().SetTargets(
+            ['/World/A', expr.GetCollectionPath()])
+        query = includer.ComputeMembershipQuery()
+        self.assertEqual(includedPaths(query), [Sdf.Path('/World/A')])
+        self.assertEqual(set(query.GetIncludedCollections()),
+                         {expr.GetCollectionPath()})
+
+        # In automatic-mode, expr's includes make it relationship-mode, so its
+        # rules are merged, and its exclude of /World/A is stronger than
+        # includer's include, which precedes it.
+        self.assertTrue(expr.GetModeAttr().Clear())
+        query = includer.ComputeMembershipQuery()
+        self.assertEqual(includedPaths(query),
+                         [Sdf.Path('/World/B'), Sdf.Path('/World/C')])
+        self.assertEqual(set(query.GetIncludedCollections()),
+                         {expr.GetCollectionPath(), rel.GetCollectionPath()})
+
     def test_HashMembershipQuery(self):
         self.assertEqual(
             hash(Usd.UsdCollectionMembershipQuery()),
