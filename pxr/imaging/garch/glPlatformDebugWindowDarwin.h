@@ -26,6 +26,7 @@ public:
 
 private:
     GarchGLDebugWindow *_callback;
+    float _scaleFactor = 1;
 };
 
 
