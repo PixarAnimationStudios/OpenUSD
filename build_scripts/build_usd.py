@@ -1762,6 +1762,8 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED={}'
                          .format('ON' if context.safetyFirst else 'OFF'))
+        extraArgs.append('-DCMAKE_INSTALL_RPATH_USE_LINK_PATH={}'
+                         .format('ON' if context.useLinkPathRpath else 'OFF'))
         extraArgs.append(f"-DPXR_ENABLE_COMPILER_CACHE={'ON' if context.useCompilerCache else 'OFF'}")
 
         if context.buildOneTBB:
@@ -2197,6 +2199,16 @@ subgroup.add_argument("--build-monolithic", dest="build_type",
                       help="Build a single monolithic shared library")
 
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--use-link-path-rpath", dest="use_link_path_rpath",
+                      action="store_true", default=True,
+                      help=("Add external linker search paths to installed "
+                            "runtime paths (default)"))
+subgroup.add_argument("--no-use-link-path-rpath", dest="use_link_path_rpath",
+                      action="store_false",
+                      help=("Do not add external linker search paths to "
+                            "installed runtime paths"))
+
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tests", dest="build_tests", action="store_true",
                       default=False, help="Build unit tests")
 subgroup.add_argument("--no-tests", dest="build_tests", action="store_false",
@@ -2498,6 +2510,7 @@ class InstallContext:
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
+        self.useLinkPathRpath = args.use_link_path_rpath
 
         # Dependencies that are forced to be built
         self.forceBuildAll = args.force_all
@@ -2889,6 +2902,7 @@ if MacOS():
 summaryMsg += """\
     Variant                          {buildVariant}
     Target                           {buildTarget}
+    Link-path install RPATH          {useLinkPathRpath}
     UsdValidation                    {buildUsdValidation}
     Imaging                          {buildImaging}
       Ptex support:                  {enablePtex}
@@ -2971,6 +2985,7 @@ summaryMsg = summaryMsg.format(
                   else ""),
     buildTarget=(context.buildTarget),
     buildAppleFramework=("On" if context.buildAppleFramework else "Off"),
+    useLinkPathRpath=("On" if context.useLinkPathRpath else "Off"),
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
