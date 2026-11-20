@@ -120,7 +120,6 @@ You can download source code archives from [GitHub](https://www.github.com/Pixar
 
 ```
 > git clone https://github.com/PixarAnimationStudios/OpenUSD
-Cloning into 'OpenUSD'...
 ```
 
 #### 3. Run the script
