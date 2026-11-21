@@ -39,6 +39,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (blendShapes) \
     (blendShapeWeights) \
     (blendShapeRanges) \
+    (numAnimationSources) \
+    (numSkeletonJoints) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingResolvedSkeletonSchemaTokens, USDSKELIMAGING_API,
     USD_SKEL_IMAGING_RESOLVED_SKELETON_SCHEMA_TOKENS);
@@ -99,7 +101,17 @@ public:
 
     /// Ranges for concatenated blendShapes/Weights.
     USDSKELIMAGING_API
-    HdVec2iArrayDataSourceHandle GetBlendShapeRanges() const; 
+    HdVec2iArrayDataSourceHandle GetBlendShapeRanges() const;
+
+    /// Number of animation sources used to pose the skeleton. Each animation
+    /// source contributes one block of numSkeletonJoints transforms to
+    /// skinningTransforms and one entry to blendShapeRanges.
+    USDSKELIMAGING_API
+    HdIntDataSourceHandle GetNumAnimationSources() const;
+
+    /// Number of joints in the skeleton.
+    USDSKELIMAGING_API
+    HdIntDataSourceHandle GetNumSkeletonJoints() const; 
 
     /// @}
 
@@ -146,6 +158,14 @@ public:
     /// Prim-level relative data source locator to locate blendShapeRanges.
     USDSKELIMAGING_API
     static const HdDataSourceLocator &GetBlendShapeRangesLocator();
+
+    /// Prim-level relative data source locator to locate numAnimationSources.
+    USDSKELIMAGING_API
+    static const HdDataSourceLocator &GetNumAnimationSourcesLocator();
+
+    /// Prim-level relative data source locator to locate numSkeletonJoints.
+    USDSKELIMAGING_API
+    static const HdDataSourceLocator &GetNumSkeletonJointsLocator();
     /// @} 
 
     /// \name Schema construction
@@ -165,7 +185,9 @@ public:
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
         const HdFloatArrayDataSourceHandle &blendShapeWeights,
-        const HdVec2iArrayDataSourceHandle &blendShapeRanges
+        const HdVec2iArrayDataSourceHandle &blendShapeRanges,
+        const HdIntDataSourceHandle &numAnimationSources,
+        const HdIntDataSourceHandle &numSkeletonJoints
     );
 
     /// \class UsdSkelImagingResolvedSkeletonSchema::Builder
@@ -192,6 +214,12 @@ public:
         USDSKELIMAGING_API
         Builder &SetBlendShapeRanges(
             const HdVec2iArrayDataSourceHandle &blendShapeRanges);
+        USDSKELIMAGING_API
+        Builder &SetNumAnimationSources(
+            const HdIntDataSourceHandle &numAnimationSources);
+        USDSKELIMAGING_API
+        Builder &SetNumSkeletonJoints(
+            const HdIntDataSourceHandle &numSkeletonJoints);
 
         /// Returns a container data source containing the members set thus far.
         USDSKELIMAGING_API
@@ -203,6 +231,8 @@ public:
         HdTokenArrayDataSourceHandle _blendShapes;
         HdFloatArrayDataSourceHandle _blendShapeWeights;
         HdVec2iArrayDataSourceHandle _blendShapeRanges;
+        HdIntDataSourceHandle _numAnimationSources;
+        HdIntDataSourceHandle _numSkeletonJoints;
 
     };
 
