@@ -245,6 +245,34 @@ else()
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
+
+    pxr_register_test(testUsdDiffToolEditBack4
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff crate_noext text_noext"
+        TESTENV testenv/testDiffToolEditBack
+        POST_COMMAND "${HEADBIN} -c8 crate_noext"
+        POST_COMMAND_STDOUT_REDIRECT crate_noext_header.txt
+        EXPECTED_RETURN_CODE 0
+        DIFF_COMPARE crate_noext_header.txt
+        ENV
+          "USD_DIFF=sed -i.bak 's/World/Edited/'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
+
+    pxr_register_test(testUsdDiffToolEditBack5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff crate_noext text_noext"
+        TESTENV testenv/testDiffToolEditBack
+        POST_COMMAND "${HEADBIN} -c9 text_noext"
+        POST_COMMAND_STDOUT_REDIRECT text_noext_header.txt
+        EXPECTED_RETURN_CODE 0
+        DIFF_COMPARE text_noext_header.txt
+        ENV
+          "USD_DIFF=sed -i.bak 's/World/Edited/'"
+        PRE_PATH
+            ${CMAKE_INSTALL_PREFIX}/bin
+    )
 endif()
 
 pxr_register_test(testUsdDiffWithDirectories1

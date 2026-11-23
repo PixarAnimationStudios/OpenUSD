@@ -10,9 +10,6 @@ from subprocess import call
 from pxr.UsdUtils.toolPaths import (
     FindUsdBinary, RunUsdBinary, SplitCommandLine)
 
-import platform
-isWindows = (platform.system() == 'Windows')
-
 NO_DIFF_FOUND_EXIT_CODE = 0
 DIFF_FOUND_EXIT_CODE = 1
 ERROR_EXIT_CODE = 2
@@ -30,7 +27,7 @@ def _generateCatOptions(outPath, flatten=None, fmt=None):
     if flatten:
         options.append('--flatten')
 
-    if fmt and os.path.splitext(outPath)[1] == '.usd':
+    if fmt:
         options.append('--usdFormat')
         options.append(fmt)
 
@@ -128,16 +125,16 @@ def _getFileFormat(path):
 
     return None
 
-# A .usd file may hold either text or crate data. Returns the format id of the
-# one that can read path, so that writing back preserves it, or None if neither
-# can (e.g. the file is empty), leaving usdcat to use its default.
+# A file of type 'usd' may hold either text or crate data. Returns the format
+# id of the one that can read path, so that writing back preserves it, or the
+# default format for new .usd files if neither can (e.g. the file is empty).
 def _getUnderlyingUsdFormat(path):
-    from pxr import Sdf
+    from pxr import Sdf, Tf
     for formatId in ('usdc', 'usda'):
         fileFormat = Sdf.FileFormat.FindById(formatId)
         if fileFormat and fileFormat.CanRead(path):
             return formatId
-    return None
+    return Tf.GetEnvSetting('USD_DEFAULT_FILE_FORMAT')
 
 def _convertTo(inPath, outPath, flatten=None, fmt=None):
     # Just copy empty files -- we want something to diff against but
@@ -169,11 +166,12 @@ def _tryEdit(fileName, tempFileName, fileType, flattened):
         _exit('Error: Cannot write to %s, insufficient permissions' % fileName,
               ERROR_EXIT_CODE)
 
-    # usdcat's --usdFormat takes the underlying format, not 'usd' itself.
-    if fileType == 'usd':
-        fileType = _getUnderlyingUsdFormat(fileName)
+    # A file of type 'usd' has either the .usd extension or one that usdcat
+    # does not recognize, and usdcat needs --usdFormat to know which
+    # underlying format to write.  Any other type is implied by the extension.
+    fmt = _getUnderlyingUsdFormat(fileName) if fileType == 'usd' else None
 
-    return _convertTo(tempFileName, fileName, flatten=None, fmt=fileType)
+    return _convertTo(tempFileName, fileName, flatten=None, fmt=fmt)
 
 class FileManager(object):
     def __init__(self, baseline, comparison):
@@ -422,16 +420,18 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
                     tempComparison.name) != tempComparisonTimestamp)
 
             # If we intend to edit either of the files
+            writeBackError = 'Error: failed to write edits from %s back to %s.'
             if not noeffect:
                 if tempBaselineChanged:
                     if _tryEdit(baseline, tempBaseline.name, 
                                 baselineFileType, flatten) != 0:
-                        _exit(convertError % (baseline, tempBaseline.name),
+                        _exit(writeBackError % (tempBaseline.name, baseline),
                               ERROR_EXIT_CODE)
                 if tempComparisonChanged:
                     if _tryEdit(comparison, tempComparison.name,
                                 comparisonFileType, flatten) != 0:
-                        _exit(convertError % (comparison, tempComparison.name),
+                        _exit(writeBackError % (tempComparison.name,
+                                                comparison),
                               ERROR_EXIT_CODE)
     return diffResult
 
