@@ -358,7 +358,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
 
 endfunction() # _install_resource_files
 
-# Installs resource files for a test-only library named LIBRARY_NAME.
+# Installs resource files for a test plugin named LIBRARY_NAME.
 #
 # plugInfo.json files are installed with @VARIABLE@ placeholders filled in.
 # If the resourceFile matches *_plugInfo.json, then it is installed as
@@ -411,13 +411,6 @@ function(_install_test_resource_files LIBRARY_NAME)
             "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
             "${CMAKE_INSTALL_PREFIX}/tests/lib/${libraryFile}")
     endif()
-
-    # Historically, test-only plugInfo.json files only substituted variables
-    # named TEST_PLUG_INFO_XXX, but to support plugInfo.json files produced by
-    # usdGenSchema, we also substitute variables named PLUG_INFO_XXX.
-    set(PLUG_INFO_RESOURCE_PATH "${TEST_PLUG_INFO_RESOURCE_PATH}")
-    set(PLUG_INFO_ROOT "${TEST_PLUG_INFO_ROOT}")
-    set(PLUG_INFO_LIBRARY_PATH "${TEST_PLUG_INFO_LIBRARY_PATH}")
 
     set(foundPlugInfoFile FALSE)
     foreach(resourceFile ${args_FILES})
@@ -943,12 +936,6 @@ endfunction()
 #      side effects then those constructors and side effects will not
 #      run.  We depend on these constructs (e.g. TF_REGISTRY_FUNCTION).
 #
-#    - If the target is not an OBJECT library and we're not building shared
-#      libraries and we're linking with test-only libraries (see
-#      pxr_build_test_library), then we must link those using whole-archive
-#      functionality for the same reason.  This applies to monolithic builds
-#      too, since test-only libraries are never part of the monolithic library.
-#
 #    - We link against PXR_MALLOC_LIBRARY and PXR_THREAD_LIBS because we
 #      always want those.
 #
@@ -956,20 +943,6 @@ function(_pxr_target_link_libraries NAME)
     # Split core libraries from non-core libraries.
     _pxr_split_libraries("${ARGN}" internal external)
     get_property(type TARGET ${NAME} PROPERTY TYPE)
-
-    # Test-only libraries are never core libraries, so they are always in the
-    # external list.
-    if(NOT "${type}" STREQUAL "OBJECT_LIBRARY" AND NOT BUILD_SHARED_LIBS)
-        set(final "")
-        foreach(lib ${external})
-            if(lib IN_LIST PXR_TEST_LIBS)
-                list(APPEND final "$<LINK_LIBRARY:WHOLE_ARCHIVE,${lib}>")
-            else()
-                list(APPEND final ${lib})
-            endif()
-        endforeach()
-        set(external ${final})
-    endif()
 
     if("${type}" STREQUAL "OBJECT_LIBRARY")
         # OBJECT libraries can be linked to normally
@@ -1673,13 +1646,8 @@ endfunction() # pxr_create_apple_framework
 # to output variables named by OUT_PUBLIC_CLASSES, OUT_PYTHON_MODULE_FILES, and
 # OUT_RESOURCE_FILES respectively.
 #
-# If SKIP_INSTALL_PATHS is present, files that include an explicit install path
-# are ignored. (e.g. 'schema.usda:mylib/usd/schema.usda'). This can be specified
-# for callers that are not prepared to parse the install path.
-#
 function(_pxr_parse_generated_schema_classes FILE)
-    set(options
-        SKIP_INSTALL_PATHS)
+    set(options)
     set(oneValueArgs
         OUT_PUBLIC_CLASSES
         OUT_PYTHON_MODULE_FILES
@@ -1725,11 +1693,6 @@ function(_pxr_parse_generated_schema_classes FILE)
                 set(fileType 2)
                 continue()
             endif()
-        endif()
-
-        # Files that include an explicit install path may be skipped.
-        if(args_SKIP_INSTALL_PATHS AND "${line}" MATCHES ":")
-            continue()
         endif()
 
         # Depending on the file type, append to the appropriate list.
