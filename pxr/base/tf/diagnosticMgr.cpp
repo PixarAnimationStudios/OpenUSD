@@ -29,6 +29,9 @@
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/threads.h"
 
+#include <tbb/cache_aligned_allocator.h>
+#include <tbb/enumerable_thread_specific.h>
+
 #include <signal.h>
 #include <stdlib.h>
 
@@ -211,8 +214,25 @@ TfDiagnosticMgr::_ThreadState::_MakeLabel(const char *suffix)
         suffix);
 }
 
+struct TfDiagnosticMgr::_ThreadLocalData
+{
+    // A guard used to protect reentrency when adding/removing
+    // delegates as well as posting errors/warnings/statuses
+    tbb::enumerable_thread_specific<bool> reentrantGuard;
+
+    tbb::enumerable_thread_specific<_ThreadState> threadState;
+
+    // Thread-specific error mark counts & trap stacks.  Use a native key for
+    // best performance here.
+    tbb::enumerable_thread_specific<
+        _MarkCountAndTrapStack,
+        tbb::cache_aligned_allocator<_MarkCountAndTrapStack>,
+        tbb::ets_key_per_instance> markCountsAndTrapStacks;
+};
+
 TfDiagnosticMgr::TfDiagnosticMgr()
-    : _quiet(false)
+    : _threadLocalData(std::make_unique<_ThreadLocalData>())
+    , _quiet(false)
 {
     _nextSerial = 0;
     TfSingleton<This>::SetInstanceConstructed(*this);
@@ -221,6 +241,39 @@ TfDiagnosticMgr::TfDiagnosticMgr()
 
 TfDiagnosticMgr::~TfDiagnosticMgr()
 {
+}
+
+TfDiagnosticMgr::_ThreadState &
+TfDiagnosticMgr::_GetThreadState()
+{
+    return _threadLocalData->threadState.local();
+}
+
+TfDiagnosticMgr::ErrorIterator
+TfDiagnosticMgr::GetErrorBegin()
+{
+    return _GetThreadState()._errorList.begin();
+}
+
+TfDiagnosticMgr::ErrorIterator
+TfDiagnosticMgr::GetErrorEnd()
+{
+    return _GetThreadState()._errorList.end();
+}
+
+bool
+TfDiagnosticMgr::HasActiveErrorMark()
+{
+    return _threadLocalData->markCountsAndTrapStacks.local().markCount > 0;
+}
+
+void *
+TfDiagnosticMgr::_CreateErrorMark()
+{
+    size_t &markCount =
+        _threadLocalData->markCountsAndTrapStacks.local().markCount;
+    ++markCount;
+    return &markCount;
 }
 
 void
@@ -252,7 +305,7 @@ TfDiagnosticMgr::AppendError(TfError const &e) {
     if (!HasActiveErrorMark()) {
         _ReportError(e);
     } else {
-        ErrorList &errorList = _threadState.local()._errorList;
+        ErrorList &errorList = _GetThreadState()._errorList;
         errorList.push_back(e);
         errorList.back()._serial = _nextSerial.fetch_add(1);
         _AppendPendingErrorsLogText(std::prev(errorList.end())); 
@@ -274,7 +327,7 @@ TfDiagnosticMgr::_SpliceErrors(ErrorList &src)
             error._serial = serial++;
         }
         // Now splice them into the main list.
-        ErrorList &errorList = _threadState.local()._errorList;
+        ErrorList &errorList = _GetThreadState()._errorList;
         // We store the begin iterator from the new list.  This iterator remains
         // valid *after the splice*, and iterates the spliced elements from src
         // in errorList.
@@ -343,7 +396,7 @@ TfDiagnosticMgr::_ForEachDelegate(Fn const &fn) const
 void *
 TfDiagnosticMgr::_PushTrap(TfDiagnosticTrap *trap)
 {
-    _TrapStack &stack = _markCountsAndTrapStacks.local().trapStack;
+    _TrapStack &stack = _threadLocalData->markCountsAndTrapStacks.local().trapStack;
     stack.push_back(trap);
     return &stack;
 }
@@ -374,14 +427,14 @@ TfDiagnosticMgr::_PopTrap(TfDiagnosticTrap *trap, void *key)
 inline TfDiagnosticTrap *
 TfDiagnosticMgr::_GetActiveTrap()
 {
-    auto &stack = _markCountsAndTrapStacks.local().trapStack;
+    auto &stack = _threadLocalData->markCountsAndTrapStacks.local().trapStack;
     return stack.empty() ? nullptr : stack.back();
 }
 
 void
 TfDiagnosticMgr::_ReportError(const TfError &err)
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    _ReentrancyGuard guard(&_threadLocalData->reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -410,7 +463,7 @@ TfDiagnosticMgr::PostWarning(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet)
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    _ReentrancyGuard guard(&_threadLocalData->reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -462,7 +515,7 @@ void TfDiagnosticMgr::PostStatus(
     TfCallContext const &context, std::string const &commentary,
     TfDiagnosticInfo info, bool quiet)
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    _ReentrancyGuard guard(&_threadLocalData->reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         return;
     }
@@ -501,7 +554,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
                                 TfEnum statusCode,
                                 std::string const &msg) const
 {
-    _ReentrancyGuard guard(&_reentrantGuard.local());
+    _ReentrancyGuard guard(&_threadLocalData->reentrantGuard.local());
     if (guard.ScopeWasReentered()) {
         TfLogCrash("RECURSIVE FATAL ERROR",
                    msg, std::string() /*additionalInfo*/,
@@ -541,7 +594,7 @@ void TfDiagnosticMgr::PostFatal(TfCallContext const &context,
 TfDiagnosticMgr::ErrorIterator
 TfDiagnosticMgr::EraseError(ErrorIterator i)
 {
-    ErrorList &errorList = _threadState.local()._errorList;
+    ErrorList &errorList = _GetThreadState()._errorList;
 
     return i == errorList.end() ? i : errorList.erase(i);
 }
@@ -549,7 +602,7 @@ TfDiagnosticMgr::EraseError(ErrorIterator i)
 TfDiagnosticMgr::ErrorIterator
 TfDiagnosticMgr::_GetErrorMarkBegin(size_t mark, size_t *nErrors)
 {
-    ErrorList &errorList = _threadState.local()._errorList;
+    ErrorList &errorList = _GetThreadState()._errorList;
 
     if (mark >= _nextSerial || errorList.empty()) {
         if (nErrors)
@@ -580,7 +633,7 @@ TfDiagnosticMgr::EraseRange(ErrorIterator first, ErrorIterator last)
     // Capture the serial before erasing so the partial rebuild can locate
     // the dirty boundary via the existing backward scan.
     const size_t startSerial = first->_serial;
-    ErrorIterator result = _threadState.local()._errorList.erase(first, last);
+    ErrorIterator result = _GetThreadState()._errorList.erase(first, last);
     _RebuildPendingErrorLogText(startSerial);
     return result;
 }
@@ -691,7 +744,7 @@ TfDiagnosticMgr::GetCodeName(const TfEnum &code)
 void
 TfDiagnosticMgr::_AppendPendingErrorsLogText(ErrorIterator i)
 {
-    auto &ts = _threadState.local();
+    auto &ts = _GetThreadState();
     // Need to be careful -- Update() calls the passed function twice to update
     // the text double-buffer.
     ts._pendingErrorsLogText.Update([&](std::vector<std::string> &log) {
@@ -712,7 +765,7 @@ TfDiagnosticMgr::_RebuildPendingErrorLogText(size_t startSerial)
     // _GetErrorMarkBegin does a backward scan -- O(tail), not O(total) -- and
     // returns the iterator directly, avoiding a separate forward traversal.
     // std::list::size() is O(1) in C++11.
-    auto &ts = _threadState.local();
+    auto &ts = _GetThreadState();
     size_t nErrors;
     ErrorIterator markBegin = _GetErrorMarkBegin(startSerial, &nErrors);
     const size_t validLogEnd = ts._errorList.size() - nErrors;
@@ -732,7 +785,7 @@ void
 TfDiagnosticMgr::_AppendTrappedDiagnosticsLogText(TfDiagnosticBase const &d,
                                                   TfDiagnosticTrap *trap)
 {
-    _LogTextBuffer &logText = _threadState.local()._trappedDiagnosticsLogText;
+    _LogTextBuffer &logText = _GetThreadState()._trappedDiagnosticsLogText;
     // Establish trap's _logStart if not already established.
     if (trap->_logStart == size_t(-1)) {
         trap->_logStart = logText.GetSize();
@@ -753,8 +806,8 @@ TfDiagnosticMgr::_RebuildTrappedDiagnosticsLogText(size_t validLogEnd)
     // computed from current container sizes rather than _logStart so that the
     // algorithm stays correct even if _logStart is momentarily stale.  After
     // the update, _logStart is resynced for all traps.
-    auto &stack = _markCountsAndTrapStacks.local().trapStack;
-    _threadState.local()._trappedDiagnosticsLogText.Update(
+    auto &stack = _threadLocalData->markCountsAndTrapStacks.local().trapStack;
+    _GetThreadState()._trappedDiagnosticsLogText.Update(
         [&](std::vector<std::string> &log) {
             if (log.size() > validLogEnd) {
                 log.resize(validLogEnd);
@@ -874,12 +927,12 @@ public:
     static std::vector<std::string>
     GetPendingErrorsLogText() {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-        return mgr._threadState.local()._pendingErrorsLogText._texts.first;
+        return mgr._GetThreadState()._pendingErrorsLogText._texts.first;
     }
     static std::vector<std::string>
     GetTrappedDiagnosticsLogText() {
         TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-        return mgr._threadState.local()._trappedDiagnosticsLogText._texts.first;
+        return mgr._GetThreadState()._trappedDiagnosticsLogText._texts.first;
     }
     static std::vector<std::string>
     GetTransportLogTextForTesting(TfErrorTransport const &transport) {

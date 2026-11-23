@@ -30,8 +30,6 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/functionLite.h"
 
-#include <tbb/enumerable_thread_specific.h>
-
 #include <atomic>
 #include <cstdarg>
 #include <list>
@@ -167,14 +165,12 @@ public:
     void SetQuiet(bool quiet) { _quiet = quiet; }
     
     /// Return an iterator to the beginning of this thread's error list.
-    ErrorIterator GetErrorBegin() {
-        return _threadState.local()._errorList.begin();
-    }        
+    TF_API
+    ErrorIterator GetErrorBegin();
 
     /// Return an iterator to the end of this thread's error list.
-    ErrorIterator GetErrorEnd() {
-        return _threadState.local()._errorList.end();
-    }
+    TF_API
+    ErrorIterator GetErrorEnd();
 
     /// Remove error specified by iterator \p i.
     /// \deprecated Use TfErrorMark instead.
@@ -256,9 +252,8 @@ public:
 
     /// Return true if an instance of TfErrorMark exists in the current thread
     /// of execution, false otherwise.
-    bool HasActiveErrorMark() {
-        return _markCountsAndTrapStacks.local().markCount > 0;
-    }
+    TF_API
+    bool HasActiveErrorMark();
 
 #if !defined(doxygen)
     //
@@ -395,11 +390,7 @@ private:
     ErrorIterator _GetErrorMarkBegin(size_t mark, size_t *nErrors);
 
     // Invoked by ErrorMark ctor.
-    inline void *_CreateErrorMark() {
-        size_t &markCount = _markCountsAndTrapStacks.local().markCount;
-        ++markCount;
-        return &markCount;
-    }
+    void *_CreateErrorMark();
 
     // Invoked by ErrorMark dtor.
     inline bool _DestroyErrorMark(void *key) {
@@ -476,10 +467,6 @@ private:
     template <class Fn>
     bool _ForEachDelegate(Fn const &fn) const;
     
-    // A guard used to protect reentrency when adding/removing
-    // delegates as well as posting errors/warnings/statuses
-    mutable tbb::enumerable_thread_specific<bool> _reentrantGuard;
-
     // The registered delegates global delegates.
     std::vector<Delegate*> _delegates;
    
@@ -521,7 +508,8 @@ private:
         _LogTextBuffer _trappedDiagnosticsLogText;
     };
 
-    tbb::enumerable_thread_specific<_ThreadState> _threadState;
+    // Return this thread's _ThreadState.
+    _ThreadState &_GetThreadState();
 
     // Store as many trap pointers locally as we can in a cache line, minus the
     // size needed for the error mark count.
@@ -540,12 +528,10 @@ private:
 
     static_assert(sizeof(_MarkCountAndTrapStack) == ARCH_CACHE_LINE_SIZE);
     
-    // Thread-specific error mark counts & trap stacks.  Use a native key for
-    // best performance here.
-    tbb::enumerable_thread_specific<
-        _MarkCountAndTrapStack,
-        tbb::cache_aligned_allocator<_MarkCountAndTrapStack>,
-        tbb::ets_key_per_instance> _markCountsAndTrapStacks;
+    // Thread-specific state, defined in the .cpp to keep tbb out of this
+    // header.
+    struct _ThreadLocalData;
+    std::unique_ptr<_ThreadLocalData> _threadLocalData;
 
     bool _quiet;
 
