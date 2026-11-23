@@ -2948,5 +2948,141 @@ class TestUsdNamespaceEditorTargetPathFixup(unittest.TestCase):
 
         _EditAndVerifyNonDefaultPrims(unloadedLayer, unloadedStage)
 
+    def test_EmbeddedTargetPaths(self):
+        # The goal of this test is to verify that targets and connections are
+        # updated when the edited object is referred to only by a target path
+        # embedded in them, such as /B.bar in </C.summed[/B.bar]>.
+
+        layerContents = '''#usda 1.0
+        def "A"
+        {
+        }
+
+        def "B"
+        {
+            int bar
+        }
+
+        def "C"
+        {
+            int summed.connect = </B.bar>
+            rel r = </A>
+        }
+
+        def "D"
+        {
+            rel bundles = [</C.summed[/B.bar]>, </C.r[/A].ra>]
+            int in.connect = [</C.summed[/B.bar]>, </C.r[/A].ra>]
+        }
+
+        def "E"
+        {
+            rel nested = </D.bundles[/C.summed[/B.bar]]>
+        }
+        '''
+
+        def _ApplyEditAndVerify(editFn, expected):
+            layer = Sdf.Layer.CreateAnonymous()
+            layer.ImportFromString(layerContents)
+            stage = Usd.Stage.Open(layer)
+            editor = Usd.NamespaceEditor(stage)
+            self.assertTrue(editFn(editor))
+            result = editor.CanApplyEdits()
+            self.assertTrue(result)
+            self.assertFalse(result.warnings)
+            self.assertTrue(editor.ApplyEdits())
+
+            for path, items in expected.items():
+                path = Sdf.Path(path)
+                spec = layer.GetPropertyAtPath(path)
+                self.assertTrue(spec, path)
+                fieldName = 'targetPaths' \
+                    if isinstance(spec, Sdf.RelationshipSpec) \
+                    else 'connectionPaths'
+                self.assertEqual(spec.GetInfo(fieldName),
+                                 Sdf.PathListOp.CreateExplicit(items), path)
+
+        # Move a prim named only inside embedded target paths.
+        _ApplyEditAndVerify(
+            lambda editor: editor.MovePrimAtPath('/B', '/B2'), {
+                '/C.summed' : ['/B2.bar'],
+                '/C.r' : ['/A'],
+                '/D.bundles' : ['/C.summed[/B2.bar]', '/C.r[/A].ra'],
+                '/D.in' : ['/C.summed[/B2.bar]', '/C.r[/A].ra'],
+                '/E.nested' : ['/D.bundles[/C.summed[/B2.bar]]'],
+            })
+
+        # Same as above, for the relational attribute form.
+        _ApplyEditAndVerify(
+            lambda editor: editor.MovePrimAtPath('/A', '/A2'), {
+                '/C.summed' : ['/B.bar'],
+                '/C.r' : ['/A2'],
+                '/D.bundles' : ['/C.summed[/B.bar]', '/C.r[/A2].ra'],
+                '/D.in' : ['/C.summed[/B.bar]', '/C.r[/A2].ra'],
+                '/E.nested' : ['/D.bundles[/C.summed[/B.bar]]'],
+            })
+
+        # Rename a property named only inside embedded target paths.
+        _ApplyEditAndVerify(
+            lambda editor: editor.MovePropertyAtPath('/B.bar', '/B.baz'), {
+                '/C.summed' : ['/B.baz'],
+                '/D.bundles' : ['/C.summed[/B.baz]', '/C.r[/A].ra'],
+                '/D.in' : ['/C.summed[/B.baz]', '/C.r[/A].ra'],
+                '/E.nested' : ['/D.bundles[/C.summed[/B.baz]]'],
+            })
+
+        # Move the prim that is the prefix of the outer paths.
+        _ApplyEditAndVerify(
+            lambda editor: editor.MovePrimAtPath('/C', '/C2'), {
+                '/C2.summed' : ['/B.bar'],
+                '/C2.r' : ['/A'],
+                '/D.bundles' : ['/C2.summed[/B.bar]', '/C2.r[/A].ra'],
+                '/D.in' : ['/C2.summed[/B.bar]', '/C2.r[/A].ra'],
+                '/E.nested' : ['/D.bundles[/C2.summed[/B.bar]]'],
+            })
+
+        # Deleting a prim named only inside embedded target paths deletes the
+        # targets and connections that refer to it, just as it does for
+        # targets and connections that refer to it directly.
+        _ApplyEditAndVerify(
+            lambda editor: editor.DeletePrimAtPath('/B'), {
+                '/C.summed' : [],
+                '/C.r' : ['/A'],
+                '/D.bundles' : ['/C.r[/A].ra'],
+                '/D.in' : ['/C.r[/A].ra'],
+                '/E.nested' : [],
+            })
+
+        # An embedded target path authored across a composition arc can't be
+        # fixed up without relocates, so it produces the same warning as a
+        # plain target path does.
+        refLayer = Sdf.Layer.CreateAnonymous()
+        refLayer.ImportFromString('''#usda 1.0
+        def "Model"
+        {
+            rel plain = </Model/B.bar>
+            rel embedded = </Model/C.summed[/Model/B.bar]>
+        }
+        ''')
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''#usda 1.0
+        def "Root" (
+            references = @''' + refLayer.identifier + '''@</Model>
+        )
+        {
+            def "B"
+            {
+                int bar
+            }
+        }
+        ''')
+        editor = Usd.NamespaceEditor(Usd.Stage.Open(rootLayer))
+        self.assertTrue(editor.MovePrimAtPath('/Root/B', '/Root/B2'))
+        result = editor.CanApplyEdits()
+        self.assertTrue(result)
+        self.assertEqual(len(result.warnings), 2)
+        self.assertTrue(any("'/Root.plain'" in w for w in result.warnings))
+        self.assertTrue(any("'/Root.embedded'" in w for w in result.warnings))
+
 if __name__ == '__main__':
     unittest.main()

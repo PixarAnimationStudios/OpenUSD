@@ -799,6 +799,36 @@ _TestSdfSchemaPathValidation()
     TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A.a")));
     TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}")));
     TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}B")));
+
+    // Relationship targets and attribute connections may be any absolute
+    // path other than the absolute root, provided that neither the path nor
+    // any target path embedded in it contains a variant selection.
+    using IsValidFn = SdfAllowed (*)(const SdfPath &);
+    for (IsValidFn isValid: { &SdfSchema::IsValidRelationshipTargetPath,
+                              &SdfSchema::IsValidAttributeConnectionPath }) {
+        TF_AXIOM(isValid(SdfPath("/A")));
+        TF_AXIOM(isValid(SdfPath("/A/B")));
+        TF_AXIOM(isValid(SdfPath("/A.a")));
+        TF_AXIOM(isValid(SdfPath("/A.r[/B]")));
+        TF_AXIOM(isValid(SdfPath("/A.r[/B.a]")));
+        TF_AXIOM(isValid(SdfPath("/A.r[/B].a")));
+        TF_AXIOM(isValid(SdfPath("/A.r[/B.r[/C]]")));
+        TF_AXIOM(isValid(SdfPath("/A.a.mapper[/B.b]")));
+        TF_AXIOM(isValid(SdfPath("/A.a.mapper[/B.b].arg")));
+
+        TF_AXIOM(!isValid(SdfPath()));
+        TF_AXIOM(!isValid(SdfPath("/")));
+        TF_AXIOM(!isValid(SdfPath("A")));
+        TF_AXIOM(!isValid(SdfPath("A.a")));
+        TF_AXIOM(!isValid(SdfPath(".r[/B]")));
+        TF_AXIOM(!isValid(SdfPath("/A{x=y}")));
+        TF_AXIOM(!isValid(SdfPath("/A{x=y}B")));
+        TF_AXIOM(!isValid(SdfPath("/A{x=y}B.a")));
+        TF_AXIOM(!isValid(SdfPath("/A.r[/B{x=y}C]")));
+        TF_AXIOM(!isValid(SdfPath("/A.r[/B{x=y}C].a")));
+        TF_AXIOM(!isValid(SdfPath("/A.r[/B.r[/C{x=y}D]]")));
+        TF_AXIOM(!isValid(SdfPath("/A.a.mapper[/B{x=y}C.b]")));
+    }
 }
 
 static void 

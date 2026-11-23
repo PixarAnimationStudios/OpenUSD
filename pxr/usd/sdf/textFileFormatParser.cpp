@@ -1087,14 +1087,14 @@ struct TextParserAction<PathRef>
             
             context.savedPath = SdfPath(pathStr);
 
-            // Valid paths are prim or property paths that do not contain
-            // variant selections.
+            // Reject explicitly authored variant selections here, before the
+            // workaround below would strip them.  The remaining validation
+            // happens on the anchored paths, via
+            // SdfSchema::IsValidAttributeConnectionPath().
             SdfPath const &path = context.savedPath;
-            bool pathValid = (path.IsPrimPath() || path.IsPropertyPath()) &&
-                !path.ContainsPrimVariantSelection();
-            if (!pathValid) {
+            if (path.IsEmpty() || path.ContainsPrimVariantSelection()) {
                 std::string errorMessage = "'" +
-                    pathStr + "' is not a valid prim or property scene path";
+                    pathStr + "' is not a valid scene path";
                 Sdf_TextFileFormatParser_Err(
                     context,
                     in.input(),
@@ -1106,9 +1106,12 @@ struct TextParserAction<PathRef>
 
             // Expand paths relative to the containing prim.
             //
-            // This strips any variant selections from the containing prim
-            // path before expanding the relative path, which is what we
-            // want.  Connection paths never point into the variant namespace.
+            // GetPrimPath() strips the containing prim's own variant
+            // selection, but not those of its ancestors, so a relative path
+            // authored inside nested variants anchors into the variant
+            // namespace.  The workaround below strips those selections, and
+            // SdfSchema::IsValidAttributeConnectionPath() rejects any that
+            // remain in embedded target paths.
             SdfPath absPath = context.savedPath.MakeAbsolutePath(
                     context.path.GetPrimPath());
 
@@ -1156,9 +1159,10 @@ struct TextParserAction<PathRef>
 
             // Expand paths relative to the containing prim.
             //
-            // This strips any variant selections from the containing prim
-            // path before expanding the relative path, which is what we
-            // want.  Inherit paths are not allowed to be variants.
+            // GetPrimPath() strips the containing prim's own variant
+            // selection, but not those of its ancestors.  Any that remain
+            // are subject to SdfSchema::IsValidInheritPath() and
+            // SdfSchema::IsValidSpecializesPath().
             SdfPath absPath = 
                 context.savedPath.MakeAbsolutePath(context.path.GetPrimPath());
 
@@ -1188,9 +1192,9 @@ struct TextParserAction<PathRef>
             if (!path.IsAbsolutePath()) {
                 // Expand paths relative to the containing prim.
                 //
-                // This strips any variant selections from the containing prim
-                // path before expanding the relative path, which is what we
-                // want.  Target paths never point into the variant namespace.
+                // GetPrimPath() strips the containing prim's own variant
+                // selection, but not those of its ancestors.  Any that remain
+                // are rejected by SdfSchema::IsValidRelationshipTargetPath().
                 path = path.MakeAbsolutePath(context.path.GetPrimPath());
             }
 

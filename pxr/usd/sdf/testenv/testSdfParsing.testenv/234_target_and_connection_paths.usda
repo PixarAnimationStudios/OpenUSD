@@ -1,0 +1,42 @@
+#usda 1.0
+
+def "TargetA"
+{
+    int foo
+}
+
+def "TargetB"
+{
+    int bar
+}
+
+def "Connected"
+{
+    int summed.connect = [</TargetA.foo>, </TargetB.bar>]
+    rel r2 = </TargetA>
+    rel r = [</TargetA>, </Connected.r2[/TargetA]>]
+}
+
+def "Dot"
+{
+    # Relationship targets that are themselves target, mapper, mapper arg and
+    # relational attribute paths, including nested and relative paths.
+    rel bundles = [
+        </Connected.summed[/TargetB.bar]>,
+        </Connected.r[/Connected.r2[/TargetA]]>,
+        </Connected.summed.mapper[/TargetB.bar]>,
+        </Connected.summed.mapper[/TargetB.bar].arg>,
+        </Connected.r[/TargetA].relAttr>,
+        <../Connected.r[../TargetA]>,
+    ]
+
+    # Attribute connections to the same kinds of paths.
+    int in.connect = [
+        </Connected.summed[/TargetB.bar]>,
+        </Connected.r[/Connected.r2[/TargetA]]>,
+        </Connected.summed.mapper[/TargetB.bar]>,
+        </Connected.summed.mapper[/TargetB.bar].arg>,
+        </Connected.r[/TargetA].relAttr>,
+        <../Connected.r[../TargetA]>,
+    ]
+}

@@ -103,13 +103,36 @@ struct _CollectPathsXf
     mutable SdfPathSet paths;
 };
 
-// Append an SdfPath to its transform.
+// Append an SdfPath to its transform, along with any target paths embedded in
+// it (e.g. /B.bar in /C.summed[/B.bar]), since the path also refers to those
+// objects and must be fixed up when they are edited.
 SdfPath
 _CollectPath(
     SdfPath const &path, _CollectPathsXf const &xf)
 {
     xf.paths.insert(path);
+    if (path.ContainsTargetPath()) {
+        SdfPathVector targetPaths;
+        path.GetAllTargetPathsRecursively(&targetPaths);
+        xf.paths.insert(targetPaths.begin(), targetPaths.end());
+    }
     return path;
+}
+
+// Return true if \p path or any target path embedded in it has \p prefix.
+bool
+_PathOrEmbeddedTargetHasPrefix(SdfPath const &path, SdfPath const &prefix)
+{
+    if (path.HasPrefix(prefix)) {
+        return true;
+    }
+    if (!path.ContainsTargetPath()) {
+        return false;
+    }
+    SdfPathVector targetPaths;
+    path.GetAllTargetPathsRecursively(&targetPaths);
+    return std::any_of(targetPaths.begin(), targetPaths.end(),
+        [&prefix](SdfPath const &p) { return p.HasPrefix(prefix); });
 }
 
 // Namespace edit SdfPath by replacing its prefix.
@@ -135,9 +158,9 @@ _PathListOpNamespaceEdit(SdfPathListOp const &listOp, _NamespaceEditXf const& xf
             if (!path.IsAbsolutePath()) {
                 return std::optional<SdfPath>(path);
             }
-            // If the path doesn't start with the old path, it is not 
-            // affected and returned unmodified.
-            if (!path.HasPrefix(xf.oldPath)) {
+            // If neither the path nor any target path embedded in it starts
+            // with the old path, it is not affected and returned unmodified.
+            if (!_PathOrEmbeddedTargetHasPrefix(path, xf.oldPath)) {
                 return std::optional<SdfPath>(path);
             }
             // Otherwise we found an affected path. If we've deleted
