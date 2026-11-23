@@ -202,6 +202,8 @@ pxr_plugin(${PXR_PACKAGE}
         renderParam
         renderPass
         renderPassPruneSceneIndexPlugin
+        renderPassSceneIndex
+        renderPassSceneIndexPlugin
         renderPassVisibilityAndMatteSceneIndexPlugin
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
@@ -233,12 +235,14 @@ pxr_plugin(${PXR_PACKAGE}
         rileyTypes
         sceneIndexObserverApi
         statsListener
+        statsMetrics
         worldOffsetSceneIndexPlugin
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
         velocityMotionResolvingSceneIndexPlugin
         pxr/imaging/hdsi/velocityMotionResolvingSceneIndex
+        velocityMotionResolvingSceneIndexPlugin
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS
@@ -275,6 +279,13 @@ if(TARGET hdPrman)
         PRIVATE
             "${PROJECT_BINARY_DIR}/include/pxr/imaging"
     )
+    if(WIN32)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE _WIN32)
+    elseif(APPLE)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE OSX)
+    elseif(UNIX)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE LINUX)
+    endif()
 endif()
 
 if(WIN32 AND NOT BUILD_SHARED_LIBS)
@@ -289,6 +300,7 @@ else()
             usd
             usdImaging
             usdRender
+            usdRiPxrImaging
             ${PXRCORE_LIBRARY}
             ${PRMAN_LIBRARY}
         CPPFILES

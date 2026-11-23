@@ -3,10 +3,12 @@ set(PXR_PACKAGE rmanUsdValidators)
 
 pxr_plugin(rmanUsdValidators
     LIBRARIES
+        arch
         tf
         plug
         sdf
         usd
+        usdGeom
         usdRender
         usdRi
         usdShade

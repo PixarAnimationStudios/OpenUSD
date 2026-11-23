@@ -1,0 +1,31 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HdPrman_LegacyMeshLightAdapter" : {
+                        "bases": ["UsdImagingMeshAdapter"],
+                        "primTypeName": "PxrMesh"
+                    },
+                    "HdPrman_LegacyVolumeLightAdapter" : {
+                        "bases": ["UsdImagingVolumeAdapter"],
+                        "primTypeName": "PxrVolume"
+                    },
+                    "HdPrman_EnvDayLightAdapter" : {
+                        "bases": ["UsdImagingLightAdapter"],
+                        "primTypeName": "PxrEnvDayLight"
+                    },
+                    "HdPrman_RenderTerminalTimeSamplingAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "apiSchemaName": "PxrRenderTerminalTimeSamplingAPI"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "rmanUsdImaging",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

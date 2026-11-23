@@ -25,6 +25,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/utils.h"
 
+#include "pxr/usd/usd/schemaRegistry.h"
+
 #include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/array.h"
@@ -787,6 +789,11 @@ HdPrman_DisplayColorSpaceSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
+    // If the display filter doesn't exist don't load this scene index.
+    if (UsdSchemaRegistry::FindSchemaInfo(
+        _tokens->PxrColorTransformDisplayFilter) == nullptr) {
+        return inputScene;
+    }
     return _HdPrmanDisplayColorSpaceSceneIndex::New(inputScene);
 }
 

@@ -3,6 +3,7 @@ set(PXR_PACKAGE usdRiPxrImaging)
 
 pxr_library(usdRiPxrImaging
     LIBRARIES
+        arch
         gf
         tf
         plug

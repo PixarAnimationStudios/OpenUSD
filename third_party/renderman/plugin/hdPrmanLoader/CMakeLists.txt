@@ -7,6 +7,8 @@ pxr_plugin(hdPrmanLoader
         plug
         tf
         hd
+        hf
+        vt
 
     PUBLIC_CLASSES
         rendererPlugin
