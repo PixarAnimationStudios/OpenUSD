@@ -11,8 +11,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/arch/demangle.h"
-
-#include <tbb/enumerable_thread_specific.h>
+#include "pxr/base/arch/hints.h"
 
 #include <atomic>
 #include <type_traits>
@@ -32,6 +31,27 @@ public:
     static void InitializeStack() {
         return Derived::_InitializeStack();
     }
+};
+
+// Detail for TfStacked storage types.  A type-erased per-thread pointer,
+// implemented in stacked.cpp so that this header does not need tbb.  Each
+// thread's slot is initially null.  The pointees are not destroyed with the
+// slot.
+class Tf_StackedPerThreadSlot {
+public:
+    TF_API Tf_StackedPerThreadSlot();
+    TF_API ~Tf_StackedPerThreadSlot();
+
+    Tf_StackedPerThreadSlot(Tf_StackedPerThreadSlot const &) = delete;
+    Tf_StackedPerThreadSlot &
+    operator=(Tf_StackedPerThreadSlot const &) = delete;
+
+    // Return the calling thread's slot.
+    TF_API void *&Local();
+
+private:
+    struct _Impl;
+    _Impl *_impl;
 };
 
 // Detail for TfStacked storage types.
@@ -60,10 +80,17 @@ private:
         bool _initialized;
     };
 
+    // Per-thread holders are never freed.  The storage is only destroyed if
+    // it loses the initialization race in TfStacked::_GetStack(), before any
+    // thread has used it.
     struct _PerThreadStackStorage {
-        tbb::enumerable_thread_specific<_StackHolder> stack;
+        Tf_StackedPerThreadSlot slot;
         Stack &Get() {
-            return stack.local().Get();
+            void *&holder = slot.Local();
+            if (ARCH_UNLIKELY(!holder)) {
+                holder = new _StackHolder;
+            }
+            return static_cast<_StackHolder *>(holder)->Get();
         }
     };
 
