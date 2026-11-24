@@ -26,7 +26,6 @@
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/base/work/dispatcher.h"
 
 #include <atomic>
 #include <functional>
@@ -2082,10 +2081,6 @@ private:
     // The state delegate for this layer.
     SdfLayerStateDelegateBaseRefPtr _stateDelegate;
 
-    // Dispatcher used in layer initialization, letting waiters participate in
-    // loading instead of just busy-waiting.
-    WorkDispatcher _initDispatcher;
-    
     // Atomic variable protecting layer initialization -- the interval between
     // adding a layer to the layer registry and finishing the process of
     // initializing its contents, at which point we can truly publish the layer
