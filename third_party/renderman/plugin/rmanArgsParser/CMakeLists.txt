@@ -31,3 +31,12 @@ pxr_plugin(rmanArgsParser
     RESOURCE_FILES
         plugInfo.json
 )
+
+if(NOT TARGET ${PXR_PACKAGE})
+    return()
+endif()
+
+target_include_directories(${PXR_PACKAGE}
+    PRIVATE
+    "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
+)

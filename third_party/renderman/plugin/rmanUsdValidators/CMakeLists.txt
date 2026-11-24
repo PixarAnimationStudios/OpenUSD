@@ -24,6 +24,15 @@ pxr_plugin(rmanUsdValidators
         plugInfo.json
 )
 
+if (NOT TARGET ${PXR_PACKAGE})
+    return()
+endif()
+
+target_include_directories(${PXR_PACKAGE}
+    PRIVATE
+    "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
+)
+
 pxr_build_test(testRmanUsdValidators
     LIBRARIES
         tf
