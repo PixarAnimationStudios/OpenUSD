@@ -78,6 +78,7 @@
 
 #include <tbb/concurrent_queue.h>
 
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -294,6 +295,64 @@ template <> struct _IsAlwaysInlined<string> : std::true_type {};
 template <> struct _IsAlwaysInlined<TfToken> : std::true_type {};
 template <> struct _IsAlwaysInlined<SdfPath> : std::true_type {};
 template <> struct _IsAlwaysInlined<SdfAssetPath> : std::true_type {};
+
+// Metafunction that determines if values of type T must be compared by their
+// bytes when deduplicating values to write.  These types are written by
+// bitwise copy and have no padding, but operator== does not compare their
+// representations: -0.0 == +0.0 is true even though they are written
+// differently, and NaN never compares equal to itself.
+template <class T>
+struct _IsBitwiseDedup : std::integral_constant<
+    bool,
+    std::is_arithmetic<T>::value ||
+    std::is_same<T, GfHalf>::value ||
+    GfIsGfVec<T>::value ||
+    GfIsGfMatrix<T>::value ||
+    GfIsGfQuat<T>::value> {};
+
+// Equality for the value deduplication tables.  Two values may share storage
+// in the file only if they would be written identically, so floating-point
+// values (and arrays and array edits of them) compare by their bytes.  Other
+// types compare with operator==.
+struct _DedupEqual {
+    template <class T>
+    bool operator()(T const &x, T const &y) const {
+        if constexpr (_IsBitwiseDedup<T>::value) {
+            return memcmp(&x, &y, sizeof(T)) == 0;
+        }
+        else {
+            return x == y;
+        }
+    }
+
+    template <class T>
+    bool operator()(VtArray<T> const &x, VtArray<T> const &y) const {
+        if constexpr (_IsBitwiseDedup<T>::value) {
+            return x.size() == y.size() &&
+                (x.IsIdentical(y) || x.empty() ||
+                 memcmp(x.cdata(), y.cdata(), sizeof(T) * x.size()) == 0);
+        }
+        else {
+            return x == y;
+        }
+    }
+
+    template <class T>
+    bool operator()(VtArrayEdit<T> const &x, VtArrayEdit<T> const &y) const {
+        if constexpr (_IsBitwiseDedup<T>::value) {
+            VtArray<T> xValues, yValues;
+            std::vector<int64_t> xIndexes, yIndexes;
+            VtArrayEditBuilder<T>::GetSerializationData(
+                x, &xValues, &xIndexes);
+            VtArrayEditBuilder<T>::GetSerializationData(
+                y, &yValues, &yIndexes);
+            return xIndexes == yIndexes && (*this)(xValues, yValues);
+        }
+        else {
+            return x == y;
+        }
+    }
+};
 
 template <class T>
 struct _TypeEnumFor {};
@@ -1928,11 +1987,14 @@ struct CrateFile::_ValueHandler : _ValueHandlerBase
         }                
     }
     
-    std::unique_ptr<std::unordered_map<T, ValueRep, _Hasher>> _valueDedup;
     std::unique_ptr<
-        std::unordered_map<VtArray<T>, ValueRep, _Hasher>> _arrayDedup;
+        std::unordered_map<T, ValueRep, _Hasher, _DedupEqual>> _valueDedup;
     std::unique_ptr<
-        std::unordered_map<VtArrayEdit<T>, ValueRep, _Hasher>> _arrayEditDedup;
+        std::unordered_map<VtArray<T>, ValueRep, _Hasher, _DedupEqual>>
+    _arrayDedup;
+    std::unique_ptr<
+        std::unordered_map<VtArrayEdit<T>, ValueRep, _Hasher, _DedupEqual>>
+    _arrayEditDedup;
 
 };
 
