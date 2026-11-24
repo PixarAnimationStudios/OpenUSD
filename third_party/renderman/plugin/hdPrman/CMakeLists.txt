@@ -240,7 +240,6 @@ pxr_plugin(${PXR_PACKAGE}
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
-        velocityMotionResolvingSceneIndexPlugin
         pxr/imaging/hdsi/velocityMotionResolvingSceneIndex
         velocityMotionResolvingSceneIndexPlugin
         virtualStructResolvingSceneIndex
