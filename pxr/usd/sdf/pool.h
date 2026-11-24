@@ -16,8 +16,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <tbb/concurrent_queue.h>
-
 #include <atomic>
 #include <thread>
 
@@ -241,15 +239,10 @@ private:
     }
 
     // Try to take a shared free list.
-    static bool _TakeSharedFreeList(_FreeList &out) {
-        return _sharedFreeLists->try_pop(out);
-    }
-    
+    static inline bool _TakeSharedFreeList(_FreeList &out);
+
     // Give a free list to be shared by other threads.
-    static void _ShareFreeList(_FreeList &in) {
-        _sharedFreeLists->push(in);
-        in = {};
-    }
+    static inline void _ShareFreeList(_FreeList &in);
 
     // Reserve a new span of pool space.
     static inline void _ReserveSpan(_PoolSpan &out);
@@ -260,7 +253,10 @@ private:
     SDF_API static _ThreadData _threadData;
     SDF_API static char *_regionStarts[NumRegions+1];
     SDF_API static std::atomic<_RegionState> _regionState;
-    SDF_API static TfStaticData<tbb::concurrent_queue<_FreeList>> _sharedFreeLists;
+    // Free lists shared between threads.  Defined in instantiatePool.h so
+    // that this header does not need tbb.
+    struct _SharedFreeLists;
+    SDF_API static TfStaticData<_SharedFreeLists> _sharedFreeLists;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
