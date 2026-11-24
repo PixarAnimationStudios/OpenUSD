@@ -2061,6 +2061,13 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
         // Delegate to prototype adapter and USD prim.
         const SdfPath instancerPath = cachePath.GetParentPath();
         _ProtoPrim const& proto = _GetProtoPrim(instancerPath, cachePath);
+        if (!proto.adapter || proto.paths.empty()) {
+            // The prototype data may already be gone while its rprim is
+            // still in the render index: on an instancer resync, the
+            // instancer data is removed immediately, but removal of the
+            // Hydra prims is deferred until the end of the change batch.
+            return SdfPath();
+        }
         UsdPrim protoPrim = _GetProtoUsdPrim(proto);
         SdfPath materialId =
             proto.adapter->GetMaterialId(protoPrim, cachePath, time);
