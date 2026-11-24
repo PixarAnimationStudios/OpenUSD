@@ -26,6 +26,8 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <tbb/spin_mutex.h>
+
 #include <functional>
 #include <iostream>
 #include <numeric>

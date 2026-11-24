@@ -12,8 +12,6 @@
 
 #include "pxr/base/arch/align.h"
 
-#include <tbb/cache_aligned_allocator.h>
-
 #include <atomic>
 #include <iterator>
 
@@ -94,8 +92,7 @@ public:
         while (curNode) {
             Node* nodeToDelete = curNode;
             curNode = curNode->next;
-            nodeToDelete->~Node();
-            _alloc.deallocate(nodeToDelete, 1);
+            delete nodeToDelete;
         }
     }
 
@@ -112,8 +109,7 @@ public:
     /// Inserts an item at the beginning of the list and returns an iterator to
     /// the newly created item.
     iterator Insert() {
-        Node* newNode = _alloc.allocate(1);
-        new(newNode) Node();
+        Node* newNode = new Node();
 
         // Add the node to the linked list in an atomic manner.
         do {
@@ -124,7 +120,6 @@ public:
 
 private:
     std::atomic<Node*> _head;
-    tbb::cache_aligned_allocator<Node> _alloc;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

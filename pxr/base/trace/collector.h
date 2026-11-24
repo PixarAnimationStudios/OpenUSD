@@ -34,8 +34,6 @@
 #include <string>
 #include <vector>
 
-#include <tbb/spin_mutex.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TraceScopeHolder;
