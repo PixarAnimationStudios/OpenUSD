@@ -28,6 +28,8 @@
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include <tbb/concurrent_queue.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
