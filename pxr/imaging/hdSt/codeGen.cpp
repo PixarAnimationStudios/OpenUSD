@@ -2437,7 +2437,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // Barycentric coordinates
     if (builtinBarycentricsEnabled) {
         _genFS << "vec3 GetBarycentricCoord() {\n"
-                  "  return hd_BaryCoordNoPersp;\n"
+                  "  return hd_BaryCoord;\n"
                   "}\n";
     } else {
         if (_hasGS) {
@@ -3057,8 +3057,8 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
         if (builtinBarycentricsEnabled) {
             HgiShaderFunctionAddStageInput(
-                &desc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+                &desc, "hd_BaryCoord", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoord);
         }
 
         if (_geometricShader->GetPrimitiveType() ==
@@ -3495,8 +3495,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
         if (builtinBarycentricsEnabled) {
             HgiShaderFunctionAddStageInput(
-                &fsDesc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+                &fsDesc, "hd_BaryCoord", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoord);
         }
 
         if (_geometricShader->GetPrimitiveType() ==

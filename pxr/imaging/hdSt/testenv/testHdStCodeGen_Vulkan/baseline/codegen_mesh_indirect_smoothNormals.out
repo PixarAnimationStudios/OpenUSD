@@ -1986,7 +1986,7 @@ layout(location = 2) in vec4 gsPatchCoord;
 flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
 flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
 flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 layout(location = 0) in VertexData {
   vec4 Peye;
   vec3 Neye;
@@ -2037,7 +2037,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -5083,7 +5083,7 @@ layout(location = 2) in vec4 gsPatchCoord;
 flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
 flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
 flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 layout(location = 0) in VertexData {
   vec4 Peye;
   vec3 Neye;
@@ -5134,7 +5134,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;

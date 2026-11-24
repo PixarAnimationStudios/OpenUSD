@@ -1877,7 +1877,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Global Structs ////////
 
 // //////// Global Member Declarations ////////
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
+vec3 hd_BaryCoord = gl_BaryCoordNV;
 
 // //////// Global Function Definitions ////////
 
@@ -2053,7 +2053,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -5047,7 +5047,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Global Structs ////////
 
 // //////// Global Member Declarations ////////
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
+vec3 hd_BaryCoord = gl_BaryCoordNV;
 
 // //////// Global Function Definitions ////////
 
@@ -5223,7 +5223,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;

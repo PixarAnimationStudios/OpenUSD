@@ -2539,7 +2539,7 @@ layout(std430, binding = 1) readonly buffer ssbo_faceVisibility { float faceVisi
 flat layout(location = 1) in ivec4 tes_interstageDrawingCoord0;
 flat layout(location = 2) in ivec4 tes_interstageDrawingCoord1;
 flat layout(location = 3) in ivec4 tes_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 layout(location = 0) in CurveVertexData {
   vec4 Peye;
 } inData;
@@ -2588,7 +2588,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;

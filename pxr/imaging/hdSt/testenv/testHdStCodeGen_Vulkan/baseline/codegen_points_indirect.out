@@ -1315,7 +1315,7 @@ flat layout(location = 4) in int vsPointId;
 flat layout(location = 0) in ivec4 vs_interstageDrawingCoord0;
 flat layout(location = 1) in ivec4 vs_interstageDrawingCoord1;
 flat layout(location = 2) in ivec4 vs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 uint hd_SampleMaskIn = gl_SampleMaskIn[0];
 layout(location = 3) in VertexData {
   vec4 Peye;
@@ -1365,7 +1365,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
