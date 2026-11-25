@@ -553,8 +553,6 @@ _BakeAndShiftExtrapLoopBoundary(
     return resultData;
 }
 
-// _ReparameterizeExtrapLoop()
-
 } // anonymous namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -759,6 +757,16 @@ Ts_SplineData* Ts_Bake(
                   "when the current segment's end time is not +inf");
     }
 
+    // If we're already at the end of the iterator, the interval's max
+    // is before the first knot. We can finish the first knot and return.
+    if (it.AtEnd()) {
+        segment = *it;
+        _SetKnotDataValues(segment, d);
+        _FinalizeKnotData(d);
+        bakedData->SetKnotFromDouble(&d, VtDictionary());
+        return bakedData;
+    }
+
     while (!it.AtEnd()) {
         segment = *it;
         _SetKnotDataValues(segment, d);
@@ -890,6 +898,25 @@ Ts_Truncate(
         return nullptr;
     }
     resultData->loopParams = Ts_LoopParams();
+
+    // Linear extrapolation computes its slope from its two adjacent knots.
+    // But depending on the truncation interval, baking may result in less
+    // than two knots. In these cases, compute the slope and swap the extrap
+    // mode to sloped
+    if (resultData->times.size() < 2) {
+        if (preExtrap.mode == TsExtrapLinear) {
+            preExtrap = TsExtrapolation(TsExtrapSloped);
+            preExtrap.slope = Ts_Eval(data, firstTime,
+                                      Ts_EvalDerivative,
+                                      Ts_EvalPre).value_or(0.0);
+        }
+        if (postExtrap.mode == TsExtrapLinear) {
+            postExtrap = TsExtrapolation(TsExtrapSloped);
+            postExtrap.slope = Ts_Eval(data, lastTime,
+                                       Ts_EvalDerivative,
+                                       Ts_EvalAtTime).value_or(0.0);
+        }
+    }
 
     // Write back simplified extrapolation. This ensures we don't
     // breakdown in a looped section that actually behaves like held
