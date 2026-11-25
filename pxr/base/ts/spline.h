@@ -563,8 +563,8 @@ public:
     TS_API
     TsSpline GetTruncated(
         const GfInterval& interval,
-        TsExtrapolation preFallback = TsExtrapolation(TsExtrapValueBlock),
-        TsExtrapolation postFallback = TsExtrapolation(TsExtrapValueBlock)
+        TsExtrapolation preExtrap = TsExtrapolation(TsExtrapValueBlock),
+        TsExtrapolation postExtrap = TsExtrapolation(TsExtrapValueBlock)
     ) const;
 
     /// Returns a new spline resulting from time scaling the knots of a given

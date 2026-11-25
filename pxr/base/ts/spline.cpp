@@ -705,15 +705,15 @@ TF_PP_SEQ_FOR_EACH(_INSTANTIATE_SAMPLE_METHOD,
 TsSpline
 TsSpline::GetTruncated(
     const GfInterval& interval,
-    TsExtrapolation preFallback,
-    TsExtrapolation postFallback) const
+    TsExtrapolation preExtrap,
+    TsExtrapolation postExtrap) const
 {
     if (interval.IsEmpty() || _data == nullptr || _data->times.empty()) {
         return TsSpline();
     }
 
     Ts_SplineData* truncatedData = Ts_Truncate(_GetData(), interval,
-                                               preFallback, postFallback);
+                                               preExtrap, postExtrap);
 
     if (truncatedData) {
         return TsSpline(truncatedData);

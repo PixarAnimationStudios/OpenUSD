@@ -129,13 +129,24 @@ pxr_library(ts
     DOXYGEN_FILES
         doxygen/overview.md
         doxygen/regression.md
+        doxygen/splines.md
         doxygen/tsTest.dox
+        doxygen/images/autoEase.png
         doxygen/images/boldS.png
         doxygen/images/centerVertical.png
+        doxygen/images/dualValued.png
         doxygen/images/endVert.png
+        doxygen/images/extrapLinear.png
+        doxygen/images/extrapSloped.png
         doxygen/images/fourThirdOneThird.png
+        doxygen/images/interpModes.png
+        doxygen/images/introExample.png
         doxygen/images/keepRatio.png
         doxygen/images/keepStart.png
+        doxygen/images/loopBoundary.png
+        doxygen/images/loopOscillate.png
+        doxygen/images/loopRepeat.png
+        doxygen/images/loopReset.png
         doxygen/images/nearVertical.png
         doxygen/images/oneThirdFourThird.png
         doxygen/images/regressiveS.png

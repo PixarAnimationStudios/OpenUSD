@@ -8,7 +8,12 @@ of a value that varies over time, usually continuously.
 
 The most important classes are \ref TsSpline, \ref TsKnot, and \ref TsKnotMap.
 
-# Subtopics
+# Where to Go Next
 
-* \subpage page_ts_regression
-* \subpage page_ts_tsTest
+| To learn about...                  | Read...                               |
+|------------------------------------|---------------------------------------|
+| What a spline can represent        | \subpage page_ts_splines              |
+| Calling the API                    | [API Guide](#splines-api-guide)       |
+| Why tangents get shortened         | \subpage page_ts_regression           |
+| Testing and graphing splines       | \subpage page_ts_tsTest               |
+
