@@ -32,6 +32,7 @@ import sys
 import yaml
 
 from pxr.Performance import parseTimingOutput
+from pxr.UsdUtils.toolPaths import RunUsdBinary
 
 from pxr.Performance.parseTimingOutput import (
     METRICS,
@@ -64,49 +65,51 @@ def parseOutput(output, parseFn, traceFile = None):
     return metrics
 
 
+def runUsdBinaryWrapper(binaryName, options, assetPath):
+    """
+    Wraps RunUsdBinary to run subprocess commands invoking usd binaries.
+    `options` must be a list of string.
+    """
+    # Note that we don't catch the possible RuntimeError, OSError from
+    # RunUsdBinary; on failure we want the entire script to terminate.
+    proc = RunUsdBinary(binaryName, options=options, paths=[assetPath],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    stdout = stdout.decode(errors="replace")
+    stderr = stderr.decode(errors="replace")
+
+    # If the command failed, output any errors and re-raise
+    if proc.returncode != 0:
+        print("ERROR:", stderr, file=sys.stderr)
+        raise subprocess.CalledProcessError(
+            proc.returncode, binaryName, stdout, stderr)
+
+    return stdout, stderr
+
+
 def warmCache(assetPath):
     """
     Open usdview and load the asset to warm the system and
     filesystem cache.
     """
-    command = f"usdview --quitAfterStartup --timing {assetPath}"
-    try:
-        subprocess.run(command,
-                       shell=True,
-                       capture_output=True,
-                       check=True)
-    except subprocess.CalledProcessError as e:
-        print(e.stderr, file=sys.stderr)
-        raise
+    runUsdBinaryWrapper("usdview", ["--quitAfterStartup", "--timing"], assetPath)
 
 
 def measurePerformance(assetPath, traceDir, iteration, sessionLayer):
     """
     Run usdview to produce native timing information.
     """
-    traceArgs = ""
+    options = ["--quitAfterStartup", "--timing"]
+    if sessionLayer:
+        options.append(f"--sessionLayer={sessionLayer}")
+
     traceFile = None
     if traceDir is not None:
         traceFile = os.path.join(traceDir, f"usdview_{iteration}.trace")
-        traceArgs = f"--traceToFile {traceFile} --traceFormat trace"
+        options += [f"--traceToFile={traceFile}", "--traceFormat=trace"]
 
-    if sessionLayer:
-        sessionLayer = f"--sessionLayer {sessionLayer}"
-    else:
-        sessionLayer = ""
+    output, _ = runUsdBinaryWrapper("usdview", options, assetPath)
 
-    command = (f"usdview --quitAfterStartup --timing {sessionLayer} "
-               f"{assetPath} {traceArgs}")
-    try:
-        result = subprocess.run(command,
-                                shell=True,
-                                capture_output=True,
-                                check=True)
-    except subprocess.CalledProcessError as e:
-        print("ERROR", e.stderr.decode(), file=sys.stderr)
-        raise
-
-    output = result.stdout.decode()
     return parseOutput(output, parseTiming, traceFile)
 
 
@@ -118,33 +121,22 @@ def measureTestusdviewPerf(assetPath,
     """
     Run timing scripts for metrics registered in `testusdviewMetrics`.
     """
-    if sessionLayer:
-        sessionLayer = f"--sessionLayer {sessionLayer}"
-    else:
-        sessionLayer = ""
-
     metrics = {}
     for script, metricExpressions in testusdviewMetrics.items():
-        traceArgs = ""
+        options = ["--norender"]
         traceFile = None
         if traceDir is not None:
             scriptRep = re.sub(r'\W+', '_', os.path.basename(script))
             traceFile = os.path.join(traceDir,
                 f"testusdview_{scriptRep}_{iteration}.trace")
-            traceArgs = f"--traceToFile {traceFile} --traceFormat trace"
+            options += [f"--traceToFile={traceFile}", "--traceFormat=trace"]
 
-        command = (f"testusdview --norender {traceArgs} --testScript "
-                   f"{script} {sessionLayer} {assetPath}")
-        try:
-            result = subprocess.run(command,
-                                    shell=True,
-                                    capture_output=True,
-                                    check=True)
-        except subprocess.CalledProcessError as e:
-            print("ERROR:", e.stderr.decode(), file=sys.stderr)
-            raise
+        options.append(f"--testScript={script}")
+        if sessionLayer:
+            options.append(f"--sessionLayer={sessionLayer}")
 
-        output = result.stdout.decode()
+        output, _ = runUsdBinaryWrapper("testusdview", options, assetPath)
+
         parseFn = functools.partial(parseTimingGeneric, metricExpressions)
         currMetrics = parseOutput(output, parseFn, traceFile)
         metrics.update(currMetrics)
