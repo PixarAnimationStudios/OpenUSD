@@ -11,7 +11,10 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/dirtyList.h"
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/selection.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/unitTestNullRenderDelegate.h"
@@ -23,12 +26,14 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdShade/coordSysAPI.h"
 #include "pxr/usd/usdShade/material.h"
+#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -1734,6 +1739,112 @@ DelegateDependencyMapTest()
     }
 }
 
+// Observer that, like a dependency-tracking scene index downstream of
+// scene index emulation, reads back the material binding of every rprim
+// whenever prims are dirtied.
+class _MaterialBindingQueryingObserver : public HdSceneIndexObserver
+{
+public:
+    explicit _MaterialBindingQueryingObserver(HdRenderIndex *renderIndex)
+        : _renderIndex(renderIndex) {}
+
+    void PrimsAdded(const HdSceneIndexBase &,
+                    const AddedPrimEntries &) override {}
+    void PrimsRemoved(const HdSceneIndexBase &,
+                      const RemovedPrimEntries &) override {}
+    void PrimsRenamed(const HdSceneIndexBase &,
+                      const RenamedPrimEntries &) override {}
+    void PrimsDirtied(const HdSceneIndexBase &sender,
+                      const DirtiedPrimEntries &) override
+    {
+        for (const SdfPath &id : _renderIndex->GetRprimIds()) {
+            const HdSceneIndexPrim prim = sender.GetPrim(id);
+            if (HdPathDataSourceHandle const pathDs =
+                    HdMaterialBindingsSchema::GetFromParent(prim.dataSource)
+                        .GetMaterialBinding().GetPath()) {
+                pathDs->GetTypedValue(0.0f);
+            }
+        }
+    }
+
+private:
+    HdRenderIndex *_renderIndex;
+};
+
+static void
+PointInstancerPrototypeResyncTest()
+{
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "PointInstancerPrototypeResyncTest\n";
+    std::cout << "-------------------------------------------------------\n";
+
+    // A point instancer with two prototypes, each with a material that lives
+    // underneath the prototype.
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdGeomPointInstancer pi =
+        UsdGeomPointInstancer::Define(stage, SdfPath("/World/PI"));
+    for (int i = 0; i < 2; ++i) {
+        const SdfPath root(TfStringPrintf("/World/PI/Protos/P%d", i));
+        UsdGeomXform::Define(stage, root);
+        UsdGeomMesh mesh = UsdGeomMesh::Define(stage, root.AppendChild(
+                                                   TfToken("Geo")));
+        mesh.CreatePointsAttr(VtValue(VtVec3fArray{
+            GfVec3f(0,0,0), GfVec3f(1,0,0), GfVec3f(1,1,0), GfVec3f(0,1,0)}));
+        mesh.CreateFaceVertexCountsAttr(VtValue(VtIntArray{4}));
+        mesh.CreateFaceVertexIndicesAttr(VtValue(VtIntArray{0, 1, 2, 3}));
+        UsdShadeMaterial mat = UsdShadeMaterial::Define(stage,
+            root.AppendPath(SdfPath(TfStringPrintf("Looks/M%d", i))));
+        UsdShadeShader shader = UsdShadeShader::Define(stage,
+            mat.GetPath().AppendChild(TfToken("Surf")));
+        shader.CreateIdAttr(VtValue(TfToken("UsdPreviewSurface")));
+        mat.CreateSurfaceOutput().ConnectToSource(
+            shader.ConnectableAPI(), TfToken("surface"));
+        UsdShadeMaterialBindingAPI::Apply(mesh.GetPrim()).Bind(mat);
+        pi.CreatePrototypesRel().AddTarget(root);
+    }
+    pi.CreateProtoIndicesAttr(VtValue(VtIntArray{0, 1, 0, 1}));
+    pi.CreatePositionsAttr(VtValue(VtVec3fArray{
+        GfVec3f(0,0,0), GfVec3f(2,0,0), GfVec3f(4,0,0), GfVec3f(6,0,0)}));
+
+    // Bring up Hydra
+    Hd_UnitTestNullRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex>
+        renderIndex(HdRenderIndex::New(&renderDelegate, HdDriverVector()));
+    std::unique_ptr<UsdImagingDelegate> delegate(
+        new UsdImagingDelegate(renderIndex.get(),
+                               SdfPath::AbsoluteRootPath()));
+
+    delegate->Populate(stage->GetPseudoRoot());
+    delegate->SetTime(0);
+    delegate->SyncAll(true);
+
+    _MaterialBindingQueryingObserver observer(renderIndex.get());
+    renderIndex->GetTerminalSceneIndex()->AddObserver(
+        HdSceneIndexObserverPtr(&observer));
+
+    // In a single change batch, deactivate one prototype (which resyncs the
+    // instancer and drops its prototype data right away, while removal of
+    // the Hydra prims is deferred) and author a new attribute on the other
+    // prototype's shader (which dirties that prototype's material id).
+    // The observer queries the material id of the prototype rprims while the
+    // instancer's prototype data is gone but the rprims are still in the
+    // render index; this used to crash in
+    // UsdImagingPointInstancerAdapter::GetMaterialId (GitHub issue #4354).
+    {
+        SdfChangeBlock block;
+        stage->GetPrimAtPath(SdfPath("/World/PI/Protos/P0")).SetActive(false);
+        UsdShadeShader shader(stage->GetPrimAtPath(
+            SdfPath("/World/PI/Protos/P1/Looks/M1/Surf")));
+        shader.CreateInput(TfToken("roughness"), SdfValueTypeNames->Float)
+            .Set(0.3f);
+    }
+    delegate->SetTime(0);
+    delegate->SyncAll(true);
+
+    renderIndex->GetTerminalSceneIndex()->RemoveObserver(
+        HdSceneIndexObserverPtr(&observer));
+}
+
 int main()
 {
     TfErrorMark mark;
@@ -1758,6 +1869,7 @@ int main()
     ShaderResyncTest();
     InstancerMultipleEditTest();
     DelegateDependencyMapTest();
+    PointInstancerPrototypeResyncTest();
 
     if (TF_AXIOM(mark.IsClean()))
         std::cout << "OK" << std::endl;
