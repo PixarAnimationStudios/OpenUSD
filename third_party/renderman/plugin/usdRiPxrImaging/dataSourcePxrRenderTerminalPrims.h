@@ -43,14 +43,21 @@ public:
     USDRIPXRIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    /// Returns the locators dirtied by a change to \p properties.
+    ///
+    /// \p shaderIdAttrName is the name of the terminal's shader id
+    /// attribute (e.g. "ri:integrator:shaderId"); the resource's node
+    /// identifier is derived from that attribute's value, so a change to it
+    /// dirties the resource.
     USDRIPXRIMAGING_API
     static
     HdDataSourceLocatorSet
     Invalidate(
-        UsdPrim const& prim,
-        const TfToken &subprim,
-        const TfTokenVector &properties,
-        UsdImagingPropertyInvalidationType invalidationType);
+        const UsdPrim& prim,
+        const TfToken& subprim,
+        const TfTokenVector& properties,
+        UsdImagingPropertyInvalidationType invalidationType,
+        const TfToken& shaderIdAttrName);
 
 private:
     // Private constructor, use static New() instead.
@@ -188,17 +195,21 @@ UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Get(
 template <typename TerminalSchema>
 HdDataSourceLocatorSet
 UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
-    UsdPrim const& prim,
-    const TfToken &subprim,
-    const TfTokenVector &properties,
-    const UsdImagingPropertyInvalidationType invalidationType)
+    const UsdPrim& prim,
+    const TfToken& subprim,
+    const TfTokenVector& properties,
+    const UsdImagingPropertyInvalidationType invalidationType,
+    const TfToken& shaderIdAttrName)
 {
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators;
-    for (const TfToken &propertyName : properties) {
-        // Properties with the "inputs" prefix are aggregated under the Resource
-        if (_HasInputPrefix(propertyName)) {
+    for (const TfToken& propertyName : properties) {
+        // Properties with the "inputs" prefix are aggregated under the
+        // Resource, and the shader id attribute's value becomes its node
+        // identifier.
+        if (_HasInputPrefix(propertyName) ||
+                propertyName == shaderIdAttrName) {
             locators.insert(TerminalSchema::GetResourceLocator());
         }
         // Note: Skip UsdImagingDataSourcePrim::Invalidate(...)

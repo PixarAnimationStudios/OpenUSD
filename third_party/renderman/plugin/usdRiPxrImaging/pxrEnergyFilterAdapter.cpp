@@ -12,6 +12,8 @@
 #if PXR_VERSION >= 2608
 #include "pxr/imaging/hd/energyFilterSchema.h"
 #endif
+#include "pxr/imaging/hd/containerDataSourceEditor.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -21,6 +23,8 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/base/gf/vec4f.h"
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,6 +45,17 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 #if PXR_VERSION >= 2608
+
+static const TfTokenVector&
+_GetFlatAttrNames()
+{
+    static const TfTokenVector names = {
+        _tokens->riEnergyFilterEnabled,
+        _tokens->riEnergyFilterLpe,
+        _tokens->riEnergyFilterOrder
+    };
+    return names;
+}
 
 UsdRiPxrImagingEnergyFilterAdapter::
 ~UsdRiPxrImagingEnergyFilterAdapter() = default;
@@ -82,14 +97,9 @@ UsdRiPxrImagingEnergyFilterAdapter::GetImagingSubprimData(
         // Overlay the base-class properties (enabled, lpe, order) as flat
         // attributes so that downstream Hydra consumers can read them via
         // sceneDelegate->Get(path, token).
-        const TfToken flatAttrs[] = {
-            _tokens->riEnergyFilterEnabled,
-            _tokens->riEnergyFilterLpe,
-            _tokens->riEnergyFilterOrder
-        };
         std::vector<TfToken> names;
         std::vector<HdDataSourceBaseHandle> values;
-        for (const TfToken &attrName : flatAttrs) {
+        for (const TfToken& attrName : _GetFlatAttrNames()) {
             UsdAttribute attr = prim.GetAttribute(attrName);
             VtValue val;
             if (attr && attr.HasAuthoredValue() && attr.Get(&val)) {
@@ -117,10 +127,27 @@ UsdRiPxrImagingEnergyFilterAdapter::InvalidateImagingSubprim(
     const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return
+        HdDataSourceLocatorSet locators =
             UsdRiPxrImaging_DataSourceRenderTerminalPrim<HdEnergyFilterSchema>::
             Invalidate(
-                prim, subprim, properties, invalidationType);
+                prim, subprim, properties, invalidationType,
+                _tokens->riEnergyFilterShaderId);
+
+        // invalidation for the extra ri attributes that aren't shader inputs
+        HdDataSourceLocatorSet flatLocators;
+        const TfTokenVector& flatAttrNames = _GetFlatAttrNames();
+        for (const TfToken& propertyName : properties) {
+            if (std::find(flatAttrNames.begin(), flatAttrNames.end(),
+                          propertyName) != flatAttrNames.end()) {
+                flatLocators.insert(HdDataSourceLocator(propertyName));
+            }
+        }
+        if (!flatLocators.IsEmpty()) {
+            locators.insert(
+                HdContainerDataSourceEditor::ComputeDirtyLocators(
+                    flatLocators));
+        }
+        return locators;
     }
 
     return HdDataSourceLocatorSet();

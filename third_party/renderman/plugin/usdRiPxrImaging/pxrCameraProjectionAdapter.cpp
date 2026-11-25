@@ -87,7 +87,8 @@ UsdRiPxrImagingCameraProjectionAdapter::InvalidateImagingSubprim(
     return
         UsdRiPxrImaging_DataSourceRenderTerminalPrim
             <UsdRiPxrImagingProjectionSchema>::
-                Invalidate( prim, subprim, properties, invalidationType);
+                Invalidate( prim, subprim, properties, invalidationType,
+                            _tokens->riProjectionShaderId);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

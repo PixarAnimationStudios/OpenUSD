@@ -86,7 +86,8 @@ UsdRiPxrImagingDisplayFilterAdapter::InvalidateImagingSubprim(
         return
             UsdRiPxrImaging_DataSourceRenderTerminalPrim<HdDisplayFilterSchema>::
             Invalidate(
-                prim, subprim, properties, invalidationType);
+                prim, subprim, properties, invalidationType,
+                _tokens->riDisplayFilterShaderId);
     }
 
     return HdDataSourceLocatorSet();
