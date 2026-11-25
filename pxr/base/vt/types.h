@@ -204,20 +204,37 @@ TF_PP_SEQ_FOR_EACH(VT_ARRAY_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
 #define VT_ARRAY_EDIT_VALUE_TYPES \
 TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
 
-// This unfortunately must be two separate PP lists, otherwise we exceed the
-// MSVC macro nesting depth.
-#define VT_VALUE_TYPES_1                                \
-    VT_BUILTIN_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES
-#define VT_VALUE_TYPES_2                                \
-    VT_ARRAY_VALUE_TYPES VT_ARRAY_EDIT_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
+// Expand _macro for each known value type tuple: VT_SCALAR_VALUE_TYPES, then
+// VT_ARRAY_VALUE_TYPES, then VT_ARRAY_EDIT_VALUE_TYPES, then
+// VT_NONARRAY_VALUE_TYPES.  The _macro must have the same form as for
+// TF_PP_SEQ_FOR_EACH, namely MACRO(unused, elem), where `unused` should be
+// ignored and `elem` is the value type tuple element.
+//
+// This builds the array and array edit tuples one at a time while iterating
+// VT_SCALAR_VALUE_TYPES, rather than iterating the macro-generated
+// VT_ARRAY_VALUE_TYPES and VT_ARRAY_EDIT_VALUE_TYPES sequences.
+// TF_PP_SEQ_FOR_EACH's cost grows quadratically with sequence length, and this
+// form is much cheaper to preprocess.
+#define VT_FOR_EACH_VALUE_TYPE(_macro)                                      \
+    TF_PP_SEQ_FOR_EACH(_macro, ~, VT_SCALAR_VALUE_TYPES)                    \
+    TF_PP_SEQ_FOR_EACH(                                                     \
+        _VT_FOR_EACH_ARRAY_TYPE, _macro, VT_SCALAR_VALUE_TYPES)             \
+    TF_PP_SEQ_FOR_EACH(                                                     \
+        _VT_FOR_EACH_ARRAY_EDIT_TYPE, _macro, VT_SCALAR_VALUE_TYPES)        \
+    TF_PP_SEQ_FOR_EACH(_macro, ~, VT_NONARRAY_VALUE_TYPES)
 
-// Expand _macro for each value type tuple in VT_VALUE_TYPES_{1,2}.  The _macro
-// must have the same form as for TF_PP_SEQ_FOR_EACH, namely MACRO(unused,
-// elem), where `unused` should be ignored and `elem` is the VT_VALUE_TYPES
-// tuple element.
-#define VT_FOR_EACH_VALUE_TYPE(_macro)              \
-    TF_PP_SEQ_FOR_EACH(_macro, ~, VT_VALUE_TYPES_1) \
-    TF_PP_SEQ_FOR_EACH(_macro, ~, VT_VALUE_TYPES_2)
+// Invoke _macro on fully expanded arguments, so that _macro sees the same
+// tokens it would see when iterating VT_ARRAY_VALUE_TYPES or
+// VT_ARRAY_EDIT_VALUE_TYPES directly.
+#define _VT_FOR_EACH_INVOKE(_macro, args) _macro args
+#define _VT_FOR_EACH_ARRAY_TYPE(_macro, elem)                               \
+    _VT_FOR_EACH_INVOKE(_macro, (~,                                         \
+        (TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)),               \
+         TF_PP_CAT(VT_TYPE_NAME(elem), Array))))
+#define _VT_FOR_EACH_ARRAY_EDIT_TYPE(_macro, elem)                          \
+    _VT_FOR_EACH_INVOKE(_macro, (~,                                         \
+        (TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), ArrayEdit)),           \
+         TF_PP_CAT(VT_TYPE_NAME(elem), ArrayEdit))))
 
 // Populate a type list from the preprocessor sequence.  The type `void` is
 // prepended to accommodate the comma-type expansion for the rest of the type
@@ -261,9 +278,9 @@ VtGetNumKnownValueTypes() {
 }
 
 /// Provide compile-time value type indexes for types that are "known" to Vt --
-/// specifically, those types that appear in VT_VALUE_TYPES_{1,2} and are
-/// visited by VT_FOR_EACH_VALUE_TYPE().  Note that VtArray and VtValue can work
-/// with other types that are not these "known" types.
+/// specifically, those types visited by VT_FOR_EACH_VALUE_TYPE().  Note that
+/// VtArray and VtValue can work with other types that are not these "known"
+/// types.
 ///
 /// VtGetKnownValueTypeIndex can only be used with these known types.  Querying
 /// a type that is not known to Vt results in a compilation error.  The set of
@@ -278,11 +295,11 @@ constexpr int
 VtGetKnownValueTypeIndex()
 {
     constexpr int index = Vt_KnownValueTypeDetail::GetIndex<T>();
-    static_assert(index != -1, "T is not one of the known VT_VALUE_TYPES.");
+    static_assert(index != -1, "T is not one of the known Vt value types.");
     return index;
 }
 
-/// Returns true if `T` is a type that appears in VT_VALUE_TYPES.
+/// Returns true if `T` is a type visited by VT_FOR_EACH_VALUE_TYPE().
 template <class T>
 constexpr bool
 VtIsKnownValueType()
@@ -317,9 +334,11 @@ Vt_IsTypeAllowedToRegisterTransforms()
         ;
 }
 
-// None of the VT_VALUE_TYPES are value proxies.  We want to specialize these
+// None of the known value types are value proxies.  We want to specialize these
 // templates here, since otherwise the VtIsTypedValueProxy will require a
-// complete type to check if it derives VtTypedValueProxyBase.
+// complete type to check if it derives VtTypedValueProxyBase.  VtArray and
+// VtArrayEdit are never value proxies, so we partially specialize for those
+// rather than specializing for each of the array value types.
 #define VT_SPECIALIZE_IS_VALUE_PROXY(unused, elem)                             \
     template <> struct                                                         \
     VtIsValueProxy< VT_TYPE(elem) > : std::false_type {};                      \
@@ -327,7 +346,22 @@ Vt_IsTypeAllowedToRegisterTransforms()
     VtIsTypedValueProxy< VT_TYPE(elem) > : std::false_type {};                 \
     template <> struct                                                         \
     VtIsErasedValueProxy< VT_TYPE(elem) > : std::false_type {};
-VT_FOR_EACH_VALUE_TYPE(VT_SPECIALIZE_IS_VALUE_PROXY)
+TF_PP_SEQ_FOR_EACH(VT_SPECIALIZE_IS_VALUE_PROXY, ~, VT_SCALAR_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(VT_SPECIALIZE_IS_VALUE_PROXY, ~, VT_NONARRAY_VALUE_TYPES)
+
+template <class T>
+struct VtIsValueProxy<VtArray<T>> : std::false_type {};
+template <class T>
+struct VtIsTypedValueProxy<VtArray<T>> : std::false_type {};
+template <class T>
+struct VtIsErasedValueProxy<VtArray<T>> : std::false_type {};
+
+template <class T>
+struct VtIsValueProxy<VtArrayEdit<T>> : std::false_type {};
+template <class T>
+struct VtIsTypedValueProxy<VtArrayEdit<T>> : std::false_type {};
+template <class T>
+struct VtIsErasedValueProxy<VtArrayEdit<T>> : std::false_type {};
 #undef VT_SPECIALIZE_IS_VALUE_PROXY
 
 // Free functions to represent "zero" for various base types.  See
