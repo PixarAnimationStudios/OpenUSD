@@ -141,6 +141,13 @@ static std::string _WrapGetValueTypeName(
     return Ts_GetTypeNameFromType(knot.GetValueType());
 }
 
+// Add a wrapper to disambiguate between GetCustomDataByKey overloads.
+static VtValue _WrapGetCustomDataByKey(
+    const TsKnot& knot,
+    const std::string& keyPath)
+{
+    return knot.GetCustomDataByKey(keyPath);
+}
 
 namespace
 {
@@ -245,7 +252,7 @@ void wrapKnot()
         .def("SetCustomData", &This::SetCustomData)
         .def("GetCustomData", &This::GetCustomData)
         .def("SetCustomDataByKey", &This::SetCustomDataByKey)
-        .def("GetCustomDataByKey", &This::GetCustomDataByKey)
+        .def("GetCustomDataByKey", &_WrapGetCustomDataByKey)
 
         .def("UpdateTangents", &_WrapUpdateTangents,
              (arg("prevKnot"),
