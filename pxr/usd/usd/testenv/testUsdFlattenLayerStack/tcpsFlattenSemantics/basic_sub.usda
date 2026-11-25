@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    timeCodesPerSecond = 20
+)
+
+def Xform "World"
+{
+    def Xform "Reference" (
+        prepend references = @./basic_asset.usda@
+    )
+    {
+    }
+
+    def Xform "Payload" (
+        prepend payload = @./basic_asset.usda@
+    )
+    {
+    }
+}

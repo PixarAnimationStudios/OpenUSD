@@ -407,13 +407,41 @@ _ApplyLayerOffsetToRefOrPayloadListOp(
             auto layerStackIndex = listOpIndexMap.find(refOrPayload);
 
             if (layerStackIndex != listOpIndexMap.end()) {
-                const SdfLayerOffset* offset = 
-                    context.layerStack->GetLayerOffsetForLayer(
-                        layerStackIndex->second);
-                if (offset && !offset->IsIdentity()) {
-                    result.SetLayerOffset(
-                        (*offset) * refOrPayload.GetLayerOffset());
+                const size_t sourceLayerIndex = layerStackIndex->second;
+                SdfLayerOffset flattenedOffset =
+                    refOrPayload.GetLayerOffset();
+
+                if (const SdfLayerOffset* offset =
+                        context.layerStack->GetLayerOffsetForLayer(
+                            sourceLayerIndex)) {
+                    flattenedOffset = (*offset) * flattenedOffset;
                 }
+
+                // External references and payloads will have automatic TCPS
+                // scaling applied again when the flattened layer composes
+                // them. Remove only the automatic source-layer-to-stack scale
+                // that is already included in the cumulative layer offset.
+                //
+                // Keep the cumulative translation unchanged. In nested layer
+                // stacks, earlier automatic scales affect how later authored
+                // translations compose, so scaling the translation back would
+                // change the resulting animation start time.
+                if (!refOrPayload.GetAssetPath().empty()) {
+                    const auto &layers = context.layerStack->GetLayers();
+                    if (TF_VERIFY(sourceLayerIndex < layers.size())) {
+                        const SdfLayerHandle &sourceLayer =
+                            layers[sourceLayerIndex];
+                        const double sourceTcps =
+                            sourceLayer->GetTimeCodesPerSecond();
+                        const double flattenedTcps =
+                            context.layerStack->GetTimeCodesPerSecond();
+                        flattenedOffset.SetScale(
+                            flattenedOffset.GetScale() *
+                            sourceTcps / flattenedTcps);
+                    }
+                }
+
+                result.SetLayerOffset(flattenedOffset);
             }
 
             return std::optional<RefOrPayloadType>(result);
