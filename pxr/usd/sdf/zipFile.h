@@ -92,6 +92,12 @@ public:
 
         /// Whether or not this file is encrypted.
         bool encrypted = false;
+
+        /// Minimum zip file specification version needed to extract this
+        /// file, as stored in its local file header. See section 4.4.3 of
+        /// the zip file specification for details. In particular, a value
+        /// of 45 means this file uses the Zip64 format extensions.
+        uint16_t versionNeededToExtract = 0;
     };
 
     /// \class Iterator

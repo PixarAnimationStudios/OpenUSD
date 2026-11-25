@@ -163,7 +163,7 @@ _WrapComputeSurfaceSource(const UsdShadeMaterial &self,
 {
     UsdShadeShader source; 
     TfToken sourceName;
-    UsdShadeAttributeType sourceType;
+    UsdShadeAttributeType sourceType = UsdShadeAttributeType::Invalid;
     source = self.ComputeSurfaceSource({renderContext}, &sourceName, &sourceType);
     return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
@@ -174,7 +174,7 @@ _WrapComputeDisplacementSource(const UsdShadeMaterial &self,
 {
     UsdShadeShader source; 
     TfToken sourceName;
-    UsdShadeAttributeType sourceType;
+    UsdShadeAttributeType sourceType = UsdShadeAttributeType::Invalid;
     source = self.ComputeDisplacementSource({renderContext}, &sourceName, &sourceType);
     return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
@@ -185,7 +185,7 @@ _WrapComputeVolumeSource(const UsdShadeMaterial &self,
 {
     UsdShadeShader source; 
     TfToken sourceName;
-    UsdShadeAttributeType sourceType;
+    UsdShadeAttributeType sourceType = UsdShadeAttributeType::Invalid;
     source = self.ComputeVolumeSource({renderContext}, &sourceName, &sourceType);
     return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }

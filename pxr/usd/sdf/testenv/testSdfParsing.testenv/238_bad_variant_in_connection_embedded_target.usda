@@ -1,0 +1,6 @@
+#usda 1.0
+
+def "Prim"
+{
+    int a.connect = </Prim.r[/Variant{vset=sel}Is/Invalid].a>
+}

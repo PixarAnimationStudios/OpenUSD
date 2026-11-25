@@ -432,8 +432,8 @@ public:
 
     // Paths to the Sample Filters from the Render Settings Prim
     void SetSampleFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& sampleFilterPaths);
-    SdfPathVector GetSampleFilterPaths() {
+        const VtArray<SdfPath>& sampleFilterPaths);
+    VtArray<SdfPath> GetSampleFilterPaths() {
         return _sampleFilterPaths;
     }
 
@@ -447,8 +447,8 @@ public:
 
     // Paths to the Display Filters from the Render Settings Prim
     void SetDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& displayFilterPaths);
-    SdfPathVector GetDisplayFilterPaths() {
+        const VtArray<SdfPath>& displayFilterPaths);
+    VtArray<SdfPath> GetDisplayFilterPaths() {
         return _displayFilterPaths;
     }
 
@@ -463,8 +463,8 @@ public:
 #if _PRMANAPI_VERSION_MAJOR_ >= 27
     // Riley Data from the Energy Filter Prim
     void SetEnergyFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& energyFilterPaths);
-    SdfPathVector GetEnergyFilterPaths() {
+        const VtArray<SdfPath>& energyFilterPaths);
+    VtArray<SdfPath> GetEnergyFilterPaths() {
         return _energyFilterPaths;
     }
     void AddEnergyFilter(
@@ -510,6 +510,11 @@ public:
     // Returns true if the render delegate in interactive mode (as opposed to
     // batched/offline mode).
     bool IsInteractive() const;
+
+    // Returns 1 if render recovery was requested through the husk-style
+    // "-recover 1" delegate option, 0 otherwise. Used to set the Riley
+    // "attemptRecovery" render option for both interactive and batch renders.
+    int GetAttemptRecovery() const { return _attemptRecovery; }
 
     bool UsingHusk() const;
 
@@ -616,6 +621,7 @@ private:
         _lightPathFactory;
 #endif
     int _progressMode;
+    int _attemptRecovery;
     uint64_t _startTime;
     uint64_t _stopTime;
 
@@ -724,11 +730,11 @@ private:
     HdMaterialNode2 _renderSettingsIntegratorNode;
     riley::IntegratorId _integratorId;
 
-    SdfPathVector _sampleFilterPaths;
+    VtArray<SdfPath> _sampleFilterPaths;
     _PathToRileyFilterMap _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
 
-    SdfPathVector _displayFilterPaths;
+    VtArray<SdfPath> _displayFilterPaths;
     _PathToRileyFilterMap _displayFilterNodes;
     riley::DisplayFilterId _displayFiltersId;
 
@@ -741,7 +747,7 @@ private:
     using _PathToEnergyFilterDataMap =
         std::unordered_map<SdfPath, _EnergyFilterData, SdfPath::Hash>;
 
-    SdfPathVector _energyFilterPaths;
+    VtArray<SdfPath> _energyFilterPaths;
     _PathToEnergyFilterDataMap _energyFilterNodes;
 #endif // _PRMANAPI_VERSION_MAJOR_ >= 27
     /// ------------------------------------------------------------------------

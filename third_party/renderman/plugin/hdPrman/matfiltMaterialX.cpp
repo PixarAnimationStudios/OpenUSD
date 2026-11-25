@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 #include "hdPrman/matfiltMaterialX.h"
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/utils.h"
 
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/hash.h"
@@ -1356,7 +1357,7 @@ _UpdateTextureNodes(
                                                  path,                    // value
                                                  _tokens->filename.GetText());//type
                 }
-                else if (!ext.empty() && ext != "tex") {
+                else if (HdPrman_Utils::IsRtxHioNeeded(path)) {
 
                     // Update the input value to use the Renderman texture plugin
                     const std::string pluginName = 

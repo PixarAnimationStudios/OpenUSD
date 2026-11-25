@@ -15,7 +15,6 @@
 # Windows command script to execute "python <file>" where <file> is in
 # the same directory as the command script.
 
-from __future__ import print_function
 import sys
 
 if len(sys.argv) < 3 or len(sys.argv) > 4:

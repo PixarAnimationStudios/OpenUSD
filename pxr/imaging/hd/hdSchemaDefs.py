@@ -88,7 +88,11 @@
             ('topology', 'HdMeshTopologySchema', {}),
             ('subdivisionScheme', T_TOKEN, {}),
             ('subdivisionTags', 'HdSubdivisionTagsSchema', {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
 
         ADD_DEFAULT_LOCATOR = True,
@@ -128,7 +132,11 @@
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('topology', 'HdTetMeshTopologySchema', {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
 
         ADD_DEFAULT_LOCATOR = True,
@@ -173,7 +181,11 @@
             ('vRange', T_VEC2D, {}),
             ('trimCurve', 'HdNurbsPatchTrimCurveSchema', {}),
             ('orientation', T_TOKEN, {}),
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
         ],
         
         ADD_DEFAULT_LOCATOR = True,
@@ -381,6 +393,18 @@
             ('min', T_VEC3D, {}),
             ('max', T_VEC3D, {}),
             
+        ],
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
+    # surface
+    dict(
+        SCHEMA_NAME = 'Surface',
+        SCHEMA_TOKEN = 'surface',
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('doubleSided', T_BOOL, {}),
         ],
         ADD_DEFAULT_LOCATOR = True,
     ),
@@ -1532,7 +1556,11 @@
         SCHEMA_TOKEN = 'plane',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
-            ('doubleSided', T_BOOL, {}),
+            ('doubleSided', T_BOOL, dict(
+                DOC = '''
+                    Deprecated. Use the prim-level surface schema instead.
+                    ''',
+            )),
             ('axis', T_TOKEN, {}),
             ('length', T_DOUBLE, {}),
             ('width', T_DOUBLE, {}),
@@ -1578,11 +1606,18 @@
         SCHEMA_NAME = 'Selection',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
-            ('fullySelected', T_BOOL, {}),
+            ('fullySelected', T_BOOL,
+             dict(DOC = '''
+                The (entire) prim is selected rather than just some of its
+                faces, for example. A future version of this schema will include
+                additional data sources to indicate that some faces, edges,
+                vertices of the prim are selected.''')),
             ('nestedInstanceIndices', 'HdInstanceIndicesVectorSchema',
              dict(DOC = '''
-                Starting with the outer most, list for each nesting
-                level of instancing what instances are selected.''')),
+                Present if this prim has an instanced by schema pointing
+                to an instancer. Indicates what instances of this prim
+                are selected. For nested instancing, the vector starts with
+                the outer most instancer.''')),
         ],
     ),
 
@@ -1726,6 +1761,10 @@
                            the material render contexts correctly.''')),
             ('renderSettingDescriptors', 'HdRenderSettingDescriptorContainerSchema',
              dict(DOC = '''Render settings advertised by rendererer.''')),
+            ('excludedPurposesHint', T_TOKENARRAY,
+             dict(DOC = '''Hint listing prim purposes (e.g. render, proxy, guide) that
+             are typically excluded (i.e. not consumed or rendered) by the
+             renderer. See UsdGeomImageable and HdPurposeSchema for more information.'''))
         ],
     ),
 

@@ -207,7 +207,7 @@ Explicit Built-in API Schemas (not auto-apply)
 
 As with schema inheritance, built-in API schemas are included in other
 schemas by schema identifier (e.g. as `LightAPI is a built-in of MeshLightAPI
-<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/pxr/usd/usdLux/schema.usda#L223-L235>`_)
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/v26.11/pxr/usd/usdLux/schema.usda#L223-L235>`__)
 so they will always be built-in with a specific version. If an API schema
 that is included as built-in API schema for one or more other schemas is
 upgraded to a new version, then all of those schemas that include the API

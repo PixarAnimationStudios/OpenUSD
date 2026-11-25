@@ -1,0 +1,27 @@
+#usda 1.0
+
+def "Light"
+{
+    over "I"
+    {
+        over "rig"
+        {
+            over "lights"
+            {
+                over "L"
+                {
+                }
+            }
+
+            def "propagated"
+            {
+                def "X" (
+                    inherits = </Light/I/rig/lights/L>
+                )
+                {
+                    double a = 1
+                }
+            }
+        }
+    }
+}

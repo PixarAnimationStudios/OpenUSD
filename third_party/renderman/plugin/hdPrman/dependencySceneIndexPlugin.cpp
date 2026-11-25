@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
+#include "pxr/imaging/hd/volumeSchema.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -38,6 +39,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/pxr.h"
@@ -150,6 +152,89 @@ _ComputeVolumeFieldBindingDependencies(
         _ComputeVolumeFieldBindingDependency(primPath));
 }
 
+HdContainerDataSourceHandle
+_BuildVolumeFilterDependenciesDs(const VtArray<SdfPath> &filterPaths)
+{
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> deps;
+    const size_t numFilters = filterPaths.size();
+
+    const size_t numDeps = 1 /* __dependencies -> filters */ +  numFilters;
+    names.reserve(numDeps);
+    deps.reserve(numDeps);
+
+    static const HdLocatorDataSourceHandle filtersLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdVolumeSchema::GetDefaultLocator().Append(HdTokens->filters));
+
+    static const HdLocatorDataSourceHandle dependenciesLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdDependenciesSchema::GetDefaultLocator());
+
+    names.push_back(_tokens->__dependenciesToFilters);
+    deps.push_back(
+        HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(/* self */ nullptr)
+            .SetDependedOnDataSourceLocator(filtersLocDs)
+            .SetAffectedDataSourceLocator(dependenciesLocDs)
+            .Build());
+
+    static const HdLocatorDataSourceHandle emptyLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdDataSourceLocator::EmptyLocator());
+
+    static const HdLocatorDataSourceHandle affectedLocatorDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdVolumeSchema::GetDefaultLocator());
+
+    for (const auto &filterPath : filterPaths) {
+        const std::string filterPathStr = filterPath.GetAsString();
+        names.emplace_back(filterPathStr);
+        deps.push_back(
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(filterPath))
+            .SetDependedOnDataSourceLocator(emptyLocDs)
+            .SetAffectedDataSourceLocator(affectedLocatorDs)
+            .Build());
+    }
+
+    return HdRetainedContainerDataSource::New(
+        numDeps, names.data(), deps.data());
+}
+
+HdContainerDataSourceHandle
+_ComputeVolumeFilterDependencies(
+    const HdContainerDataSourceHandle &volumePrimSource)
+{
+#if PXR_VERSION >= 2405
+    const
+#endif
+    auto vs = HdVolumeSchema::GetFromParent(volumePrimSource);
+
+    // XXX
+    // HdVolumeSchema is barebones at the moment, so we need to explicitly use
+    // the 'filters' token below.
+    const HdContainerDataSourceHandle volumeDs = vs.GetContainer();
+    if (volumeDs) {
+        HdDataSourceBaseHandle filtersDs = volumeDs->Get(HdTokens->filters);
+        VtArray<SdfPath> filterPaths;
+
+        if (HdSampledDataSourceHandle valDs =
+                HdSampledDataSource::Cast(filtersDs)) {
+
+            VtValue val = valDs->GetValue(0.0f);
+            if (val.IsHolding<VtArray<SdfPath>>()) {
+                filterPaths = val.UncheckedGet<VtArray<SdfPath>>();
+            }
+        }
+
+        return _BuildVolumeFilterDependenciesDs(filterPaths);
+    }
+
+    return nullptr;
+}
+
 // Register a dependency on each filter targeted by the light such that
 // the invalidation of *any* locator on the filter invalidates the 'light'
 // locator of the light prim.
@@ -159,11 +244,11 @@ _ComputeVolumeFieldBindingDependencies(
 // register individual dependency entries for collection, visibility, light
 // and material locators.
 //
-// Additionally, declare that the dependencies depends on the targeted 
+// Additionally, declare that the dependencies depends on the targeted
 // filters.
-// 
+//
 HdContainerDataSourceHandle
-_BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
+_BuildLightFilterDependenciesDs(const VtArray<SdfPath> &filterPaths)
 {
     TfTokenVector names;
     std::vector<HdDataSourceBaseHandle> deps;
@@ -176,7 +261,7 @@ _BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
     static const HdLocatorDataSourceHandle filtersLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdLightSchema::GetDefaultLocator().Append(HdTokens->filters));
-    
+
     static const HdLocatorDataSourceHandle dependenciesLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDependenciesSchema::GetDefaultLocator());
@@ -188,12 +273,12 @@ _BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
             .SetDependedOnDataSourceLocator(filtersLocDs)
             .SetAffectedDataSourceLocator(dependenciesLocDs)
             .Build());
-    
+
     static const HdLocatorDataSourceHandle emptyLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDataSourceLocator::EmptyLocator());
 
-    static const HdLocatorDataSourceHandle affectedLocatorDs = 
+    static const HdLocatorDataSourceHandle affectedLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdLightSchema::GetDefaultLocator());
 
@@ -228,14 +313,14 @@ _ComputeLightFilterDependencies(
     const HdContainerDataSourceHandle lightDs = ls.GetContainer();
     if (lightDs) {
         HdDataSourceBaseHandle filtersDs = lightDs->Get(HdTokens->filters);
-        SdfPathVector filterPaths;
-        
+        VtArray<SdfPath> filterPaths;
+
         if (HdSampledDataSourceHandle valDs =
                 HdSampledDataSource::Cast(filtersDs)) {
 
             VtValue val = valDs->GetValue(0.0f);
-            if (val.IsHolding<SdfPathVector>()) {
-                filterPaths = val.UncheckedGet<SdfPathVector>();
+            if (val.IsHolding<VtArray<SdfPath>>()) {
+                filterPaths = val.UncheckedGet<VtArray<SdfPath>>();
             }
         }
 
@@ -249,7 +334,7 @@ _ComputeLightFilterDependencies(
 // and OverlayedContainerDataSources (23.07).
 #if PXR_VERSION >= 2307
 
-// Register a dependency on the projection plugin such that 
+// Register a dependency on the projection plugin such that
 // the invalidation of *any* locator on the projection invalidates
 // the 'camera' locator of the camera prim.
 HdContainerDataSourceHandle
@@ -263,7 +348,7 @@ _BuildCameraDependenciesDs(const SdfPath &projectionPath)
             HdCameraSchema::GetNamespacedPropertiesLocator()
             .Append(TfToken("ri"))
             .Append(TfToken("projection")));
-    
+
     static const HdLocatorDataSourceHandle dependenciesLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDependenciesSchema::GetDefaultLocator());
@@ -275,12 +360,12 @@ _BuildCameraDependenciesDs(const SdfPath &projectionPath)
             .SetDependedOnDataSourceLocator(projectionLocDs)
             .SetAffectedDataSourceLocator(dependenciesLocDs)
             .Build());
-    
+
     static const HdLocatorDataSourceHandle emptyLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDataSourceLocator::EmptyLocator());
 
-    static const HdLocatorDataSourceHandle affectedLocatorDs = 
+    static const HdLocatorDataSourceHandle affectedLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdCameraSchema::GetDefaultLocator());
 
@@ -370,10 +455,17 @@ public:
         HdDataSourceBaseHandle result = _primContainer->Get(name);
 
         if (name == HdDependenciesSchema::GetSchemaToken()) {
-            return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            std::vector<HdContainerDataSourceHandle> sources {
                 _ComputeVolumeFieldBindingDependencies(
                     _primPath, _primContainer),
-                HdContainerDataSource::Cast(result));
+                _ComputeVolumeFilterDependencies(_primContainer),
+                HdContainerDataSource::Cast(result) };
+#if PXR_VERSION < 2610
+            return HdOverlayContainerDataSource::New(
+#else
+            return HdCreateOverlayContainerDataSource(
+#endif
+                sources.size(), sources.data());
         }
 
         return result;
@@ -488,7 +580,7 @@ public:
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override
     {
         HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-        
+
         if (prim.primType == HdPrimTypeTokens->volume) {
 #if PXR_VERSION >= 2308
             // Override prim data source in a lazy manner instead of using

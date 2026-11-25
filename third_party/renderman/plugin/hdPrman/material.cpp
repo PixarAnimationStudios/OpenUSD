@@ -396,7 +396,8 @@ _ConvertNodes(
     }
     if (sn.type == riley::ShadingNode::Type::k_Displacement ||
         sn.type == riley::ShadingNode::Type::k_Light ||
-        sn.type == riley::ShadingNode::Type::k_LightFilter
+        sn.type == riley::ShadingNode::Type::k_LightFilter ||
+        sn.type == riley::ShadingNode::Type::k_Bxdf
 #if _PRMANAPI_VERSION_MAJOR_ >= 27 && HD_API_VERSION >= 93
         || sn.type == riley::ShadingNode::Type::k_VolumeFilter
 #endif

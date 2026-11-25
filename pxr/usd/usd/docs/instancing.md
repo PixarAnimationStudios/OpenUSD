@@ -36,7 +36,7 @@ beneath the referenced Car model grows.
 ## Explicit Instances, Implicit Prototypes {#Usd_ScenegraphInstancing_Instancing}
 
 Prims that share parts of the scenegraph through instancing are called
-"instance" prims.  Each of these instance prims are associated with a
+"instance" prims.  Each of these instance prims is associated with a
 "prototype" prim that serves as the root of the shared scenegraph.  A single
 prototype prim may have many associated instances, all of which share the same
 scenegraph.  
@@ -222,6 +222,13 @@ layers.  For example, a user could author their "instanceable" metadata in a
 session layer to see the effects of enabling (or disabling) instancing on prims 
 in a scene without editing that scene directly.
 
+Instancing applies only to prims on the stage.  A composition arc that targets
+a path beneath an instance, such as a reference to </ParkingLot/Car_1/Body>,
+composes that path as if the instance were not instanceable, so it picks up
+overrides on Car_1's descendants that Car_1 itself ignores (see
+\ref Usd_ScenegraphInstancing_Editing).  The "active" metadata behaves the same
+way: deactivating Car_1 does not affect prims that reference paths beneath it.
+
 ### Classifying Prims with Instancing {#Usd_ScenegraphInstancing_Instances}
 
 Consumers can check if a UsdPrim is an instance with an associated prototype
@@ -252,12 +259,8 @@ pseudo-root in the scenegraph.  Because of this, they will not be returned when
 using UsdStage::Traverse or when calling UsdPrim::GetChildren on the 
 pseudo-root.  Consumers can access prototype prims via UsdPrim::GetPrototype or 
 UsdStage::GetPrototypes instead.
-
-\warning Because prototype prims are dynamically generated, the name of a
-prototype prim associated with an instance is not stable and may vary from
-run to run. Consumers should not save or hard-code the paths to prims in
-prototypes, but can use the API described below if they need to determine an
-instance's prototype at runtime.
+Prototype paths are not stable from run to run; see the warning in
+\ref Usd_ScenegraphInstancing_Instancing.
 
 \code{.py}
 >>> stage = Usd.Stage.Open('ParkingLot.usd')
@@ -389,6 +392,13 @@ overriding properties and metadata on prototypes or prims in prototypes is also
 not allowed.  Attempting to make these restricted changes via the USD API will 
 result in coding errors.  Any existing overrides in scene description will be 
 silently ignored.
+
+Overrides on classes follow the same rule.  An override on a class at a path
+beneath the instance, such as </ParkingLot/Car_1/BodyClass>, is an override on a
+descendant and is ignored.  An override on a class outside the instance, such as
+a root prim </_class_Body>, applies to the instance's descendants that inherit or
+specialize it, as it would without instancing.  Relocates authored outside an
+instance that affect prims beneath it are also ignored.
 
 \code{.py}
 >>> stage = Usd.Stage.Open('ParkingLot.usd')
@@ -538,7 +548,8 @@ Sdf.Path('/__Prototype_1/Body.doorRel')
 [Sdf.Path('/__Prototype_1/Door')]
 
 # If the relationship is accessed through instance proxies, the relationship
-# target API behaves as though instancing is not present.
+# target API behaves as though instancing is not present, for targets beneath
+# the instance (see "Known Limitations" for targets outside it).
 >>> instanceProxy = stage.GetPrimAtPath('/ParkingLot/Car_1/Body')
 >>> instanceProxy_doorRel = instanceProxy.GetRelationship('doorRel')
 
@@ -609,7 +620,8 @@ To determine the set of prototype prims needed, UsdStage analyzes each prim
 marked as instanceable and computes an "instancing key" that consists of:
 
 - The direct composition arcs on the prim that pull in scene description, in 
-order from strongest to weakest
+order from strongest to weakest, including how each arc maps the namespace it
+brings in onto the instance
 - The variant selections applied to the prim
 - The \ref Usd_Page_ValueClips "value clips" that affect the prim
 - The UsdStageLoadRules from the stage that apply to the prim and its descendants
@@ -618,22 +630,48 @@ order from strongest to weakest
 These elements, along with the \ref Usd_ScenegraphInstancing_Editing "restriction on per-instance overrides" 
 of descendant prims and their properties, guarantee that every prim with the 
 same key will have the same scenegraph hierarchy beneath them, and that 
-computing any values or metadata will return the same result.  
+computing any values or metadata will return the same result, apart from the
+cases in \ref Usd_ScenegraphInstancing_Limitations.
 
 UsdStage groups the instanceable prims by their key and generates a prototype
 prim for each group.  During this process, UsdStage will select one instanceable
 prim per group to serve as the source for the corresponding prototype prim.  
-This selection is non-deterministic; this allows for multi-threaded discovery
-of instances with minimal locking, and since all of the prims in a group have
-the same scenegraph hierarchy and values, it doesn't matter which is selected.
-Enabling \c USD_INSTANCING #TF_DEBUG flag will given some diagnostic information
-about this process.
+This selection is non-deterministic; this allows for multi-threaded discovery of
+instances with minimal locking, and since all of the prims in a group have the
+same scenegraph hierarchy and values, it doesn't matter which is selected.
+Enabling the \c USD_INSTANCING #TF_DEBUG flag will give some diagnostic
+information about this process.
 
 UsdStage will update prototypes as instanceable prims are added or removed, or
 whenever an element that is part of the instancing key changes.  For example,
 if an instance prim's variant selection is changed, UsdStage will recompute
 its key and either assign that instance to an already-existing prototype if
 there are existing instances with the same key, or create a new prototype.
+
+### Known Limitations {#Usd_ScenegraphInstancing_Limitations}
+
+In the following cases, instances that share a prototype can compose
+differently than they would without instancing.  Because the prototype's source
+instance is selected non-deterministically, the result can then vary from run to
+run.
+
+- **Classes outside the instance overridden in different contexts.**  For
+  example, if two different ParkingLot assets reference the same Car model as
+  an instance, and only one of them overrides a class outside the Car that the
+  Car's prims inherit, such as a root prim </_class_Body>, the Car instances
+  in both lots share a prototype.  The override then reaches either both
+  instances or neither, depending on which instance is the source.
+
+- **Relationship targets and attribute connections outside the instance.**
+  Targets beneath an instance are composed once, for the prototype's source, and
+  then mapped onto each instance.  Targets outside the instance are not mapped.
+  For example, if ParkingLot.usd contains an instanceable Car whose Body
+  inherits a root class </_class_Body> with a relationship targeting
+  </ParkingLot/Lamp>, then when a scene references ParkingLot.usd as both
+  /World/Lot_1 and /World/Lot_2, both cars report the same target,
+  /World/Lot_1/Lamp or /World/Lot_2/Lamp.
+
+These cases can be avoided by deinstancing the affected instances.
 
 ### Nested Instancing {#Usd_ScenegraphInstancing_NestedInstancing}
 
@@ -729,7 +767,7 @@ structure and can share the same scenegraph.
 
 When \ref Usd_ScenegraphInstancing_Prototypes "traversing the scenegraph using prototypes",
 it is important to note that, in the nested case, prims in prototypes may also
-be instances and requiring accessing the associated prototypes to continue
+be instances and require accessing the associated prototypes to continue
 traversal. In this example, the prototype prim for the ParkingLot prims,
 /__Prototype_2, contains instance Car prims that are associated with their
 prototype prim, /__Prototype_1.  
@@ -741,6 +779,6 @@ not being used on the stage.
 ### Flattening {#Usd_ScenegraphInstancing_Flattening}
 
 When flattening a UsdStage into a single layer via its various \ref Usd_stageSerialization "serialization methods",
-each prototype prim in the scenegraph will be written out to specially-named
+each prototype prim in the scenegraph will be written out to a specially-named
 root prim.  These prims will be referenced by the flattened instance prims that
 were associated with that prototype.

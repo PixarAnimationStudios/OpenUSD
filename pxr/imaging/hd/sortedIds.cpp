@@ -59,6 +59,25 @@ private:
     std::bitset<_NumBits> _bits;
 };
 
+// Return the first element in [first, last) that is not less than `value`, like
+// std::lower_bound.  Probe at exponentially increasing distances from `first`
+// to bracket the result, then binary search within the bracket.  This takes
+// O(log d) comparisons where d is the distance to the result, and compares
+// nearby elements first.
+template <class Iter, class T>
+Iter
+_GallopLowerBound(Iter first, Iter last, T const &value)
+{
+    const size_t avail = std::distance(first, last);
+    Iter lo = first;
+    size_t step = 1;
+    while (step <= avail && *(first + (step - 1)) < value) {
+        lo = first + step;
+        step *= 2;
+    }
+    return std::lower_bound(lo, first + std::min(step - 1, avail), value);
+}
+
 } // anon
 
 // The purpose of this helper is to ensure correct semantics for queued mixed
@@ -216,7 +235,7 @@ void Hd_SortedIds::RemoveRange(size_t start, size_t end)
     size_t numIds = _ids.size();
     size_t numToRemove = (end - start + 1);
 
-    if (!_edits.empty()) {
+    if (_mode != _NoMode) {
         TF_CODING_ERROR("RemoveRange can only be called while list sorted");
         return;
     }
@@ -239,28 +258,6 @@ Hd_SortedIds::Clear()
     _edits.clear();
     _mode = _NoMode;
     _updater.reset();
-}
-
-// The C++ standard requires that the output cannot overlap with either range.
-// This implementation allows the output range to start at the first input
-// range.
-template <class Iter1, class Iter2, class OutIter>
-static inline OutIter
-_SetDifference(Iter1 f1, Iter1 l1, Iter2 f2, Iter2 l2, OutIter out)
-{
-    while (f1 != l1 && f2 != l2) {
-        if (*f1 < *f2) {
-            *out = *f1;
-            ++out, ++f1;
-        }
-        else if (*f2 < *f1) {
-            ++f2;
-        }
-        else {
-            ++f1, ++f2;
-        }
-    }
-    return std::copy(f1, l1, out);
 }
 
 void
@@ -326,52 +323,29 @@ Hd_SortedIds::_Sort()
             }
         }
         else {
-            auto removeEnd =
-                upper_bound(_ids.begin(), _ids.end(), _edits.back());
+            const auto removeEnd =
+                upper_bound(removeBegin, _ids.end(), _edits.back());
 
-            // If the number of elements we're removing is small compared to the
-            // size of the range, then do individual binary search & erase
-            // rather than a set-difference over the range.
-            //
-            // Empirical testing suggests the break-event point is with very low
-            // density -- about one removal per 6400 elements to search.  Note
-            // that the best value for this constant could depend quite a lot on
-            // the performance characterisitcs of the hardware.  The test
-            // "testHdSortedIdsPerf" can be useful to help find an optimal value
-            // for this.
-            //
-            // One reason it's such a low density, even though set-difference
-            // needs to do operator< on every path, is that almost all of those
-            // operator< will be performed on the same two paths, and that
-            // special case is really fast.
-            static constexpr size_t BinarySearchFrac = 6400;
-            const size_t removeRangeSize = distance(removeBegin, removeEnd);
-            if (removeRangeSize / BinarySearchFrac > _edits.size()) {
-                // Binary search & erase each _edits element.
-                auto updateIter = _edits.begin();
-                const auto updateEnd = _edits.end();
-                while (removeBegin != removeEnd && updateIter != updateEnd) {
-                    if (*removeBegin == *updateIter) {
-                        --removeEnd;
-                        removeBegin = _ids.erase(removeBegin);
-                    }
-                    removeBegin = ++updateIter != updateEnd
-                        ? lower_bound(removeBegin, removeEnd, *updateIter)
-                        : removeEnd;
+            // Compact _ids in a single pass.  As each element to remove is
+            // found, shift the kept span preceding it down over the elements
+            // removed so far.  Elements before the first removal do not move.
+            // Galloping search finds each element in O(log gap) comparisons,
+            // so this adapts to both sparse and dense removals.
+            auto out = _ids.end(); // Write position, end() until first removal.
+            auto keep = removeBegin; // Start of the pending kept span.
+            auto cur = removeBegin;
+            for (SdfPath const &edit: _edits) {
+                cur = _GallopLowerBound(cur, removeEnd, edit);
+                if (cur == removeEnd) {
+                    break;
+                }
+                if (*cur == edit) {
+                    out = out == _ids.end() ? cur : std::move(keep, cur, out);
+                    keep = ++cur;
                 }
             }
-            else {
-                // Take the difference.
-                auto newRemoveEnd = _SetDifference(
-                    make_move_iterator(removeBegin),
-                    make_move_iterator(removeEnd),
-                    make_move_iterator(_edits.begin()),
-                    make_move_iterator(_edits.end()),
-                    removeBegin);
-
-                // Shift remaining backward.
-                const auto dst = std::move(removeEnd, _ids.end(), newRemoveEnd);
-                _ids.erase(dst, _ids.end());
+            if (out != _ids.end()) {
+                _ids.erase(std::move(keep, _ids.end(), out), _ids.end());
             }
         }
     }
@@ -384,8 +358,7 @@ Hd_SortedIds::_Sort()
             _ids.insert(addBegin, std::move(_edits.front()));
         }
         else {
-            auto addEnd =
-                upper_bound(_ids.begin(), _ids.end(), _edits.back());
+            auto addEnd = upper_bound(addBegin, _ids.end(), _edits.back());
 
             if (std::distance(addBegin, addEnd) == 0) {
                 // We're inserting into an empty range in _ids.
@@ -394,32 +367,32 @@ Hd_SortedIds::_Sort()
                             std::make_move_iterator(_edits.end()));
             }
             else {
-                // Create tmp space to write the union to, then do the union.
-                SdfPathVector tmp;
-                tmp.reserve(std::distance(addBegin, addEnd) + _edits.size());
-                // We explicitly use merge rather than set_union here to
-                // preserve the semantics that inserting duplicates always
-                // succeeds.
-                std::merge(make_move_iterator(addBegin),
-                           make_move_iterator(addEnd),
-                           make_move_iterator(_edits.begin()),
-                           make_move_iterator(_edits.end()),
-                           back_inserter(tmp));
-                
-                size_t numAdded = tmp.size() - std::distance(addBegin, addEnd);
-
-                // Resize _ids and refetch possibly invalidated iterators.
+                // Merge in place from the back.  Grow _ids, shift the elements
+                // after the range to the new end, then merge the range with
+                // _edits backward into the space that opens up.  We merge
+                // rather than take the union to preserve the semantics that
+                // inserting duplicates always succeeds.
+                const size_t numAdded = _edits.size();
                 const size_t addBeginIdx = distance(_ids.begin(), addBegin);
                 const size_t addEndIdx = distance(_ids.begin(), addEnd);
-                _ids.resize(_ids.size() + numAdded);
-                addBegin = _ids.begin() + addBeginIdx;
-                addEnd = _ids.begin() + addEndIdx;
+                const size_t oldSize = _ids.size();
+                _ids.resize(oldSize + numAdded);
 
-                // Shift remaining items to end.
-                std::move_backward(addEnd, _ids.end()-numAdded, _ids.end());
-                
-                // Move the union to its final place in _ids.
-                std::move(tmp.begin(), tmp.end(), addBegin);
+                std::move_backward(_ids.begin() + addEndIdx,
+                                   _ids.begin() + oldSize, _ids.end());
+
+                const auto first = _ids.begin() + addBeginIdx;
+                auto src = _ids.begin() + addEndIdx;
+                auto dst = src + numAdded;
+                auto edit = _edits.end();
+                while (edit != _edits.begin()) {
+                    if (src != first && *(edit-1) < *(src-1)) {
+                        *--dst = std::move(*--src);
+                    }
+                    else {
+                        *--dst = std::move(*--edit);
+                    }
+                }
             }
         }
     }

@@ -34,7 +34,7 @@ TraceReporterDataSourceCollector::ConsumeData()
 {
     TraceCollector::GetInstance().CreateCollection();
     std::vector<CollectionPtr> collections;
-    std::shared_ptr<TraceCollection> collection;
+    CollectionPtr collection;
     while (_pendingCollections.try_pop(collection)) {
         collections.emplace_back(std::move(collection));
     }

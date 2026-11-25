@@ -56,7 +56,6 @@ Results for composing </Model_1/Anim/LAnim>
 Prim Stack:
     root.usda            /_class_Model/Rig/SymRig
     root.usda            /_class_Model/Rig/LRig
-    root.usda            /_class_Model/Anim/LAnim
     model.usda           /_class_Model/Rig/SymRig
     model.usda           /_class_Model/Rig/LRig
     rig.usda             /Rig/LRig

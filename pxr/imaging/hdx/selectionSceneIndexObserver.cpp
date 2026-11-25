@@ -20,6 +20,104 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+
+//
+// If we have nested instancers we obtain an instance id for
+// each level. For HdSelection::AddInstance, we encode this sequence
+// of nested ids indices in a single integer.
+//
+// For example, assume we selected
+//     the instances with id 5 and 6 of 10 in the outer most instancer
+//     the instances with id 3 of 12 in the next instancer
+//     the instances with id 7 and 8 of 15 in the inner most instancer.
+// So in total, we have 2 * 1 * 2 = 4 nested instances selected. The
+// corresponding encoded nested instance ids are:
+//
+//  [ (5 * 12 + 3) * 15 + 7,
+//    (5 * 12 + 3) * 15 + 8,
+//    (6 * 12 + 3) * 15 + 7,
+//    (6 * 12 + 3) * 15 + 8 ].
+//
+class EncodedNestedInstanceIds
+{
+public:
+    // Given selected instance ids for the next inner level
+    // of instancing, compute the new encoded nested instance ids.
+    //
+    EncodedNestedInstanceIds
+    AppendInnerInstanceIds(
+        const VtIntArray &instanceIds,
+        const int numInstances)
+    {
+        EncodedNestedInstanceIds result;
+        if (_ids) {
+            const size_t n = _ids->size();
+            const size_t m = instanceIds.size();
+
+            result._ids = VtIntArray(n * m);
+
+            VtIntArray &resultIds = *result._ids;
+
+            for (size_t i = 0; i < n; i++) {
+                const int b = numInstances * (*_ids)[i];
+                for (size_t j = 0; j < m; j++) {
+                    resultIds[i * m + j] = b + instanceIds[j];
+                }
+            }
+        } else {
+            result._ids = instanceIds;
+        }
+        return result;
+    }
+
+    // The encoded nested instance ids.
+    //
+    // Null for a prim that has no instancers.
+    //
+    const std::optional<VtIntArray> &GetIds() const {
+        return _ids;
+    }
+
+private:
+    std::optional<VtIntArray> _ids;
+};
+
+void
+_AddPrimToSelection(
+    const SdfPath &primPath,
+    const EncodedNestedInstanceIds &encodedNestedInstanceIds,
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex)
+{
+    if (encodedNestedInstanceIds.GetIds()) {
+        // HdSelection::AddInstance expects nested instance ids.
+        // See explanation for EncodedNestedInstanceIds.
+        //
+        // For HdSelection::AddInstance, nothing is everything.
+        // That is, passing an empty array selects all instances.
+        // This is not what we intend here. An empty array can result from
+        // user selecting an instance proxy path to an invis'd instance.
+        if (!encodedNestedInstanceIds.GetIds()->empty()) {
+            std::unique_lock lock(resultMutex);
+
+            result->AddInstance(
+                HdSelection::HighlightModeSelect,
+                primPath,
+                *encodedNestedInstanceIds.GetIds());
+        }
+    } else {
+        std::unique_lock lock(resultMutex);
+
+        result->AddRprim(
+            HdSelection::HighlightModeSelect,
+            primPath);
+    }
+}
+    
+}
+
 static void
 _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
@@ -247,43 +345,17 @@ _GetSelectedInstanceIdsAndNumForPrototype(
                 selectedInstanceIndicesSchema));
 }    
 
-//
-// If we have nested instancer's we obtain an instance id for
-// each level. We encode those instance id's as a single integer
-// we call the nested instance id using the number of possible id's
-// for that instancer (and prototype).
-//
-// For example, assume we selected
-//     the instances with id 5 and 6 of 10 in the outer most instancer
-//     the instances with id 3 of 12 in the next instancer
-//     the instances with id 7 and 8 of 15 in the inner most instancer.
-// So in total, we have 4 nested instances selected. The corresponding
-// nested instance id's are:
-//
-//  [ (5 * 12 + 3) * 15 + 7,
-//    (5 * 12 + 3) * 15 + 8,
-//    (6 * 12 + 3) * 15 + 7,
-//    (6 * 12 + 3) * 15 + 8 ].
-//
-// Note that when we say nested instance indices, we think of a sequence
-// of integers, one for each level of instancing. However, when we say
-// nested instance id, we think of these choices of instance at each level
-// of instancing being encoded by a single integer.
-//
 static
-VtIntArray
-_GetSelectedNestedInstanceIds(
+EncodedNestedInstanceIds
+_GetEncodedSelectedNestedInstanceIds(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const HdInstanceIndicesVectorSchema &selectedNestedInstanceIndices)
 {
     TRACE_FUNCTION();
 
-    const size_t depth = selectedNestedInstanceIndices.GetNumElements();
-    if (depth == 0) {
-        return {};
-    }
+    EncodedNestedInstanceIds encodedNestedInstanceIds;
 
-    VtIntArray selectedNestedInstanceIds({0});
+    const size_t depth = selectedNestedInstanceIndices.GetNumElements();
 
     // Going from outer most to inner most instancer.
 
@@ -302,24 +374,12 @@ _GetSelectedNestedInstanceIds(
                 sceneIndex,
                 selectedNestedInstanceIndices.GetElement(d));
 
-        const size_t n = selectedNestedInstanceIds.size();
-        const size_t m = selectedInstanceIdsForPrototype.size();
-
-        // Multiply number of nested instances by number of instances selected
-        // at this nesting level.
-        VtIntArray newSelectedNestedInstanceIds(n * m);
-        for (size_t i = 0; i < n; i++) {
-            const int nestedIdBase = num * selectedNestedInstanceIds.AsConst()[i];
-            for (size_t j = 0; j < m; j++) {
-                newSelectedNestedInstanceIds[i * m + j] =
-                    nestedIdBase + selectedInstanceIdsForPrototype[j];
-            }
-        }
-
-        selectedNestedInstanceIds = std::move(newSelectedNestedInstanceIds);
+        encodedNestedInstanceIds =
+            encodedNestedInstanceIds.AppendInnerInstanceIds(
+                selectedInstanceIdsForPrototype, num);
     }
 
-    return selectedNestedInstanceIds;
+    return encodedNestedInstanceIds;
 }
 
 // Given one of the data source under the selections locator
@@ -329,8 +389,8 @@ static
 void
 _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    const HdSelectionSchema &selectionSchema,
     const SdfPath &primPath,
+    const HdSelectionSchema &selectionSchema,
     HdSelectionSharedPtr const &result,
     std::mutex &resultMutex)
 {
@@ -346,37 +406,14 @@ _AddToSelection(
         return;
     }
 
-    // Retrieve instancing information.
-    const HdInstanceIndicesVectorSchema selectedNestedInstanceIndices =
-        selectionSchema.GetNestedInstanceIndices();
-
-    if (selectedNestedInstanceIndices.GetNumElements() > 0) {
-        // HdSelection::AddInstance expects nested instance ids.
-        // See above explanations.
-        //
-        const VtIntArray selectedNestedInstanceIds = 
-            _GetSelectedNestedInstanceIds(
-                sceneIndex, selectedNestedInstanceIndices);
-
-        // For HdSelection::AddInstance, nothing is everything.
-        // That is, passing an empty array selects all instances.
-        // This is not what we intent here. An empty array can result,
-        // if a user selects an instance proxy path to an invis'd instance.
-        if (!selectedNestedInstanceIds.empty()) {
-            std::unique_lock lock(resultMutex);
-
-            result->AddInstance(
-                HdSelection::HighlightModeSelect,
-                primPath,
-                selectedNestedInstanceIds);
-        }
-    } else {
-        std::unique_lock lock(resultMutex);
-
-        result->AddRprim(
-            HdSelection::HighlightModeSelect,
-            primPath);
-    }
+    _AddPrimToSelection(
+        primPath,
+        // Retrieve instancing information.
+        _GetEncodedSelectedNestedInstanceIds(
+            sceneIndex,
+            selectionSchema.GetNestedInstanceIndices()),
+        result,
+        resultMutex);
 }
 
 // Query prim at path in scene index for selections data source
@@ -407,8 +444,8 @@ _AddToSelection(
                 selectionsSchema.GetElement(i);
             _AddToSelection(
                 sceneIndex,
-                selectionSchema,
                 primPath,
+                selectionSchema,
                 result, 
                 resultMutex);
         }

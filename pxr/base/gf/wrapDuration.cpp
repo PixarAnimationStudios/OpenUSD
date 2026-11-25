@@ -6,8 +6,10 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/base/gf/duration.h"
+#include "pxr/base/gf/pyBufferUtils.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pySpan.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/external/boost/python/class.hpp"
@@ -89,4 +91,8 @@ void wrapDuration()
         ;
 
     implicitly_convertible<double, This>();
+
+    // Let C-contiguous buffers of doubles be passed to wrapped functions
+    // taking TfSpan<GfDuration>.
+    TfPyRegisterSpanBufferLayout<This>(Gf_GetPyBufferFmtFor<double>()[0]);
 }

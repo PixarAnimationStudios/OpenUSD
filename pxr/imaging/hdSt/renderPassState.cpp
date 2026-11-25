@@ -75,6 +75,74 @@ HdStRenderPassState::HdStRenderPassState(
 
 HdStRenderPassState::~HdStRenderPassState() = default;
 
+void
+HdStRenderPassState::Copy(HdRenderPassState const& src)
+{
+    if (const HdStRenderPassState* st =
+            dynamic_cast<const HdStRenderPassState*>(&src)) {
+        *this = *st;
+    } else {
+        HdRenderPassState::Copy(src);
+    }
+}
+
+void
+HdStRenderPassState::CopyUniforms(HdStRenderPassState const& src)
+{
+    // Clip plane count determines the UBO layout; both states must agree.
+    if (!TF_VERIFY(_clipPlanesBufferSize == src._clipPlanesBufferSize)) {
+        return;
+    }
+
+    // All base-class fields that Prepare() uploads to _renderPassStateBar:
+
+    // Camera and framing (determine matrices and viewport uniform)
+    _camera                = src._camera;
+    _viewport              = src._viewport;
+    _framing               = src._framing;
+    _overrideWindowPolicy  = src._overrideWindowPolicy;
+
+    // Color and appearance uniforms
+    _overrideColor         = src._overrideColor;
+    _wireframeColor        = src._wireframeColor;
+    _maskColor             = src._maskColor;
+    _indicatorColor        = src._indicatorColor;
+    _pointColor            = src._pointColor;
+    _pointSize             = src._pointSize;
+    _pointSelectedSize     = src._pointSelectedSize;
+
+    // Scalar uniforms
+    _lightingEnabled           = src._lightingEnabled;
+    _enableExposureCompensation = src._enableExposureCompensation;
+    _stepSize                  = src._stepSize;
+    _stepSizeLighting          = src._stepSizeLighting;
+    _alphaThreshold            = src._alphaThreshold;
+    _tessLevel                 = src._tessLevel;
+
+    // HdStRenderPassState-specific fields used by Prepare():
+
+    // Override matrices (for render passes that call SetCameraFramingState)
+    _worldToViewMatrix = src._worldToViewMatrix;
+    _projectionMatrix  = src._projectionMatrix;
+    _clipPlanes        = src._clipPlanes;
+
+    // Derived/cached fields computed by Prepare()
+    _cullMatrix           = src._cullMatrix;
+    _clipPlanesBufferSize = src._clipPlanesBufferSize;
+
+    // The GPU uniform buffer itself
+    _renderPassStateBar = src._renderPassStateBar;
+
+    // ... and we need to re-register the renderpass state binding as well.
+    if (_renderPassShader && _renderPassStateBar) {
+        HdStBufferArrayRangeSharedPtr bar =
+            std::static_pointer_cast<HdStBufferArrayRange>(_renderPassStateBar);
+        _renderPassShader->AddBufferBinding(
+            HdStBindingRequest(HdStBinding::UBO, _tokens->renderPassState,
+                               bar, /*interleaved=*/true));
+    }
+}
+
 unsigned int
 HdStRenderPassState::_GetFramebufferHeight() const
 {
@@ -1326,78 +1394,5 @@ HdStRenderPassState::GetGraphicsPipelineHash(
 
     return hash;
 }
-
-void
-HdStRenderPassState::CopyAllExceptShaderFrom(
-    const HdStRenderPassState& other)
-{
-    _camera = other._camera;
-    _viewport = other._viewport;
-    _framing = other._framing;
-    if (other._overrideWindowPolicy.has_value()) {
-        _overrideWindowPolicy.emplace(other._overrideWindowPolicy.value());
-    } else {
-        _overrideWindowPolicy.reset();
-    }
-    _overrideColor = other._overrideColor;
-    _wireframeColor = other._wireframeColor;
-    _pointColor = other._pointColor;
-    _pointSize = other._pointSize;
-    _lightingEnabled = other._lightingEnabled;
-    _clippingEnabled = other._clippingEnabled;
-    _maskColor = other._maskColor;
-    _indicatorColor = other._indicatorColor;
-    _pointSelectedSize = other._pointSelectedSize;
-    _alphaThreshold = other._alphaThreshold;
-    _tessLevel = other._tessLevel;
-    _drawRange = other._drawRange;
-    _depthBiasUseDefault = other._depthBiasUseDefault;
-    _depthBiasEnabled = other._depthBiasEnabled;
-    _depthBiasConstantFactor = other._depthBiasConstantFactor;
-    _depthBiasSlopeFactor = other._depthBiasSlopeFactor;
-    _depthFunc = other._depthFunc;
-    _depthMaskEnabled = other._depthMaskEnabled;
-    _depthTestEnabled = other._depthTestEnabled;
-    _depthClampEnabled = other._depthClampEnabled;
-    _depthRange = other._depthRange;
-    _cullStyle = other._cullStyle;
-    _stencilFunc = other._stencilFunc;
-    _stencilRef = other._stencilRef;
-    _stencilMask = other._stencilMask;
-    _stencilFailOp = other._stencilFailOp;
-    _stencilZFailOp = other._stencilZFailOp;
-    _stencilZPassOp = other._stencilZPassOp;
-    _stencilEnabled = other._stencilEnabled;
-    _lineWidth = other._lineWidth;
-    _blendColorOp = other._blendColorOp;
-    _blendColorSrcFactor = other._blendColorSrcFactor;
-    _blendColorDstFactor = other._blendColorDstFactor;
-    _blendAlphaOp = other._blendAlphaOp;
-    _blendAlphaSrcFactor = other._blendAlphaSrcFactor;
-    _blendAlphaDstFactor = other._blendAlphaDstFactor;
-    _blendConstantColor = other._blendConstantColor;
-    _blendEnabled = other._blendEnabled;
-    _alphaToCoverageEnabled = other._alphaToCoverageEnabled;
-    _colorMaskUseDefault = other._colorMaskUseDefault;
-    _colorMasks.assign(other._colorMasks.cbegin(), other._colorMasks.cend());
-    _aovBindings.assign(other._aovBindings.cbegin(), other._aovBindings.cend());
-    _aovInputBindings.assign(
-        other._aovInputBindings.cbegin(), other._aovInputBindings.cend());
-    _useMultiSampleAov = other._useMultiSampleAov;
-    _conservativeRasterizationEnabled = other._conservativeRasterizationEnabled;
-    _stepSize = other._stepSize;
-    _stepSizeLighting = other._stepSizeLighting;
-    _multiSampleEnabled = other._multiSampleEnabled;
-    _worldToViewMatrix = other._worldToViewMatrix;
-    _projectionMatrix = other._projectionMatrix;
-    _clipPlanes.assign(other._clipPlanes.cbegin(), other._clipPlanes.cend());
-    _cullMatrix = other._cullMatrix;
-    _fallbackLightingShader = other._fallbackLightingShader;
-    _lightingShader = other._lightingShader;
-    _renderPassStateBar = other._renderPassStateBar;
-    _clipPlanesBufferSize = other._clipPlanesBufferSize;
-    _resolveMultiSampleAov = other._resolveMultiSampleAov;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

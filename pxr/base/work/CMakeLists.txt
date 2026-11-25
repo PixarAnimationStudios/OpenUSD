@@ -133,7 +133,7 @@ pxr_build_test(testWorkThreadLimits
 
 pxr_register_test(testWorkDispatcher
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkDispatcher"
-    LABELS $<IF:$<PLATFORM_ID:Windows>,flaky,>
+    LABELS $<$<PLATFORM_ID:Windows>:flaky>
 )
 pxr_register_test(testWorkLoops
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkLoops"

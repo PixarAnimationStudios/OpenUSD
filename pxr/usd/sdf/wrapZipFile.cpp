@@ -110,6 +110,8 @@ wrapZipFile()
                 &SdfZipFile::FileInfo::compressionMethod)
             .def_readonly("encrypted",
                 &SdfZipFile::FileInfo::encrypted)
+            .def_readonly("versionNeededToExtract",
+                &SdfZipFile::FileInfo::versionNeededToExtract)
             ;
     }
 

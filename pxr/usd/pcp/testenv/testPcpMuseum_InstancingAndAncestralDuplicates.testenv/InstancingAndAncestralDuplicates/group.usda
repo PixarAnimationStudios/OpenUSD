@@ -1,0 +1,17 @@
+#usda 1.0
+
+def "Group"
+{
+    def "Model"
+    {
+        def "Geom"
+        {
+        }
+    }
+
+    def "Variant" (
+        inherits = </Group/Model>
+    )
+    {
+    }
+}

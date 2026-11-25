@@ -27,7 +27,12 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     : HdTask(id)
     , _lastVersion(-1)
     , _hasSelection(false)
-    , _params({false, false, 0.5, GfVec4f(), GfVec4f()})
+    , _params({/* enableSelectionHighlight */ false,
+               /* enableLocateHighlight */    false,
+               /* occludedSelectionOpacity */ 0.5,
+               /* minSelectionOpacity */      0.0,
+               /* selectionColor */           GfVec4f(),
+               /* locateColor */              GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
     , _pointColorsBufferSize(0)
@@ -115,6 +120,8 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                                       HdTupleType { HdTypeFloatVec4, 1 });
             uniformSpecs.emplace_back(HdxTokens->occludedSelectionOpacity,
                                       HdTupleType { HdTypeFloat, 1 });
+            uniformSpecs.emplace_back(HdxTokens->minSelectionOpacity,
+                                      HdTupleType { HdTypeFloat, 1 });
             uniformSpecs.emplace_back(HdxTokens->selectionPointColors,
                                       HdTupleType { HdTypeFloatVec4,
                                                     _pointColorsBufferSize});
@@ -141,6 +148,9 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
                 std::make_shared<HdVtBufferSource>(
                     HdxTokens->occludedSelectionOpacity,
                     VtValue(_params.occludedSelectionOpacity)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxTokens->minSelectionOpacity,
+                    VtValue(_params.minSelectionOpacity)),
                 std::make_shared<HdVtBufferSource>(
                     HdxTokens->selectionPointColors,
                     VtValue(ptColors),
@@ -186,6 +196,7 @@ std::ostream& operator<<(std::ostream& out,
 {
     out << pv.enableSelectionHighlight << " ";
     out << pv.enableLocateHighlight << " ";
+    out << pv.minSelectionOpacity << " ";
     out << pv.selectionColor << " ";
     out << pv.locateColor;
     return out;
@@ -195,7 +206,8 @@ bool operator==(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs) {
     return lhs.enableSelectionHighlight == rhs.enableSelectionHighlight
         && lhs.enableLocateHighlight == rhs.enableLocateHighlight
-        && lhs.selectionColor == rhs.selectionColor 
+        && lhs.minSelectionOpacity == rhs.minSelectionOpacity
+        && lhs.selectionColor == rhs.selectionColor
         && lhs.locateColor == rhs.locateColor;
 }
 

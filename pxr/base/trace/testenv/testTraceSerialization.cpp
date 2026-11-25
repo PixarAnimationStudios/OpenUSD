@@ -170,7 +170,7 @@ CreateTestCollection(float startTimeSec=0.0)
 
 static void
 _TestSerialization(
-    const std::vector<std::shared_ptr<TraceCollection>>& testCols,
+    const std::vector<std::shared_ptr<const TraceCollection>>& testCols,
     std::string fileName)
 {
     std::stringstream test;
@@ -188,7 +188,7 @@ _TestSerialization(
         ostream << test.str();
     }
     // Read a collection from the file just written
-    std::shared_ptr<TraceCollection> collection;
+    std::shared_ptr<const TraceCollection> collection;
     {
         std::ifstream istream(fileName);
         collection = TraceSerialization::Read(istream);
@@ -217,7 +217,7 @@ main(int argc, char *argv[])
     TraceCategory::GetInstance().RegisterCategory(
         TestCategory, "Test Category");
 
-    std::vector<std::shared_ptr<TraceCollection>> collections;
+    std::vector<std::shared_ptr<const TraceCollection>> collections;
     std::cout << "Testing single collection\n";
     collections.emplace_back(CreateTestCollection());
     _TestSerialization(collections, "trace.json");

@@ -1986,7 +1986,7 @@ layout(location = 2) in vec4 gsPatchCoord;
 flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
 flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
 flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 layout(location = 0) in VertexData {
   vec4 Peye;
   vec3 Neye;
@@ -2037,7 +2037,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -2282,11 +2282,21 @@ vec4 ApplySelectionColor(vec4 color)
     return color;
 }
 
+// No-op stub for passes without selection highlighting (e.g. pick and
+// shadow passes). It satisfies the forward declaration called from
+// ApplyColorOverridesPostLighting. The real minimum selection opacity floor
+// is in hdx/shaders/selection.glslfx.
+vec4 ApplySelectionOpacity(vec4 color)
+{
+    return color;
+}
+
 
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
 FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -2319,7 +2329,7 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
         vec4 indicatorColor = GetIndicatorColor();
         color.rgb = ApplyMaskColor(color.rgb, indicatorWeight, indicatorColor);
     #endif
-    return color;
+    return ApplySelectionOpacity(color);
 }
 
 
@@ -2762,6 +2772,7 @@ FORWARD_DECL(ScalarOverride GetScalarOverride());
 FORWARD_DECL(
     vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
 FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -2778,7 +2789,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         vec4 colorOverride = ApplyColorOverrides(result);
         result = reprStyle.applyColorOverride ? colorOverride : result;
 
-        return result;
+        // This path skips ApplyColorOverridesPostLighting, so apply the
+        // selection opacity floor here.
+        return ApplySelectionOpacity(result);
     }
 
     // Draw mode can override face color
@@ -5121,7 +5134,7 @@ layout(location = 2) in vec4 gsPatchCoord;
 flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
 flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
 flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
+vec3 hd_BaryCoord = gl_BaryCoordEXT;
 layout(location = 0) in VertexData {
   vec4 Peye;
   vec3 Neye;
@@ -5172,7 +5185,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_BaryCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -5417,11 +5430,21 @@ vec4 ApplySelectionColor(vec4 color)
     return color;
 }
 
+// No-op stub for passes without selection highlighting (e.g. pick and
+// shadow passes). It satisfies the forward declaration called from
+// ApplyColorOverridesPostLighting. The real minimum selection opacity floor
+// is in hdx/shaders/selection.glslfx.
+vec4 ApplySelectionOpacity(vec4 color)
+{
+    return color;
+}
+
 
 
 // Forward declare selection functionality.
 // XXX: Currently, the non-empty implementation of this is in hdx.
 FORWARD_DECL(vec4 ApplySelectionColor(vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 // XXX: Make sure to update hdx/shaders/renderPass.glslfx when editing these
 // color override methods, since they're currently duplicated. This is because
@@ -5454,7 +5477,7 @@ vec4 ApplyColorOverridesPostLighting(vec4 color)
         vec4 indicatorColor = GetIndicatorColor();
         color.rgb = ApplyMaskColor(color.rgb, indicatorWeight, indicatorColor);
     #endif
-    return color;
+    return ApplySelectionOpacity(color);
 }
 
 
@@ -5897,6 +5920,7 @@ FORWARD_DECL(ScalarOverride GetScalarOverride());
 FORWARD_DECL(
     vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord));
 FORWARD_DECL(vec4 postSurfaceShader(vec4 Peye, vec3 Neye, vec4 color));
+FORWARD_DECL(vec4 ApplySelectionOpacity(vec4 color));
 
 vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
@@ -5913,7 +5937,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         vec4 colorOverride = ApplyColorOverrides(result);
         result = reprStyle.applyColorOverride ? colorOverride : result;
 
-        return result;
+        // This path skips ApplyColorOverridesPostLighting, so apply the
+        // selection opacity floor here.
+        return ApplySelectionOpacity(result);
     }
 
     // Draw mode can override face color

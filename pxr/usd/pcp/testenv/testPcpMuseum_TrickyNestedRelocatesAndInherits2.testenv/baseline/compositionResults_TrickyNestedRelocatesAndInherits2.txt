@@ -1,0 +1,245 @@
+Loading @TrickyNestedRelocatesAndInherits2/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Saverio>
+
+Prim Stack:
+    root.usda            /Saverio
+    charrig.usda         /CharRig
+
+Child names:
+     ['Rig', 'Control']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig>
+
+Prim Stack:
+    root.usda            /Saverio/Rig
+    charrig.usda         /CharRig/Rig
+    feathers.usda        /FeathersRig
+
+Child names:
+     ['SymWing', 'RWing']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing
+    charrig.usda         /CharRig/Rig/SymWing
+    feathers.usda        /FeathersRig/SymWing
+
+Child names:
+     ['Control', 'Deform']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Control>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control
+    charrig.usda         /CharRig/Rig/SymWing/Control
+    feathers.usda        /FeathersRig/SymWing/Control
+
+Child names:
+     ['Flight01']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Control/Flight01>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01
+    charrig.usda         /CharRig/Rig/SymWing/Control/Flight01
+    feathers.usda        /FeathersRig/SymWing/Control/Flight01
+
+Child names:
+     ['Base', 'X']
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Rig/SymWing/Control/Flight01.probe:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Control/Flight01/Base>
+
+Prim Stack:
+    charrig.usda         /CharRig/Rig/SymWing/Control/Flight01/Base
+    feathers.usda        /FeathersRig/SymWing/Control/Flight01/Base
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Rig/SymWing/Control/Flight01/Base.probe:
+    charrig.usda         /CharRig/Rig/SymWing/Control/Flight01/Base.probe
+    feathers.usda        /FeathersRig/SymWing/Control/Flight01/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Control/Flight01/X>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01/X
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Rig/SymWing/Control/Flight01/X.probe:
+    root.usda            /Saverio/Rig/SymWing/Control/Flight01/X.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Deform>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/SymWing/Deform
+
+Child names:
+     ['Flight01Rig']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Deform/Flight01Rig>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig
+
+Child names:
+     ['Control']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Deform/Flight01Rig/Control>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control
+
+Child names:
+     ['Base', 'X']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Deform/Flight01Rig/Control/Base>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Rig/SymWing/Deform/Flight01Rig/Control/Base.probe:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/SymWing/Deform/Flight01Rig/Control/X>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/X
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Rig/SymWing/Deform/Flight01Rig/Control/X.probe:
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/RWing>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing
+    charrig.usda         /CharRig/Rig/SymWing
+    feathers.usda        /FeathersRig/RWing
+    feathers.usda        /FeathersRig/SymWing
+
+Child names:
+     ['Deform']
+
+Prohibited child names:
+     ['Control']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/RWing/Deform>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/RWing/Deform
+    feathers.usda        /FeathersRig/SymWing/Deform
+
+Child names:
+     ['Flight01Rig']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Rig/RWing/Deform/Flight01Rig>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig
+
+Prohibited child names:
+     ['Control']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Control>
+
+Prim Stack:
+    charrig.usda         /CharRig/Control
+
+Child names:
+     ['RWing']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Control/RWing>
+
+Prim Stack:
+    root.usda            /Saverio/Rig/SymWing/Control
+    charrig.usda         /CharRig/Rig/SymWing/Control
+    feathers.usda        /FeathersRig/SymWing/Control
+
+Child names:
+     ['Flight01']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Control/RWing/Flight01>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control
+
+Child names:
+     ['Base', 'X']
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Control/RWing/Flight01/Base>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Control/RWing/Flight01/Base.probe:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base.probe
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base.probe
+
+------------------------------------------------------------------------
+Results for composing </Saverio/Control/RWing/Flight01/X>
+
+Prim Stack:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/X
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base
+
+Property names:
+     ['probe']
+
+Property stacks:
+/Saverio/Control/RWing/Flight01/X.probe:
+    feathers.usda        /FeathersRig/RWing/Deform/Flight01Rig/Control/Base.probe
+    feathers.usda        /FeathersRig/SymWing/Deform/Flight01Rig/Control/Base.probe
+

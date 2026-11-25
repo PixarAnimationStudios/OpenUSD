@@ -1,0 +1,214 @@
+Loading @SpecializesAndAncestralArcs7/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+    root.usda            /_class_Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks>
+
+Prim Stack:
+    root.usda            /Model/Looks
+    root.usda            /_class_Model/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Mat>
+
+Prim Stack:
+    root.usda            /Model/Looks/Mat
+    root.usda            /_class_Mat
+    root.usda            /_class_Model/Looks/Mat
+
+Child names:
+     ['Shader']
+
+------------------------------------------------------------------------
+Results for composing </Model/Looks/Mat/Shader>
+
+Prim Stack:
+    root.usda            /Model/Looks/Mat/Shader
+    root.usda            /_class_Mat/Shader
+    root.usda            /_class_Model/Looks/Mat/Shader
+    root.usda            /_class_Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/Model/Looks/Mat/Shader.source:
+    root.usda            /_class_Mat/Shader.source
+    root.usda            /_class_Model/Looks/Mat/Shader.source
+    root.usda            /_class_Shader.source
+
+------------------------------------------------------------------------
+Results for composing </Model2>
+
+Prim Stack:
+    root.usda            /Model2
+    root.usda            /_class_Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Model2/Looks>
+
+Prim Stack:
+    root.usda            /Model2/Looks
+    root.usda            /_class_Model/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Model2/Looks/Mat>
+
+Prim Stack:
+    root.usda            /Model2/Looks/Mat
+    root.usda            /_class_Model/Looks/Mat
+
+Child names:
+     ['Shader']
+
+------------------------------------------------------------------------
+Results for composing </Model2/Looks/Mat/Shader>
+
+Prim Stack:
+    root.usda            /Model2/Looks/Mat/Shader
+    root.usda            /Ref/Mat/Shader
+    root.usda            /_class_Mat/Shader
+    root.usda            /_class_Model/Looks/Mat/Shader
+    root.usda            /_class_Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/Model2/Looks/Mat/Shader.source:
+    root.usda            /_class_Mat/Shader.source
+    root.usda            /_class_Model/Looks/Mat/Shader.source
+    root.usda            /_class_Shader.source
+
+------------------------------------------------------------------------
+Results for composing </Ref>
+
+Prim Stack:
+    root.usda            /Ref
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Ref/Mat>
+
+Prim Stack:
+    root.usda            /Ref/Mat
+    root.usda            /_class_Mat
+
+Child names:
+     ['Shader']
+
+------------------------------------------------------------------------
+Results for composing </Ref/Mat/Shader>
+
+Prim Stack:
+    root.usda            /Ref/Mat/Shader
+    root.usda            /_class_Mat/Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/Ref/Mat/Shader.source:
+    root.usda            /_class_Mat/Shader.source
+
+------------------------------------------------------------------------
+Results for composing </_class_Model>
+
+Prim Stack:
+    root.usda            /_class_Model
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </_class_Model/Looks>
+
+Prim Stack:
+    root.usda            /_class_Model/Looks
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </_class_Model/Looks/Mat>
+
+Prim Stack:
+    root.usda            /_class_Model/Looks/Mat
+
+Child names:
+     ['Shader']
+
+------------------------------------------------------------------------
+Results for composing </_class_Model/Looks/Mat/Shader>
+
+Prim Stack:
+    root.usda            /_class_Model/Looks/Mat/Shader
+    root.usda            /_class_Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/_class_Model/Looks/Mat/Shader.source:
+    root.usda            /_class_Model/Looks/Mat/Shader.source
+    root.usda            /_class_Shader.source
+
+------------------------------------------------------------------------
+Results for composing </_class_Mat>
+
+Prim Stack:
+    root.usda            /_class_Mat
+
+Child names:
+     ['Shader']
+
+------------------------------------------------------------------------
+Results for composing </_class_Mat/Shader>
+
+Prim Stack:
+    root.usda            /_class_Mat/Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/_class_Mat/Shader.source:
+    root.usda            /_class_Mat/Shader.source
+
+------------------------------------------------------------------------
+Results for composing </_class_Shader>
+
+Prim Stack:
+    root.usda            /_class_Shader
+
+Property names:
+     ['source']
+
+Property stacks:
+/_class_Shader.source:
+    root.usda            /_class_Shader.source
+

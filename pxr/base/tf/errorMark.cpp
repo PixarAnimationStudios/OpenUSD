@@ -93,7 +93,7 @@ TfErrorMark::Transport() const
         return transport;
     }
     TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-    auto &ts = mgr._threadState.local();
+    auto &ts = mgr._GetThreadState();
     transport = TfErrorTransport {
         ts._errorList, begin, end, mgr._PinErrorLogText(begin, end)
     };

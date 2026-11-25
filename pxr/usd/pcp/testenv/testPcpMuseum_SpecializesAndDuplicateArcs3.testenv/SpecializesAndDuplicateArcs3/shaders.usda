@@ -1,0 +1,19 @@
+#usda 1.0
+
+def "Shaders" (
+    references = </Shaders_dsv>
+)
+{
+}
+
+def "Shaders_dsv"
+{
+    def "Looks"
+    {
+        def "Mat" (
+            references = @./lib.usda@</Lib/Looks/Mat>
+        )
+        {
+        }
+    }
+}

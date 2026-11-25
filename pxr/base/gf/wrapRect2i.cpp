@@ -7,9 +7,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/rect2i.h"
+#include "pxr/base/gf/pyBufferUtils.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -106,5 +108,9 @@ void wrapRect2i()
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
-    
+
+    // Let C-contiguous buffers of shape (N, 2, 2), holding each rect's min and
+    // max corners, be passed to wrapped functions taking TfSpan<GfRect2i>.
+    TfPyRegisterSpanBufferLayout<This>(
+        Gf_GetPyBufferFmtFor<int>()[0], { 2, 2 });
 }

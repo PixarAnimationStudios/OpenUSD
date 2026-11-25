@@ -344,8 +344,8 @@ SdfLayer::_WaitForInitializationAndCheckIfSuccessful()
     // being initialized, this will be false, blocking progress until
     // initialization completes.
     while (!_initializationComplete) {
-        // XXX: Disabled for now due to intermittent crashes.
-        //_initDispatcher.Wait();
+        // XXX: It WBN to find a way to do something useful here rather than
+        // just busy-wait.
         std::this_thread::yield();
     }
 
@@ -3607,20 +3607,9 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     }
 
     if (!layer->IsMuted()) {
-        // Run the file parser to read in the file contents.  We do this in a
-        // dispatcher, so that other threads that "wait" to read this file can
-        // actually participate in completing its loading (assuming the layer
-        // _Read is internally task-parallel).
-        bool readSuccess = false;
-        // XXX: Disabled for now due to intermittent crashes.
-        // WorkWithScopedParallelism([&]() {
-        //     layer->_initDispatcher.Run([&readSuccess, &layer, &info,
-        //                                 &readFilePath, metadataOnly]() {
-            readSuccess = layer->_Read(
-                info.identifier, info.resolvedLayerPath, metadataOnly);
-        //     });
-        //     layer->_initDispatcher.Wait();
-        //});
+        // Run the file parser to read in the file contents.
+        const bool readSuccess = layer->_Read(
+            info.identifier, info.resolvedLayerPath, metadataOnly);
         if (!readSuccess) {
             layer->_FinishInitialization(/* success = */ false);
             return TfNullPtr;

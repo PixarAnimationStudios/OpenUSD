@@ -39,6 +39,10 @@ group.add_argument("--keepRatio", action = "store_true",
                    help = "De-regress with Keep Ratio, then evaluate with Ts.")
 group.add_argument("--keepStart", action = "store_true",
                    help = "De-regress with Keep Start, then evaluate with Ts.")
+group.add_argument("--maya", action = "store_true",
+                   help = ("De-regress like Maya does (with Keep Start)."
+                           " This synonym of --keepStart labels the curve with"
+                           " 'Maya' for use in documentation."))
 
 group = parser.add_argument_group("Output")
 group.add_argument("--out",
@@ -73,7 +77,9 @@ group.add_argument("--list", action="store_true", default=False,
 
 group = parser.add_argument_group("Bells and whistles (off by default)")
 group.add_argument("--title",
-                   help = "Graph title.")
+                   help = "Change the graph title (Default is spline name).")
+group.add_argument("--no-title", action="store_true", default=False,
+                   help = "No title.")
 group.add_argument("--box", action = "store_true",
                    help = "Include box around image.")
 group.add_argument("--scales", action = "store_true",
@@ -82,7 +88,7 @@ group.add_argument("--scales", action = "store_true",
 args = parser.parse_args()
 
 if not (args.bez or args.ts or args.sample or args.sampleWithSources or
-        args.contain or args.keepRatio or args.keepStart):
+        args.contain or args.keepRatio or args.keepStart or args.maya):
     args.ts = True
 
 if not args.case:
@@ -98,10 +104,11 @@ if args.case.isdigit():
                      " all available cases.")
         # parser.error does not return
 
-if not args.title:
+if args.no_title:
+    args.title = None
+elif not args.title:
     args.title = args.case
-print(f'{args.title = }')
-    
+
 ################################################################################
 
 if args.list:
@@ -113,7 +120,7 @@ if args.list:
 
     sys.exit()
 
-        
+
 spline = Museum.GetSplineByName(args.case, Tf.Type.FindByName('double'))
 
 times = STimes(spline)
@@ -136,7 +143,7 @@ if args.minTime is None:
 
 if args.maxTime is None:
     args.maxTime = times.GetMaxTime()
-    
+
 if args.timeScale is None:
     timeSpan = max(args.maxTime - args.minTime, .001)
     args.timeScale = args.width / timeSpan
@@ -178,8 +185,8 @@ def GetSamples(spline, sampler="eval", antiRegressor=None):
                                   args.tolerance,
                                   withSources=True)
     assert (sampler in ("bez", "eval", "sample", "sampleWithSources"))
-            
-    
+
+
 def EvalWithAntiRegression(name, mode, spline, colorIndex):
     splineCopy = Ts.Spline(spline)
     with Ts.AntiRegressionAuthoringSelector(mode):
@@ -196,24 +203,25 @@ if args.ts:
     samples = GetSamples(spline, "eval");
     grapher.AddSpline("Ts", spline, samples, colorIndex = 1)
 
+if args.keepStart or args.maya:
+    label = "Maya" if args.maya else "Start"
+    samples = GetSamples(spline, "eval", Ts.AntiRegressionKeepStart)
+    grapher.AddSpline(label, spline, samples, colorIndex = 2)
+
 if args.contain:
     samples = GetSamples(spline, "eval", Ts.AntiRegressionContain)
-    grapher.AddSpline("Contain", spline, samples, colorIndex = 2)
+    grapher.AddSpline("Contain", spline, samples, colorIndex = 3)
 
 if args.keepRatio:
     samples = GetSamples(spline, "eval", Ts.AntiRegressionKeepRatio)
-    grapher.AddSpline("Contain", spline, samples, colorIndex = 3)
+    grapher.AddSpline("Ratio", spline, samples, colorIndex = 4)
 
-if args.keepStart:
-    samples = GetSamples(spline, "eval", Ts.AntiRegressionKeepStart)
-    grapher.AddSpline("Contain", spline, samples, colorIndex = 4)
-    
 if args.sample:
     # Note that using "samples" returns a Ts.SplineSamples instead of a list of
     # TsTest_Sample objects.
     samples = GetSamples(spline, "sample")
     grapher.AddSpline("Sample", spline, samples, colorIndex = 5)
-    
+
 if args.sampleWithSources:
     # Note that using "samplesWithSources returns a Ts.SplineSamplesWithSources
     # instead of a list of TsTest_Sample objects.

@@ -274,6 +274,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdChangeTracker::DirtyNormals |
         HdChangeTracker::DirtyWidths |
         HdChangeTracker::DirtyVolumeField |
+        HdChangeTracker::DirtySubdivTags |
         HdChangeTracker::DirtyTopology |
         HdChangeTracker::DirtyPrimvar;
 
@@ -284,7 +285,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdChangeTracker::DirtyTransform |
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyDoubleSided |
-        HdChangeTracker::DirtySubdivTags |
         HdChangeTracker::DirtyVolumeField |
         HdChangeTracker::DirtyCategories |
         HdChangeTracker::DirtyPrimvar |

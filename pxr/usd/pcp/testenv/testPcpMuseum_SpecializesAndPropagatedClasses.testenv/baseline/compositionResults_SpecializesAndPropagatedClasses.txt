@@ -1,0 +1,217 @@
+Loading @SpecializesAndPropagatedClasses/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Asset>
+
+Prim Stack:
+    root.usda            /Asset
+    root.usda            /_class_Lib
+
+Child names:
+     ['Model', '_class_Mat']
+
+------------------------------------------------------------------------
+Results for composing </Asset/Model>
+
+Prim Stack:
+    root.usda            /_class_Lib/Model
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Asset/Model/Mat>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat
+    root.usda            /_class_Lib/Model/Mat
+    root.usda            /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromAssetClass']
+
+Property stacks:
+/Asset/Model/Mat.fromAssetClass:
+    root.usda            /Asset/_class_Mat.fromAssetClass
+
+------------------------------------------------------------------------
+Results for composing </Asset/Model/Mat/Kid>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </Asset/_class_Mat>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat
+    root.usda            /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromAssetClass']
+
+Property stacks:
+/Asset/_class_Mat.fromAssetClass:
+    root.usda            /Asset/_class_Mat.fromAssetClass
+
+------------------------------------------------------------------------
+Results for composing </Asset/_class_Mat/Kid>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib>
+
+Prim Stack:
+    root.usda            /_class_Lib
+
+Child names:
+     ['Model', '_class_Mat']
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/Model>
+
+Prim Stack:
+    root.usda            /_class_Lib/Model
+
+Child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/Model/Mat>
+
+Prim Stack:
+    root.usda            /_class_Lib/Model/Mat
+    root.usda            /_class_Lib/_class_Mat
+
+------------------------------------------------------------------------
+Results for composing </_class_Lib/_class_Mat>
+
+Prim Stack:
+    root.usda            /_class_Lib/_class_Mat
+
+------------------------------------------------------------------------
+Results for composing </Inst>
+
+Prim Stack:
+    root.usda            /Inst
+    root.usda            /Asset/_class_Mat
+    root.usda            /_class_Lib/Model/Mat
+    root.usda            /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid', '_class_Mat']
+
+Property names:
+     ['fromAssetClass']
+
+Property stacks:
+/Inst.fromAssetClass:
+    root.usda            /Asset/_class_Mat.fromAssetClass
+
+------------------------------------------------------------------------
+Results for composing </Inst/Kid>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </Inst/_class_Mat>
+
+Prim Stack:
+    root.usda            /Inst/_class_Mat
+
+Property names:
+     ['fromInstClass']
+
+Property stacks:
+/Inst/_class_Mat.fromInstClass:
+    root.usda            /Inst/_class_Mat.fromInstClass
+
+------------------------------------------------------------------------
+Results for composing </Relocated>
+
+Prim Stack:
+    root.usda            /Relocated
+    root.usda            /Asset
+    root.usda            /_class_Lib
+
+Child names:
+     ['Model', '_class_Mat']
+
+------------------------------------------------------------------------
+Results for composing </Relocated/Model>
+
+Prim Stack:
+    root.usda            /_class_Lib/Model
+
+Child names:
+     ['Moved']
+
+Prohibited child names:
+     ['Mat']
+
+------------------------------------------------------------------------
+Results for composing </Relocated/Model/Moved>
+
+Prim Stack:
+    root.usda            /Relocated/_class_Mat
+    root.usda            /Asset/_class_Mat
+    root.usda            /_class_Lib/Model/Mat
+    root.usda            /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromAssetClass', 'fromRelocatedClass']
+
+Property stacks:
+/Relocated/Model/Moved.fromAssetClass:
+    root.usda            /Asset/_class_Mat.fromAssetClass
+/Relocated/Model/Moved.fromRelocatedClass:
+    root.usda            /Relocated/_class_Mat.fromRelocatedClass
+
+------------------------------------------------------------------------
+Results for composing </Relocated/Model/Moved/Kid>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat/Kid
+
+------------------------------------------------------------------------
+Results for composing </Relocated/_class_Mat>
+
+Prim Stack:
+    root.usda            /Relocated/_class_Mat
+    root.usda            /Asset/_class_Mat
+    root.usda            /_class_Lib/_class_Mat
+
+Child names:
+     ['Kid']
+
+Property names:
+     ['fromAssetClass', 'fromRelocatedClass']
+
+Property stacks:
+/Relocated/_class_Mat.fromAssetClass:
+    root.usda            /Asset/_class_Mat.fromAssetClass
+/Relocated/_class_Mat.fromRelocatedClass:
+    root.usda            /Relocated/_class_Mat.fromRelocatedClass
+
+------------------------------------------------------------------------
+Results for composing </Relocated/_class_Mat/Kid>
+
+Prim Stack:
+    root.usda            /Asset/_class_Mat/Kid
+

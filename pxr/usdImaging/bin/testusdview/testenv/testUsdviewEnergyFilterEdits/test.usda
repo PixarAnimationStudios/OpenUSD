@@ -148,17 +148,25 @@ def Scope "Render"
         bool ri:hider:jitter = 0
     }
 
-    # Filter 1: desaturate all gathered energy.
+    # Evaluation order between energy filters comes from each filter's
+    # ri:energyFilter:order, NOT from the order of the ri:energyFilters
+    # targets above. Non-negative orders are applied lowest first. Both
+    # filters author an explicit order so the test never depends on the
+    # unauthored (-1, "scene encounter order") case.
+
+    # Filter 1: desaturate all gathered energy. Applied first.
     def PxrColorEditEnergyFilter "EnergyFilter1"
     {
         float inputs:ri:saturation = 0
         string ri:energyFilter:lpe = "C[DS]+[LO]"
+        int ri:energyFilter:order = 0
     }
 
-    # Filter 2: strong red tint on all gathered energy.
+    # Filter 2: strong red tint on all gathered energy. Applied second.
     def PxrColorEditEnergyFilter "EnergyFilter2"
     {
         color3f inputs:ri:mult = (3, 0.2, 0.2)
         string ri:energyFilter:lpe = "C[DS]+[LO]"
+        int ri:energyFilter:order = 1
     }
 }

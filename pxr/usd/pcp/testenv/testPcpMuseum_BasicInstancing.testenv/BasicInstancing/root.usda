@@ -70,15 +70,15 @@ def "NotAnInstance" (
 
 def "SubrootReferences" (
     # The "Instanced" prim references /Set_1/InstancedProp/geom, which
-    # is a child prim beneath an instance. We expect that the local
-    # opinions that are ignored when composing that prim are also
-    # ignored when composing "Instanced". Otherwise, users may be
-    # confused as to why a reference arc isn't bringing across the
-    # exact same set of opinions into the referencing prim.
+    # is a child prim beneath an instance.  Instancing applies to prims
+    # on the stage, not to sites reached by arcs, so the reference
+    # composes its target as if InstancedProp were not instanceable.
+    # The local opinions that are ignored when composing that prim
+    # therefore apply to "Instanced".
     #
     # This means the set of opinions on Instanced.x will match those
-    # on /Set_1/InstancedProp/geom.x, and those for Uninstanced.x will
-    # match those on /Set_1/UninstancedProp/geom.x.
+    # on Uninstanced.x, and those for Uninstanced.x will match those
+    # on /Set_1/UninstancedProp/geom.x.
 )
 {
     def "Instanced" (

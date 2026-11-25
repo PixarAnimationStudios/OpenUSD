@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
+#include "pxr/usd/usd/clipCache.h"
 #include "pxr/usd/usd/interpolators.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -117,7 +118,7 @@ Usd_Clip::Usd_Clip(
             sourceLayer, assetPath.GetAssetPath());
     }
 
-    _hasLayer = (bool)_layer;
+    _hasLayer.store((bool)_layer, std::memory_order_relaxed);
 }
 
 // Helper function to determine the linear segment in the given
@@ -872,7 +873,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 SdfLayerRefPtr
 Usd_Clip::_GetLayerForClip() const
 {
-    if (_hasLayer) {
+    if (_hasLayer.load(std::memory_order_acquire)) {
         return _layer; 
     }
 
@@ -885,8 +886,9 @@ Usd_Clip::_GetLayerForClip() const
             sourceLayer, assetPath.GetAssetPath());
     }
 
-    if (!layer) {
-        // If we failed to open the specified layer, report an error
+    const bool haveLayer = static_cast<bool>(layer);
+    if (!haveLayer) {
+        // If we failed to open the spnnecified layer, report an error
         // and use a dummy anonymous layer instead, to avoid having
         // to check layer validity everywhere and to avoid reissuing
         // this error.
@@ -898,10 +900,21 @@ Usd_Clip::_GetLayerForClip() const
                      SdfUsdaFileFormatTokens->Id.GetText()));
     }
 
-    std::lock_guard<std::mutex> lock(_layerMutex);
-    if (!_layer) { 
-        _layer = layer;
-        _hasLayer = true;
+    bool didSetLayer = false;
+    {
+        std::lock_guard<std::mutex> lock(_layerMutex);
+        if (!_layer) {
+            _layer = layer;
+            _hasLayer.store(true, std::memory_order_release);
+            didSetLayer = true;
+        }
+    }
+
+    // Tell the owning cache about the newly opened layer so that the stage can
+    // listen for changes to it.  Only the thread that set _layer does this, so
+    // the cache hears about each clip's layer once.
+    if (didSetLayer && haveLayer && _cache) {
+        _cache->_AddClipLayer(_layer);
     }
 
     return _layer;
@@ -919,7 +932,7 @@ Usd_Clip::GetLayer() const
 SdfLayerHandle
 Usd_Clip::GetLayerIfOpen() const
 {
-    if (!_hasLayer) {
+    if (!_hasLayer.load(std::memory_order_acquire)) {
         return SdfLayerHandle();
     }
     return GetLayer();

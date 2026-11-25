@@ -205,6 +205,7 @@ pxr_library(tf
         pyPtrHelpers
         pyResultConversions
         pySingleton
+        pySpan
         pyUtils
         pyWrapContext
         scriptModuleLoader
@@ -321,6 +322,7 @@ pxr_library(tf
         wrapStringUtils.cpp
         wrapTestPyAnnotatedBoolResult.cpp
         wrapTestPyContainerConversions.cpp
+        wrapTestPySpan.cpp
         wrapTestPyStaticTokens.cpp
         wrapTestTfPython.cpp
         wrapTestTfPyOptional.cpp
@@ -513,6 +515,7 @@ pxr_test_scripts(
     testenv/testTfPyNotice.py
     testenv/testTfPyOptional.py
     testenv/testTfPyScopeDescription.py
+    testenv/testTfPySpan.py
     testenv/testTfPyStaticTokens.py
     testenv/testTfScriptModuleLoader.py
     testenv/testTfStringUtils.py
@@ -860,6 +863,10 @@ pxr_register_test(testTf_PyContainerConversions
 pxr_register_test(testTf_PyOptional
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyOptional"
+)
+pxr_register_test(testTfPySpan
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPySpan"
 )
 pxr_register_test(testTf_PyStaticTokens
     PYTHON

@@ -406,6 +406,10 @@ size_t Ts_TypedSplineData<T>::SetKnot(
     if (!customDataIn.empty())
     {
         customData[knotData->time] = customDataIn;
+    } else if (overwrite) {
+        // When overwriting a knot that has customData with a new knot that does
+        // not, erase the customData entry for the knot's time.
+        customData.erase(knotData->time);
     }
 
     return idx;

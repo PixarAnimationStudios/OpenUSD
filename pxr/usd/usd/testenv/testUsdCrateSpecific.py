@@ -61,5 +61,81 @@ class TestUsdCrateSpecific(unittest.TestCase):
             usdc = os.path.join(tmpdir, "foo.usdc")
             stage.Export(usdc)
 
+    def test_TargetAndConnectionPathKinds(self):
+        """Relationship targets and attribute connections may be target,
+        mapper, mapper arg and relational attribute paths, including nested
+        target paths.  Crate synthesizes target and connection specs from the
+        list ops rather than storing them, so check that a round trip through
+        a crate file preserves both the list ops and the set of specs.
+        """
+        import textwrap
+
+        layerContent = '''#usda 1.0
+
+        def "TargetA" {
+            int foo
+        }
+
+        def "TargetB" {
+            int bar
+        }
+
+        def "Connected" {
+            int summed.connect = [</TargetA.foo>, </TargetB.bar>]
+            rel r2 = </TargetA>
+            rel r = [</TargetA>, </Connected.r2[/TargetA]>]
+        }
+
+        def "Dot" {
+            rel bundles = [
+                </Connected.summed[/TargetB.bar]>,
+                </Connected.r[/Connected.r2[/TargetA]]>,
+                </Connected.summed.mapper[/TargetB.bar]>,
+                </Connected.summed.mapper[/TargetB.bar].arg>,
+                </Connected.r[/TargetA].relAttr>,
+            ]
+            int in.connect = [
+                </Connected.summed[/TargetB.bar]>,
+                </Connected.r[/Connected.r2[/TargetA]]>,
+                </Connected.summed.mapper[/TargetB.bar]>,
+                </Connected.summed.mapper[/TargetB.bar].arg>,
+                </Connected.r[/TargetA].relAttr>,
+            ]
+        }
+        '''
+
+        def _GetSpecPaths(layer):
+            paths = []
+            layer.Traverse('/', paths.append)
+            return sorted(paths)
+
+        def _GetLists(layer):
+            return (
+                list(layer.GetRelationshipAtPath(
+                    '/Dot.bundles').targetPathList.explicitItems),
+                list(layer.GetAttributeAtPath(
+                    '/Dot.in').connectionPathList.explicitItems))
+
+        textLayer = Sdf.Layer.CreateAnonymous(".usda")
+        self.assertTrue(textLayer.ImportFromString(
+            textwrap.dedent(layerContent)))
+
+        # Spot-check that the nested target spec exists in the text layer,
+        # so the comparison below is meaningful.
+        self.assertIn(
+            Sdf.Path('/Dot.bundles[/Connected.r[/Connected.r2[/TargetA]]]'),
+            _GetSpecPaths(textLayer))
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            usdc = os.path.join(tmpdir, "targets.usdc")
+            self.assertTrue(textLayer.Export(usdc))
+            crateLayer = Sdf.Layer.OpenAsAnonymous(usdc)
+            self.assertTrue(crateLayer)
+            self.assertEqual(_GetLists(crateLayer), _GetLists(textLayer))
+            self.assertEqual(
+                _GetSpecPaths(crateLayer), _GetSpecPaths(textLayer))
+            # Release the layer so its file can be removed with tmpdir.
+            del crateLayer
+
 if __name__ == "__main__":
     unittest.main()

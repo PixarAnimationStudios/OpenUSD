@@ -14,6 +14,7 @@
 #include "pxr/imaging/hd/volumeSchema.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -55,10 +56,10 @@ public:
     Get(const TfToken &name) override
     {
         if (name == HdTokens->filters) {
-            SdfPathVector filterPaths;
+
             const auto filtersRel = _prim.GetRelationship(_tokens->riVolumeFilters);
-            filtersRel.GetForwardedTargets(&filterPaths);
-            return HdCreateTypedRetainedDataSource(VtValue(filterPaths));
+
+            return UsdImagingDataSourceRelationship::New(filtersRel, _stageGlobals);
         }
 
         return nullptr;
@@ -76,12 +77,15 @@ private:
     }
 
     explicit _VolumeDataSource(
-        const UsdPrim& prim)
+        const UsdPrim& prim,
+        const UsdImagingDataSourceStageGlobals& stageGlobals)
       : _prim(prim)
+      , _stageGlobals(stageGlobals)
     {
     }
 
     UsdPrim _prim;
+    const UsdImagingDataSourceStageGlobals& _stageGlobals;
 };
 
 } // namespace anonymous
@@ -125,7 +129,7 @@ UsdRiPxrImagingVolumeAPIAdapter::GetImagingSubprimData(
                 stageGlobals,
                 HdMaterialTerminalTokens->volume),
             HdVolumeSchemaTokens->volume,
-            _VolumeDataSource::New(prim));
+            _VolumeDataSource::New(prim, stageGlobals));
     }
 
     return nullptr;

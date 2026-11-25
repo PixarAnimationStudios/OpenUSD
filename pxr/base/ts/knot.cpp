@@ -422,7 +422,32 @@ bool TsKnot::SetCustomDataByKey(
 VtValue TsKnot::GetCustomDataByKey(
     const std::string &keyPath) const
 {
-    return *(_customData.GetValueAtPath(keyPath));
+    VtValue result;
+
+    // The GetCustomDataByKey overload below explicitly does not modify
+    // result if there is no value in the customData, so it will remain
+    // empty. Ignore the returned bool.
+    (void) GetCustomDataByKey(keyPath, &result);
+
+    return result;
+}
+
+bool TsKnot::GetCustomDataByKey(
+    const std::string &keyPath,
+    VtValue* const value) const
+{
+    if (!value) {
+        TF_CODING_ERROR("Null output value pointer.");
+        return false;
+    }
+
+    const VtValue* tmp = _customData.GetValueAtPath(keyPath);
+    if (tmp) {
+        *value = *tmp;
+        return true;
+    }
+
+    return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

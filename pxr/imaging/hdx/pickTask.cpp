@@ -821,9 +821,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     // called during Prepare or Execute.
     _UpdateUseOverlayPass();
 
-    // This is important for Hgi garbage collection to run.
-    _hgi->StartFrame();
-
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
 
@@ -876,7 +873,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     // For 'resolveDeep' mode, read hits from the pick buffer.
     if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
         _ResolveDeep();
-        _hgi->EndFrame();
         return;
     }
 
@@ -987,9 +983,6 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         TF_CODING_ERROR("Unrecognized interesection mode '%s'",
             _contextParams.resolveMode.GetText());
     }
-
-    // This is important for Hgi garbage collection to run.
-    _hgi->EndFrame();
 }
 
 void HdxPickTask::_ResolveDeep()

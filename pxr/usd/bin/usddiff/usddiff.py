@@ -5,13 +5,10 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import print_function
 import difflib, os, sys
 from subprocess import call
-from pxr.UsdUtils.toolPaths import FindUsdBinary, RunUsdBinary
-
-import platform
-isWindows = (platform.system() == 'Windows')
+from pxr.UsdUtils.toolPaths import (
+    FindUsdBinary, RunUsdBinary, SplitCommandLine)
 
 NO_DIFF_FOUND_EXIT_CODE = 0
 DIFF_FOUND_EXIT_CODE = 1
@@ -30,23 +27,25 @@ def _generateCatOptions(outPath, flatten=None, fmt=None):
     if flatten:
         options.append('--flatten')
 
-    if fmt and os.path.splitext(outPath)[1] == '.usd':
+    if fmt:
         options.append('--usdFormat')
         options.append(fmt)
 
     return options
 
-def _splitDiffCommand(diffCmd):
-    diffCmdArgs = list()
+# returns the program and arguments of the command named by the first of
+# envVarNames that is set to anything but whitespace, or (None, []) if none is.
+def _splitDiffCommand(*envVarNames):
+    for envVarName in envVarNames:
+        try:
+            diffCmdList = SplitCommandLine(os.environ.get(envVarName, ''))
+        except ValueError as e:
+            _exit("Error: Failed to parse $%s: %s" % (envVarName, e),
+                  ERROR_EXIT_CODE)
+        if diffCmdList:
+            return (diffCmdList[0], diffCmdList[1:])
 
-    if diffCmd is not None:
-        diffCmdList = diffCmd.split()
-        diffCmd = diffCmdList[0]
-        
-        if diffCmdList[1:]:
-            diffCmdArgs = diffCmdList[1:]
-
-    return (diffCmd, diffCmdArgs)
+    return (None, [])
 
 # looks up a suitable diff tool, and verifies usdcat is available
 def _findDiffTools():
@@ -55,8 +54,7 @@ def _findDiffTools():
               ERROR_EXIT_CODE)
 
     # prefer USD_DIFF, then DIFF, else use the internal unified diff.
-    diffCmd, diffCmdArgs = _splitDiffCommand(
-        os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
+    diffCmd, diffCmdArgs = _splitDiffCommand('USD_DIFF', 'DIFF')
 
     if diffCmd and not FindUsdBinary(diffCmd):
         _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
@@ -67,8 +65,7 @@ def _findDiffTools():
 
 def _findImageDiffTools():
     # prefer USD_IMAGE_DIFF, else use the internal filecmp.
-    imageDiffCommand, imageDiffCmdArgs = _splitDiffCommand(
-        os.environ.get('USD_IMAGE_DIFF'))
+    imageDiffCommand, imageDiffCmdArgs = _splitDiffCommand('USD_IMAGE_DIFF')
 
     if imageDiffCommand and not FindUsdBinary(imageDiffCommand):
         _exit("Error: Failed to find image diff tool %s." % (imageDiffCommand),
@@ -128,6 +125,17 @@ def _getFileFormat(path):
 
     return None
 
+# A file of type 'usd' may hold either text or crate data. Returns the format
+# id of the one that can read path, so that writing back preserves it, or the
+# default format for new .usd files if neither can (e.g. the file is empty).
+def _getUnderlyingUsdFormat(path):
+    from pxr import Sdf, Tf
+    for formatId in ('usdc', 'usda'):
+        fileFormat = Sdf.FileFormat.FindById(formatId)
+        if fileFormat and fileFormat.CanRead(path):
+            return formatId
+    return Tf.GetEnvSetting('USD_DEFAULT_FILE_FORMAT')
+
 def _convertTo(inPath, outPath, flatten=None, fmt=None):
     # Just copy empty files -- we want something to diff against but
     # the file isn't valid usd.
@@ -157,8 +165,13 @@ def _tryEdit(fileName, tempFileName, fileType, flattened):
     if not os.access(fileName, os.W_OK):
         _exit('Error: Cannot write to %s, insufficient permissions' % fileName,
               ERROR_EXIT_CODE)
-    
-    return _convertTo(tempFileName, fileName, flatten=None, fmt=fileType)
+
+    # A file of type 'usd' has either the .usd extension or one that usdcat
+    # does not recognize, and usdcat needs --usdFormat to know which
+    # underlying format to write.  Any other type is implied by the extension.
+    fmt = _getUnderlyingUsdFormat(fileName) if fileType == 'usd' else None
+
+    return _convertTo(tempFileName, fileName, flatten=None, fmt=fmt)
 
 class FileManager(object):
     def __init__(self, baseline, comparison):
@@ -222,9 +235,9 @@ class FileManager(object):
 def _launchDiffTool(diffCmd, diffCmdArgs, baseline, comparison, brief):
     if diffCmd:
         # Run the external diff tool.
-        if brief:
-            diffCmdArgs.append("--brief")
-        return call([diffCmd] + diffCmdArgs + [baseline, comparison])
+        briefArgs = ["--brief"] if brief else []
+        return call([diffCmd] + diffCmdArgs + briefArgs +
+                    [baseline, comparison])
 
     else:
         # Read the files.
@@ -407,16 +420,18 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
                     tempComparison.name) != tempComparisonTimestamp)
 
             # If we intend to edit either of the files
+            writeBackError = 'Error: failed to write edits from %s back to %s.'
             if not noeffect:
                 if tempBaselineChanged:
                     if _tryEdit(baseline, tempBaseline.name, 
                                 baselineFileType, flatten) != 0:
-                        _exit(convertError % (baseline, tempBaseline.name),
+                        _exit(writeBackError % (tempBaseline.name, baseline),
                               ERROR_EXIT_CODE)
                 if tempComparisonChanged:
                     if _tryEdit(comparison, tempComparison.name,
                                 comparisonFileType, flatten) != 0:
-                        _exit(convertError % (comparison, tempComparison.name),
+                        _exit(writeBackError % (tempComparison.name,
+                                                comparison),
                               ERROR_EXIT_CODE)
     return diffResult
 

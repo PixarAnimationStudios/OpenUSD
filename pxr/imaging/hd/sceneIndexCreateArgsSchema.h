@@ -42,6 +42,7 @@ using HdRenderDelegateInfoDataSourceHandle = HdRenderDelegateInfoDataSource::Han
     (cameraMotionBlurSupport) \
     (legacyRenderDelegateInfo) \
     (renderSettingDescriptors) \
+    (excludedPurposesHint) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexCreateArgsSchemaTokens, HD_API,
     HD_SCENE_INDEX_CREATE_ARGS_SCHEMA_TOKENS);
@@ -106,7 +107,13 @@ public:
 
     /// Render settings advertised by rendererer.
     HD_API
-    HdRenderSettingDescriptorContainerSchema GetRenderSettingDescriptors() const; 
+    HdRenderSettingDescriptorContainerSchema GetRenderSettingDescriptors() const;
+
+    /// Hint listing prim purposes (e.g. render, proxy, guide) that are
+    /// typically excluded (i.e. not consumed or rendered) by the renderer.
+    /// See UsdGeomImageable and HdPurposeSchema for more information.
+    HD_API
+    HdTokenArrayDataSourceHandle GetExcludedPurposesHint() const; 
 
     /// @} 
 
@@ -126,7 +133,8 @@ public:
         const HdBoolDataSourceHandle &motionBlurSupport,
         const HdBoolDataSourceHandle &cameraMotionBlurSupport,
         const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo,
-        const HdContainerDataSourceHandle &renderSettingDescriptors
+        const HdContainerDataSourceHandle &renderSettingDescriptors,
+        const HdTokenArrayDataSourceHandle &excludedPurposesHint
     );
 
     /// \class HdSceneIndexCreateArgsSchema::Builder
@@ -150,6 +158,9 @@ public:
         HD_API
         Builder &SetRenderSettingDescriptors(
             const HdContainerDataSourceHandle &renderSettingDescriptors);
+        HD_API
+        Builder &SetExcludedPurposesHint(
+            const HdTokenArrayDataSourceHandle &excludedPurposesHint);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -160,6 +171,7 @@ public:
         HdBoolDataSourceHandle _cameraMotionBlurSupport;
         HdRenderDelegateInfoDataSourceHandle _legacyRenderDelegateInfo;
         HdContainerDataSourceHandle _renderSettingDescriptors;
+        HdTokenArrayDataSourceHandle _excludedPurposesHint;
 
     };
 

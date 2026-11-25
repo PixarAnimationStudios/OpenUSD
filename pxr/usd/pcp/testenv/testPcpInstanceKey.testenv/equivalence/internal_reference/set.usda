@@ -1,0 +1,23 @@
+#usda 1.0
+def "Set"
+{
+    def "Lib"
+    {
+        def "target"
+        {
+        }
+        def "A"
+        {
+            def "widget"
+            {
+                rel r = </Set/Lib/target>
+            }
+        }
+    }
+    def "Inst1" (
+        instanceable = true
+        references = </Set/Lib/A>
+    )
+    {
+    }
+}

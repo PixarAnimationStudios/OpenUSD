@@ -95,6 +95,10 @@ RtMatrixToGfMatrix(const RtMatrix4x4 &m)
         m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
 }
 
+HDPRMAN_API
+bool
+IsRtxHioNeeded(const std::string& filename);
+
 /// Attempt to extract a useful texture identifier from the given \p asset.
 /// If \p asset is determined to not be a .tex file, attempt to use the Hio
 /// based Rtx plugin to load the texture.  If \p asset is non-empty, we will

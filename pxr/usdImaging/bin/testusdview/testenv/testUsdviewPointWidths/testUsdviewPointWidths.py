@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import print_function
 
 from pxr.Usdviewq.common import Usd, UsdGeom
 from pxr import Vt, Gf, Sdf

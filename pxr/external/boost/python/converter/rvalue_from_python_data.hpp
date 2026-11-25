@@ -72,6 +72,28 @@ struct rvalue_from_python_stage1_data
     constructor_function construct;
 };
 
+// A view type is one that refers to data it does not own, such as a span.
+// View types declare themselves by providing a member typedef named
+// pxr_boost_python_view_type.
+//
+// Registry-based rvalue conversions cannot produce view types safely: when a
+// view is built from a temporary (e.g. a container converted from a Python
+// list), the temporary is destroyed before the view is used.  So view types
+// may not be converted through rvalue_from_python_storage, which every
+// registry-based rvalue conversion uses (wrapped function arguments,
+// extract<T>, implicit<Source, T>, and results of calls into Python).
+// Instead, a view type must provide a specialization of
+// arg_rvalue_from_python<T> (and of arg_rvalue_from_python<T const &>) that
+// owns whatever the view refers to for the duration of the wrapped call.  A
+// view type's header cannot always include its specialization, so a
+// translation unit that uses one without the other fails to compile here.
+template <class T, class = void>
+struct is_view_type : std::false_type {};
+
+template <class T>
+struct is_view_type<T, std::void_t<typename T::pxr_boost_python_view_type>>
+    : std::true_type {};
+
 // Augments rvalue_from_python_stage1_data by adding storage for
 // constructing an object of remove_reference<T>::type. The
 // construct() function of rvalue converters (stored in m_construct
@@ -81,6 +103,12 @@ struct rvalue_from_python_stage1_data
 template <class T>
 struct rvalue_from_python_storage
 {
+    static_assert(
+        !is_view_type<std::remove_cv_t<std::remove_reference_t<T>>>::value,
+        "View types do not support registry-based rvalue conversions.  For "
+        "function arguments, include the header that provides this view "
+        "type's arg_rvalue_from_python specialization.  See is_view_type.");
+
     rvalue_from_python_stage1_data stage1;
 
     // Storage for the result, in case an rvalue must be constructed

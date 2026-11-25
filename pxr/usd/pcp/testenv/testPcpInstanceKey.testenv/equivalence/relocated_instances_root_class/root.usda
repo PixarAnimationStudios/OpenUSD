@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    relocates = {
+        </World/orig1>: </World/one>,
+        </World/orig2>: </World/two>
+    }
+)
+
+class "_cls"
+{
+    def "fromRootCls"
+    {
+    }
+}
+
+def "World" (
+    references = @./w.usda@</W>
+)
+{
+    over "one" (
+        instanceable = true
+    )
+    {
+    }
+
+    over "two" (
+        instanceable = true
+    )
+    {
+    }
+}

@@ -483,6 +483,21 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
                 {"TestPcp_depth":"1", "TestPcp_height":"3", "TestPcp_num":"3", "TestPcp_radius":"25"
                  })))
 
+        # A specializes arc authored across a reference is still an inert
+        # placeholder beneath the reference when the payload is evaluated,
+        # since it is propagated to the root later.  Its opinions must still
+        # affect the parameters.
+        payloads = self._GeneratePrimIndexPaths(
+            "/ReferencedSpecializes", 2, 3, 4)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+
+        self.assertTrue(Sdf.Layer.Find(Sdf.Layer.CreateIdentifier(
+                dynamicLayerFileName,
+                {"TestPcp_depth":"2", "TestPcp_num":"3"})))
+
         print("\ntest_WeakerOpinions Success!\n")
 
     def test_SiblingPayloads(self):

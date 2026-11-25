@@ -34,16 +34,6 @@ PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( GetNormalized_overloads,
 PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( Normalize_overloads,
                                         Normalize, 0, 1 );
 
-static GfQuaternion __truediv__(const GfQuaternion &self, double value)
-{
-    return self / value;
-}
-
-static GfQuaternion& __itruediv__(GfQuaternion &self, double value)
-{
-    return self /= value;
-}
-
 static string _Repr(GfQuaternion const &self) {
     return TF_PY_REPR_PREFIX + "Quaternion(" + TfPyRepr(self.GetReal()) + ", " +
         TfPyRepr(self.GetImaginary()) + ")";
@@ -113,19 +103,4 @@ void wrapQuaternion()
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>{});
-    }
-    
 }

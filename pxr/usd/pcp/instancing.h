@@ -16,6 +16,7 @@
 #include "pxr/usd/pcp/composeSite.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex.h"
+#include "pxr/usd/pcp/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -93,7 +94,11 @@ Pcp_ChildNodeIsInstanceable(
     // since it has no opinions to contribute to the prim index. In particular,
     // this allows prim indexes with implied arcs in different layer stacks
     // that have no overrides to still be considered equivalent for sharing.
-    return node.HasTransitiveDirectDependency() && 
+    //
+    // An ancestral node that stands in for a direct arc skipped as its
+    // duplicate is instanceable too, since it provides that arc's opinions.
+    return (node.HasTransitiveDirectDependency() ||
+            Pcp_IsDirectDuplicate(node)) &&
         node.CanContributeSpecs() && node.HasSpecs();
 }
 
@@ -101,7 +106,8 @@ inline bool
 Pcp_ChildNodeIsDirectOrInDirectArcSubtree(
     const PcpNodeRef& node)
 {
-    return node.IsRootNode() || node.HasTransitiveDirectDependency();
+    return node.IsRootNode() || node.HasTransitiveDirectDependency() ||
+        Pcp_IsDirectDuplicate(node);
 }
 
 inline bool

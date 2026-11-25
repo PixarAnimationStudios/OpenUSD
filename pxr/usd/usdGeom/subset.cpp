@@ -678,11 +678,13 @@ UsdGeomSubset::GetUnassignedIndices(
                 return result;
             }
         }
-        VtVec2iArray pairsInFamily;
+        std::set<GfVec2i, cmpPair> pairsInFamily;
         for (const auto &subset : subsets) {
             VtVec2iArray subsetPairs = subset._GetIndexPairs(time, preserveOrder);
-            std::move(subsetPairs.begin(), subsetPairs.end(), 
-                    std::back_inserter(pairsInFamily));
+
+            pairsInFamily.insert(
+                std::make_move_iterator(subsetPairs.begin()), 
+                std::make_move_iterator(subsetPairs.end()));
         }
 
         struct cmpPair e;

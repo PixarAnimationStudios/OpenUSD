@@ -366,10 +366,10 @@ Qparams _QparamsDefault(const TfToken& pvRole)
 /// Look-up an attribute's options-specified quantization parameters.
 // First looks up options["mesh-qbits"][name]; if not found, then with name = "*";
 // if still not found, uses default values.
-Qparams _QparamsFromOptions(const VtDictionary& options, const TfToken& name, const TfToken& pvRole)
+Qparams _QparamsFromOptions(const VtDictionary* options, const TfToken& name, const TfToken& pvRole)
 {
-    auto it = options.find("mesh-qbits");
-    if (it == options.end() || !it->second.IsHolding<VtDictionary>())
+    auto it = options->find("mesh-qbits");
+    if (it == options->end() || !it->second.IsHolding<VtDictionary>())
         return _QparamsDefault(pvRole);
 
     const auto vtv =

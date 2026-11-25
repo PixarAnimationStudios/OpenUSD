@@ -894,7 +894,13 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
                 _rootLayer, _sessionLayer, pathResolverContext),
             /*fileFormatTarget=*/_rootLayer->GetFileFormat()->GetTarget(),
             /*usdMode=*/true))
-    , _clipCache(new Usd_ClipCache)
+    , _clipCache(new Usd_ClipCache(
+            // Listen for changes to clip layers as clips open them, since clip
+            // layers are not in general among the layers used by _cache.
+            [this](const SdfLayerHandle &layer) {
+                return TfNotice::Register(
+                    UsdStagePtr(this), &UsdStage::_HandleLayersDidChange, layer);
+            }))
     , _instanceCache(new Usd_InstanceCache)
     , _usedLayersRevision(0)
     , _interpolationType(UsdInterpolationTypeLinear)
@@ -4475,6 +4481,7 @@ UsdStage::_HandleLayersDidChange(
     _pendingChanges->pcpChanges.DidChange(_cache.get(), n.GetChangeListVec());
 
     _ComputePendingChanges(n.GetChangeListVec());
+    _ComputePendingClipChanges(n.GetChangeListVec());
 
     // It is possible that some additional computation may be necessary if
     // the changes contained sublayer operations such as layer muting / unmuting
@@ -4496,6 +4503,82 @@ UsdStage::_HandleLayersDidChange(
     // raw pointers to entries stored in the notice, so we must process these
     // changes immediately while the notice is still alive.
     _ProcessPendingChanges();
+}
+
+void
+UsdStage::_ComputePendingClipChanges(
+    const SdfLayerChangeListVec &changeListVec)
+{
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
+    }
+
+    Usd_ClipCache::ChangedSites sites;
+    for (const auto& layerAndChangeList : changeListVec) {
+        _clipCache->ComputeChangedSites(
+            layerAndChangeList.first, layerAndChangeList.second, &sites);
+    }
+    if (sites.empty()) {
+        return;
+    }
+
+    // Clips only supply attribute values, so changes to them are reported as
+    // info changes to the affected attributes, as for value edits in other
+    // layers.
+    const SdfChangeList::Entry *entry =
+        &Usd_ClipCache::GetClipValuesChangedEntry();
+    _PendingChanges::PathsToChangesMap &infoChanges =
+        _pendingChanges->otherInfoChanges;
+
+    const auto addAttribute = [&infoChanges, entry](const SdfPath &path) {
+        std::vector<const SdfChangeList::Entry*> &entries = infoChanges[path];
+        if (std::find(entries.begin(), entries.end(), entry) == entries.end()) {
+            entries.push_back(entry);
+        }
+    };
+
+    // Changes to clip prims that are not itemized by attribute may affect any
+    // attribute at or below the dependent stage prims.  Clips cannot introduce
+    // attributes, so these are all attributes on those prims.  Instance proxies
+    // are included here and remapped to prototypes during change processing
+    // like other changes beneath instances.
+    const auto addAttributesInSubtree = [this, &addAttribute](
+        const SdfPath &primPath) {
+        const UsdPrim root = GetPrimAtPath(primPath);
+        if (!root) {
+            return;
+        }
+        for (const UsdPrim &prim : UsdPrimRange(
+                 root, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate))) {
+            for (const UsdAttribute &attr : prim.GetAttributes()) {
+                addAttribute(attr.GetPath());
+            }
+        }
+    };
+
+    // Map each site to the stage objects that depend on it. Root dependencies
+    // are included since clip sets may be introduced in the stage's own layer
+    // stack.
+    const PcpDependencyFlags depTypes = PcpDependencyTypeAnyNonVirtual;
+    for (const Usd_ClipCache::ChangedSite &site : sites) {
+        const PcpDependencyVector deps = _cache->FindSiteDependencies(
+            site.layerStack, site.path, depTypes,
+            /* recurseOnSite */ false,
+            /* recurseOnIndex */ false,
+            /* filterForExistingCachesOnly */ false);
+        for (const PcpDependency &dep : deps) {
+            if (dep.indexPath.IsPrimPropertyPath()) {
+                addAttribute(dep.indexPath);
+            }
+            else if (dep.indexPath.IsPrimPath()) {
+                addAttributesInSubtree(dep.indexPath);
+            }
+        }
+
+        TF_DEBUG(USD_CHANGES).Msg(
+            "Clip values changed at <%s> in layer stack %s\n",
+            site.path.GetText(), TfStringify(site.layerStack).c_str());
+    }
 }
 
 void UsdStage::_ComputePendingChanges(
@@ -4735,6 +4818,117 @@ void UsdStage::_ComputePendingChanges(
 
 }
 
+void
+UsdStage::_UpdateLoadRulesAndPopulationMask()
+{
+    TRACE_FUNCTION();
+    
+    // We check the expected namespace edit changes to determine which paths on
+    // the stage need updating.
+    if (!TF_VERIFY(_pendingChanges) || 
+        _pendingChanges->expectedNamespaceEditChanges.empty()) {
+        return;
+    }
+
+    // Load rules that load everything and a mask that includes everything do 
+    // not need to be updated.
+    const bool updateLoadRules = !_loadRules.GetRules().empty();
+    const bool updatePopMask = _populationMask != UsdStagePopulationMask::All();
+    if (!updateLoadRules && !updatePopMask) {
+        return;
+    }
+
+    // Collect the prim moves from the list of expected namespace edits. We 
+    // explicitly leave deleted paths untouched in the load rules and 
+    // population mask.
+    std::vector<std::pair<SdfPath, SdfPath>> primMoves;
+    for (const auto &change : _pendingChanges->expectedNamespaceEditChanges) {
+        if (change.oldPath.IsPrimPath() && !change.newPath.IsEmpty() &&
+            change.oldPath != change.newPath) {
+            primMoves.emplace_back(change.oldPath, change.newPath);
+        }
+    }
+
+    if (primMoves.empty()) {
+        return;
+    }
+
+    // Determine whether the load rules/population mask state for the given path 
+    // needs to be clobbered by seeing whether it or any of its ancestors were 
+    // included in any prim move destinations.
+    auto isClobbered = [&primMoves](const SdfPath &path) {
+        return std::any_of(primMoves.begin(), primMoves.end(),
+            [&path](const auto &move) { return path.HasPrefix(move.second); });
+    };
+
+    // Update the given path with the first matching prefix from the list of
+    // prim moves. All of the expected changes come from a single namespace 
+    // edit, so any move containing the path gives the same result. 
+    auto movePath = [&primMoves](SdfPath *path) {
+        for (const auto &move : primMoves) {
+            if (path->HasPrefix(move.first)) {
+                *path = path->ReplacePrefix(move.first, move.second);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Update the load rules if needed.
+    if (updateLoadRules) {
+        std::vector<std::pair<SdfPath, UsdStageLoadRules::Rule>> rules =
+            _loadRules.GetRules();
+        const size_t numRules = rules.size();
+
+        // Remove existing load rules at newPath before we move the rules for
+        // oldPath over.
+        rules.erase(
+            std::remove_if(rules.begin(), rules.end(),
+                [&isClobbered](const auto &rule) {
+                    return isClobbered(rule.first);
+                }),
+            rules.end());
+
+        // Update paths in the load rules.
+        bool changed = rules.size() != numRules;
+        for (auto &rule : rules) {
+            changed |= movePath(&rule.first);
+        }
+
+        // If the load rules were changed, re-sort them. 
+        if (changed) {
+            std::sort(rules.begin(), rules.end(),
+                    [](const auto &l, const auto &r) {
+                        return l.first < r.first;
+                    });
+            _loadRules.SetRules(std::move(rules));
+        }
+    }
+
+    // Update the population mask if needed.
+    if (updatePopMask) {
+        std::vector<SdfPath> maskPaths = _populationMask.GetPaths();
+        const size_t numPaths = maskPaths.size();
+
+        // Remove existing population mask state at newPath before we move the 
+        // mask for oldPath over.
+        maskPaths.erase(
+            std::remove_if(maskPaths.begin(), maskPaths.end(), isClobbered),
+            maskPaths.end());
+
+        // Update population mask paths.
+        bool changed = maskPaths.size() != numPaths;
+        for (SdfPath &path : maskPaths) {
+            changed |= movePath(&path);
+        }
+
+        // Save the updated paths to the population mask.
+        if (changed) {
+            _populationMask = UsdStagePopulationMask(std::move(maskPaths));
+        }
+    }
+}
+
 bool
 UsdStage::_ProcessPendingChanges()
 {
@@ -4758,6 +4952,9 @@ UsdStage::_ProcessPendingChanges()
 
     UsdNotice::ObjectsChanged::_NamespaceEditsInfo namespaceEditsInfo;
 
+    // Before we recompose, we need to update the stage's load rules and 
+    // population mask if necessary. 
+    _UpdateLoadRulesAndPopulationMask();
     _Recompose(changes, &recomposeChanges);
 
     // Filter out all changes to objects beneath instances and remap

@@ -20,7 +20,6 @@ The names of the created variations will be taken directly from the basename
 of their corresponding input file.
 '''
 
-from __future__ import print_function
 
 from pxr import Tf, Kind, Sdf, Usd
 

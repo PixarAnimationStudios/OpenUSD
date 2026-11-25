@@ -62,6 +62,20 @@ class TestUsdShadeMaterialOutputs(unittest.TestCase):
         ngVolShader = UsdShade.Shader.Define(stage, "/Material/NodeGraph/NGVol")
         ngVolShaderOutput = ngVolShader.CreateOutput("out", Sdf.ValueTypeNames.Token)
 
+        # Confirm that initally no sources are found
+        univSurfSource = mat.ComputeSurfaceSource()
+        univDispSource = mat.ComputeDisplacementSource()
+        univVolSource = mat.ComputeVolumeSource()
+        self.assertTrue(univSurfSource[0].GetPath().isEmpty)
+        self.assertTrue(univDispSource[0].GetPath().isEmpty)
+        self.assertTrue(univVolSource[0].GetPath().isEmpty)
+        self.assertEqual(univSurfSource[1], '')
+        self.assertEqual(univDispSource[1], '')
+        self.assertEqual(univVolSource[1], '')
+        self.assertEqual(univSurfSource[2], UsdShade.AttributeType.Invalid)
+        self.assertEqual(univDispSource[2], UsdShade.AttributeType.Invalid)
+        self.assertEqual(univVolSource[2], UsdShade.AttributeType.Invalid)
+
         # Author universal output connections.
         univSurfaceOutput.ConnectToSource(surfOutput)
         univDisplacementOutput.ConnectToSource(dispOutput)

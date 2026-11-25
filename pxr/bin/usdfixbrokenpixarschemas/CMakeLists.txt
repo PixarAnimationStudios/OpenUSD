@@ -1,6 +1,11 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
+if (NOT PXR_BUILD_USD_VALIDATION)
+    message(STATUS "Skipping usdfixbrokenpixarschemas because PXR_BUILD_USD_VALIDATION=OFF")
+    return()
+endif()
+
 pxr_python_bin(usdfixbrokenpixarschemas
     DEPENDENCIES
         sdf

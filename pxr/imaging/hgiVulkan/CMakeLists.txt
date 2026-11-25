@@ -64,11 +64,6 @@ if (APPLE)
     return()
 endif()
 
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
-
 pxr_build_test(testHgiVulkan
     LIBRARIES
         hgiVulkan

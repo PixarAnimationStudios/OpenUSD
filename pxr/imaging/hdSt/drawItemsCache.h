@@ -102,20 +102,19 @@ private:
     struct _CacheValue
     {
         _CacheValue()
-        : collectionVersion(0),
+        : rprimIndexVersion(0),
           renderTagsVersion(0),
           materialTagsVersion(0),
           geomSubsetDrawItemsVersion(0) {}
         
         HdDrawItemConstPtrVectorSharedPtr drawItems;
-        size_t collectionVersion;
+        size_t rprimIndexVersion;
         size_t renderTagsVersion;
         size_t materialTagsVersion;
         size_t geomSubsetDrawItemsVersion;
     };
 
     bool _IsCacheEntryStale(_CacheValue const &val,
-                            TfToken const &collectionName,
                             HdRenderIndex *renderIndex) const;
 
     void _UpdateCacheEntry(

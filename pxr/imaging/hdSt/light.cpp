@@ -116,7 +116,7 @@ HdStLight::HdStLight(SdfPath const &id, TfToken const &lightType)
 HdStLight::~HdStLight() = default;
 
 GlfSimpleLight
-HdStLight::_ApproximateAreaLight(SdfPath const &id, 
+HdStLight::_ApproximateAreaLight(SdfPath const &id,
                                  HdSceneDelegate *sceneDelegate)
 {
     if (!sceneDelegate->GetVisible(id)) {
@@ -146,12 +146,12 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     }
 
     // Intensity
-    float intensity = 
+    float intensity =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
             .Get<float>();
 
     // Exposure
-    float exposure = 
+    float exposure =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure)
             .Get<float>();
     intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
@@ -159,44 +159,44 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     // Dimensions
     // (If we are normalizing for area, there's nothing to do here, since
     // we are already approximating the light as an area-less point source)
-    VtValue normalizeVal = 
+    VtValue normalizeVal =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
     if (!normalizeVal.GetWithDefault<bool>(false)) {
         // Compute area of the maximum possible facing profile.
         float area = 1.0f;
         if (_lightType == HdPrimTypeTokens->diskLight ||
             _lightType == HdPrimTypeTokens->sphereLight) {
-            VtValue radiusVal = 
+            VtValue radiusVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->radius);
             if (radiusVal.IsHolding<float>()) {
                 float radius = radiusVal.Get<float>();
                 area = radius * radius * M_PI;
             }
         } else if (_lightType == HdPrimTypeTokens->rectLight) {
-            VtValue widthVal = 
+            VtValue widthVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->width);
             if (widthVal.IsHolding<float>()) {
                 area *= widthVal.Get<float>();
             }
-            VtValue heightVal = 
+            VtValue heightVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->height);
             if (heightVal.IsHolding<float>()) {
                 area *= heightVal.Get<float>();
             }
         } else if (_lightType == HdPrimTypeTokens->cylinderLight) {
-            VtValue lengthVal = 
+            VtValue lengthVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->length);
             if (lengthVal.IsHolding<float>()) {
                 area *= lengthVal.Get<float>();
             }
-            VtValue radiusVal = 
+            VtValue radiusVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->radius);
             if (radiusVal.IsHolding<float>()) {
                 float radius = radiusVal.Get<float>();
                 area *= radius;
             }
         } else if (_lightType == HdPrimTypeTokens->distantLight) {
-            VtValue angleDegVal = 
+            VtValue angleDegVal =
                 sceneDelegate->GetLightParamValue(id, HdLightTokens->angle);
             if (angleDegVal.IsHolding<float>()) {
                 // Convert from cone apex angle to solid angle
@@ -209,16 +209,16 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     }
 
     // Calculate the final color of the light
-    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
+    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f);
 
     // Ambient, Diffuse & Specular multipliers
-    float ambientMultiplier = 
+    float ambientMultiplier =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->ambient)
             .GetWithDefault<float>(0.0f);
-    float diffuseMultiplier = 
+    float diffuseMultiplier =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
             .GetWithDefault<float>(1.0f);
-    float specularMultiplier = 
+    float specularMultiplier =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->specular)
             .GetWithDefault<float>(1.0f);
 
@@ -259,7 +259,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
 
 GlfSimpleLight
 HdStLight::_PrepareDomeLight(
-    SdfPath const &id, 
+    SdfPath const &id,
     HdSceneDelegate * const sceneDelegate)
 {
     // Create the Glf Simple Light object that will be used by the rest
@@ -276,17 +276,17 @@ HdStLight::_PrepareDomeLight(
         l.SetHasIntensity(false);
         return l;
     }
-    
+
     // Get the color of the light
     GfVec3f hdc = sceneDelegate->GetLightParamValue(id, HdLightTokens->color)
         .Get<GfVec3f>();
 
     // Color temperature
-    VtValue enableColorTemperatureVal = 
+    VtValue enableColorTemperatureVal =
         sceneDelegate->GetLightParamValue(id,
             HdLightTokens->enableColorTemperature);
     if (enableColorTemperatureVal.GetWithDefault<bool>(false)) {
-        VtValue colorTemperatureVal = 
+        VtValue colorTemperatureVal =
             sceneDelegate->GetLightParamValue(id,
                 HdLightTokens->colorTemperature);
         if (colorTemperatureVal.IsHolding<float>()) {
@@ -297,24 +297,24 @@ HdStLight::_PrepareDomeLight(
     }
 
     // Intensity
-    float intensity = 
+    float intensity =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity)
             .Get<float>();
 
     // Exposure
-    float exposure = 
+    float exposure =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure)
             .Get<float>();
     intensity *= powf(2.0f, GfClamp(exposure, -50.0f, 50.0f));
 
     // Calculate the final color of the light
-    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f); 
+    GfVec4f c(hdc[0]*intensity, hdc[1]*intensity, hdc[2]*intensity, 1.0f);
 
     // Diffuse & Specular multiplier
-    float diffuseMultiplier = 
+    float diffuseMultiplier =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse)
             .GetWithDefault<float>(1.0f);
-    float specularMultiplier = 
+    float specularMultiplier =
         sceneDelegate->GetLightParamValue(id, HdLightTokens->specular)
             .GetWithDefault<float>(1.0f);
 
@@ -384,8 +384,8 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
     SdfPath const &id = GetId();
 
     // HdStLight communicates to the scene graph and caches all interesting
-    // values within this class. Later on Get() is called from 
-    // TaskState (RenderPass) to perform aggregation/pre-computation, 
+    // values within this class. Later on Get() is called from
+    // TaskState (RenderPass) to perform aggregation/pre-computation,
     // in order to make the shader execution efficient.
 
     // Change tracking
@@ -398,24 +398,12 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // Lighting Params
     if (bits & DirtyParams) {
-        HdChangeTracker& changeTracker =
-            sceneDelegate->GetRenderIndex().GetChangeTracker();
-
-        // Remove old dependencies
-        VtValue val = Get(HdTokens->filters);
-        if (val.IsHolding<SdfPathVector>()) {
-            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
-            for (SdfPath const & filterPath : lightFilterPaths) {
-                changeTracker.RemoveSprimSprimDependency(filterPath, id);
-            }
-        }
-
         if (_lightType == HdPrimTypeTokens->simpleLight) {
             _params[HdLightTokens->params] =
                 _PrepareSimpleLight(id, sceneDelegate);
         }
         else if (_lightType == HdPrimTypeTokens->domeLight) {
-            _params[HdLightTokens->params] = 
+            _params[HdLightTokens->params] =
                 _PrepareDomeLight(id, sceneDelegate);
         }
         // If it is an area light we will extract the parameters and convert
@@ -423,15 +411,6 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
         else {
             _params[HdLightTokens->params] =
                 _ApproximateAreaLight(id, sceneDelegate);
-        }
-
-        // Add new dependencies
-        val = Get(HdTokens->filters);
-        if (val.IsHolding<SdfPathVector>()) {
-            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
-            for (SdfPath const & filterPath : lightFilterPaths) {
-                changeTracker.AddSprimSprimDependency(filterPath, id);
-            }
         }
     }
 
@@ -491,11 +470,6 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
             if (_params[HdLightTokens->shadowCollection] != newCollection) {
                 _params[HdLightTokens->shadowCollection] = newCollection;
-
-                HdChangeTracker& changeTracker =
-                             sceneDelegate->GetRenderIndex().GetChangeTracker();
-
-                changeTracker.MarkCollectionDirty(newCollection.GetName());
             }
 
         } else {
@@ -529,7 +503,7 @@ HdStLight::GetInitialDirtyBitsMask() const
     // In the case of simple and distant lights we want to sync all dirty bits,
     // but for area lights coming from the scenegraph we just want to extract
     // the Transform and Params for now.
-    if (_lightType == HdPrimTypeTokens->simpleLight || 
+    if (_lightType == HdPrimTypeTokens->simpleLight ||
         _lightType == HdPrimTypeTokens->distantLight) {
         return AllDirty;
     } else {

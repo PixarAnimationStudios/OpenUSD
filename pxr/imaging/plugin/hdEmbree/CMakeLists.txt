@@ -47,7 +47,6 @@ pxr_build_test(testHdEmbree
     LIBRARIES
         arch
         garch
-        hdEmbree
         hdSt
         hdx
         hio

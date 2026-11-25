@@ -290,8 +290,8 @@ _GetInstanceIndicesForPrototype(
 //
 _InstanceIndices
 _ComputeAllInstanceIndicesForPrototype(
-    const SdfPath &prototypePath,
-    HdSceneIndexBaseRefPtr const &sceneIndex)
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &prototypePath)
 {
     TRACE_FUNCTION();
 
@@ -339,8 +339,8 @@ _ComputeAllInstanceIndicesForPrototype(
 //
 _InstanceIndicesVector
 _ComputeAllNestedInstanceIndicesForPrototype(
-    const SdfPath &prototypePath,
-    HdSceneIndexBaseRefPtr const &sceneIndex)
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &prototypePath)
 {
     TRACE_FUNCTION();
 
@@ -351,7 +351,7 @@ _ComputeAllNestedInstanceIndicesForPrototype(
     while (true) {
         _InstanceIndices instanceIndices =
             _ComputeAllInstanceIndicesForPrototype(
-                path, sceneIndex);
+                sceneIndex, path);
 
         if (TfDebug::IsEnabled(USDIMAGING_SELECTION)) {
             if (!instanceIndices.instancer.IsEmpty()) {
@@ -380,8 +380,8 @@ _ComputeAllNestedInstanceIndicesForPrototype(
 
 std::vector<_PrimAndNestedInstanceIndices>
 _ComputePiPropagatedPathsAndNestedInstanceIndices(
-    HdContainerDataSourceHandle const &primSource,
-    HdSceneIndexBaseRefPtr const &sceneIndex)
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    HdContainerDataSourceHandle const &primSource)
 {
     TRACE_FUNCTION();
 
@@ -412,7 +412,7 @@ _ComputePiPropagatedPathsAndNestedInstanceIndices(
         result.push_back(
             { propagatedPrototype,
               _ComputeAllNestedInstanceIndicesForPrototype(
-                  propagatedPrototype, sceneIndex)});
+                  sceneIndex, propagatedPrototype)});
     }
 
     return result;
@@ -465,8 +465,8 @@ _ComputeNiPrototypePathAndInstanceIndices(
 // conforming to HdInstanceIndicesSchema.
 std::pair<SdfPath, _InstanceIndices>
 _ComputeNiPrototypePathAndInstanceIndices(
-    HdContainerDataSourceHandle const &primSource,
-    HdSceneIndexBaseRefPtr const &sceneIndex)
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    HdContainerDataSourceHandle const &primSource)
 {
     TRACE_FUNCTION();
 
@@ -489,11 +489,11 @@ _ComputeNiPrototypePathAndInstanceIndices(
         instanceSchema, instancerTopologySchema);
 }
 
-bool
+_PrimAndNestedInstanceIndices
 _TranslatePathToNiPrototype(
-    HdContainerDataSourceHandle const &primSource,
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    _PrimAndNestedInstanceIndices * const primAndInstanceIndices)
+    HdContainerDataSourceHandle const &primSource,
+    const _PrimAndNestedInstanceIndices &primAndInstanceIndices)
 {
     TRACE_FUNCTION();
 
@@ -501,11 +501,11 @@ _TranslatePathToNiPrototype(
     _InstanceIndices instanceIndices;
     std::tie(prototypePath, instanceIndices) =
         _ComputeNiPrototypePathAndInstanceIndices(
-            primSource,
-            sceneIndex);
+            sceneIndex,
+            primSource);
 
     if (prototypePath.IsEmpty()) {
-        return false;
+        return primAndInstanceIndices;
     }
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
@@ -517,8 +517,10 @@ _TranslatePathToNiPrototype(
     // is instancing. More precisely, the prototype that
     // was added by the prototype propagating scene index after
     // instancing aggregation.
-    primAndInstanceIndices->prim = std::move(prototypePath);
 
+    _PrimAndNestedInstanceIndices result{
+        prototypePath, primAndInstanceIndices.nestedInstanceIndices};
+    
     if (!instanceIndices.instancer.IsEmpty()) {
         TF_DEBUG(USDIMAGING_SELECTION).Msg(
             "                Instancer: %s\n"
@@ -530,15 +532,15 @@ _TranslatePathToNiPrototype(
         // as what instancer was added by instance aggregation to
         // realize this instance and what the instance index within
         // that instancer is.
-        primAndInstanceIndices->nestedInstanceIndices.push_back(
+        result.nestedInstanceIndices.push_back(
             std::move(instanceIndices));
     }
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "            New path: %s\n",
-        primAndInstanceIndices->prim.GetText());
+        result.prim.GetText());
 
-    return true;
+    return result;
 }
 
 _InstanceIndicesVector
@@ -555,21 +557,18 @@ _Concat(const _InstanceIndicesVector &a,
 // this copy as well. Add the copy to the entries.
 void
 _AddPiPropagatedPrototypes(
-    HdContainerDataSourceHandle const &primSource,
     HdSceneIndexBaseRefPtr const &sceneIndex,
+    HdContainerDataSourceHandle const &primSource,
     const _PrimAndNestedInstanceIndices &primAndInstanceIndices,
     std::vector<_PrimAndNestedInstanceIndices> * const newPrimAndInstanceIndices)
 {
     TRACE_FUNCTION();
 
-    const _InstanceIndicesVector oldIndices =
-        primAndInstanceIndices.nestedInstanceIndices;
-
     const std::vector<_PrimAndNestedInstanceIndices> propagatedPathsAndIndices =
         _ComputePiPropagatedPathsAndNestedInstanceIndices(
-            primSource, sceneIndex);
+            sceneIndex, primSource);
 
-    for (auto &propagatedPathAndIndices : propagatedPathsAndIndices) {
+    for (const auto &propagatedPathAndIndices : propagatedPathsAndIndices) {
 
         TF_DEBUG(USDIMAGING_SELECTION).Msg(
             "            New path: %s\n",
@@ -577,44 +576,45 @@ _AddPiPropagatedPrototypes(
 
         newPrimAndInstanceIndices->push_back(
             { propagatedPathAndIndices.prim,
-              _Concat(oldIndices,
+              _Concat(primAndInstanceIndices.nestedInstanceIndices,
                       propagatedPathAndIndices.nestedInstanceIndices)});
     }
 }
 
 // Given the instancing information to select a prim at
 // primAndInstanceIndices.prim, compute the information to select
-// the child at primName.
+// it in the scene index, translating it to the prototype if the prim
+// is a native instance or adding the propagated prototypes if the prim
+// is a point instancer prototype.
 void
-_AppendNameToSceneIndexPrimsAndInstanceIndices(
-    _PrimAndNestedInstanceIndices primAndInstanceIndices,
-    const TfToken &primName,
+_ComputeSceneIndexPrimsAndInstanceIndicesHelper(
     HdSceneIndexBaseRefPtr const &sceneIndex,
+    const _PrimAndNestedInstanceIndices &primAndInstanceIndices,
     std::vector<_PrimAndNestedInstanceIndices> * const result)
 {
     TRACE_FUNCTION();
 
-    SdfPath &prim = primAndInstanceIndices.prim;
-    prim = prim.AppendChild(primName);
-
-    HdContainerDataSourceHandle const primSource =
-        sceneIndex->GetPrim(prim).dataSource;
+    const SdfPath &prim = primAndInstanceIndices.prim;
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "            Scene index prim to process: %s\n",
         prim.GetText());
 
-    if (!_TranslatePathToNiPrototype(
-            primSource,
+
+    HdContainerDataSourceHandle const primSource =
+        sceneIndex->GetPrim(prim).dataSource;
+
+    result->push_back(
+        _TranslatePathToNiPrototype(
             sceneIndex,
-            &primAndInstanceIndices)) {
-        _AddPiPropagatedPrototypes(
             primSource,
-            sceneIndex,
-            primAndInstanceIndices,
-            result);
-    }
-    result->push_back(std::move(primAndInstanceIndices));
+            primAndInstanceIndices));
+
+    _AddPiPropagatedPrototypes(
+        sceneIndex,
+        primSource,
+        primAndInstanceIndices,
+        result);
 }
 
 // Given a usd proxy path, computes the corresponding paths in the scene index
@@ -771,7 +771,8 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //
 std::vector<_PrimAndNestedInstanceIndices>
 _ComputeSceneIndexPrimsAndInstanceIndices(
-    const SdfPath &usdPath, HdSceneIndexBaseRefPtr const &sceneIndex)
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &usdPath)
 {
     TRACE_FUNCTION();
 
@@ -791,9 +792,10 @@ _ComputeSceneIndexPrimsAndInstanceIndices(
 
         std::vector<_PrimAndNestedInstanceIndices> newResult;
 
-        for (const _PrimAndNestedInstanceIndices &primAndIndices : result) {
-            _AppendNameToSceneIndexPrimsAndInstanceIndices(
-                primAndIndices, primName, sceneIndex, &newResult);
+        for (_PrimAndNestedInstanceIndices &primAndIndices : result) {
+            primAndIndices.prim = primAndIndices.prim.AppendChild(primName);
+            _ComputeSceneIndexPrimsAndInstanceIndicesHelper(
+                sceneIndex, std::move(primAndIndices), &newResult);
         }
 
         result = std::move(newResult);
@@ -883,8 +885,8 @@ _ClassifyNodes(
         _InstanceIndices instanceIndices;
         std::tie(prototypePath, instanceIndices) =
             _ComputeNiPrototypePathAndInstanceIndices(
-                prim.dataSource,
-                sceneIndex);
+                sceneIndex,
+                prim.dataSource);
         const bool isNativeInstance = !prototypePath.IsEmpty();
 
         if (isNativeInstance) {
@@ -900,8 +902,8 @@ _ClassifyNodes(
             // If yes, note the corresponding propagated prototype to add to
             // the seeds below.
             _AddPiPropagatedPrototypes(
-                prim.dataSource,
                 sceneIndex,
+                prim.dataSource,
                 primAndNestedInstanceIndices,
                 &node.piPropagatedSeeds);
 
@@ -1131,8 +1133,8 @@ UsdImagingSelectionSceneIndex::AddSelection(
     const std::vector<_PrimAndNestedInstanceIndices> primsAndIndices =
         _ExpandToDescendants(
             _ComputeSceneIndexPrimsAndInstanceIndices(
-                usdPath,
-                _GetInputSceneIndex()),
+                _GetInputSceneIndex(),
+                usdPath),
             _GetInputSceneIndex());
 
 

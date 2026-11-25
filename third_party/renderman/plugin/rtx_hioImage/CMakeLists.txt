@@ -23,3 +23,13 @@ pxr_plugin(${PXR_PACKAGE}
 
     DISABLE_PRECOMPILED_HEADERS
 )
+
+if(TARGET RtxHioImage)
+    if(WIN32)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE _WIN32)
+    elseif(APPLE)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE OSX)
+    elseif(UNIX)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE LINUX)
+    endif()
+endif()

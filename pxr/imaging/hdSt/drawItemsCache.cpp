@@ -75,7 +75,7 @@ HdSt_DrawItemsCache::GetDrawItems(
     _CacheValue &val = ret.first->second;
     const bool cacheMiss = ret.second; // Insertion success
     const bool staleEntry = !cacheMiss &&
-        _IsCacheEntryStale(val, collection.GetName(), renderIndex);
+        _IsCacheEntryStale(val, renderIndex);
     
     // 3 possibilities:
     // 1. Doesn't exist in cache => Query render index and add entry
@@ -140,12 +140,11 @@ HdSt_DrawItemsCache::GarbageCollect()
 bool
 HdSt_DrawItemsCache::_IsCacheEntryStale(
     HdSt_DrawItemsCache::_CacheValue const &val,
-    TfToken const &collectionName,
     HdRenderIndex *renderIndex) const
 {
     HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
-    const bool collectionVersionChanged =
-        val.collectionVersion != tracker.GetCollectionVersion(collectionName);
+    const bool rprimIndexVersionChanged =
+        val.rprimIndexVersion != tracker.GetRprimIndexVersion();
     const bool renderTagsVersionChanged =
         val.renderTagsVersion != tracker.GetRenderTagVersion();
     const bool materialTagsVersionChanged =
@@ -154,7 +153,7 @@ HdSt_DrawItemsCache::_IsCacheEntryStale(
         val.geomSubsetDrawItemsVersion != _GetGeomSubsetDrawItemsVersion(
             renderIndex);
 
-    return collectionVersionChanged ||
+    return rprimIndexVersionChanged ||
            renderTagsVersionChanged ||
            materialTagsVersionChanged ||
            geomSubsetDrawItemsChanged;
@@ -171,8 +170,7 @@ HdSt_DrawItemsCache::_UpdateCacheEntry(
 
     HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
 
-    val->collectionVersion =
-        tracker.GetCollectionVersion(collection.GetName());
+    val->rprimIndexVersion = tracker.GetRprimIndexVersion();
     val->renderTagsVersion = tracker.GetRenderTagVersion();
     val->materialTagsVersion = _GetMaterialTagsVersion(renderIndex);
     val->geomSubsetDrawItemsVersion = _GetGeomSubsetDrawItemsVersion(

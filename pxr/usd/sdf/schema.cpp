@@ -1447,37 +1447,60 @@ SdfSchemaBase::IsValidSpecializesPath(const SdfPath& path)
     return true;
 }
 
-SdfAllowed 
-SdfSchemaBase::IsValidAttributeConnectionPath(const SdfPath& path)
+// Return true if \p path or any target path embedded in it contains a prim
+// variant selection.  SdfPath::ContainsPrimVariantSelection() considers only
+// the path's own prim part, not embedded target paths like the one in
+// </A.rel[/B{v=x}C].attr>.
+static bool
+_PathOrTargetsContainPrimVariantSelection(const SdfPath& path)
 {
     if (path.ContainsPrimVariantSelection()) {
+        return true;
+    }
+    if (path.ContainsTargetPath()) {
+        SdfPathVector targetPaths;
+        path.GetAllTargetPathsRecursively(&targetPaths);
+        for (SdfPath const &targetPath: targetPaths) {
+            if (targetPath.ContainsPrimVariantSelection()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+SdfAllowed
+SdfSchemaBase::IsValidAttributeConnectionPath(const SdfPath& path)
+{
+    if (_PathOrTargetsContainPrimVariantSelection(path)) {
         return SdfAllowed("Attribute connection paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() && (path.IsPropertyPath() || path.IsPrimPath())) {
+    if (path.IsAbsolutePath() && !path.IsAbsoluteRootPath()) {
         return true;
     }
     else {
         return SdfAllowed(
-            TfStringPrintf("Connection paths must be absolute prim or "
-                           "property paths: <%s>", path.GetText()));
+            TfStringPrintf("Connection paths must be absolute and must not "
+                           "be the absolute root path: <%s>", path.GetText()));
     }
 }
 
 SdfAllowed
 SdfSchemaBase::IsValidRelationshipTargetPath(const SdfPath& path)
 {
-    if (path.ContainsPrimVariantSelection()) {
+    if (_PathOrTargetsContainPrimVariantSelection(path)) {
         return SdfAllowed("Relationship target paths cannot contain "
                           "variant selections");
     }
-    if (path.IsAbsolutePath() && 
-        (path.IsPropertyPath() || path.IsPrimPath() || path.IsMapperPath())) {
+    if (path.IsAbsolutePath() && !path.IsAbsoluteRootPath()) {
         return true;
     }
     else {
-        return SdfAllowed("Relationship target paths must be absolute prim, "
-                          "property or mapper paths");
+        return SdfAllowed(
+            TfStringPrintf("Relationship target paths must be absolute and "
+                           "must not be the absolute root path: <%s>",
+                           path.GetText()));
     }
 }
 

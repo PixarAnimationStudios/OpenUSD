@@ -105,6 +105,30 @@ def _DumpMallocTags(stage, contextStr):
         (contextStr, layerName, memInMb))
     _Msg("For detailed analysis, see " + reportName)
 
+def _JoinDelegateOptionsValue(argv):
+    """
+    Returns argv with `--delegate-options "VALUE"` rewritten as
+    `--delegate-options="VALUE"`.
+
+    When the string value passed to `--delegate-options` begins with a `-`, it
+    may be interpreted by argparse as a top-level option flag instead of a value
+    despite being in quotes, having spaces, and being positioned after a flag
+    that takes an argument. So we must pre-process the unparsed args to convert
+    the `--delegate-options "value"` form into the `--delegate-options="value"`
+    form to prevent this kind of mis-parse. (We also handle the abbreviated
+    `--delegate` form argparse also accepts.)
+    """
+    joined = []
+    i = 0
+    while i < len(argv):
+        if argv[i] in ['--delegate-options', '--delegate'] and i + 1 < len(argv):
+            joined.append('--delegate-options=' + argv[i + 1])
+            i += 2
+        else:
+            joined.append(argv[i])
+            i += 1
+    return joined
+
 def main() -> int:
     programName = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=programName,
@@ -244,7 +268,14 @@ def main() -> int:
             'Abort recording and return a non-zero exit code if a Tf '
             'error is raised during rendering.'))
 
-    args = parser.parse_args()
+    parser.add_argument('--delegate-options', action='store',
+        type=str, dest='delegateOptions', default='',
+        help=(
+            'String of command line options to pass directly to the '
+            'render delegate. Supported options vary by render delegate and '
+            'parsing them is the render delegate\'s responsibility.'))
+
+    args = parser.parse_args(_JoinDelegateOptionsValue(sys.argv[1:]))
 
     args.imageWidth = max(args.imageWidth, 1)
 
@@ -371,7 +402,8 @@ def main() -> int:
 
     # Initialize FrameRecorder 
     frameRecorder = UsdAppUtils.FrameRecorder(
-        rendererPluginId, args.gpuEnabled, args.drawModeEnabled)
+        rendererPluginId, args.gpuEnabled, args.drawModeEnabled,
+        ["--delegate-options", args.delegateOptions] if args.delegateOptions else [])
     if args.rpPrimPath:
         frameRecorder.SetActiveRenderPassPrimPath(args.rpPrimPath)
     if args.rsPrimPath:

@@ -197,10 +197,13 @@ pxr_plugin(${PXR_PACKAGE}
         pinnedCurveExpandingSceneIndexPlugin
         pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex
         previewSurfacePrimvarsSceneIndexPlugin
+        relationshipPathVectorConvertingSceneIndexPlugin
         renderBuffer
         renderParam
         renderPass
         renderPassPruneSceneIndexPlugin
+        renderPassSceneIndex
+        renderPassSceneIndexPlugin
         renderPassVisibilityAndMatteSceneIndexPlugin
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
@@ -232,12 +235,13 @@ pxr_plugin(${PXR_PACKAGE}
         rileyTypes
         sceneIndexObserverApi
         statsListener
+        statsMetrics
         worldOffsetSceneIndexPlugin
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
-        velocityMotionResolvingSceneIndexPlugin
         pxr/imaging/hdsi/velocityMotionResolvingSceneIndex
+        velocityMotionResolvingSceneIndexPlugin
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS
@@ -265,15 +269,28 @@ pxr_plugin(${PXR_PACKAGE}
 )
 
 # Include paths to hdPrman headers within hdPrman itself look like
-# #include "hdPrman/...", so we need to add include/pxr/imaging
-# to the include paths for this library. We use PROJECT_BINARY_DIR
-# to include headers out of the build directory, which is what
-# normally happens in the USD build.
+# #include "hdPrman/...", so we need to augment the include paths for this library.
 if(TARGET hdPrman)
     target_include_directories(${PXR_PACKAGE}
         PRIVATE
-            "${PROJECT_BINARY_DIR}/include/pxr/imaging"
+            "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
     )
+
+    # Add the project source directory to the front of the include search path
+    # so that the "#include <pxr/base/vt/visitValue.h>" in the polyfill finds
+    # the "real" header. This can be removed along with the polyfill -- see
+    # comments at the top of the file.
+    target_include_directories(${PXR_PACKAGE}
+        BEFORE
+        PRIVATE "${PROJECT_SOURCE_DIR}"
+    )
+    if(WIN32)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE _WIN32)
+    elseif(APPLE)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE OSX)
+    elseif(UNIX)
+        target_compile_definitions(${PXR_PACKAGE} PRIVATE LINUX)
+    endif()
 endif()
 
 if(WIN32 AND NOT BUILD_SHARED_LIBS)
@@ -288,6 +305,7 @@ else()
             usd
             usdImaging
             usdRender
+            usdRiPxrImaging
             ${PXRCORE_LIBRARY}
             ${PRMAN_LIBRARY}
         CPPFILES

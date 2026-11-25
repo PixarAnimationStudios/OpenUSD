@@ -38,14 +38,17 @@ public:
     using This = TraceReporterBase;
     using ThisPtr = TraceReporterBasePtr;
     using ThisRefPtr = TraceReporterBaseRefPtr;
-    using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using CollectionPtr = std::shared_ptr<const TraceCollection>;
     using DataSourcePtr = std::unique_ptr<TraceReporterDataSourceBase>;
 
     /// Constructor taking ownership of \p dataSource.
-    TRACE_API TraceReporterBase(DataSourcePtr dataSource);
+    TRACE_API explicit TraceReporterBase(DataSourcePtr dataSource);
 
     /// Destructor.
     TRACE_API virtual ~TraceReporterBase();
+
+    /// Returns `true` the reporter has any processed colletions.
+    TRACE_API bool HasProcessedCollections() const;
 
     /// Write all collections that were processed by this reporter to \p ostr.
     TRACE_API bool SerializeProcessedCollections(std::ostream& ostr) const;

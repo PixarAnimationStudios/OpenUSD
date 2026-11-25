@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "Mid" (
+    references = @./inner_plain.usda@</Inner>
+)
+{
+    over "I" (
+        instanceable = false
+    )
+    {
+    }
+}

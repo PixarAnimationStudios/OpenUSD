@@ -82,13 +82,12 @@ class GfLineSeg2d {
     double              _length;   // distance from p0 to p1
 };
 
-/// Computes the closets points on \p line and \p seg.
+/// Computes the closest points on `line` and `seg`.
 ///
-/// The two points are returned in \p p1 and \p p2. The parametric distances
-/// of \p p1 and \p p2 along the line and segment are returned in \p t1 and \p
-/// t2.
+/// The closest points are stored in `p1` and `p2`. The parametric distances of
+/// `p1` and `p2` along the line and segment are stored in `t1` and `t2`.
 ///
-/// This returns \c false if the lines were close enough to parallel that no
+/// This returns `false` if the lines were close enough to parallel that no
 /// points could be computed; in this case, the other return values are
 /// undefined.
 GF_API
@@ -96,14 +95,14 @@ bool GfFindClosestPoints( const GfLine2d &line, const GfLineSeg2d &seg,
                           GfVec2d *p1 = nullptr, GfVec2d *p2 = nullptr,
                           double *t1 = nullptr, double *t2 = nullptr );
 
-/// Computes the closets points on two line segments, \p seg1 and \p seg2.
+/// Computes the closest points on two line segments, `seg1` and `seg2`.
 ///
-/// The two points are returned in \p p1 and \p p2. The parametric distances
-/// of \p p1 and \p p2 along the segments are returned in \p t1 and \p t2.
+/// The two points are returned in `p1` and `p2`. The parametric distances of
+/// `p1` and `p2` along the segments are returned in `t1` and `t2`.
 ///
-/// This returns \c false if the lines were close enough to parallel that no
-/// points could be computed; in this case, the other return values are
-/// undefined.
+/// This returns `false` if the line segments were close enough to parallel and
+/// overlapping so that no unique closest points could be computed; in this
+/// case, the other return values are undefined.
 GF_API
 bool GfFindClosestPoints( const GfLineSeg2d &seg1, const GfLineSeg2d &seg2,
                           GfVec2d *p1 = nullptr, GfVec2d *p2 = nullptr,

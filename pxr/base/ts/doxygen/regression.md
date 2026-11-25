@@ -93,7 +93,7 @@ We've seen the (1, 1) point on the ellipse above; it's the symmetrical case with
 the vertical in the center of the interval.  That one is also a corner of the
 green box, one of the limits of contained tangents.
 
-Here are two additional important cases, the (1/3, 4/3) and (4/3, 1/3) ellipse
+There are two additional important cases, the (1/3, 4/3) and (4/3, 1/3) ellipse
 limits.  These are the longest possible non-regressive tangents.  They put the
 vertical at times 1/9 and 8/9 respectively.
 
@@ -115,11 +115,11 @@ corners of the green square, and limits of contained tangents.
 
 While reviewing the anti-regression strategies listed next, developers are
 encouraged to run `regressDemo.py` in the `ts/script` directory.  This must be
-run by a Python interpreter than can import `Ts`, and either `PySide6` or
+run by a Python interpreter that can import `Ts`, and either `PySide6` or
 `PySide2`.  Select a mode, then drag a tangent long, and watch the limiting
 behavior and the graph at the bottom.
 
-# Anti-Regression Strategies
+# Anti-Regression Strategies {#anti-regression-strategies}
 
 First, most spline animation systems observe one important restriction, which Ts
 enforces as well: tangents may never face backwards, out of their segment's
@@ -127,24 +127,25 @@ interval.  Such a tangent will be ignored at runtime, as though it were
 zero-length.  This prevents some of the worst cases.  But, even when forced to
 face into their segments, tangents can cause regression by being too long.
 
-Here are the anti-regression strategies that Ts supports:
+The anti-regression strategies that Ts supports are specified by the
+`TsAntiRegressionMode` enum:
 
-**Single-Tangent Strategies:** shorten each tangent in isolation.
+- `TsAntiRegressionNone`: Do not adjust tangents when knots are added to
+  splines. If regressive curve segments are discovered during evaluation, the
+  `TsAntiRegressionKeepRatio` strategy will be used to adjust the tangents prior
+  to evaluating a result.
 
-- **Contain:** Forbid tangents from crossing neighboring knots in the time
-  dimension.  This is overly conservative: it forbids bold tangents, which is
-  both a slight creative limitation and a possible point of incompatibility.
-  But the system is simple and intuitive, and it is used in some popular
-  packages.
+- `TsAntiRegressionContain`: Forbid tangents from crossing neighboring knots in
+  the time dimension. This is overly conservative: it forbids bold tangents,
+  which is both a slight creative limitation and a possible point of
+  incompatibility.  But the strategy is simple and intuitive, and it is used in
+  several popular packages.
 
-**Dual-Tangent Strategies:** for each spline segment, consider both tangents,
-and shorten one or both.
-
-- **Keep Start:** When tangents are long enough to cause regression, keep the
-  start tangent the same, and shorten the end tangent until the non-regressive
-  limit is reached, with a single vertical.  This is what Maya does.  It's
-  asymmetrical, always favoring the start tangent, a bias that often pushes the
-  adjusted curve far to the right of the original regressive Bezier.  On the
+- `TsAntiRegressionKeepStart`: When tangents are long enough to cause
+  regression, try to keep the start tangent the same and shorten the end tangent
+  until the non-regressive limit is reached.  This is the strategy Maya uses.
+  It's asymmetrical, always favoring the start tangent, a bias that often pushes
+  the adjusted curve far to the right of the original regressive Bezier.  On the
   ellipse graph above, Maya finds the vertical line through the original point
   in tangent-length space, and takes the nearest intersection with the ellipse.
   If the start tangent length is greater than 4/3, Maya alters both tangent
@@ -153,12 +154,12 @@ and shorten one or both.
 
 ![](./images/keepStart.png)
 
-- **Keep Ratio:** When tangents are long enough to cause regression, shorten
-  both of them, until the non-regressive limit is reached, with a single
-  vertical.  In so doing, preserve the ratio of the original tangent lengths.
-  On the ellipse graph above, this strategy finds the line from the origin to
-  the original point, and takes the intersection of that line with the outer
-  edge of the ellipse.
+- `TsAntiRegressionKeepRatio`: When tangents are long enough to cause
+  regression, shorten both of them, until the non-regressive limit is reached.
+  In so doing, preserve the ratio of the original tangent lengths.  On the
+  ellipse graph above, this strategy finds the line from the origin to the
+  original point, and takes the intersection of that line with the outer edge of
+  the ellipse.
 
 ![](./images/keepRatio.png)
 
@@ -167,17 +168,19 @@ lengths.  Operate on both segments adjacent to the knot being edited.  Handle
 edits to knot time, and edits to tangent length.  These strategies only work
 during interactive edits, because they require differentiating between the knot
 being edited (the "active" knot) and the other knot in the segment (the
-"opposite" knot).
+"opposite" knot). Interactive strategies are selected with a
+`TsRegressionPreventer::InteractiveMode` value:
 
-- **Limit Active:** Clamp the active tangent to the non-regressive limit, given
+- `ModeLimitActive`: Clamp the active tangent to the non-regressive limit, given
   the existing length of the opposite tangent.
 
-- **Limit Opposite:** As the non-regressive limit is exceeded, shorten the
+- `ModeLimitOpposite`: As the non-regressive limit is exceeded, shorten the
   opposite tangent to barely maintain non-regression.  When the opposite tangent
   cannot be made any shorter without regression, clamp the active tangent there.
 
-**Disabling**: If desired, regressive splines may be deliberately authored by
-selecting the **None** strategy.  This will result in **Keep Ratio** behavior at
+If desired, regressive splines may be deliberately authored by using a
+`TsAntiRegressionAuthoringSelector` to select `TsAntiRegressionNone`. Note that
+regressive curve segments will result in `TsAntiRegressionKeepRatio` behavior at
 evaluation time.
 
 # Center and Fringe Behavior
@@ -246,7 +249,7 @@ operations, except for Runtime Limiting, which always uses Keep Ratio.
 ## Default Authoring Mode
 
 The (default) default anti-regression authoring mode is hard-coded to Keep
-Ratio.  A different default may configured into the build:
+Ratio.  A different default may be configured into the build:
 
 * With `build_usd.py`: `--default-anti-regression=TsAntiRegression...`
 
@@ -279,7 +282,7 @@ supports Limit Active and Limit Opposite, which cannot be used in any other
 context, because they require differentiating a single knot that is being
 edited.
 
-It make sense to use `TsRegressionPreventer` in the same default mode as all
+It makes sense to use `TsRegressionPreventer` in the same default mode as all
 other anti-regression contexts.  It can also make sense to use Limit Active or
 Limit Opposite with `TsRegressionPreventer`, despite the default mode being
 different.  Maintainers of client code are encouraged to try `regressDemo` to

@@ -9,7 +9,6 @@
 # algorithm.  Given the inputs (currently just a root layer), it
 # walks namespace and dumps out the results for every prim.
 
-from __future__ import print_function
 import sys, os, argparse, re
 from pxr import Pcp, Sdf, Work
 

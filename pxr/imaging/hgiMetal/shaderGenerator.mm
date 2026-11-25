@@ -166,7 +166,8 @@ _GetBuiltinInputKeyword(HgiShaderFunctionParamDesc const &param,
        {HgiShaderKeywordTokens->hdPrimitiveID, "primitive_id"},
        {HgiShaderKeywordTokens->hdFrontFacing, "front_facing"},
        {HgiShaderKeywordTokens->hdPosition, "position"},
-       {HgiShaderKeywordTokens->hdBaryCoordNoPersp, "barycentric_coord"},
+       {HgiShaderKeywordTokens->hdBaryCoord, "barycentric_coord"},
+       {HgiShaderKeywordTokens->hdBaryCoordNoPersp, "barycentric_coord, center_no_perspective"},
        {HgiShaderKeywordTokens->hdFragCoord, "position"},
        {HgiShaderKeywordTokens->hdPointCoord, "point_coord"},
        {HgiShaderKeywordTokens->hdSampleMaskIn, "sample_mask"},
@@ -500,6 +501,7 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
               "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
               "#define dFdx    dfdx\n"
               "#define dFdy    dfdy\n"
+              "#define inversesqrt rsqrt\n"
 
               "#define lessThan(a, b) ((a) < (b))\n"
               "#define lessThanEqual(a, b) ((a) <= (b))\n"

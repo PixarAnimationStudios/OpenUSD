@@ -1,0 +1,33 @@
+#usda 1.0
+(
+    relocates = {
+        </CharRig/Rig/RWing/Control>: </CharRig/Control/RWing>,
+        </CharRig/Rig/RWing/Deform/Flight01Rig/Control>: </CharRig/Control/RWing/Flight01>
+    }
+)
+
+def "CharRig"
+{
+    def "Rig" (
+        references = @./feathers.usda@</FeathersRig>
+    )
+    {
+        over "SymWing"
+        {
+            over "Control"
+            {
+                over "Flight01"
+                {
+                    over "Base"
+                    {
+                        string probe = "charrig SymWing/Control"
+                    }
+                }
+            }
+        }
+    }
+
+    def "Control"
+    {
+    }
+}

@@ -72,6 +72,10 @@ public:
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
+    /// \copydoc SdfFileFormat::ReadFromString()                                                                                 
+    ///                                                                                                                          
+    /// This function delegates to the underlying file format for the layer,
+    /// which in all cases assumes \p str contains text format (.usda) USD data.  
     SDF_API
     virtual bool ReadFromString(
         SdfLayer* layer,

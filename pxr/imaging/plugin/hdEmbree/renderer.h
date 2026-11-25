@@ -22,10 +22,11 @@
 #include <embree4/rtcore_device.h>
 #include <embree4/rtcore_ray.h>
 
-#include <random>
 #include <atomic>
+#include <climits>
 #include <map>
 #include <mutex>
+#include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

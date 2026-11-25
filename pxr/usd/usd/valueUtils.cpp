@@ -76,7 +76,8 @@ Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset)
     _TryApplyLayerOffsetToValue<VtArray<GfDuration>>(value, offset) ||
     _TryApplyLayerOffsetToValue<VtArrayEdit<GfDuration>>(value, offset) ||
     _TryApplyLayerOffsetToValue<VtDictionary>(value, offset) ||
-    _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(value, offset);
+    _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(value, offset) ||
+    _TryApplyLayerOffsetToValue<TsSpline>(value, offset);
 }
 
 template <class T>

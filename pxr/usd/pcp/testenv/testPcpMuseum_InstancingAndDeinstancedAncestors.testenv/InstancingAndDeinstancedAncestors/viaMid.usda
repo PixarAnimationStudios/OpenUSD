@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    """
+    A companion to root.usda: X's opinions about L reach it through
+    mid.usda, which deinstances I from outside inner_plain.usda, the layer
+    stack that instances I.  See root.usda for the full description.
+    """
+)
+
+def "ViaMid" (
+    references = @./mid.usda@</Mid/I/rig/propagated/X>
+)
+{
+}

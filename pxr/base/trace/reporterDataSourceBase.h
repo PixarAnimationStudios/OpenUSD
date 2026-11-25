@@ -26,7 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class TraceReporterDataSourceBase {
 public:
-    using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using CollectionPtr = std::shared_ptr<const TraceCollection>;
 
     /// Destructor
     TRACE_API virtual ~TraceReporterDataSourceBase();

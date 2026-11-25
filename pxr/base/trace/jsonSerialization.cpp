@@ -394,9 +394,9 @@ private:
 static void
 _WriteTraceEventsToJson(
     JsWriter& js,
-    const std::vector<std::shared_ptr<TraceCollection>>& collections)
+    const std::vector<std::shared_ptr<const TraceCollection>>& collections)
 {
-    using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using CollectionPtr = std::shared_ptr<const TraceCollection>;
     // Convert Counter and Data events to JSON.
     _WriteCollectionEventsToJson eventsToJson;
     for (const CollectionPtr& collection : collections) {
@@ -414,7 +414,7 @@ _WriteTraceEventsToJson(
 bool
 Trace_JSONSerialization::WriteCollectionsToJSON(
     JsWriter& js,
-    const std::vector<std::shared_ptr<TraceCollection>>& collections)
+    const std::vector<std::shared_ptr<const TraceCollection>>& collections)
 {
     
     auto extraDataWriter = [&collections](JsWriter& js) {
@@ -422,7 +422,7 @@ Trace_JSONSerialization::WriteCollectionsToJSON(
         _WriteTraceEventsToJson(js, collections);
     };
     
-    using CollectionPtr = std::shared_ptr<TraceCollection>;
+    using CollectionPtr = std::shared_ptr<const TraceCollection>;
     TraceEventTreeRefPtr graph = TraceEventTree::New();
     for (const CollectionPtr& collection : collections) {
         if (collection) {

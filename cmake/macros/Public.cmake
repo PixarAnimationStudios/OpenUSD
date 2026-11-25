@@ -285,47 +285,14 @@ function(pxr_library NAME)
             ${filePath}
         )
 
-        # Read the generated classes
-        file(STRINGS ${filePath} fileContents)
+        _pxr_parse_generated_schema_classes("${filePath}"
+            OUT_PUBLIC_CLASSES generatedPublicClasses
+            OUT_PYTHON_MODULE_FILES generatedPymoduleFiles
+            OUT_RESOURCE_FILES generatedResourceFiles)
 
-        # fileType potential values:
-        # -1: Skip line
-        # 0: Public Classes
-        # 1: Python Module Files
-        # 2: Resource Files
-        set(fileType -1)
-
-        foreach(line ${fileContents})
-            # Determine which section of the generated file we are in.
-            if (${fileType} EQUAL -1)
-                string(FIND ${line} "# Public Classes" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 0)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 0)
-                string(FIND ${line} "# Python Module Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 1)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 1)
-                string(FIND ${line} "# Resource Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 2)
-                    continue()
-                endif()
-            endif()
-
-            # Depending on the file type, append to the appropriate list.
-            if (${fileType} EQUAL 0)
-                list(APPEND args_PUBLIC_CLASSES ${line})
-            elseif(${fileType} EQUAL 1)
-                list(APPEND args_PYMODULE_CPPFILES ${line})
-            elseif(${fileType} EQUAL 2)
-                list(APPEND args_RESOURCE_FILES ${line})
-            endif()
-        endforeach()
+        list(APPEND args_PUBLIC_CLASSES ${generatedPublicClasses})
+        list(APPEND args_PYMODULE_CPPFILES ${generatedPymoduleFiles})
+        list(APPEND args_RESOURCE_FILES ${generatedResourceFiles})
     endif()
 
     # Collect libraries.
@@ -589,27 +556,38 @@ function(pxr_build_test_plugin LIBRARY_NAME)
     if (NOT bt_SOURCE_DIR)
         set(bt_SOURCE_DIR testenv)
     endif()
-    set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
-        set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
-        set(TEST_PLUG_INFO_ROOT "..")
-        set(LIBRARY_FILE "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(installResourceFiles)
 
-        set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
-        set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
-        set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
+    # Find an optional plugInfo.json named LIBNAME_plugInfo.json, or
+    # LIBNAME/plugInfo.json in that order.
+    set(testPlugInfoSrcPath1
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json")
+    set(testPlugInfoSrcPath2
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}/plugInfo.json")
+    if (EXISTS "${testPlugInfoSrcPath1}")
+        list(APPEND installResourceFiles "${testPlugInfoSrcPath1}")
+    elseif (EXISTS "${testPlugInfoSrcPath2}")
+        list(APPEND installResourceFiles "${testPlugInfoSrcPath2}")
+    endif()
 
-        file(RELATIVE_PATH 
-            TEST_PLUG_INFO_LIBRARY_PATH
-            "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-            "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
+    # Find an optional generatedSchema.usda named LIBNAME_generatedSchema.usda,
+    # or LIBNAME/generatedSchema.usda in that order.
+    set(testGeneratedSchemaSrcPath1
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}_generatedSchema.usda")
+    set(testGeneratedSchemaSrcPath2
+        "${CMAKE_CURRENT_SOURCE_DIR}/${bt_SOURCE_DIR}/${LIBRARY_NAME}/generatedSchema.usda")
+    if (EXISTS "${testGeneratedSchemaSrcPath1}")
+        list(APPEND installResourceFiles "${testGeneratedSchemaSrcPath1}")
+    elseif (EXISTS "${testGeneratedSchemaSrcPath2}")
+        list(APPEND installResourceFiles "${testGeneratedSchemaSrcPath2}")
+    endif()
 
-        configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
-        # XXX -- We shouldn't have to install to run tests.
-        install(
-            FILES ${testPlugInfoPath}
-            DESTINATION ${testPlugInfoResourceDir})
+    # XXX -- We shouldn't have to install to run tests.
+    if (installResourceFiles)
+        _install_test_resource_files(${LIBRARY_NAME}
+            INSTALL_PREFIX ${bt_INSTALL_PREFIX}
+            FILES ${installResourceFiles})
     endif()
 
     # We always want this test to build after the package it's under, even if
@@ -631,86 +609,6 @@ function(pxr_build_test_plugin LIBRARY_NAME)
         RUNTIME DESTINATION "tests/lib"
     )
 endfunction() # pxr_build_test_plugin
-
-# Builds a test-only library that can be be directly linked to unit-test
-# executables. Those executables can consume public headers from the test-only
-# library.
-function(pxr_build_test_library LIBRARY_NAME)
-    set(multiValueArgs
-        LIBRARIES
-        CPPFILES
-        PUBLIC_HEADERS
-        PRIVATE_HEADERS
-        PUBLIC_CLASSES
-        PRIVATE_CLASSES)
-    cmake_parse_arguments(args
-        "${options}"
-        "${oneValueArgs}"
-        "${multiValueArgs}"
-        ${ARGN}
-    )
-
-    # Get list of cpp files
-    set(cppFiles ${args_CPPFILES})
-    foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
-        list(APPEND cppFiles ${className}.cpp)
-    endforeach()
-
-    add_library(${LIBRARY_NAME}
-        SHARED
-        ${cppFiles}
-    )
-
-    _pxr_target_link_libraries(${LIBRARY_NAME}
-        ${args_LIBRARIES}
-    )
-
-    _get_folder("tests/lib" folder)
-    set_target_properties(${LIBRARY_NAME}
-        PROPERTIES 
-            FOLDER "${folder}"
-    )
-
-    # Add include paths available to all libraries.
-    target_include_directories(${LIBRARY_NAME}
-        PRIVATE
-            "${PROJECT_BINARY_DIR}/include"
-            "${PROJECT_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
-    )
-
-    # Copy all public and private headers to the build directory. This is also
-    # the case for core libraries. Clients linking to an installed tree should
-    # not find test-only headers, so the public headers are not installed.
-    set(headers ${args_PUBLIC_HEADERS} ${args_PRIVATE_HEADERS})
-    foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
-        list(APPEND headers ${className}.h)
-    endforeach()
-    _copy_headers(${LIBRARY_NAME}
-        FILES ${headers}
-        PREFIX ${PXR_PREFIX}
-    )
-
-    # Define macros for api.h
-    string(TOUPPER ${LIBRARY_NAME} uppercaseName)
-    target_compile_definitions(${LIBRARY_NAME}
-        PRIVATE ${uppercaseName}_EXPORTS=1
-    )
-
-    # Find libraries under the install prefix, which has the core USD
-    # libraries. Also find test-only libraries under the install prefix.
-    _pxr_init_rpath(rpath "tests/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/tests/lib")
-    _pxr_install_rpath(rpath ${LIBRARY_NAME})
-
-    # XXX -- We shouldn't have to install to run tests.
-    install(
-        TARGETS ${LIBRARY_NAME}
-        LIBRARY DESTINATION "tests/lib"
-        ARCHIVE DESTINATION "tests/lib"
-        RUNTIME DESTINATION "tests/lib"
-    )
-endfunction() # pxr_build_test_library
 
 function(pxr_build_test TEST_NAME)
     if (NOT PXR_BUILD_TESTS)
@@ -983,6 +881,11 @@ function(pxr_register_test TEST_NAME)
 
     if (bt_IMAGE_DIFF_COMPARE)
         if (IMAGE_DIFF_TOOL)
+            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
+        elseif(TARGET OpenImageIO::idiff)
+            set(IMAGE_DIFF_TOOL_PATH "$<TARGET_FILE_DIR:OpenImageIO::idiff>")
+        endif()
+        if (IMAGE_DIFF_TOOL_PATH)
             foreach (compareFile ${bt_IMAGE_DIFF_COMPARE})
                 set(testWrapperCmd ${testWrapperCmd} --image-diff-compare=${compareFile})
             endforeach ()
@@ -1017,8 +920,9 @@ function(pxr_register_test TEST_NAME)
 
             # Make sure to add the image diff tool to the PATH so
             # it can be easily found within the testWrapper
-            get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
             set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
+        else()
+            message(WARN "idiff was not located. Image comparison will be skipped without failure.")
         endif()
     endif()
 

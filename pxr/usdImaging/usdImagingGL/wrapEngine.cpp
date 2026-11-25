@@ -11,9 +11,6 @@
 #include "pxr/external/boost/python/converter/from_python.hpp"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
-
-#include "pxr/usdImaging/usdImaging/delegate.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyEnum.h"
@@ -80,7 +77,7 @@ _TestIntersection2(
         pickParams, viewMatrix, projectionMatrix, root, params, &result);
     return result;
 }
-    
+
 static
 pxr_boost::python::list
 _ToPyList(const HdInstancerContext &ctx)
@@ -91,7 +88,7 @@ _ToPyList(const HdInstancerContext &ctx)
     }
     return result;
 }
-    
+
 static void
 _SetLightingState(UsdImagingGLEngine &self, GlfSimpleLightVector const &lights,
                   GlfSimpleMaterial const &material, GfVec4f const &sceneAmbient)
@@ -116,7 +113,7 @@ void wrapEngine()
 {
     {
         using This = UsdImagingGLEngine;
-        
+
         using Parameters = This::Parameters;
         using PickParams = This::PickParams;
         using IntersectionResult = This::IntersectionResult;
@@ -212,6 +209,8 @@ void wrapEngine()
                 &Parameters::allowAsynchronousSceneProcessing)
             .def_readwrite("enableUsdDrawModes",
                 &Parameters::enableUsdDrawModes)
+            .def_readwrite("delegateCreationOptions",
+                &Parameters::delegateCreationOptions)
 
         ;
 
@@ -236,12 +235,7 @@ void wrapEngine()
         ;
     }
 
-    // Wrap the constants.
-    scope().attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
-
     TfPyContainerConversions::from_python_sequence<
         std::vector<GlfSimpleLight>,
         TfPyContainerConversions::variable_capacity_policy>();
-
-    
 }

@@ -1,0 +1,45 @@
+#usda 1.0
+
+def "TargetA"
+{
+    int foo
+}
+
+def "TargetB"
+{
+    int bar
+}
+
+def "Connected"
+{
+    rel r = [
+        </TargetA>,
+        </Connected.r2[/TargetA]>,
+    ]
+    rel r2 = </TargetA>
+    int summed.connect = [
+        </TargetA.foo>,
+        </TargetB.bar>,
+    ]
+}
+
+def "Dot"
+{
+    rel bundles = [
+        </Connected.summed[/TargetB.bar]>,
+        </Connected.r[/Connected.r2[/TargetA]]>,
+        </Connected.summed.mapper[/TargetB.bar]>,
+        </Connected.summed.mapper[/TargetB.bar].arg>,
+        </Connected.r[/TargetA].relAttr>,
+        </Connected.r[/TargetA]>,
+    ]
+    int in.connect = [
+        </Connected.summed[/TargetB.bar]>,
+        </Connected.r[/Connected.r2[/TargetA]]>,
+        </Connected.summed.mapper[/TargetB.bar]>,
+        </Connected.summed.mapper[/TargetB.bar].arg>,
+        </Connected.r[/TargetA].relAttr>,
+        </Connected.r[/TargetA]>,
+    ]
+}
+

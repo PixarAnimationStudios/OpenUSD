@@ -25,6 +25,8 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/utils.h"
 
+#include "pxr/usd/usd/schemaRegistry.h"
+
 #include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/array.h"
@@ -38,7 +40,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_DisplayColorSpaceSceneIndexPlugin"))
 
-    // Render Settings Tokens 
+    // Render Settings Tokens
     // Render Settings relationship property name.
     ((riDisplayFilters, "ri:displayFilters"))
     // Render Settings Dependency Name
@@ -48,7 +50,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PxrColorTransformDisplayFilter)
     ((colorTransformFilterName, "__ColorTransform_DisplayFilter_"))
 
-    // List of AOVs to be excluded by the display filter. 
+    // List of AOVs to be excluded by the display filter.
     // Non-color AOVS (ex: normals, depth, etc.) should not be transformed.
     ((excludeAOVs, "ri:excludeAOVs"))
     ((colorTransform, "ri:transform"))
@@ -67,14 +69,6 @@ TF_MAKE_STATIC_DATA(
     _colorSpaceRemappingCallbacks)
 {
     _colorSpaceRemappingCallbacks->clear();
-}
-
-TF_MAKE_STATIC_DATA(
-    std::vector<
-        HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransformCallback>,
-    _disableTransformCallbacks)
-{
-    _disableTransformCallbacks->clear();
 }
 
 // Helper function to determine if a HdRenderVar should be excluded
@@ -118,7 +112,7 @@ _BuildExcludeAOVsList(const HdContainerDataSourceHandle& rsPrimDS)
 
     // Use a set to collect and sort AOV names to exclude.
     std::set<std::string> excludeAOVs;
-    
+
     const HdRenderSettingsSchema rsSchema(renderSettingsDS);
     const HdRenderProductVectorSchema productsSchema =
         rsSchema.GetRenderProducts();
@@ -173,14 +167,14 @@ _BuildExcludeAOVsList(const HdContainerDataSourceHandle& rsPrimDS)
 
 namespace {
 
-// Gets the authored Rendering Color Space from the given Render Settings Prim 
-// data source. Defaults to LinearRec709. 
+// Gets the authored Rendering Color Space from the given Render Settings Prim
+// data source. Defaults to LinearRec709.
 static GfColorSpace
 _GetRenderingColorSpace(const HdContainerDataSourceHandle rsPrimDS)
 {
     // Default to Linear Rec 709
     TfToken renderingCsName = GfColorSpaceNames->LinearRec709;
-    
+
     HdRenderSettingsSchema rsSchema =
         HdRenderSettingsSchema::GetFromParent(rsPrimDS);
     if (rsSchema) {
@@ -205,7 +199,7 @@ _GetRenderingColorSpace(const HdContainerDataSourceHandle rsPrimDS)
 }
 
 // Returns the path to the Color Transform Display Filter prim to be added as a
-// child of a Render Settings prim with a given path. This display filter will 
+// child of a Render Settings prim with a given path. This display filter will
 // be responsible to convert the rendered pixels from the Rendering Color Space
 // to the Display Color Space.
 static SdfPath
@@ -214,14 +208,14 @@ _GetDisplayFilterPrimPath(const SdfPath& renderSettingsPath)
     return renderSettingsPath.AppendChild(_tokens->colorTransformFilterName);
 }
 
-// Uses GfColorSpace to return the 3x3 color transform matrix to transform 
-// from the display color space to the rendering color space. 
+// Uses GfColorSpace to return the 3x3 color transform matrix to transform
+// from the display color space to the rendering color space.
 static VtArray<double>
 _GetColorTransformArray(
     GfColorSpace const& displayColorSpace,
     GfColorSpace const& renderingColorSpace)
 {
-    // The 3x3 matrix to be set in the Color Transform display filter to 
+    // The 3x3 matrix to be set in the Color Transform display filter to
     // convert the colors from the rendering to display color space.
     GfMatrix3f transMatrix;
     if (displayColorSpace == renderingColorSpace) {
@@ -241,9 +235,9 @@ _GetColorTransformArray(
 // Display Filter Data Sources
 //
 
-// Returns a Display Filter data source that sets the necessary attributes 
-// in a Color Transform display filter in order for it to convert the input 
-// colors from the Rendering Color Space to the Display Color Space, using 
+// Returns a Display Filter data source that sets the necessary attributes
+// in a Color Transform display filter in order for it to convert the input
+// colors from the Rendering Color Space to the Display Color Space, using
 // the provided list of AOVs to exclude.
 static HdContainerDataSourceHandle
 _GetDisplayFilterDataSource(
@@ -254,7 +248,7 @@ _GetDisplayFilterDataSource(
     const VtArray<double> transformArray =
         _GetColorTransformArray(displayColorSpace, renderingColorSpace);
     const std::vector<TfToken> paramsNames = {
-        _tokens->colorTransform, 
+        _tokens->colorTransform,
         _tokens->excludeAOVs };
     const std::vector<HdDataSourceBaseHandle> paramsValues = {
         HdMaterialNodeParameterSchema::Builder()
@@ -272,7 +266,7 @@ _GetDisplayFilterDataSource(
     TF_VERIFY(paramsNames.size() == paramsValues.size(),
               "Parameter names and values must have the same size.");
 
-    return 
+    return
         HdDisplayFilterSchema::Builder()
             .SetResource(
             HdMaterialNodeSchema::Builder()
@@ -288,8 +282,8 @@ _GetDisplayFilterDataSource(
             .Build();
 }
 
-// Dependency Data Source to dirty the DisplayFilter Resource when the 
-// Rendering Color Space on the Parent Render Settings Prim has changed. 
+// Dependency Data Source to dirty the DisplayFilter Resource when the
+// Rendering Color Space on the Parent Render Settings Prim has changed.
 static HdContainerDataSourceHandle
 _GetDisplayFilterDependenciesDataSource(const SdfPath& parentRenderSettingsPath)
 {
@@ -353,7 +347,7 @@ public:
     Get(const TfToken &name) override
     {
         HdDataSourceBaseHandle result;
-        
+
         if (name == HdDisplayFilterSchemaTokens->displayFilter) {
             return
                 _GetDisplayFilterDataSource(
@@ -380,15 +374,15 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 // Render Settings Data Sources
-// 
+//
 // Adds a Display Filter data source to transform from the Rendering to Display
-// Color Space. Adds the path to this display filter in the name in the 
+// Color Space. Adds the path to this display filter in the name in the
 // namespaced Settings data source, and necessary dependencies to make sure
 // this information is updated based on the rendering color space.
 
 // Data source override for the 'namespacedSettings' that prepends the color
 // transform display filter.
-class _ColorTransformNamespacedSettingsDataSource final 
+class _ColorTransformNamespacedSettingsDataSource final
     : public HdContainerDataSource
 {
 public:
@@ -418,18 +412,31 @@ public:
 
         if (name == _tokens->riDisplayFilters) {
 
-            SdfPathVector newFilterPaths = { _colorTransformFilterPath };
+            VtArray<SdfPath> newFilterPaths = { _colorTransformFilterPath };
             if (result) {
                 // Add existing filters after the color transform filter.
                 const HdSampledDataSourceHandle sampledDs =
                     HdSampledDataSource::Cast(result);
-                const SdfPathVector filterPaths =
-                    sampledDs->GetValue(0).GetWithDefault<SdfPathVector>();
-                newFilterPaths.insert(newFilterPaths.end(), filterPaths.begin(),
-                                      filterPaths.end());
+                const VtValue filterPathsVal = sampledDs->GetValue(0.f);
+
+                if (filterPathsVal.IsHolding<VtArray<SdfPath>>()) {
+                    const auto& filterPaths = filterPathsVal
+                        .UncheckedGet<VtArray<SdfPath>>();
+                    newFilterPaths.insert(
+                        newFilterPaths.end(),
+                        std::make_move_iterator(filterPaths.begin()),
+                        std::make_move_iterator(filterPaths.end()));
+                } else if (filterPathsVal.IsHolding<SdfPathVector>()) {
+                    const auto& filterPaths = filterPathsVal
+                        .UncheckedGet<SdfPathVector>();
+                    newFilterPaths.insert(
+                        newFilterPaths.end(),
+                        std::make_move_iterator(filterPaths.begin()),
+                        std::make_move_iterator(filterPaths.end()));
+                }
             }
 
-            return HdRetainedTypedSampledDataSource<SdfPathVector>::New(
+            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
                     newFilterPaths);
         }
 
@@ -443,7 +450,7 @@ private:
 };
 
 // Data source override for 'renderSettings' that overrides the data source for
-// the 'namespacedSettings' locator when the rendering color space is different 
+// the 'namespacedSettings' locator when the rendering color space is different
 // from the display color space (currently assumed to be LinearRec709).
 class _RenderSettingsDataSource final : public HdContainerDataSource
 {
@@ -470,20 +477,20 @@ public:
     {
         // Override or add the displayFilters sampled data source inside the
         // namespaced settings data source if the rendering and display color
-        // spaces differ. 
+        // spaces differ.
         if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
             HdRenderSettingsSchema rsSchema(_input);
             if (!rsSchema.IsDefined()) {
                 return nullptr;
             }
 
-            HdContainerDataSourceHandle namespacedSettingsDS = 
+            HdContainerDataSourceHandle namespacedSettingsDS =
                 rsSchema.GetNamespacedSettings().GetContainer();
 
             if (namespacedSettingsDS && _NeedColorSpaceTransform(rsSchema)) {
 
                 // NOTE: This DS just prepends the color transform path
-                // inside the render settings namespaced settings 
+                // inside the render settings namespaced settings
                 return _ColorTransformNamespacedSettingsDataSource::New(
                     namespacedSettingsDS, _colorTransformFilterPath, _si);
             }
@@ -500,10 +507,6 @@ private:
     // Returns true if rendering and display color spaces are different
     bool _NeedColorSpaceTransform(const HdRenderSettingsSchema &rsSchema)
     {
-        if (HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransform(_si)) {
-            return false;
-        }
-
         const HdTokenDataSourceHandle colorSpaceDS =
             rsSchema.GetRenderingColorSpace();
         TfToken renderingCsName = (colorSpaceDS)
@@ -513,17 +516,17 @@ private:
         renderingCsName =
             HdPrman_DisplayColorSpaceSceneIndexPlugin::RemapColorSpaceName(
                 renderingCsName);
-        
-        // We assume the Display Color Space is LinearRec709 since we 
-        // currently do not have a way to specify it. 
+
+        // We assume the Display Color Space is LinearRec709 since we
+        // currently do not have a way to specify it.
         return (renderingCsName != GfColorSpaceNames->LinearRec709);
     }
 };
 
-// Builds and returns a dependencies data source that declares a "self" 
-// dependency on the Render Settings Prim to invalidate the 'namespacedSettings' 
-// locator when the 'renderingColorSpace' locator is dirtied. This is done 
-// because the connected display filters are aggregated under 
+// Builds and returns a dependencies data source that declares a "self"
+// dependency on the Render Settings Prim to invalidate the 'namespacedSettings'
+// locator when the 'renderingColorSpace' locator is dirtied. This is done
+// because the connected display filters are aggregated under
 // 'namespacedSettings'.
 static HdContainerDataSourceHandle
 _GetRenderSettingsDependenciesDataSource(
@@ -553,8 +556,8 @@ _GetRenderSettingsDependenciesDataSource(
 }
 
 // Render Settings Prim Data Source provides overrides for the
-// 'renderSettings' (to add the child Display Filter) and '__dependencies' 
-// locators (to make sure the namespaced settings are dirtied when the 
+// 'renderSettings' (to add the child Display Filter) and '__dependencies'
+// locators (to make sure the namespaced settings are dirtied when the
 // rendering color space changes).
 class _RenderSettingsPrimDataSource final : public HdContainerDataSource
 {
@@ -583,12 +586,12 @@ public:
     Get(const TfToken &name) override
     {
         HdDataSourceBaseHandle result = _input->Get(name);
-        
+
         if (name == HdRenderSettingsSchemaTokens->renderSettings) {
             if (HdContainerDataSourceHandle renderSettingsContainer =
                     HdContainerDataSource::Cast(result)) {
                 return _RenderSettingsDataSource::New(
-                        renderSettingsContainer, 
+                        renderSettingsContainer,
                         _colorTransformFilterPath, _si);
             }
         } else if (name == HdDependenciesSchemaTokens->__dependencies) {
@@ -606,9 +609,9 @@ private:
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Scene Index that adds a Display Filter prim under every Render Settings prim. 
-// The filter is added to the list of Display Filters connected to the 
-// Render Settings prim when its Rendering Color Space is different from the 
+// Scene Index that adds a Display Filter prim under every Render Settings prim.
+// The filter is added to the list of Display Filters connected to the
+// Render Settings prim when its Rendering Color Space is different from the
 // display color space (which is currently assumed to be LinearRec709)
 TF_DECLARE_REF_PTRS(_HdPrmanDisplayColorSpaceSceneIndex);
 
@@ -630,7 +633,7 @@ public:
         if (prim.dataSource && prim.primType == HdPrimTypeTokens->renderSettings) {
             prim.dataSource =
                 _RenderSettingsPrimDataSource::New(
-                    prim.dataSource, 
+                    prim.dataSource,
                     _GetDisplayFilterPrimPath(primPath),
                     _GetInputSceneIndex());
         }
@@ -656,7 +659,7 @@ public:
             SdfPathVector vec = _GetInputSceneIndex()->GetChildPrimPaths(primPath);
             vec.emplace_back(_GetDisplayFilterPrimPath(primPath));
             return vec;
-        }    
+        }
 
         return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
     }
@@ -693,14 +696,14 @@ protected:
             }
         }
 
-        // Make sure the new Color Transform display filter prims are added to 
+        // Make sure the new Color Transform display filter prims are added to
         // the results any was added above. Otherwise, simply return the input
         // entries.
         if (!added.empty()) {
             HdSceneIndexObserver::AddedPrimEntries allEntries(entries);
             allEntries.insert(allEntries.end(), added.begin(), added.end());
             _SendPrimsAdded(allEntries);
-        
+
         } else {
             _SendPrimsAdded(entries);
         }
@@ -781,31 +784,16 @@ HdPrman_DisplayColorSpaceSceneIndexPlugin::RemapColorSpaceName(
     return convertedCsName;
 }
 
-/* static */
-void
-HdPrman_DisplayColorSpaceSceneIndexPlugin::RegisterDisableTransformCallback(
-    const DisableTransformCallback& callback)
-{
-    _disableTransformCallbacks->push_back(callback);
-}
-
-bool
-HdPrman_DisplayColorSpaceSceneIndexPlugin::DisableTransform(
-    const HdSceneIndexBaseRefPtr& si)
-{
-    for (const auto& callback : *_disableTransformCallbacks) {
-        if (callback(si)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 HdSceneIndexBaseRefPtr
 HdPrman_DisplayColorSpaceSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
+    // If the display filter doesn't exist don't load this scene index.
+    if (UsdSchemaRegistry::FindSchemaInfo(
+        _tokens->PxrColorTransformDisplayFilter) == nullptr) {
+        return inputScene;
+    }
     return _HdPrmanDisplayColorSpaceSceneIndex::New(inputScene);
 }
 

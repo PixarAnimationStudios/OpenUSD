@@ -1,0 +1,31 @@
+#usda 1.0
+
+def "Asset" (
+    references = </Asset_dsv>
+)
+{
+}
+
+def "Asset_dsv"
+{
+    def "Looks"
+    {
+        def "Mat" (
+            references = @./shaders.usda@</Shaders/Looks/MatA>
+        )
+        {
+        }
+    }
+}
+
+def "AssetDirect"
+{
+    def "Looks"
+    {
+        def "Mat" (
+            references = @./shaders.usda@</Shaders/Looks/MatA>
+        )
+        {
+        }
+    }
+}

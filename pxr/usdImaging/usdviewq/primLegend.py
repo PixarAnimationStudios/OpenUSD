@@ -21,7 +21,7 @@ class PrimLegend(QtWidgets.QWidget):
         self.setMaximumHeight(0)
         self._isMinimized = True
 
-        graphicsScene = QtWidgets.QGraphicsScene()
+        graphicsScene = QtWidgets.QGraphicsScene(self)
 
         # Set colors
         self._ui.primLegendColorHasArcs.setScene(graphicsScene)

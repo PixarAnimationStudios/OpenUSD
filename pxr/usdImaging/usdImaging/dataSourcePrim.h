@@ -382,6 +382,45 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXform);
 
 // ----------------------------------------------------------------------------
 
+/// \class UsdImagingDataSourceSurface
+///
+/// Data source representing surface properties for a USD gprim.
+/// 
+class UsdImagingDataSourceSurface : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceSurface);
+
+    /// Returns the names contained in this data source.
+    ///
+    /// This class only returns 'doubleSided'.
+    TfTokenVector GetNames() override;
+
+    /// Returns the data source for the given \p 'name'.
+    ///
+    /// Only 'doubleSided' returns anything for this class.
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    /// Use to construct a new UsdImagingDataSourceSurface.
+    ///
+    /// \p doubleSidedAttr is the USD attribute holding doubleSided data.
+    /// \p stageGlobals is the context object for the USD stage.
+    ///
+    /// Note: client code calls this via static New().
+    UsdImagingDataSourceSurface(
+            const UsdAttribute &doubleSidedAttr,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+private:
+    UsdAttribute _doubleSidedAttr;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceSurface);
+
+// ----------------------------------------------------------------------------
+
 ///
 /// \class UsdImagingDataSourcePrimOrigin
 ///

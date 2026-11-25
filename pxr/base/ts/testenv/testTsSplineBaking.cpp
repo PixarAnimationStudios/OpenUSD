@@ -441,6 +441,49 @@ public:
 
         return result;
     }
+
+    bool TestBakeOutsideKnotRange()
+    {
+        const std::string testId =
+            "TestBakeOutsideKnotRange";
+
+        TsSpline spline;
+        {
+            TsKnot k1, k2;
+            k1.SetTime(0);
+            k1.SetValue(0.0);
+            k1.SetNextInterpolation(TsInterpLinear);
+            k2.SetTime(10);
+            k2.SetValue(10.0);
+            k2.SetNextInterpolation(TsInterpLinear);
+            spline.SetKnots({k1, k2});
+        }
+        spline.SetPreExtrapolation(TsExtrapolation(TsExtrapLinear));
+        spline.SetPostExtrapolation(TsExtrapolation(TsExtrapLoopRepeat));
+
+        const std::vector<GfInterval> intervals = {
+            GfInterval(-20, -2, true, false),
+            GfInterval(-20, 0, true, false),
+        };
+
+        for (const GfInterval& interval : intervals) {
+            const TsKnotMap knots = spline.GetKnotsWithLoopsBaked(interval);
+
+            double value = 0;
+            const bool ok = knots.size() == 1
+                && knots.begin()->GetTime() == 0
+                && knots.begin()->GetValue(&value)
+                && value == 0
+                && !knots.begin()->IsDualValued();
+            if (!ok) {
+                std::cerr << testId << ": unexpected baked knots for interval "
+                          << interval << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+    }
 };
 
 int main(int argc, const char **argv)
@@ -449,7 +492,8 @@ int main(int argc, const char **argv)
 
     if (!bakeTest.TestBakeInnerLoops() ||
         !bakeTest.TestGetKnotsWithInnerLoopsBaked() ||
-        !bakeTest.TestGetKnotsWithLoopsBaked())
+        !bakeTest.TestGetKnotsWithLoopsBaked() ||
+        !bakeTest.TestBakeOutsideKnotRange())
     {
         return 1;
     }

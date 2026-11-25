@@ -63,6 +63,10 @@ UsdUtils_LocalizationContext::Process(
             continue;
         }
 
+        if (!_delegate->ShouldTraverse(item.anchoredPath)) {
+            continue;
+        }
+
         SdfLayerRefPtr layer = SdfLayer::FindOrOpen(item.anchoredPath);
         if (!layer) {
             continue;

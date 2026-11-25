@@ -49,6 +49,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/visitValue.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include "pxr/pxr.h"
 
@@ -1025,10 +1026,12 @@ HdPrmanInstancer::_PopulateInstancesForChild(
     tbb::queuing_mutex::scoped_lock lock(mutex);
     _ClockMsg("Populate Instances of <%s> from Child <%s> : Run",
         prototypePrimPath.GetText(), childInstancerId.GetText());
-    _PopulateInstances(renderParam, dirtyBits, childInstancerId,
-        prototypePrimPath, rileyPrototypeIds, coordSysList, prototypeParams,
-        prototypeXform, rileyMaterialIds, prototypePaths, lightShaderId,
-        subInstances, prototypeFlats);
+    WorkWithScopedParallelism([&]() {
+        _PopulateInstances(renderParam, dirtyBits, childInstancerId,
+            prototypePrimPath, rileyPrototypeIds, coordSysList, prototypeParams,
+            prototypeXform, rileyMaterialIds, prototypePaths, lightShaderId,
+            subInstances, prototypeFlats);
+    }, false);
 }
 
 void
@@ -1047,7 +1050,9 @@ HdPrmanInstancer::_DepopulateInstancesForChild(
     tbb::queuing_mutex::scoped_lock lock(mutex);
     _ClockMsg("Depopulate Instances of <%s> from Child <%s> : Run",
         prototypePrimPath.GetText(), childInstancerId.GetText());
-    _DepopulateInstances(renderParam, prototypePrimPath, protoIdsToKeep);
+    WorkWithScopedParallelism([&]() {
+        _DepopulateInstances(renderParam, prototypePrimPath, protoIdsToKeep);
+    }, false);
 }
 
 void

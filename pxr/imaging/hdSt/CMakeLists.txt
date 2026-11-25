@@ -192,6 +192,7 @@ pxr_library(hdSt
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/backPlateSurface.glslfx
         shaders/basisCurves.glslfx
         shaders/capsule.glslfx
         shaders/compute.glslfx
@@ -208,6 +209,7 @@ pxr_library(hdSt
         shaders/implicitSurface.glslfx
         shaders/implicitSurfaceFaceCull.glslfx
         shaders/implicitSurfaceNormal.glslfx
+        shaders/implicitSurfaceWire.glslfx
         shaders/instancing.glslfx
         shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx
@@ -246,7 +248,7 @@ pxr_build_test(testHdStQualifiers
         testenv/testHdStQualifiers.cpp
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 pxr_build_test(testHdStBasicDrawing
     LIBRARIES
         hdSt
@@ -608,7 +610,7 @@ pxr_build_test(testHdStSubResourceRegistry
 )
 endif()
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 # Most HdSt tests require setup of a GL context and window. This is the
 # exception.
 pxr_register_test(testHdStBufferSource
@@ -631,11 +633,6 @@ pxr_register_test(testHdStQualifiers
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-
-if (WIN32)
-    message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
 
 #
 # Register tests

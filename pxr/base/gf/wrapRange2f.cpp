@@ -12,10 +12,13 @@
 #include "pxr/base/gf/range2f.h"
 #include "pxr/base/gf/range2d.h"
 
+#include "pxr/base/gf/pyBufferUtils.h"
+
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/copy_const_reference.hpp"
@@ -37,16 +40,6 @@ static const int _dimension = 2;
 static string _Repr(GfRange2f const &self) {
     return TF_PY_REPR_PREFIX + "Range2f(" +
         TfPyRepr(self.GetMin()) + ", " + TfPyRepr(self.GetMax()) + ")";
-}
-
-static GfRange2f __truediv__(const GfRange2f &self, double value)
-{
-    return self / value;
-}
-
-static GfRange2f& __itruediv__(GfRange2f &self, double value)
-{
-    return self /= value;
 }
 
 static size_t __hash__(GfRange2f const &r) { return TfHash{}(r); }
@@ -134,19 +127,8 @@ void wrapRange2f()
     to_python_converter<std::vector<GfRange2f>,
         TfPySequenceToPython<std::vector<GfRange2f> > >();
 
-    if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
-        // __truediv__ not added by .def( self / double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division"
-        cls.def("__truediv__", __truediv__);
-    }
-    if (!PyObject_HasAttrString(cls.ptr(), "__itruediv__")) {
-        // __itruediv__ not added by .def( self /= double() ) above, which
-        // happens when building with python 2, but we need it to support
-        // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of pxr_boost::python that incorrectly wraps
-        // in-place division with __idiv__ when building with python 3.
-        cls.def("__itruediv__", __itruediv__, return_self<>());
-    }
-
+    // Let C-contiguous buffers of (min, max) pairs be passed to wrapped
+    // functions taking TfSpan<GfRange2f>.
+    TfPyRegisterSpanBufferLayout<GfRange2f>(
+        Gf_GetPyBufferFmtFor<float>()[0], { 2, 2 });
 }

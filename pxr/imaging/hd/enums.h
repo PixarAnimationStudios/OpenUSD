@@ -153,8 +153,8 @@ enum HdPointsGeomStyle {
 enum HdImplicitSurfaceGeomStyle {
     HdImplicitSurfaceGeomStyleInvalid,
     HdImplicitSurfaceGeomStyleSurf,
-    HdImplicitSurfaceGeomStyleRingsOnly,
-    HdImplicitSurfaceGeomStyleRingsOnSurf,
+    HdImplicitSurfaceGeomStyleEdgeOnly,
+    HdImplicitSurfaceGeomStyleEdgeOnSurf,
     HdImplicitSurfaceGeomStylePoints
 };
 

@@ -29,7 +29,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_MAKE_STATIC_DATA(SdrTokenVec, _sourceTypes) {
-    *_sourceTypes = { TfToken("OSL"), 
+    *_sourceTypes = { TfToken("OSL"),
                       TfToken("RmanCpp"), }; }
 
 HdPrman_DisplayFilter::HdPrman_DisplayFilter(
@@ -43,7 +43,7 @@ HdPrman_DisplayFilter::Finalize(HdRenderParam *renderParam)
 {
 }
 
-void 
+void
 HdPrman_DisplayFilter::_CreateRmanDisplayFilter(
     HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
@@ -72,14 +72,14 @@ HdPrman_DisplayFilter::_CreateRmanDisplayFilter(
     }
     rileyNode.name = RtUString(shaderPath.c_str());
 
-    // Initialize the Display Filter parameters 
+    // Initialize the Display Filter parameters
     for (const auto &param : displayFilterNode.parameters) {
         const SdrShaderProperty* prop = sdrEntry->GetShaderInput(param.first);
         if (!prop) {
             TF_WARN("Unknown shaderProperty '%s' for the '%s' "
                     "shader at '%s', ignoring.\n",
-                    param.first.GetText(), 
-                    displayFilterNode.nodeTypeId.GetText(), 
+                    param.first.GetText(),
+                    displayFilterNode.nodeTypeId.GetText(),
                     filterPrimPath.GetText());
             continue;
         }
@@ -104,7 +104,7 @@ HdPrman_DisplayFilter::Sync(
         // Only Create the DisplayFilter if on the RenderSettings
         // Note that this works because the RenderSettings, being a Bprim,
         // always gets synced before the DisplayFilter Sprim.
-        const SdfPathVector& filters = param->GetDisplayFilterPaths();
+        const VtArray<SdfPath>& filters = param->GetDisplayFilterPaths();
         if (std::find(filters.begin(), filters.end(), id) != filters.end()) {
             const VtValue displayFilterResourceValue =
                 sceneDelegate->Get(id, _tokens->resource);
@@ -116,7 +116,7 @@ HdPrman_DisplayFilter::Sync(
                     sceneDelegate, param, id, displayFilterNode);
             }
         }
-    } 
+    }
     // the _CreateRmanDisplayFilter() call above regenerates the filter network,
     // so if DirtyParams was set there's nothing left to do for DirtyVisibility.
     else if (*dirtyBits & HdChangeTracker::DirtyVisibility) {
@@ -129,9 +129,9 @@ HdPrman_DisplayFilter::Sync(
 
 HdDirtyBits HdPrman_DisplayFilter::GetInitialDirtyBitsMask() const
 {
-    int mask = 
-        HdChangeTracker::Clean | 
-        HdChangeTracker::DirtyParams | 
+    int mask =
+        HdChangeTracker::Clean |
+        HdChangeTracker::DirtyParams |
         HdChangeTracker::DirtyVisibility;
     return (HdDirtyBits)mask;
 }

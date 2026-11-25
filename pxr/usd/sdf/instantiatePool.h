@@ -18,6 +18,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/pool.h"
 
+#include <tbb/concurrent_queue.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper to reserve a region of virtual address space.
@@ -47,9 +49,33 @@ Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_regionState;
 
 template <class Tag,
           unsigned ElemSize, unsigned RegionBits, unsigned ElemsPerSpan>
-TfStaticData<tbb::concurrent_queue<
-    typename Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_FreeList>>
+struct Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_SharedFreeLists
+    : tbb::concurrent_queue<_FreeList> {};
+
+template <class Tag,
+          unsigned ElemSize, unsigned RegionBits, unsigned ElemsPerSpan>
+TfStaticData<typename Sdf_Pool<
+                 Tag, ElemSize, RegionBits, ElemsPerSpan>::_SharedFreeLists>
 Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_sharedFreeLists;
+
+template <class Tag,
+          unsigned ElemSize, unsigned RegionBits, unsigned ElemsPerSpan>
+inline bool
+Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_TakeSharedFreeList(
+    _FreeList &out)
+{
+    return _sharedFreeLists->try_pop(out);
+}
+
+template <class Tag,
+          unsigned ElemSize, unsigned RegionBits, unsigned ElemsPerSpan>
+inline void
+Sdf_Pool<Tag, ElemSize, RegionBits, ElemsPerSpan>::_ShareFreeList(
+    _FreeList &in)
+{
+    _sharedFreeLists->push(in);
+    in = {};
+}
 
 
 template <class Tag,

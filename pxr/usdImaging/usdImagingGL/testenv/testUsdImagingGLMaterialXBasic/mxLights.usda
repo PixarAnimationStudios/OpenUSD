@@ -44,10 +44,15 @@ def Scope "Materials" {
     }
 }
 
-def Xform "lights" 
+def Camera "Camera"
 {
-    uniform token purpose = "render"
+    float focalLength = 18.147
+    double3 xformOp:translate = (0, 0, 5.74)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
 
+def Xform "lights"
+{
     def DistantLight "DistantLight1"
     {
         color3f inputs:color = (0,0,1)

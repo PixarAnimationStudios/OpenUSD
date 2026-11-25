@@ -20,18 +20,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-if(PXR_ENABLE_OPENVDB_SUPPORT)
-    # Find Boost package before getting any boost specific components as we need to
-    # disable boost-provided cmake config, based on the boost version found.
-    find_package(Boost REQUIRED)
-    # If a user explicitly sets Boost_NO_BOOST_CMAKE to On, following will
-    # disable the use of boost provided cmake config.
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" OFF)
-    if (Boost_NO_BOOST_CMAKE)
-      message(STATUS "Disabling boost-provided cmake config")
-    endif()
-endif()
-
 if(PXR_ENABLE_PYTHON_SUPPORT)
     # 1--Python.
     macro(setup_python_package package)
@@ -193,11 +181,20 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        set(REQUIRES_Imath TRUE)
-        find_package(OpenImageIO REQUIRED)
+        find_package(OpenImageIO 3 REQUIRED CONFIG OPTIONAL_COMPONENTS idiff)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
-        if (OIIO_idiff_BINARY)
-            set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
+    elseif(PXR_BUILD_TESTS AND NOT IMAGE_DIFF_TOOL)
+        find_package(OpenImageIO 3 CONFIG OPTIONAL_COMPONENTS idiff)
+    endif()
+    if (PXR_BUILD_TESTS)
+        if (IMAGE_DIFF_TOOL)
+            message(STATUS "Resolved IMAGE_DIFF_TOOL to $IMAGE_DIFF_TOOL")
+        elseif (TARGET OpenImageIO::idiff)
+            message(STATUS "Found idiff in OpenImageIO package")
+        else()
+            message(WARN
+                    "Tests were enabled, but OpenImageIO was built "
+                    "without idiff and IMAGE_DIFF_TOOL was unset.")
         endif()
     endif()
     # --OpenColorIO

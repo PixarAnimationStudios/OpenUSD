@@ -25,24 +25,18 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hd/version.h"
-
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
-
-#include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/settings.h"
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
-
 #include "pxr/base/arch/env.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -77,9 +71,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pixelFilterName, "ri:Ri:PixelFilterName"))
     ((pixelFilterWidth, "ri:Ri:PixelFilterWidth"))
 );
-
-TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, true,
-                      "Use Scene Index API for testHdPrman.");
 
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
                       "Use the Render Settings Prim instead of the "
@@ -496,6 +487,22 @@ AddVisualizerStyle(
     }
 }
 
+// Forward a husk-style delegate options string (e.g. "-recover 1") to the
+// render delegate through the batchCommandLine render setting, so that the
+// delegate's own "--delegate-options" parsing is what gets exercised.
+void
+AddDelegateOptions(
+    const std::string& delegateOptions, HdRenderSettingsMap* settingsMap)
+{
+    if (!delegateOptions.empty()) {
+        VtArray<std::string> batchCommandLine;
+        batchCommandLine.push_back("--delegate-options");
+        batchCommandLine.push_back(delegateOptions);
+        (*settingsMap)[HdPrmanRenderSettingsTokens->batchCommandLine] =
+            batchCommandLine;
+    }
+}
+
 // Add the Namespaced Settings to the settingsMap making sure to add the
 // fallback settings specific to testHdPrman
 void
@@ -692,32 +699,15 @@ HydraSetupAndRender(
     const int frameNum,
     TfStopwatch *timer_hydra)
 {
-    // Hydra setup
-    //
     // Assemble a Hydra pipeline to feed USD data to Riley.
-    // Scene data flows left-to-right:
-    //
-    //     => UsdStage
-    //       => UsdImagingDelegate (hydra "frontend")
-    //         => HdRenderIndex
-    //           => HdPrmanRenderDelegate (hydra "backend")
-    //             => Riley
-    //
-    // Note that Hydra is flexible, but that means it takes a few steps
-    // to configure the details. This might seem out of proportion in a
-    // simple usage example like this, if you don't consider the range of
-    // other scenarios Hydra is meant to handle.
 
     // Create the RenderDelegate, passing in the HdRenderSettingsMap
     // In order to pick up the plugin scene indices, we need to instantiate
     // the HdPrmanRenderDelegate through the renderer plugin registry.
-
     const TfToken loader = _ResolveLoaderFromVariant(variant);
-
     HdPluginRenderDelegateUniqueHandle const renderDelegate =
         HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
             loader, settingsMap);
-
     const std::string renderInstanceId =
         TfStringPrintf("testHdPrman_%s_%p",
             renderDelegate.GetPluginId().GetText(),
@@ -729,9 +719,8 @@ HydraSetupAndRender(
         static std::once_flag registerOnce;
         std::call_once(registerOnce, _RegisterApplicationSceneIndices);
     }
-
-    _AppSceneIndicesSharedPtr appSceneIndices
-        = std::make_shared<_AppSceneIndices>();
+    _AppSceneIndicesSharedPtr appSceneIndices =
+        std::make_shared<_AppSceneIndices>();
 
     // Register the app scene indices with the render instance id
     // that is provided to the render index constructor below. This allows
@@ -739,13 +728,13 @@ HydraSetupAndRender(
     s_renderInstanceTracker->RegisterInstance(
         renderInstanceId, appSceneIndices);
 
+    // Use Hydra 1.0 render index emulation, for now
     std::unique_ptr<HdRenderIndex> const hdRenderIndex(
         HdRenderIndex::New(
             renderDelegate.Get(), HdDriverVector(), renderInstanceId));
 
-    std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
-
-    if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+    // Create scene indexes
+    {
         UsdImagingCreateSceneIndicesInfo createInfo;
         createInfo.stage = stage;
         UsdImagingSceneIndices sceneIndices =
@@ -764,33 +753,9 @@ HydraSetupAndRender(
             displayStyleSceneIndex->SetCullStyleFallback(TfToken(cullStyle));
         }
 
+        // Plug scene index chain into the Hydra 1.0 render index.
         hdRenderIndex->InsertSceneIndex(
             sceneIndex, SdfPath::AbsoluteRootPath());
-    } else {
-        hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
-            hdRenderIndex.get(),
-            SdfPath::AbsoluteRootPath());
-        hdUsdFrontend->Populate(stage->GetPseudoRoot());
-        hdUsdFrontend->SetTime(frameNum);
-        hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-        if (!cameraPath.IsEmpty()) {
-            hdUsdFrontend->SetCameraForSampling(cameraPath);
-        }
-        if (!cullStyle.empty()) {
-            if (cullStyle == "none") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
-            } else if (cullStyle == "back") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
-            } else if (cullStyle == "front") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
-            } else if (cullStyle == "backUnlessDoubleSided") {
-                hdUsdFrontend->SetCullStyleFallback(
-                    HdCullStyleBackUnlessDoubleSided);
-            } else if (cullStyle == "frontUnlessDoubleSided") {
-                hdUsdFrontend->SetCullStyleFallback(
-                    HdCullStyleFrontUnlessDoubleSided);
-            }
-        }
     }
 
     // XXX
@@ -803,8 +768,10 @@ HydraSetupAndRender(
     HdRprimCollection hdCollection(
         _tokens->testCollection,
         HdReprSelector(HdReprTokens->smoothHull));
+#if HD_API_VERSION < 112
     HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
     tracker.AddCollection(_tokens->testCollection);
+#endif
 
     // We don't need multi-pass rendering with a pathtracer
     // so we use a single, simple render pass.
@@ -866,7 +833,8 @@ HydraSetupAndRender(
         renderTags.push_back(HdRenderTagTokens->geometry);
     }
 
-    // The task execution graph and engine configuration is also simple.
+    // Hydra uses tasks to organize rendering.  In the case of HdPrman
+    // there is a single task.
     HdTaskSharedPtrVector tasks = {
         std::make_shared<Hd_DrawTask>(hdRenderPass,
                                       hdRenderPassState,
@@ -879,7 +847,6 @@ HydraSetupAndRender(
 
     s_renderInstanceTracker->UnregisterInstance(renderInstanceId);
 }
-
 
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
@@ -901,7 +868,8 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "[--out|-o OUTPUT] [--frame|-f FRAME] [--env|-e NAME=VALUE]"
             "[--sceneCamPath|-c CAM_PATH] [--settings|-s RENDERSETTINGS_PATH] "
             "[--sceneCamAspect|-a aspectRatio] [--cullStyle|-k CULL_STYLE] "
-            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE]\n"
+            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE] "
+            "[--delegateOptions|-d OPTIONS]\n"
             "Single-hyphen options still need a space before the value!\n"
             "VARIANT defaults to ris and may be: %s.\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
@@ -914,6 +882,8 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "the default integrator\n"
             "PERF indicates a json file to record performance measurements\n"
             "TRACE indicates a text file to record trace measurements\n"
+            "OPTIONS is a husk-style --delegate-options string passed to the "
+            "render delegate, e.g. -d \"-recover 1\"\n"
             "CULL_STYLE selects the fallback cull style and may be one of: "
             "none|back|front|backUnlessDoubleSided|frontUnlessDoubleSided\n",
             cmd, variants.c_str());
@@ -941,6 +911,7 @@ int main(int argc, char *argv[])
     std::string perfOutput, traceOutput;
     std::string cullStyle;
     std::string variant("ris");
+    std::string delegateOptions;
 
     int frameNum = 0;
     SdfPath sceneCamPath, renderSettingsPath;
@@ -973,6 +944,8 @@ int main(int argc, char *argv[])
             env.push_back({parts[0], parts[1]});
         } else if (arg == "--variant" || arg == "-v") {
             variant = TfStringToLower(argv[++i]);
+        } else if (arg == "--delegateOptions" || arg == "-d") {
+            delegateOptions = argv[++i];
         }
     }
 
@@ -1071,6 +1044,7 @@ int main(int argc, char *argv[])
         HdRenderSettingsMap settingsMap;
 
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
+        AddDelegateOptions(delegateOptions, &settingsMap);
 
         HydraSetupAndRender(
             variant,
@@ -1112,6 +1086,7 @@ int main(int argc, char *argv[])
             AddVisualizerStyle(visualizerStyle, &settingsMap);
             AddNamespacedSettings(product.namespacedSettings, &settingsMap);
             settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
+            AddDelegateOptions(delegateOptions, &settingsMap);
 
             HydraSetupAndRender(
                 variant, settingsMap,

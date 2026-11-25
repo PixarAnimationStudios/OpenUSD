@@ -113,14 +113,6 @@ TF_MAKE_STATIC_DATA(
     _filterLightCallbacks->clear();
 }
 
-TF_MAKE_STATIC_DATA(
-    std::vector<
-        HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransformCallback>,
-    _disableTransformCallbacks)
-{
-    _disableTransformCallbacks->clear();
-}
-
 namespace {
 
 using VtArrayVec3f = VtArray<GfVec3f>;
@@ -680,21 +672,18 @@ _FilterMaterial(
                         upstreamNodeName, upstreamOutputName,
                         nodeName, inputName);
 
-                    // Update the asset param data with the raw colorspace.
+                    // Update the color space on the asset param data.
                     // This ensures that no further colorspace transformation
                     // happens.
                     //
                     // XXX Is this correct?  What if there are multiple
                     // downstream nodes connected to this one output?
                     //
-                    // XXX Revisit this to make sure we should put this color
-                    // space vs the rendering color space
-                    //
                     // Create new ParamData in the Rendering Color Space
                     HdMaterialNetworkInterface::NodeParamData newParamData;
                     newParamData.typeName = paramData.typeName;
                     newParamData.value = paramData.value;
-                    newParamData.colorSpace = GfColorSpaceNames->Raw;
+                    newParamData.colorSpace = renderingColorSpace.GetName();
                     material->SetNodeParameterData(
                         upstreamNodeName, paramName, newParamData);
                 }
@@ -737,7 +726,7 @@ _FilterMaterial(
             const GfColorSpace sourceColorSpace =
                 _GetSourceColorSpace(
                     paramName, nodeName, paramData.colorSpace);
-            if (_SkipColorTransform(sourceColorSpace, renderingColorSpace)){
+            if (_SkipColorTransform(sourceColorSpace, renderingColorSpace)) {
                 continue;
             }
 
@@ -1044,11 +1033,6 @@ public:
         const HdSceneIndexBaseRefPtr& si = _GetInputSceneIndex();
         HdSceneIndexPrim prim = si->GetPrim(primPath);
 
-        // Do nothing if we should disable this color space transformation
-        if (HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransform(si)) {
-            return prim;
-        }
-
         if (prim.dataSource) {
             if (prim.primType == HdPrimTypeTokens->material) {
                 prim.dataSource =
@@ -1123,7 +1107,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 5;
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 101;
 
     for (auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
@@ -1225,26 +1209,6 @@ HdPrman_RenderingColorSpaceSceneIndexPlugin::FilterLight(
 {
     for (const auto& callback : *_filterLightCallbacks) {
         if (callback(interface, primPath, nodeName, renderingCS)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/* static */
-void
-HdPrman_RenderingColorSpaceSceneIndexPlugin::RegisterDisableTransformCallback(
-    const DisableTransformCallback& callback)
-{
-    _disableTransformCallbacks->push_back(callback);
-}
-
-bool
-HdPrman_RenderingColorSpaceSceneIndexPlugin::DisableTransform(
-    const HdSceneIndexBaseRefPtr& si)
-{
-    for (const auto& callback : *_disableTransformCallbacks) {
-        if (callback(si)) {
             return true;
         }
     }

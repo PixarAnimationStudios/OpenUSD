@@ -2,9 +2,12 @@
 (
     defaultPrim = "world"
     upAxis = "Z"
+    subLayers = [
+        @./intersectingImplicits.usda@
+    ]
 )
 
-def Camera "main_cam"
+over Camera "main_cam"
 {
     float4[] clippingPlanes = []
     float2 clippingRange = (53.038, 60.4)
@@ -20,175 +23,7 @@ def Camera "main_cam"
     uniform token[] xformOpOrder = ["xformOp:transform"]
 }
 
-def Xform "world"
-{
-    def Xform "sphere1Xform"
-    {
-        double3 xformOp:translate = (20, 2, 3)
-        double3 xformOp:rotateXYZ = (45, 70, 60)
-        double3 xformOp:scale = (2, 6, 3)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:rotateXYZ",
-            "xformOp:scale"
-        ]
-
-        def Sphere "sphere1"
-        {
-            color3f[] primvars:displayColor = [(0, 0.3, 0.6)]
-
-            double radius = 2.5
-        }
-    }
-
-    def Xform "sphere2Xform"
-    {
-        double3 xformOp:translate = (-2, 2, 5)
-        double3 xformOp:scale = (0.5, 0.5, 0.5)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:scale"
-        ]
-
-        def Sphere "sphere2"
-        {
-            color3f[] primvars:displayColor = [(0.8, 0.2, 0.2)]
-
-            double radius = 4.0
-        }
-    }
-
-    def Xform "sphere3Xform"
-    {
-        double3 xformOp:translate = (10, 2, 3)
-        double3 xformOp:scale = (5, 2, 10)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:scale"
-        ]
-
-        def Sphere "sphere3"
-        {
-            color3f[] primvars:displayColor = [(0, 0.9, 0.6)]
-
-            double radius = 1.0
-        }
-    }
-
-    def Xform "cyl1Xform"
-    {
-        double3 xformOp:translate = (23, 2, 3)
-        double3 xformOp:rotateXYZ = (45, 70, 60)
-        double3 xformOp:scale = (2, 6, 3)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:rotateXYZ",
-            "xformOp:scale"
-        ]
-
-        def Cylinder_1 "cyl1"
-        {
-            uniform token axis = "Z"
-            double height = 5.0
-            double radiusTop = 1.2
-            double radiusBottom = 2.5
-            color3f[] primvars:displayColor = [(0.9, 0.5, 0.1)]
-        }
-    }
-
-    def Xform "cyl2Xform"
-    {
-        double3 xformOp:translate = (-0.5, 2, 5)
-        double3 xformOp:scale = (0.5, 0.5, 0.5)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:scale"
-        ]
-
-        def Cylinder "cyl2"
-        {
-            uniform token axis = "X"
-            double height = 12.0
-            double radius = 2.5
-            color3f[] primvars:displayColor = [(0.7, 0.9, 0.2)]
-        }
-    }
-
-    def Xform "cyl3Xform"
-    {
-        double3 xformOp:translate = (14, 2, 3)
-        double3 xformOp:scale = (5, 2, 10)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:scale"
-        ]
-
-        def Cone "cyl3"
-        {
-            uniform token axis = "Y"
-            double height = 2.5
-            double radius = 1.0
-            color3f[] primvars:displayColor = [(0.6, 0.2, 0.8)]
-        }
-    }
-
-    def Xform "capsule1Xform"
-    {
-        double3 xformOp:translate = (27, 2, 3)
-        double3 xformOp:rotateXYZ = (30, 45, 0)
-        double3 xformOp:scale = (2, 4, 2)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:rotateXYZ",
-            "xformOp:scale"
-        ]
-
-        def Capsule_1 "capsule1"
-        {
-            uniform token axis = "Z"
-            double height = 5.0
-            double radiusTop = 1.2
-            double radiusBottom = 2.5
-            color3f[] primvars:displayColor = [(0.3, 0.7, 0.9)]
-        }
-    }
-
-    def Xform "capsule2Xform"
-    {
-        double3 xformOp:translate = (5, 2, 3)
-        double3 xformOp:scale = (0.8, 0.8, 0.8)
-        uniform token[] xformOpOrder = [
-            "xformOp:translate",
-            "xformOp:scale"
-        ]
-
-        def Capsule "capsule2"
-        {
-            uniform token axis = "X"
-            double height = 12.0
-            double radius = 2.5
-            color3f[] primvars:displayColor = [(0.9, 0.3, 0.5)]
-        }
-    }
-
-    def Cube "cube1"
-    {
-        double size = 5.0
-        color3f[] primvars:displayColor = [(0.1, 0.7, 0.7)]
-        double3 xformOp:translate = (15, -2, 4)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-    }
-
-    def Cube "cube2"
-    {
-        double size = 3.0
-        color3f[] primvars:displayColor = [(0.8, 0.7, 0.1)]
-        double3 xformOp:translate = (-1, 2, 5)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
-    }
-}
-
-def Xform "lights" 
+def Xform "lights"
 {
     def DomeLight "DomeLight"
     {

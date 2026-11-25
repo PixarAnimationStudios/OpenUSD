@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-from __future__ import division
 
 import sys
 import math
@@ -63,9 +62,9 @@ class TestGfRay(unittest.TestCase):
                     Gf.FindClosestPoints(r, l)
         self.assertTrue(intersects and \
             rayPoint == Gf.Vec3d() and \
-            Gf.IsClose(linePoint, Gf.Vec3d(-4./3,-7./3,-7./3), 0.00001) and \
+            Gf.IsClose(linePoint, Gf.Vec3d(2./3,-1./3,-1./3), 0.00001) and \
             rayDistance == 0 and \
-            Gf.IsClose(lineDistance, -4.04145188433, 0.00001))
+            Gf.IsClose(lineDistance, -1./3**0.5, 0.00001))
 
         r = Gf.Ray(Gf.Vec3d(), Gf.Vec3d(3,4,5))
         l = Gf.Line(Gf.Vec3d(1,0,0), Gf.Vec3d(3,4,5))
@@ -87,11 +86,36 @@ class TestGfRay(unittest.TestCase):
             Gf.IsClose(rayDistance, rayDistToNearEnd, 0.00001) and \
             Gf.IsClose(lineDistance, 0, 0.00001))
 
+        # parallel but overlapping, no single closest points
         r = Gf.Ray(Gf.Vec3d(), Gf.Vec3d(3,4,5))
         l = Gf.LineSeg(Gf.Vec3d(1,0,0), Gf.Vec3d(4,4,5))
         (intersects, rayPoint, linePoint, rayDistance, lineDistance) = \
                     Gf.FindClosestPoints(r, l)
         self.assertFalse(intersects)
+
+        # parallel but non-overlapping, the start points of both the ray and
+        # the segment are the closest points.
+        r = Gf.Ray(Gf.Vec3d(), Gf.Vec3d(3,4,5))
+        l = Gf.LineSeg(Gf.Vec3d(-1,0,0), Gf.Vec3d(-4,-4,-5))
+        (intersects, rayPoint, linePoint, rayDistance, lineDistance) = \
+                    Gf.FindClosestPoints(r, l)
+        self.assertTrue(intersects and \
+            Gf.IsClose(rayPoint, Gf.Vec3d(), 0.00001) and \
+            Gf.IsClose(linePoint, Gf.Vec3d(-1,0,0), 0.00001) and \
+            Gf.IsClose(rayDistance, 0.0, 0.00001) and \
+            Gf.IsClose(lineDistance, 0.0, 0.00001))
+
+        # Clamping the ray must also move the point on the segment to the one
+        # nearest the ray's start point.
+        r = Gf.Ray(Gf.Vec3d(0,0,0), Gf.Vec3d(1,0,0))
+        l = Gf.LineSeg(Gf.Vec3d(-3,1,0), Gf.Vec3d(-1,3,0))
+        (intersects, rayPoint, linePoint, rayDistance, lineDistance) = \
+                    Gf.FindClosestPoints(r, l)
+        self.assertTrue(intersects)
+        self.assertTrue(Gf.IsClose(rayPoint, Gf.Vec3d(0,0,0), 0.00001))
+        self.assertTrue(Gf.IsClose(linePoint, Gf.Vec3d(-2,2,0), 0.00001))
+        self.assertTrue(Gf.IsClose(rayDistance, 0, 0.00001))
+        self.assertTrue(Gf.IsClose(lineDistance, 0.5, 0.00001))
 
     def test_Equality(self):
         r = Gf.Ray()

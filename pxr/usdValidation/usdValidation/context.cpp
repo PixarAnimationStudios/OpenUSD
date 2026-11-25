@@ -90,29 +90,12 @@ _CollectAncestorTypeValidators(
 }
 
 static bool
-_ShouldRunSchemaTypeValidator(const UsdPrim &prim, const TfToken &schema)
+_ShouldRunSchemaTypeValidator(const UsdPrim &prim, const TfType &type)
 {
-    // Check if the prim is of the given schema type.
-    const TfType type = TfType::FindByName(schema.GetString());
-    if (!type) {
-        return false;
-    }
-
-    const TfToken schemaTypeName
-        = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(type);
-    if (prim.IsA(schemaTypeName)) {
-        return true;
-    }
-
-    // If schema is not an API schema, then it should not be run for the prim.
-    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(type)) {
-        return false;
-    }
-
-    const TfTokenVector apiSchemas = prim.GetAppliedSchemas();
-    // Check if the prim has the given API schema applied.
-    return std::find(apiSchemas.begin(), apiSchemas.end(), schemaTypeName)
-        != apiSchemas.end();
+    // IsA matches typed schemas and HasAPI matches applied API schemas,
+    // including any instance of a multiple-apply schema. Each returns false
+    // for the other kind of schema.
+    return prim.IsA(type) || prim.HasAPI(type);
 }
 
 UsdValidationContext::UsdValidationContext(const TfTokenVector &keywords,
@@ -263,19 +246,36 @@ UsdValidationContext::_DistributeValidators(
                 // Distribute schema type validators into a vector of pairs,
                 // where the first element is the schema type and the second
                 // element is a vector of validators for that schema type.
+                // schemaTypes entries may be TfType names or schema
+                // identifiers; resolving them here lets validators naming the
+                // same schema share an entry. Entries that do not resolve are
+                // skipped.
                 for (const TfToken &schemaType :
                      validator->GetMetadata().schemaTypes) {
+                    const TfType type
+                        = UsdSchemaRegistry::GetTypeFromName(schemaType);
+                    if (!type) {
+                        continue;
+                    }
                     const auto it = std::find_if(
                         _schemaTypeValidators.begin(),
                         _schemaTypeValidators.end(),
                         [&](const _SchemaTypeValidatorPair &pair) {
-                            return pair.first == schemaType;
+                            return pair.first == type;
                         });
                     if (it != _schemaTypeValidators.end()) {
-                        it->second.push_back(validator);
+                        // A validator may name the same schema more than
+                        // once, e.g. by both TfType name and identifier.
+                        // Validators are unique and a bucket only gains this
+                        // validator within this inner loop, so if it is
+                        // already present it is the last element.
+                        if (it->second.empty()
+                            || it->second.back() != validator) {
+                            it->second.push_back(validator);
+                        }
                     } else {
                         _schemaTypeValidators.emplace_back(
-                            schemaType,
+                            type,
                             std::vector<const UsdValidationValidator *> {
                                 validator });
                     }

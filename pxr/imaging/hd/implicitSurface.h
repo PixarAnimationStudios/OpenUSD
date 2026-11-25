@@ -37,13 +37,13 @@ struct HdImplicitSurfaceReprDesc
                 HdCullStyle cullStyle = HdCullStyleDontCare,
                 TfToken shadingTerminal = HdImplicitSurfaceReprDescTokens->surfaceShader,
                 bool blendWireframeColor = true,
-                bool forceOpaqueRings = true,
+                bool forceOpaqueEdges = true,
                 bool doubleSided = false)
         : geomStyle(geomStyle)
         , cullStyle(cullStyle)
         , shadingTerminal(shadingTerminal)
         , blendWireframeColor(blendWireframeColor)
-        , forceOpaqueRings(forceOpaqueRings)
+        , forceOpaqueEdges(forceOpaqueEdges)
         , doubleSided(doubleSided)
         {}
 
@@ -62,7 +62,7 @@ struct HdImplicitSurfaceReprDesc
     bool                       blendWireframeColor;
     /// If the geom style includes wireframe lines, should those lines be
     /// forced to be fully opaque, ignoring any applicable opacity inputs.
-    bool                       forceOpaqueRings;
+    bool                       forceOpaqueEdges;
     /// Should this surface be treated as double-sided? The resolved value is
     /// (prim.doubleSided || repr.doubleSided).
     bool                       doubleSided;

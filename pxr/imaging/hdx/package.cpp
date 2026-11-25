@@ -54,22 +54,6 @@ HdxPackageRenderPassColorShader()
 }
 
 TfToken
-HdxPackageRenderPassColorAndSelectionShader()
-{
-    static TfToken shader =
-        _GetShaderPath("renderPassColorAndSelectionShader.glslfx");
-    return shader;
-}
-
-TfToken
-HdxPackageRenderPassColorWithOccludedSelectionShader()
-{
-    static TfToken shader =
-        _GetShaderPath("renderPassColorWithOccludedSelectionShader.glslfx");
-    return shader;
-}
-
-TfToken
 HdxPackageRenderPassPickingShader()
 {
     static TfToken shader = _GetShaderPath("renderPassPickingShader.glslfx");

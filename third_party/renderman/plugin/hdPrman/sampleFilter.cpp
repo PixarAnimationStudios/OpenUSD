@@ -29,7 +29,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 TF_MAKE_STATIC_DATA(SdrTokenVec, _sourceTypes) {
-    *_sourceTypes = { TfToken("OSL"), 
+    *_sourceTypes = { TfToken("OSL"),
                       TfToken("RmanCpp"), }; }
 
 HdPrman_SampleFilter::HdPrman_SampleFilter(
@@ -43,7 +43,7 @@ HdPrman_SampleFilter::Finalize(HdRenderParam *renderParam)
 {
 }
 
-void 
+void
 HdPrman_SampleFilter::_CreateRmanSampleFilter(
     HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
@@ -72,14 +72,14 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
     }
     rileyNode.name = RtUString(shaderPath.c_str());
 
-    // Initialize the Sample Filter parameters 
+    // Initialize the Sample Filter parameters
     for (const auto &param : sampleFilterNode.parameters) {
         const SdrShaderProperty* prop = sdrEntry->GetShaderInput(param.first);
         if (!prop) {
             TF_WARN("Unknown shaderProperty '%s' for the '%s' "
                     "shader at '%s', ignoring.\n",
-                    param.first.GetText(), 
-                    sampleFilterNode.nodeTypeId.GetText(), 
+                    param.first.GetText(),
+                    sampleFilterNode.nodeTypeId.GetText(),
                     filterPrimPath.GetText());
             continue;
         }
@@ -104,7 +104,7 @@ HdPrman_SampleFilter::Sync(
         // Only Create the SampleFilter if on the RenderSettings
         // Note that this works because the RenderSettings, being a Bprim,
         // always gets synced before the SampleFilter Sprim.
-        const SdfPathVector& filters = param->GetSampleFilterPaths();
+        const VtArray<SdfPath>& filters = param->GetSampleFilterPaths();
         if (std::find(filters.begin(), filters.end(), id) != filters.end()) {
             const VtValue sampleFilterResourceValue =
                 sceneDelegate->Get(id, _tokens->resource);
@@ -116,7 +116,7 @@ HdPrman_SampleFilter::Sync(
                     sceneDelegate, param, id, sampleFilterNode);
             }
         }
-    } 
+    }
     // the _CreateRmanSampleFilter() call above regenerates the filter network,
     // so if DirtyParams was set there's nothing left to do for DirtyVisibility.
     else if (*dirtyBits & HdChangeTracker::DirtyVisibility) {
@@ -129,9 +129,9 @@ HdPrman_SampleFilter::Sync(
 
 HdDirtyBits HdPrman_SampleFilter::GetInitialDirtyBitsMask() const
 {
-    int mask = 
-        HdChangeTracker::Clean | 
-        HdChangeTracker::DirtyParams | 
+    int mask =
+        HdChangeTracker::Clean |
+        HdChangeTracker::DirtyParams |
         HdChangeTracker::DirtyVisibility;
     return (HdDirtyBits)mask;
 }

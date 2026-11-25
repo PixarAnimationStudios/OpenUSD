@@ -8,7 +8,7 @@
 
 // Version gated due to dependence on
 // HdPrman_MaterialPrimvarTransferSceneIndexPlugin.
-#if PXR_VERSION >= 2302
+#if PXR_VERSION >= 2311
 
 #include "hdPrman/tokens.h"
 
@@ -270,4 +270,4 @@ HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin::_AppendSceneIndex(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_VERSION >= 2302
+#endif // PXR_VERSION >= 2311

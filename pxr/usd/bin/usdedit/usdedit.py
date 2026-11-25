@@ -6,43 +6,38 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 
 import os, subprocess, sys
-from pxr.UsdUtils.toolPaths import RunUsdBinary
-
-# Splits an editor command from the environment into an argument list. The
-# value may name a bare executable or carry arguments, as in
-# USD_EDITOR="emacs -nw", so it is split the way a shell would. Windows paths
-# contain backslashes that POSIX-mode splitting would treat as escapes, so
-# quoting is handled in the platform's own style.
-def _splitEditorCommand(editorCmd):
-    import shlex
-    if os.name == 'nt':
-        # posix=False doesn't strip quotes, so do it manually.
-        return [arg.strip('"') for arg in shlex.split(editorCmd, posix=False)]
-    return shlex.split(editorCmd)
+from pxr.UsdUtils.toolPaths import RunUsdBinary, SplitCommandLine
 
 # lookup a suitable text editor. if none is available, this will cause the
 # program to abort with a suitable error message.
 def _findEditor(usdFileName, readOnly):
     # Ensure we have a suitable editor available
     import shutil
-    editorCmd = (os.getenv("USD_EDITOR") or
-                 os.getenv("EDITOR") or 
-                 shutil.which("emacs") or
-                 shutil.which("vim") or
-                 shutil.which("notepad"))
-    
-    if not editorCmd:
-        sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 
+    editorArgs = []
+    for envVarName in ("USD_EDITOR", "EDITOR"):
+        try:
+            editorArgs = SplitCommandLine(os.getenv(envVarName, ""))
+        except ValueError as e:
+            sys.exit("Error: Failed to parse $%s: %s" % (envVarName, e))
+        if editorArgs:
+            break
+    else:
+        # A path found on PATH names the program alone, so it is not split.
+        editor = (shutil.which("emacs") or
+                  shutil.which("vim") or
+                  shutil.which("notepad"))
+        if editor:
+            editorArgs = [editor]
+
+    if not editorArgs:
+        sys.exit("Error: Couldn't find a suitable text editor to use. Expected "
                  "$USD_EDITOR or $EDITOR to be set, or emacs/vim/notepad to "
                  "be installed and available in PATH.")
 
-    editorArgs = _splitEditorCommand(editorCmd)
-
     # special handling for emacs users
-    if 'emacs' in editorCmd:
+    if 'emacs' in editorArgs[0]:
         # Passed as a single argument, so the file name needs no quoting.
         title = "usdedit %s%s" % ("--noeffect " if readOnly else "",
                                   usdFileName)

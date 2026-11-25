@@ -56,13 +56,22 @@ public:
         const string& comment = string(),
         const FileFormatArguments& args = FileFormatArguments()) const override;
 
+    /// \copydoc SdfFileFormat::ReadFromString()
+    ///
+    /// This function assumes \p str contains text format (.usda) USD data.
     virtual bool ReadFromString(SdfLayer* layer,
                                 const string& str) const override;
 
+    /// \copydoc SdfFileFormat::WriteToString()
+    ///
+    /// This function writes text format (.usda) USD data to \p str.
     virtual bool WriteToString(const SdfLayer& layer,
                                string* str,
                                const string& comment = string()) const override;
 
+    /// \copydoc SdfFileFormat::WriteToStream()
+    ///
+    /// This function writes text format (.usda) USD data to \p out.
     virtual bool WriteToStream(const SdfSpecHandle &spec,
                                std::ostream& out,
                                size_t indent) const override;

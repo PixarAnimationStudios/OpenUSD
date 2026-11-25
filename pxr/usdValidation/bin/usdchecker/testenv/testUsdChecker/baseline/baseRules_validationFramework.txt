@@ -17,6 +17,31 @@
 	Keywords: UsdGeomValidators, UsdGeomSubset
 	SchemaTypes: UsdGeomSubset
 	isSuite: False
+[usdLodValidators:DistanceHeuristicThresholds]:
+	Doc: thresholds must be strictly increasing; blendThresholds (if present) must satisfy thresholds[i] <= blendThresholds[i] <= thresholds[i+1].
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodDistanceHeuristic
+	isSuite: False
+[usdLodValidators:HeuristicLodDomain]:
+	Doc: lod:domain on a UsdLodHeuristic must be non-empty.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodHeuristic
+	isSuite: False
+[usdLodValidators:LodOverrideApiMode]:
+	Doc: lod:override:mode must be one of the allowed tokens; if mode is indexedLOD, lod:override:index must be readable.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodOverrideAPI
+	isSuite: False
+[usdLodValidators:LodRootApiHeuristics]:
+	Doc: lod:heuristics relationship targets must resolve to prims that IsA UsdLodHeuristic.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodRootAPI
+	isSuite: False
+[usdLodValidators:ScreenSizeHeuristicThresholds]:
+	Doc: thresholds must be strictly decreasing; blendThresholds (if present) must satisfy thresholds[i+1] <= blendThresholds[i] <= thresholds[i]; projectionMethod must be a valid token; extent (if present) must be empty or have exactly 2 elements.
+	Keywords: UsdLodValidators
+	SchemaTypes: UsdLodScreenSizeHeuristic
+	isSuite: False
 [usdLuxValidators:EncapsulationRulesValidator]:
 	Doc: Connectable prims in UsdLux (e.g. Light, LightFilters) can only be nested inside other Container-like Connectable prims (UsdShadeNodeGraph, UsdLuxLight or UsdLuxLightFilter).
 	Keywords: UsdLuxValidators
@@ -103,15 +128,23 @@
 	Keywords: UsdUtilsValidators
 	isSuite: False
 [usdUtilsValidators:PackageEncapsulationValidator]:
-	Doc: If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.
+	Doc: If the root layer is a package, then it's recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.
+	Keywords: UsdUtilsValidators, UsdzValidators
+	isSuite: False
+[usdUtilsValidators:RootPackageValidator]:
+	Doc: Files within the root usdz package should not be compressed or encrypted, and should be aligned to 64 bytes. Nested usdz packages are not tested.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
 [usdUtilsValidators:UsdzPackageValidator]:
 	Doc: Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
+[usdValidation:AttributeSpecValueTypeMismatch]:
+	Doc: Checks that the authored default, time sample, and spline values of each attribute spec hold the value type declared by that spec's typeName.
+	Keywords: UsdCoreValidators
+	isSuite: False
 [usdValidation:AttributeTypeMismatch]:
-	Doc: Validator that checks for attribute type mismatch with the schema definition.
+	Doc: Checks that every property spec contributing to a composed attribute is an attribute spec declaring the attribute's composed type, and that each spec's authored values hold the spec's declared type.
 	Keywords: UsdCoreValidators
 	isSuite: False
 [usdValidation:CompositionErrorTest]:

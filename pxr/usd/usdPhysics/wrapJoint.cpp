@@ -235,9 +235,39 @@ void wrapUsdPhysicsJoint()
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/xformCache.h"
+
 namespace {
 
+static tuple
+_ComputeLocalPose0(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+{
+    GfVec3f position;
+    GfQuatf orientation;
+    return self.ComputeLocalPose0(&position, &orientation, cache)
+        ? make_tuple(position, orientation)
+        : tuple();
+}
+
+static tuple
+_ComputeLocalPose1(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+{
+    GfVec3f position;
+    GfQuatf orientation;
+    return self.ComputeLocalPose1(&position, &orientation, cache)
+        ? make_tuple(position, orientation)
+        : tuple();
+}
+
 WRAP_CUSTOM {
+    _class
+        .def("GetBody0", &UsdPhysicsJoint::GetBody0)
+        .def("GetBody1", &UsdPhysicsJoint::GetBody1)
+        .def("ComputeLocalPose0", &_ComputeLocalPose0,
+             (arg("xformCache") = object()))
+        .def("ComputeLocalPose1", &_ComputeLocalPose1,
+             (arg("xformCache") = object()))
+    ;
 }
 
 }

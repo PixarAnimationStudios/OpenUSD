@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/lightAPIAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 
@@ -46,10 +47,8 @@ public:
     Get(const TfToken &name) override
     {
         if (name == HdTokens->filters) {
-            SdfPathVector filterPaths;
-            _lightApi.GetFiltersRel().GetForwardedTargets(&filterPaths);
-            return HdCreateTypedRetainedDataSource(VtValue(filterPaths));
-
+            return UsdImagingDataSourceRelationship::New(
+                _lightApi.GetFiltersRel(), _stageGlobals);
         }
         if (name == HdTokens->isLight) {
             return HdRetainedTypedSampledDataSource<bool>::New(true);

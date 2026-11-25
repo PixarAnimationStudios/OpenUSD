@@ -1,0 +1,18 @@
+#usda 1.0
+
+def "Edited"
+{
+    def "CrateChild"
+    {
+    }
+}
+
+#usda 1.0
+
+def "Edited"
+{
+    def "TextChild"
+    {
+    }
+}
+

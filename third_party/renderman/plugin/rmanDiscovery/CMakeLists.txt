@@ -26,6 +26,11 @@ pxr_plugin(rmanDiscovery
 )
 
 if(TARGET rmanDiscovery)
+    target_include_directories(${PXR_PACKAGE}
+        PRIVATE
+        "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
+    )
+
     get_target_property(rpath ${PXR_PACKAGE} INSTALL_RPATH)
     if (rpath)
         if (APPLE)

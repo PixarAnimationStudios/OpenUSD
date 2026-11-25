@@ -339,9 +339,9 @@ public:
     /// \note It's worth noting that
     /// GetTypeFromName("Sphere") == GetTypeFromName("UsdGeomSphere"), as
     /// this function resolves both the Schema's C++ class name and any
-    /// registered aliases from a libraries plugInfo.json file. However,
-    /// GetTypeFromName("Boundable") != GetTypeFromName("UsdGeomBoundable")
-    /// because type aliases don't get registered for abstract schema types.
+    /// registered aliases from a libraries plugInfo.json file. This applies
+    /// to abstract schema types as well, e.g.
+    /// GetTypeFromName("Boundable") == GetTypeFromName("UsdGeomBoundable").
     USD_API
     static TfType GetTypeFromName(const TfToken& typeName);
 

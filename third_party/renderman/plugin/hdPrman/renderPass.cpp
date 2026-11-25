@@ -1116,7 +1116,10 @@ HdPrman_RenderPass::_RenderInMainThread()
     RtParamList renderOptions;
     static RtUString const US_RENDERMODE("renderMode");
     static RtUString const US_BATCH("batch");
+    static RtUString const US_ATTEMPTRECOVERY("attemptRecovery");
     renderOptions.SetString(US_RENDERMODE, US_BATCH);
+    renderOptions.SetInteger(
+        US_ATTEMPTRECOVERY, _renderParam->GetAttemptRecovery());
 
     riley->Render(
         {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},

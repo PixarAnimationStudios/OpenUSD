@@ -430,6 +430,17 @@ pxr_build_test(testUsdThreadedAuthoring
         testenv/testUsdThreadedAuthoring.cpp
 )
 
+pxr_build_test(testUsdValueClipsThreaded
+    LIBRARIES
+        arch
+        tf
+        work
+        sdf
+        usd
+    CPPFILES
+        testenv/testUsdValueClipsThreaded.cpp
+)
+
 pxr_build_test(testUsdTimeCodeStream
     LIBRARIES
         tf
@@ -801,6 +812,10 @@ pxr_register_test(testUsdStageThreading
 )
 pxr_register_test(testUsdThreadedAuthoring
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdThreadedAuthoring"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testUsdValueClipsThreaded
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValueClipsThreaded"
     EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdTimeCodeStream

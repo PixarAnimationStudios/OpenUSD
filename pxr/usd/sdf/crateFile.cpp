@@ -2305,6 +2305,17 @@ _ReadPossiblyCompressedArray(
         _ReadCompressedInts(reader, indexes.data(), indexes.size());
         auto o = odata;
         for (auto index: indexes) {
+            // The indexes come from the file, so check them.  We do so
+            // unconditionally, regardless of PXR_SAFETY_OVER_SPEED, since it's
+            // relatively inexpensive here.
+            if (ARCH_UNLIKELY(index >= lutSize)) {
+                TF_RUNTIME_ERROR("Corrupt data stream detected reading "
+                                 "compressed array in <%s>: lookup table "
+                                 "index %u out of range for table size %u",
+                                 reader.crate->GetAssetPath().c_str(),
+                                 index, lutSize);
+                return;
+            }
             *o++ = lut[index];
         }
     } else {
@@ -3834,8 +3845,15 @@ CrateFile::_ReadTokens(Reader reader)
         charsEnd = chars.get() + uncompressedSize;
         RawDataPtr compressed(new char[compressedSize]);
         reader.ReadContiguous(compressed.get(), compressedSize);
-        TfFastCompression::DecompressFromBuffer(
-            compressed.get(), chars.get(), compressedSize, uncompressedSize);
+        // Require exactly uncompressedSize bytes.  Fewer would leave the tail
+        // of chars uninitialized, and valid LZ4 data can decompress to fewer
+        // bytes than claimed without any error.
+        if (TfFastCompression::DecompressFromBuffer(
+                compressed.get(), chars.get(), compressedSize,
+                uncompressedSize) != uncompressedSize) {
+            TF_RUNTIME_ERROR("Corrupt tokens section in crate file");
+            return;
+        }
     }
 
     // Check/ensure that we're null terminated.
@@ -4031,6 +4049,42 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     // jumps.
     jumps.resize(numPaths);
     cr.Read(reader, jumps.data(), numPaths);
+
+    // Ensure the jumps table visits each index at most once.  If it visits an
+    // index more than once, concurrent tasks in _BuildDecompressedPathsImpl
+    // would data-race on the same SdfPath object in _paths, and a crafted
+    // table can make the number of visits grow exponentially.  This walks the
+    // indexes exactly as _BuildDecompressedPathsImpl does, but serially,
+    // deferring sibling subtrees to a stack instead of spawning tasks.  It
+    // also range checks every index _BuildDecompressedPathsImpl will visit.
+    if constexpr (SafetyOverSpeed) {
+        vector<bool> visited(numPaths);
+        vector<size_t> pendingSiblings { 0 };
+        while (!pendingSiblings.empty()) {
+            size_t curIndex = pendingSiblings.back();
+            pendingSiblings.pop_back();
+            bool hasChild = false, hasSibling = false;
+            do {
+                const size_t thisIndex = curIndex++;
+                if (thisIndex >= numPaths || visited[thisIndex]) {
+                    TF_RUNTIME_ERROR(
+                        "Corrupt paths jumps table in crate file "
+                        "(index:%zu %s)", thisIndex,
+                        thisIndex >= numPaths
+                        ? TfStringPrintf(">= %zu", numPaths).c_str()
+                        : "repeated");
+                    return;
+                }
+                visited[thisIndex] = true;
+                const int32_t jump = jumps[thisIndex];
+                hasChild = (jump > 0) || (jump == -1);
+                hasSibling = (jump >= 0);
+                if (hasChild && hasSibling) {
+                    pendingSiblings.push_back(thisIndex + jump);
+                }
+            } while (hasChild || hasSibling);
+        }
+    } // SafetyOverSpeed
 
     // Now build the paths.
     _BuildDecompressedPathsImpl(pathIndexes, elementTokenIndexes, jumps, 0,

@@ -84,7 +84,8 @@ UsdRiPxrImagingIntegratorAdapter::InvalidateImagingSubprim(
         return
             UsdRiPxrImaging_DataSourceRenderTerminalPrim<HdIntegratorSchema>::
             Invalidate(
-                prim, subprim, properties, invalidationType);
+                prim, subprim, properties, invalidationType,
+                _tokens->riIntegratorShaderId);
     }
 
     return HdDataSourceLocatorSet();

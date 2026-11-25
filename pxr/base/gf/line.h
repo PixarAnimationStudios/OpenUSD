@@ -84,7 +84,7 @@ class GfLine {
     GfVec3d             _dir;   
 };
 
-/// Computes the closets points between two lines.
+/// Computes the closest points between two lines.
 ///
 /// The two points are returned in \p p1 and \p p2.  The parametric distance
 /// of each point on the lines is returned in \p t1 and \p t2.

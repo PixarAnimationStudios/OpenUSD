@@ -209,6 +209,7 @@ namespace {
         float mass = self.ComputeMassProperties(&diagonalInertia, &com, &principalAxes, massInfoFn);        
         return pxr_boost::python::make_tuple( mass, diagonalInertia, com, principalAxes );
     }
+
         
 
     WRAP_CUSTOM {
@@ -219,6 +220,8 @@ namespace {
 
         scope s = _class
             .def("ComputeMassProperties", ComputeMassPropertiesHelper)
+            .def("GetCollisionPrims", &This::GetCollisionPrims,
+                 return_value_policy<TfPySequenceToList>())
 
         ;
 

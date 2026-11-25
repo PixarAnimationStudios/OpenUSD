@@ -1,0 +1,59 @@
+#usda 1.0
+
+def "Proto"
+{
+}
+
+def "Set"
+{
+    def "Inst" (
+        instanceable = true
+        references = </Proto>
+    )
+    {
+        over "cls"
+        {
+            def "extra"
+            {
+            }
+        }
+    }
+
+    def "Other" (
+        inherits = </Set/Inst/cls>
+    )
+    {
+    }
+}
+
+def "BackrefProto"
+{
+    def "geom" (
+        references = </Backref/A/cls>
+    )
+    {
+    }
+}
+
+def "Backref"
+{
+    def "A" (
+        instanceable = true
+        references = </BackrefProto>
+    )
+    {
+        over "cls"
+        {
+            def "extra"
+            {
+            }
+        }
+    }
+
+    def "B" (
+        instanceable = true
+        references = </BackrefProto>
+    )
+    {
+    }
+}

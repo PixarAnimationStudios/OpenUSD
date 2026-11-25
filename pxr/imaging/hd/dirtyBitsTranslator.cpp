@@ -63,6 +63,7 @@
 #include "pxr/imaging/hd/energyFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
+#include "pxr/imaging/hd/surfaceSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
@@ -228,6 +229,10 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdChangeTracker::DirtyPrimvar) {
             set->append(HdSphereSchema::GetDefaultLocator());
         }
+    }
+
+    if (bits & HdChangeTracker::DirtyDoubleSided) {
+        set->append(HdSurfaceSchema::GetDoubleSidedLocator());
     }
 
     if (bits & HdChangeTracker::DirtyVisibility) {
@@ -641,7 +646,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     }
 
     if (primType == HdPrimTypeTokens->basisCurves) {
-
         // Locator (*): basisCurves > topology
         if (_FindLocator(HdBasisCurvesTopologySchema::GetDefaultLocator(),
                          end, &it)) {
@@ -657,7 +661,6 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     }
 
     // Locator (*): categories
-
     if (_FindLocator(HdCategoriesSchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyCategories;
     }
@@ -667,6 +670,16 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         if (_FindLocator(HdConeSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyPrimvar;
         }
+    }
+
+    // Locator (*): coordSysBinding
+    if (_FindLocator(HdCoordSysBindingSchema::GetDefaultLocator(), end, &it)) {
+        // XXX: We don't have a dirty bit for coordinate system bindings.
+        // As a first step, treat this as a transform-invalidation, but
+        // this seems wrong and hacky.  We hope to migrate to a full Hydra 2
+        // pipeline before too long, in which case all  this code will be
+        // deprecated anyway.
+        bits |= HdChangeTracker::DirtyTransform;
     }
 
     if (primType == HdPrimTypeTokens->cube) {
@@ -796,7 +809,7 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
 
     if (primType == HdPrimTypeTokens->mesh) {
 
-        // Locator (*): mesh > doubleSided
+        // Locator (*): mesh > doubleSided (deprecated)
 
         if (_FindLocator(HdMeshSchema::GetDoubleSidedLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyDoubleSided;
@@ -869,6 +882,12 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         if (_FindLocator(HdSphereSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyPrimvar;
         }
+    }
+
+    // Locator (*): surface > doubleSided
+
+    if (_FindLocator(HdSurfaceSchema::GetDoubleSidedLocator(), end, &it)) {
+        bits |= HdChangeTracker::DirtyDoubleSided;
     }
 
     // Locator (*): visibility

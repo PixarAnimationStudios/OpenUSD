@@ -7,6 +7,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/pyBufferUtils.h"
+#include "pxr/base/tf/pySpan.h"
 
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/handle.hpp"
@@ -72,4 +74,8 @@ void wrapHalf()
 {
     HalfPythonConversions::Register();
     pxr_boost::python::def("_HalfRoundTrip", _HalfRoundTrip);
+
+    // Let C-contiguous buffers of halfs be passed to wrapped functions taking
+    // TfSpan<GfHalf>.
+    TfPyRegisterSpanBufferLayout<GfHalf>(Gf_GetPyBufferFmtFor<GfHalf>()[0]);
 }

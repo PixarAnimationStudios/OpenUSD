@@ -211,9 +211,7 @@ HgiGLGraphicsPipeline::BindPipeline()
         glFrontFace(GL_CCW);
     }
 
-    if (_descriptor.rasterizationState.lineWidth != 1.0f) {
-        glLineWidth(_descriptor.rasterizationState.lineWidth);
-    }
+    glLineWidth(_descriptor.rasterizationState.lineWidth);
 
     if (_descriptor.rasterizationState.rasterizerEnabled) {
         glDisable(GL_RASTERIZER_DISCARD);

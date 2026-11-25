@@ -330,7 +330,7 @@ public:
 /// The \c polylines and \c sources vectors are parallel arrays. In other words,
 /// the source for the \c Polyline in \c polylines[i] is in \c sources[i] and
 /// the two vectors have the same size.
-/// \sa \ref TsSplineSamples and \ref TsSpline::SampleWithSources
+/// \sa \ref TsSplineSamples and \ref TsSpline::Sample
 template <typename Vertex>
 class TsSplineSamplesWithSources
 {

@@ -3,10 +3,12 @@ set(PXR_PACKAGE rmanUsdValidators)
 
 pxr_plugin(rmanUsdValidators
     LIBRARIES
+        arch
         tf
         plug
         sdf
         usd
+        usdGeom
         usdRender
         usdRi
         usdShade
@@ -20,6 +22,15 @@ pxr_plugin(rmanUsdValidators
 
     RESOURCE_FILES
         plugInfo.json
+)
+
+if (NOT TARGET ${PXR_PACKAGE})
+    return()
+endif()
+
+target_include_directories(${PXR_PACKAGE}
+    PRIVATE
+    "${PROJECT_SOURCE_DIR}/third_party/renderman/plugin"
 )
 
 pxr_build_test(testRmanUsdValidators

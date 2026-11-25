@@ -20,6 +20,7 @@
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/stl.h"
 
+#include <climits>
 #include <unordered_map>
 #include <vector>
 

@@ -5,7 +5,6 @@
 # https://openusd.org/license.
 #
 import os
-import platform
 import subprocess
 import sys
 import shutil
@@ -37,7 +36,7 @@ def FindUsdBinary(name):
     if binpath:
         return binpath
 
-    if platform.system() == 'Windows':
+    if sys.platform == 'win32':
         # shutil.which under Windows only returns *.EXE files so we need to
         # traverse the tool path.
         path = os.environ.get('PATH', '').split(os.pathsep)
@@ -49,6 +48,32 @@ def FindUsdBinary(name):
                     return binpath
 
     return None
+
+def SplitCommandLine(commandLine):
+    """Splits a command taken from the environment, such as $USD_EDITOR or
+    $USD_DIFF, into an argument list. The value may name a bare executable or
+    carry arguments, as in USD_EDITOR="emacs -nw".
+
+    On POSIX platforms this splits the way a shell would, as shlex.split does.
+    On Windows, backslashes are path separators rather than escapes and only
+    double quotes group, so '"C:\\Program Files\\Diff\\diff.exe" -u' yields the
+    path and '-u'. This approximates the Windows argument rules closely enough
+    for program paths and simple arguments; for instance, a literal double
+    quote cannot be expressed.
+
+    Raises ValueError if a quotation is not closed.
+    """
+    return _SplitCommandLine(commandLine, sys.platform == 'win32')
+
+def _SplitCommandLine(commandLine, windows):
+    import shlex
+    lexer = shlex.shlex(commandLine, posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ''
+    if windows:
+        lexer.escape = ''
+        lexer.quotes = '"'
+    return list(lexer)
 
 def _GetScriptInterpreter(scriptPath):
     """For Windows only, shebang emulation: returns the interpreter named by
@@ -87,7 +112,7 @@ def _ResolveUsdCommand(name):
     if not binpath:
         return None
 
-    if (platform.system() != 'Windows' or
+    if (sys.platform != 'win32' or
         os.path.splitext(binpath)[1].lower() != '.cmd'):
         return [binpath]
 

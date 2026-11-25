@@ -1519,7 +1519,10 @@ direct USD referencing of layers expressed as files of any format whose encoding
 can reasonably be translated into USD. This is not only how USD supports direct
 consumption of Alembic (:filename:`.abc`) files, but also how USD's native text
 and `crate binary <#usdglossary-cratefileformat>`_ representations are
-provisioned.
+provisioned. :usdcpp:`SdfFileFormat` plugins may need to make assumptions about 
+the encoded data in certain use cases. For example,
+:usdcpp:`SdfUsdcFileFormat::ReadFromString()` assumes the provided
+string contains native text (.usda) data, not crate binary (.usdc) data.
 
 Data authored to layers by applications or scripts **will remain in memory
 until** :usdcpp:`SdfLayer::Save` **is called on the layer**. If a program is

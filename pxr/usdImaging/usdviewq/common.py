@@ -7,8 +7,6 @@
 
 # pylint: disable=round-builtin
 
-from __future__ import division
-from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
 import os, time, sys, platform, math
@@ -452,7 +450,7 @@ class LayerInfo(object):
         return ('    '*self._depth + 
             Sdf.Layer.GetDisplayNameFromIdentifier(self._identifier))
 
-def _AddLayerTree(stage, layerTree, depth=0):
+def _AddLayerTree(stage, layerTree, exprVars, depth=0):
 
     layers = [LayerInfo.FromLayer(
         layerTree.layer, stage, layerTree.offset, depth)]
@@ -471,6 +469,16 @@ def _AddLayerTree(stage, layerTree, depth=0):
     childTreeIter = iter(layerTree.childTrees)
     numMissingLayers = 0
     for subLayerPath in subLayerPaths:
+        # Evaluate expression sublayer paths as composition does, so they
+        # match the layers in the layer tree.
+        if Sdf.VariableExpression.IsExpression(subLayerPath):
+            subLayerPath = Sdf.VariableExpression(subLayerPath).Evaluate(
+                exprVars).value or ''
+            if not subLayerPath:
+                # Composition skips sublayers whose expression evaluates to
+                # an empty path or fails to evaluate.
+                numMissingLayers = numMissingLayers + 1
+                continue
         anchoredSubLayerPath = Sdf.ComputeAssetPathRelativeToLayer(
             layerTree.layer, subLayerPath)
         if stage.IsLayerMuted(anchoredSubLayerPath):
@@ -489,7 +497,7 @@ def _AddLayerTree(stage, layerTree, depth=0):
             # Otherwise we expect the unmuted sublayer to be the next child
             # tree in the layer stack tree so we recursively add it.
             layers.extend(_AddLayerTree(
-                stage, next(childTreeIter), depth=depth + 1))
+                stage, next(childTreeIter), exprVars, depth=depth + 1))
 
     # Since we're relying on the correspondence between the unmuted sublayer 
     # paths and the child layer stack trees, report an error if the total number
@@ -507,8 +515,10 @@ def GetRootLayerStackInfo(stage):
     primIndex = stage.GetPseudoRoot().GetPrimIndex()
     layerStack = primIndex.rootNode.layerStack
 
+    exprVars = layerStack.expressionVariables.GetVariables()
+
     with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
-        return _AddLayerTree(stage, layerStack.layerTree)
+        return _AddLayerTree(stage, layerStack.layerTree, exprVars)
 
 def PrettyFormatSize(sz):
     k = 1024

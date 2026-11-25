@@ -465,16 +465,20 @@ public:
     /// @{
     // ---------------------------------------------------------------------- //
 
-    /// Adds a named collection for tracking.
+    /// \deprecated Collection changes are already communicated via
+    /// HdRenderPass::SetRprimCollection. Will be removed in 27.05.
     HD_API
     void AddCollection(TfToken const& collectionName);
 
-    /// Marks a named collection as being dirty, this bumps the version of the
-    /// collection.
+    /// \deprecated Collection changes are already communicated via
+    /// HdRenderPass::SetRprimCollection. Will be removed in 27.05.
     HD_API
     void MarkCollectionDirty(TfToken const& collectionName);
 
-    /// Returns the current version of the named collection.
+    /// \deprecated Collection changes are already communicated via
+    /// HdRenderPass::SetRprimCollection. Will be removed in 27.05.
+    /// Applications that relied on this to notice when prims were added
+    /// or removed from the render index should use GetRprimIndexVersion.
     HD_API
     unsigned GetCollectionVersion(TfToken const& collectionName) const;
 
@@ -668,9 +672,7 @@ private:
     // Does not take ownership. The HdRenderIndex manages the lifetime of this
     // scene index.
     HdRetainedSceneIndex * _emulationSceneIndex;
-    bool _disableEmulationAPI;
     void _SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex);
-    void _SetDisableEmulationAPI(bool);
 
     // Private methods which implement the behaviors of their public
     // equivalents. The public versions check to see if legacy emulation is

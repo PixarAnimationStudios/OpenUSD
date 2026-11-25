@@ -377,6 +377,46 @@ TestTruncateSpecificCases()
                                  1e-10)) {
         return false;
     }
+
+    TsSpline splineLinear;
+    splineLinear.SetPreExtrapolation(TsExtrapLinear);
+    splineLinear.SetPostExtrapolation(TsExtrapLinear);
+    {
+        TsKnot k1, k2;
+        k1.SetTime(0);
+        k1.SetValue(0.0);
+        k1.SetNextInterpolation(TsInterpLinear);
+        k2.SetTime(10);
+        k2.SetValue(10.0);
+        k2.SetNextInterpolation(TsInterpLinear);
+        splineLinear.SetKnots({k1, k2});
+    }
+
+    const std::vector<GfInterval> linearIntervals = {
+        {12, 20, CLOSED, OPEN},
+        {10, 20, CLOSED, OPEN},
+        {-20, -2, CLOSED, OPEN},
+        {-20, 0, CLOSED, OPEN},
+        {12, +inf, CLOSED, OPEN},
+        {-inf, -2, OPEN, OPEN},
+    };
+    for (const GfInterval& truncInterval : linearIntervals) {
+        const TsSpline truncated = splineLinear.GetTruncated(truncInterval);
+
+        GfInterval linearCheck = truncInterval;
+        if (!linearCheck.IsMinFinite()) {
+            linearCheck.SetMin(linearCheck.GetMax() - 100, CLOSED);
+        }
+        if (!linearCheck.IsMaxFinite()) {
+            linearCheck.SetMax(linearCheck.GetMin() + 100, OPEN);
+        }
+        if (!VerifySplineEquivalence(testId, "splineLinear", splineLinear,
+                                     truncated, truncInterval, linearCheck,
+                                     1e-10)) {
+            return false;
+        }
+    }
+
     return true;
 }
 

@@ -29,10 +29,6 @@
 #define ARCH_USE_TSC_TIMING 0
 #endif
 
-#if ARCH_USE_TSC_TIMING
-#include <x86intrin.h>
-#endif
-
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -67,7 +63,9 @@ inline uint64_t
 ArchGetTickTime()
 {
 #if ARCH_USE_TSC_TIMING
-    return __rdtsc();
+    // Use the builtin rather than __rdtsc() to avoid including <x86intrin.h>,
+    // which is expensive to compile.
+    return __builtin_ia32_rdtsc();
 #else
     return Arch_TimingClock::now().time_since_epoch().count();
 #endif

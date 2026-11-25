@@ -137,7 +137,6 @@ if (BUILD_SHARED_LIBS)
             esf
             esfUsd
             exec
-            execTest
             plug
             sdf
             tf

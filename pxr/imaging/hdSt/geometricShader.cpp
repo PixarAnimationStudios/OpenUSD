@@ -76,7 +76,10 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
         primType,
         cullStyle,
         useMetalTessellation,
-        fvarPatchType
+        fvarPatchType,
+        vertexCountFallback,
+        depthQualifier,
+        useHardwareClipPlanes
     );
     //
     // note: Don't include polygonMode into the hash.

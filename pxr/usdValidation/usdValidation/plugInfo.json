@@ -10,7 +10,10 @@
                         "doc": "Stages that can be consumed as referenceable assets must have a valid 'defaultPrim' specified."
                     },
                     "AttributeTypeMismatch": {
-                        "doc": "Validator that checks for attribute type mismatch with the schema definition."
+                        "doc": "Checks that every property spec contributing to a composed attribute is an attribute spec declaring the attribute's composed type, and that each spec's authored values hold the spec's declared type."
+                    },
+                    "AttributeSpecValueTypeMismatch": {
+                        "doc": "Checks that the authored default, time sample, and spline values of each attribute spec hold the value type declared by that spec's typeName."
                     },
                     "keywords": [
                         "UsdCoreValidators"

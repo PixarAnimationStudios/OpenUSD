@@ -26,7 +26,7 @@ class Trace_JSONSerialization {
 public:
     /// Write a JSON representation of \p collections.
     static bool WriteCollectionsToJSON(JsWriter& js,
-        const std::vector<std::shared_ptr<TraceCollection>>& collections);
+        const std::vector<std::shared_ptr<const TraceCollection>>& collections);
 
     /// Creates a TraceCollection from a JSON value if possible.
     static std::unique_ptr<TraceCollection> CollectionFromJSON(JsValue&&);

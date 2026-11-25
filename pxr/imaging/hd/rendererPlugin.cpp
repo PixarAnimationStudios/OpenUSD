@@ -15,9 +15,14 @@
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
 
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (delegateCreateArgs));
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -146,7 +151,18 @@ HdRendererPlugin::_CreateRendererFromRenderDelegate(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
-    HdPluginRenderDelegateUniqueHandle renderDelegate = CreateDelegate();
+    using SettingsMapDataSource = HdTypedSampledDataSource<HdRenderSettingsMap>;
+
+    HdRenderSettingsMap delegateCreateArgs;
+    if (HdContainerDataSourceHandle rendererCreateArgsDS =
+        rendererCreateArgs.GetContainer()) {
+        if (auto delegateCreateArgsDS = SettingsMapDataSource::Cast(
+            rendererCreateArgsDS->Get(_tokens->delegateCreateArgs))) {
+            delegateCreateArgs = delegateCreateArgsDS->GetTypedValue(0.f);
+        }
+    }
+    HdPluginRenderDelegateUniqueHandle renderDelegate =
+        CreateDelegate(delegateCreateArgs);
     if (!renderDelegate) {
         return nullptr;
     }

@@ -6,7 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
 
 # section 1
 from pxr import Usd, UsdGeom, Vt

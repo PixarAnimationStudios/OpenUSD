@@ -155,3 +155,15 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+#include "pxr/usd/usdPhysics/bodyResolution.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdPrim
+UsdPhysicsCollisionAPI::GetBody() const
+{
+    return UsdPhysics_FindEnclosingRigidBody(GetPrim());
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

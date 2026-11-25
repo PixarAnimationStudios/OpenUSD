@@ -2174,7 +2174,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (_materialTag == HdStMaterialTagTokens->masked) {
         _genFS << "#define HD_MATERIAL_TAG_MASKED 1\n";
     }
-    if (_materialTag == HdStMaterialTagTokens->translucent) {
+    if (_materialTag == HdStMaterialTagTokens->translucent ||
+        _materialTag == HdStMaterialTagTokens->translucentWithCustomDepth) {
         _genFS << "#define HD_MATERIAL_TAG_TRANSLUCENT 1\n";
     }
     if (doublePrecisionEnabled) {
@@ -2436,7 +2437,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // Barycentric coordinates
     if (builtinBarycentricsEnabled) {
         _genFS << "vec3 GetBarycentricCoord() {\n"
-                  "  return hd_BaryCoordNoPersp;\n"
+                  "  return hd_BaryCoord;\n"
                   "}\n";
     } else {
         if (_hasGS) {
@@ -3056,8 +3057,8 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
         if (builtinBarycentricsEnabled) {
             HgiShaderFunctionAddStageInput(
-                &desc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+                &desc, "hd_BaryCoord", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoord);
         }
 
         if (_geometricShader->GetPrimitiveType() ==
@@ -3073,11 +3074,14 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             }
         }
 
-        const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
-        if (!depthQualifier.IsEmpty()) {
-            HgiShaderFunctionAddStageOutput(&desc,
-                                            "gl_FragDepth",
-                                            "float", depthQualifier);
+        // Declare depth output only if earlyFragmentTests are disabled.
+        if (!desc.fragmentDescriptor.earlyFragmentTests) {
+            const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
+            if (!depthQualifier.IsEmpty()) {
+                HgiShaderFunctionAddStageOutput(&desc,
+                                                "gl_FragDepth",
+                                                "float", depthQualifier);
+            }
         }
 
         if (!glslProgram->CompileShader(desc)) {
@@ -3491,8 +3495,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
         if (builtinBarycentricsEnabled) {
             HgiShaderFunctionAddStageInput(
-                &fsDesc, "hd_BaryCoordNoPersp", "vec3",
-                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+                &fsDesc, "hd_BaryCoord", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoord);
         }
 
         if (_geometricShader->GetPrimitiveType() ==
@@ -3508,11 +3512,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             }
         }
 
-        const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
-        if (!depthQualifier.IsEmpty()) {
-            HgiShaderFunctionAddStageOutput(&fsDesc,
-                                            "gl_FragDepth",
-                                            "float", depthQualifier);
+        // Declare depth output only if earlyFragmentTests are disabled.
+        if (!fsDesc.fragmentDescriptor.earlyFragmentTests) {
+            const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
+            if (!depthQualifier.IsEmpty()) {
+                HgiShaderFunctionAddStageOutput(&fsDesc,
+                                                "gl_FragDepth",
+                                                "float", depthQualifier);
+            }
         }
 
         if (!glslProgram->CompileShader(fsDesc)) {

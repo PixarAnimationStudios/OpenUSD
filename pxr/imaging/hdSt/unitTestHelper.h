@@ -208,10 +208,8 @@ HdSt_TestDriverBase<SceneDelegate>::_Init(HdReprSelector const &reprSelector)
               CameraUtilFraming(
                   GfRect2i(GfVec2i(0, 0), 512, 512)));
 
-    // Update collection with repr and add collection to change tracker.
+    // Update collection with repr.
     _collection.SetReprSelector(reprSelector);
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.AddCollection(_collection.GetName());
 }
 
 static inline
@@ -328,10 +326,6 @@ void
 HdSt_TestDriverBase<SceneDelegate>::SetRepr(HdReprSelector const &reprSelector)
 {
     _collection.SetReprSelector(reprSelector);
-
-    // Mark changes.
-    HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
-    tracker.MarkCollectionDirty(_collection.GetName());
 
     for (const HdRenderPassSharedPtr &renderPass : _renderPasses) {
         renderPass->SetRprimCollection(_collection);

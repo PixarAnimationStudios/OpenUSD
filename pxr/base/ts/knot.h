@@ -324,9 +324,21 @@ public:
         const std::string &keyPath,
         VtValue value);
 
+    /// \brief Get the custom data at `keyPath`.
+    ///
+    /// If `keyPath` is not part of the customData, return an empty VtValue.
     TS_API
     VtValue GetCustomDataByKey(
         const std::string &keyPath) const;
+
+    /// \overload
+    ///
+    /// If `keyPath` is not part of the customData, return false and do not
+    /// modify the VtValue pointed to by `value`.
+    TS_API
+    bool GetCustomDataByKey(
+        const std::string &keyPath,
+        VtValue* value) const;
 
     /// @}
     /// \name Continuity queries

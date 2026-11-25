@@ -11,6 +11,8 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
+#include "pxr/usd/sdf/pathTable.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
@@ -18,13 +20,16 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 ///
 /// \class HdsiCoordSysPrimSceneIndex
 ///
+/// This is a utility scene index to aid emulation of Hydra 1 style
+/// coordinate systems, given Hydra 2 coordinate system bindings.
+///
 /// If prim P has a coord sys binding FOO to another prim Q, the scene
-/// index will add a coord sys prim Q.__coordSys:FOO under Q.
+/// index will add a coord sys prim Q/__coordSys_FOO under Q.
 /// It will rewrite the coord sys binding on P to point to
-/// Q.__coordSys:FOO and use Q's xform data source for Q.__coordSys:FOO.
+/// __coordSys_FOO and use Q's xform data source for __coordSys_FOO.
 ///
 /// Motivation: USD allows for a coord sys binding to target any xformable
-/// prim. Some render delegates, however, only allow a coord sys binding
+/// prim. Some Hydra 1 render delegates, however, only allow a coord sys binding
 /// to point to a prim of type coord sys. This scene index is creating prim's
 /// of that type for such render delegates.
 ///
@@ -36,28 +41,33 @@ TF_DECLARE_REF_PTRS(HdsiCoordSysPrimSceneIndex);
 ///
 /// Input to scene index:
 ///
-/// /MyXform
-///     dataSource:
-///         xform: [ some xform ]
-/// /MyPrim
-///     dataSource:
-///         coordSysBinding:
-///             FOO: /MyXform
+/// </MyXform>
+///     prim type: any
+///     prim container dataSource:
+///         "xform": [ some xform ]
+/// </MyPrim>
+///     prim type: any
+///     prim container dataSource:
+///         "coordSysBinding":
+///             "FOO": </MyXform>
 ///
 /// Will be transformed to:
 ///
-/// /MyXform
-///     dataSource:
-///         xform: [ some xform ]
-/// /MyXform.__coordSys:FOO
-///     dataSource:
-///         coordSys:
-///             name: FOO
-///         xform: [ as above ]
-/// /MyPrim
-///     dataSource:
-///         coordSysBinding:
-///             FOO: /MyXform.__coordSys:FOO
+/// </MyXform>
+///     prim type: any
+///     prim container dataSource:
+///         "xform": [ some xform ]
+/// </MyXform/__coordSys_FOO>
+///     prim type: coordSys
+///     prim container dataSource:
+///         "coordSys":
+///             "name": "FOO"
+///         "xform": [ as above ]
+/// </MyPrim>
+///     prim type: any
+///     prim container dataSource:
+///         "coordSysBinding":
+///             "FOO": </MyXform/__coordSys_FOO>
 ///
 class HdsiCoordSysPrimSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
@@ -106,16 +116,27 @@ protected:
     using _PrimToBindings = std::map<SdfPath, _Bindings>;
 
     // Record coordSys bindings of prim at primPath. That is, add entries to the
-    // below data structures if needed and increase ref-counts.
+    // below data structures if needed and record primPath as a source of
+    // the bindings.
     // Optionally, return prims of type coord system that this scene index needs
     // to add.
     void _AddBindingsForPrim(const SdfPath &primPath,
                              SdfPathSet * addedCoordSysPrims = nullptr);
-    // Remove coordSys bindings. That is, decrease ref-counts and remove entries
-    // from below data structures if needed.
+    // Compute the coordSys bindings of the prim at primPath from the input
+    // scene. Does not modify any data structures and is thread-safe.
+    _Bindings _ComputeBindingsForPrim(const SdfPath &primPath) const;
+    // Record the given bindings for the prim at primPath. Same as
+    // _AddBindingsForPrim but with the bindings already computed.
+    void _AddBindings(const SdfPath &primPath,
+                      _Bindings &&bindings,
+                      SdfPathSet * addedCoordSysPrims);
+    // Remove coordSys bindings of the prim at primPath. That is, remove
+    // primPath as a source of the bindings and remove entries from below
+    // data structures if needed.
     // Optionally, return prims of type coord system that this scene index needs
     // to remove.
-    void _RemoveBindings(const _Bindings &bindings,
+    void _RemoveBindings(const SdfPath &primPath,
+                         const _Bindings &bindings,
                          SdfPathSet * removedCoordSysPrims);
     // Similar to above, but give the prim path explicitly to look-up bindings
     // in map.
@@ -132,38 +153,39 @@ protected:
         const SdfPath &primPath) const;
 
 private:
-    using _NameToRefCount =
-        std::unordered_map<TfToken, size_t, TfToken::HashFunctor>;
-    using _PrimToNameToRefCount =
-        std::unordered_map<SdfPath, _NameToRefCount, SdfPath::Hash>;
     // Maps prim which is targeted by coord sys binding to name of binding to
-    // count how many bindings are referencing that prim using that name.
+    // the set of prims that have a binding with that name targeting the prim.
+    //
+    // This map is used to determine which coord sys prims we need to create
+    // under the targeted prim, and which prims' bindings need to be
+    // invalidated when a targeted prim is added or removed.
     //
     // We delete an inner entry when there is no longer any coord sys binding
     // with that name targeting the prim.
-    // We delete a prim when it is no longer targeted by any binding.
     //
-    // This map is used to determine which coord sys prims we need to create
-    // under the targeted prim.
-    //
+    // We delete a prim entry when it is no longer targeted by any binding
+    // and there are no descendent prim entries.  (This is due to how
+    // SdfPathTable implicitly contains ancestor entries.)
     //
     // In the above example, the content of the map will be:
     //
     // {
-    //    /MyXform: {
-    //                 FOO: 1
-    //              }
+    //    /: {},           // <-- Implcicit ancestor entry for SdfPathTable
+    //    </MyXform>: {    // <-- Explicit entry for binding target prim
+    //        "FOO": [ </MyPrim> ]
+    //    }
     // }
     //
-    _PrimToNameToRefCount _targetedPrimToNameToRefCount;
+    using _NameToSourcePrims =
+        std::unordered_map<TfToken, SdfPathSet, TfToken::HashFunctor>;
+    using _PrimToNameToSourcePrims = SdfPathTable<_NameToSourcePrims>;
+    _PrimToNameToSourcePrims _targetedPrimToNameToSourcePrims;
 
-    // Maps prim to the coord sys bindings of that prim.
-    //
-    // Used to decrease ref counts when a prim gets deleted or modified.
-    //
+    // Maps prim to the observed coord sys bindings of that prim.
+    // Used to update the above map when a prim gets deleted or modified.
     // In the above example, the content of the map will be:
     //
-    // { /MyPrim: [(FOO, /MyXform)] }
+    // { </MyPrim>: [("FOO", </MyXform>)] }
     //
     _PrimToBindings _primToBindings;
 };

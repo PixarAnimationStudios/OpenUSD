@@ -37,7 +37,7 @@ void Recursion(int N)
     Recursion(N-1);
 }
 
-std::shared_ptr<TraceCollection>
+std::shared_ptr<const TraceCollection>
 CreateTrace(int N, int R)
 {
     std::unique_ptr<TraceReporterDataSourceCollector> dataSrc =
@@ -48,7 +48,7 @@ CreateTrace(int N, int R)
         Recursion(R);
     }
     TraceCollector::GetInstance().SetEnabled(false);
-    std::shared_ptr<TraceCollection> collection = 
+    std::shared_ptr<const TraceCollection> collection = 
         dataSrc->ConsumeData()[0];
     TraceReporter::GetGlobalReporter()->ClearTree();
     return collection;
