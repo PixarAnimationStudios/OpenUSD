@@ -243,7 +243,14 @@ HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
     for (auto it : _commandPools) {
         HgiVulkan_CommandPool* pool = it.second;
         for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
-            if (cb->ResetIfConsumedByGPU(wait)) {
+            // A command buffer holds its inflight bit only while it is in
+            // flight. AcquireCommandBuffer may already have seen it finish
+            // and released the bit without resetting it; releasing it again
+            // here would clear the bit of whichever command buffer acquired
+            // it since, while that one may still be executing, and let the
+            // garbage collector destroy objects it still uses.
+            const bool holdsInflightBit = cb->IsInFlight();
+            if (cb->ResetIfConsumedByGPU(wait) && holdsInflightBit) {
                 _ReleaseInflightBit(cb->GetInflightId());
             }
         }
