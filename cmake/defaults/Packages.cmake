@@ -309,6 +309,12 @@ endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
+    # sdrOsl links OpenImageIO, which OSL depends on. The imaging section
+    # above only looks for OpenImageIO when PXR_BUILD_IMAGING is enabled,
+    # so look for it here if it has not been found yet.
+    if (NOT TARGET OpenImageIO::OpenImageIO)
+        find_package(OpenImageIO REQUIRED CONFIG)
+    endif()
     set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
