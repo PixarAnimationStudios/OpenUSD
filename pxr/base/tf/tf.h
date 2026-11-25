@@ -31,12 +31,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #  define TF_MAX_ARITY 7
 #endif // TF_MAX_ARITY
 
-
-/// This value may be used by functions that return a \c size_t to indicate
-/// that a special or error condition has occurred.
-/// \ingroup group_tf_TfError
-#define TF_BAD_SIZE_T SIZE_MAX
-
 /// \addtogroup group_tf_BasicMath
 ///@{
 
