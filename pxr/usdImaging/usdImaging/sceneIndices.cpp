@@ -17,6 +17,7 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/usdMetersPerUnitSchema.h"
 #include "pxr/usdImaging/usdImaging/usdUpAxisSchema.h"
 #include "pxr/usdImaging/usdImaging/sceneIndexCreateArgsSchema.h"
 
@@ -155,7 +156,8 @@ _InstanceDataSourceNames()
         // asset resolution.  See HdDataSourceMaterialNetworkInterface::
         // GetModelAssetName().
         UsdImagingModelSchema::GetSchemaToken(),
-        UsdImagingUsdUpAxisSchema::GetSchemaToken()
+        UsdImagingUsdUpAxisSchema::GetSchemaToken(),
+        UsdImagingUsdMetersPerUnitSchema::GetSchemaToken()
     };
 
     for (const UsdImagingSceneIndexPluginUniquePtr &plugin :

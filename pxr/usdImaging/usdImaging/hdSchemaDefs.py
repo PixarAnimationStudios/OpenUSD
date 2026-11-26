@@ -294,4 +294,17 @@
             ('upAxis', T_TOKEN, {}),
         ],
     ),
+
+    #--------------------------------------------------------------------------
+    # usdImaging/usdMetersPerUnit
+    dict(
+        SCHEMA_NAME = 'UsdMetersPerUnit',
+        SCHEMA_TOKEN = '__usdMetersPerUnit',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR=True)),
+
+            ('metersPerUnit', T_DOUBLE, {}),
+        ],
+    ),
 ] 
