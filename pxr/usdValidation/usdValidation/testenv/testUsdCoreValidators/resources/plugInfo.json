@@ -1,0 +1,65 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "ResourcePath": ".",
+            "Name": "testUsdCoreValidators",
+            "Info": {
+                "Types": {
+                    "testApplicabilityBaseType": {
+                        "bases": ["UsdTyped"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestBase"
+                        },
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testApplicabilityDerivedType": {
+                        "bases": ["testApplicabilityBaseType"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestDerived"
+                        },
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testApplicabilityOtherType": {
+                        "bases": ["UsdTyped"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestOther"
+                        },
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testApplicabilityBaseOnlyAPI": {
+                        "bases": ["UsdAPISchemaBase"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestBaseOnlyAPI"
+                        },
+                        "schemaKind": "singleApplyAPI",
+                        "apiSchemaCanOnlyApplyTo": ["ApplicabilityTestBase"]
+                    },
+                    "testApplicabilityTargetAPI": {
+                        "bases": ["UsdAPISchemaBase"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestTargetAPI"
+                        },
+                        "schemaKind": "singleApplyAPI"
+                    },
+                    "testApplicabilityRequiresTargetAPI": {
+                        "bases": ["UsdAPISchemaBase"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestRequiresTargetAPI"
+                        },
+                        "schemaKind": "singleApplyAPI",
+                        "apiSchemaCanOnlyApplyTo": ["ApplicabilityTestTargetAPI"]
+                    },
+                    "testApplicabilityInstancesAPI": {
+                        "bases": ["UsdAPISchemaBase"],
+                        "alias": {
+                            "UsdSchemaBase": "ApplicabilityTestInstancesAPI"
+                        },
+                        "schemaKind": "multipleApplyAPI",
+                        "apiSchemaAllowedInstanceNames": ["left", "right"]
+                    }
+                }
+            }
+        }
+    ]
+}

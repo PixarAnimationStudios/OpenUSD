@@ -15,6 +15,9 @@
                     "AttributeSpecValueTypeMismatch": {
                         "doc": "Checks that the authored default, time sample, and spline values of each attribute spec hold the value type declared by that spec's typeName."
                     },
+                    "APISchemaApplicability": {
+                        "doc": "Checks that each API schema authored on a prim can be applied to it, as UsdPrim::CanApplyAPI determines: the prim must be of a type, or have an API schema applied, that the API schema can only be applied to, and the instance name of a multiple-apply API schema must be one it allows. API schemas built into the prim's type or into other API schemas, auto-applied API schemas, and schemas that are not registered applied API schemas are not validated."
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]
