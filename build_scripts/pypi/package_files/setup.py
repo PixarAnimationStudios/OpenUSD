@@ -130,6 +130,19 @@ pluginfo_files = [
     if os.path.isfile(f)
 ]
 
+# The package ships prebuilt extension modules and shared libraries rather
+# than building them via ext_modules, so setuptools would otherwise treat it
+# as pure Python and tag the wheel with ABI "none" (e.g. cp314-none). Such a
+# wheel is accepted by installers on any CPython 3.14 interpreter, including
+# free-threaded builds whose module ABI is incompatible, and then crashes on
+# import. Declaring that the distribution has extension modules makes the
+# wheel carry the real ABI tag of the interpreter it was built with (e.g.
+# cp314-cp314) so that incompatible interpreters reject it at install time,
+# and marks the wheel as platform-specific (Root-Is-Purelib: false).
+class BinaryDistribution(setuptools.Distribution):
+   def has_ext_modules(self):
+       return True
+       
 # Config
 setuptools.setup(
     name="usd-core",
@@ -162,4 +175,5 @@ setuptools.setup(
         "Topic :: Multimedia :: Graphics",
     ],
     python_requires='>=3.11, <3.15',
+    distclass=BinaryDistribution,
 )
