@@ -37,6 +37,14 @@ HgiShaderGenerator::Execute()
 }
 
 const char *
+HgiShaderGenerator::_GetShaderCodeExtensions() const
+{
+    static const char *emptyString = "";
+    return _descriptor.shaderCodeExtensions
+                ? _descriptor.shaderCodeExtensions : emptyString;
+}
+
+const char *
 HgiShaderGenerator::_GetShaderCodeDeclarations() const
 {
     static const char *emptyString = "";
