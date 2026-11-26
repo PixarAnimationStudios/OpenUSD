@@ -102,4 +102,9 @@ pxr_register_test(testHgiGLCommand
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_hgi_backend_tests(GL
+    HGI_ENABLE_VULKAN=0
+    HGI_ENABLE_WEBGPU=0
+)
+
 endif() # BUILD_SHARED_LIBS

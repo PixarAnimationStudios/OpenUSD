@@ -138,17 +138,21 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                                  options:options
                              deallocator:nil];
 
-    bool isTexArray = texDesc.layerCount>1;
-    int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
+
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
 
     MTLOrigin origin = MTLOriginMake(
         copyOp.sourceTexelOffset[0],
         copyOp.sourceTexelOffset[1],
         depthOffset);
     MTLSize size = MTLSizeMake(
-        texDesc.dimensions[0] - copyOp.sourceTexelOffset[0],
-        texDesc.dimensions[1] - copyOp.sourceTexelOffset[1],
-        texDesc.dimensions[2] - depthOffset);
+        width - copyOp.sourceTexelOffset[0],
+        height - copyOp.sourceTexelOffset[1],
+        depth - depthOffset);
     
     MTLBlitOption blitOptions = MTLBlitOptionNone;
 
@@ -161,9 +165,8 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
                        sourceSize:size
                          toBuffer:cpuBuffer
                 destinationOffset:0
-           destinationBytesPerRow:(bytesPerPixel * texDesc.dimensions[0])
-         destinationBytesPerImage:(bytesPerPixel * texDesc.dimensions[0] *
-                                   texDesc.dimensions[1])
+           destinationBytesPerRow:(bytesPerPixel * width)
+         destinationBytesPerImage:(bytesPerPixel * width * height)
                           options:blitOptions];
 
 #if defined(ARCH_OS_OSX)
@@ -200,6 +203,12 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
     const size_t width = dstTexDesc.dimensions[0];
     const size_t height = dstTexDesc.dimensions[1];
     const size_t depth = dstTexDesc.dimensions[2];
+
+    const size_t mipWidth = std::max<size_t>(width >> copyOp.mipLevel, 1);
+    const size_t mipHeight = std::max<size_t>(height >> copyOp.mipLevel, 1);
+    const size_t mipDepth = std::max<size_t>(depth >> copyOp.mipLevel, 1);
+
+    const size_t bytesPerPixel = HgiGetDataSizeOfFormat(dstTexDesc.format);
 
     // Depth, stencil, depth-stencil, and multisample textures must be
     // allocated with MTLStorageModePrivate, which should not be used with
@@ -243,26 +252,27 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
     int depthOffset = isTexArray ? 0 : offsets[2];
     if (dstTexDesc.type == HgiTextureType1D) {
         [tempTextureId
-            replaceRegion:MTLRegionMake1D(offsets[0], width)
+            replaceRegion:MTLRegionMake1D(offsets[0], mipWidth)
               mipmapLevel:copyOp.mipLevel
                 withBytes:copyOp.cpuSourceBuffer
               bytesPerRow:copyOp.bufferByteSize];
     } else if (dstTexDesc.type == HgiTextureType2D) {
         [tempTextureId
             replaceRegion:MTLRegionMake2D(
-                offsets[0], offsets[1], width, height)
+                offsets[0], offsets[1], mipWidth, mipHeight)
               mipmapLevel:copyOp.mipLevel
                 withBytes:copyOp.cpuSourceBuffer
-              bytesPerRow:copyOp.bufferByteSize / height];
+              bytesPerRow:(bytesPerPixel * mipWidth)];
     } else {
         [tempTextureId
             replaceRegion:MTLRegionMake3D(
-                offsets[0], offsets[1], depthOffset, width, height, depth)
-              mipmapLevel:copyOp.mipLevel 
+                offsets[0], offsets[1], depthOffset,
+                mipWidth, mipHeight, mipDepth)
+              mipmapLevel:copyOp.mipLevel
                     slice:isTexArray ? offsets[2] : 0
                 withBytes:copyOp.cpuSourceBuffer
-              bytesPerRow:copyOp.bufferByteSize / height / width
-            bytesPerImage:copyOp.bufferByteSize / depth];
+              bytesPerRow:(bytesPerPixel * mipWidth)
+            bytesPerImage:(bytesPerPixel * mipWidth * mipHeight)];
     }
 
     // Blit data from temp texture to destination texture.
@@ -421,13 +431,124 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
 void
 HgiMetalBlitCmds::CopyTextureToBuffer(HgiTextureToBufferOp const& copyOp)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    HgiMetalTexture* srcTexture = dynamic_cast<HgiMetalTexture*>(
+        copyOp.gpuSourceTexture.Get());
+    if (!TF_VERIFY(srcTexture && srcTexture->GetTextureId(),
+        "Invalid texture handle")) {
+        return;
+    }
+
+    HgiMetalBuffer* bufferHandle = dynamic_cast<HgiMetalBuffer*>(
+        copyOp.gpuDestinationBuffer.Get());
+    if (!TF_VERIFY(bufferHandle && bufferHandle->GetBufferId(),
+        "Invalid buffer handle")) {
+        return;
+    }
+
+    if (copyOp.byteSize == 0) {
+        TF_WARN("The size of the data to copy was zero (aborted)");
+        return;
+    }
+
+    HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
+
+    MTLPixelFormat metalFormat = HgiMetalConversions::GetPixelFormat(
+        texDesc.format, texDesc.usage);
+    
+    if (metalFormat == MTLPixelFormatDepth32Float_Stencil8) {
+        TF_WARN("Cannot read back depth stencil on Metal.");
+        return;
+    }
+
+    size_t bytesPerPixel = HgiGetDataSizeOfFormat(texDesc.format);
+
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset = isTexArray ? 0 : copyOp.sourceTexelOffset[2];
+
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
+    MTLOrigin origin = MTLOriginMake(
+        copyOp.sourceTexelOffset[0],
+        copyOp.sourceTexelOffset[1],
+        depthOffset);
+    MTLSize size = MTLSizeMake(
+        width - copyOp.sourceTexelOffset[0],
+        height - copyOp.sourceTexelOffset[1],
+        depth - depthOffset);
+
+    MTLBlitOption blitOptions = MTLBlitOptionNone;
+
+    _CreateEncoder();
+
+    [_blitEncoder copyFromTexture:srcTexture->GetTextureId()
+                      sourceSlice:isTexArray ? copyOp.sourceTexelOffset[2] : 0
+                      sourceLevel:copyOp.mipLevel
+                     sourceOrigin:origin
+                       sourceSize:size
+                         toBuffer:bufferHandle->GetBufferId()
+                destinationOffset:copyOp.destinationByteOffset
+           destinationBytesPerRow:(bytesPerPixel * width)
+         destinationBytesPerImage:(bytesPerPixel * width * height)
+                          options:blitOptions];
 }
 
 void
 HgiMetalBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 {
-    TF_CODING_ERROR("Missing Implementation");
+    HgiMetalBuffer* srcBuffer = dynamic_cast<HgiMetalBuffer*>(
+        copyOp.gpuSourceBuffer.Get());
+    if (!TF_VERIFY(srcBuffer && srcBuffer->GetBufferId(),
+        "Invalid buffer handle")) {
+        return;
+    }
+
+    HgiMetalTexture* dstTexture = dynamic_cast<HgiMetalTexture*>(
+        copyOp.gpuDestinationTexture.Get());
+    if (!TF_VERIFY(dstTexture && dstTexture->GetTextureId(),
+        "Invalid texture handle")) {
+        return;
+    }
+
+    if (copyOp.byteSize == 0) {
+        TF_WARN("The size of the data to copy was zero (aborted)");
+        return;
+    }
+
+    HgiTextureDesc const& texDesc = dstTexture->GetDescriptor();
+
+    const size_t bytesPerPixel = HgiGetDataSizeOfFormat(texDesc.format);
+
+    const bool isTexArray = texDesc.layerCount > 1;
+    const int depthOffset = isTexArray ? 0 : copyOp.destinationTexelOffset[2];
+
+    const int width = std::max(texDesc.dimensions[0] >> copyOp.mipLevel, 1);
+    const int height = std::max(texDesc.dimensions[1] >> copyOp.mipLevel, 1);
+    const int depth = std::max(texDesc.dimensions[2] >> copyOp.mipLevel, 1);
+
+    MTLOrigin origin = MTLOriginMake(
+        copyOp.destinationTexelOffset[0],
+        copyOp.destinationTexelOffset[1],
+        depthOffset);
+    MTLSize size = MTLSizeMake(
+        width - copyOp.destinationTexelOffset[0],
+        height - copyOp.destinationTexelOffset[1],
+        depth - depthOffset);
+
+    _CreateEncoder();
+
+    [_blitEncoder copyFromBuffer:srcBuffer->GetBufferId()
+                    sourceOffset:copyOp.sourceByteOffset
+               sourceBytesPerRow:(bytesPerPixel * size.width)
+             sourceBytesPerImage:(bytesPerPixel * size.width * size.height)
+                      sourceSize:size
+                       toTexture:dstTexture->GetTextureId()
+                destinationSlice:isTexArray ?
+                                     copyOp.destinationTexelOffset[2] : 0
+                destinationLevel:copyOp.mipLevel
+               destinationOrigin:origin
+                         options:MTLBlitOptionNone];
 }
 
 void
