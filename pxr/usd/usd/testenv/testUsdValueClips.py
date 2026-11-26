@@ -2496,6 +2496,25 @@ class TestUsdValueClips(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException) as e:
                 model.SetClipTemplateStride(0, clipSetName)
 
+    def test_GetClipSetsWithoutSpecInEditTarget(self):
+        """Tests that Usd.ClipsAPI.GetClipSets returns an empty list op
+        when the current edit target has no spec for the prim."""
+        stage = Usd.Stage.CreateInMemory('TestGetClipSets.usda')
+
+        prim = stage.DefinePrim('/Model')
+        model = Usd.ClipsAPI(prim)
+
+        clipSets = Sdf.StringListOp.CreateExplicit(['my_clip_set'])
+        model.SetClipSets(clipSets)
+        self.assertEqual(model.GetClipSets(), clipSets)
+
+        # The session layer has no spec for /Model, so there is no clip
+        # sets list op to return from that edit target.
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertEqual(model.GetClipSets(), Sdf.StringListOp())
+
+        self.assertEqual(model.GetClipSets(), clipSets)
+
     def test_ClipTimesBracketingTimeSamplePrecision(self):
         stage = Usd.Stage.Open('precision/root.usda')
         prim = stage.GetPrimAtPath('/World/fx/Particles_Splash/points')
