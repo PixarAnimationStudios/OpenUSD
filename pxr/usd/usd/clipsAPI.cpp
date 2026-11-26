@@ -223,7 +223,7 @@ UsdClipsAPI::GetClipSets(SdfStringListOp* clipSets) const
 
     const SdfPrimSpecHandle primSpec = GetPrim().GetStage()->GetEditTarget()
         .GetPrimSpecForScenePath(GetPath());
-    return primSpec->HasField(UsdTokens->clipSets, clipSets);
+    return primSpec && primSpec->HasField(UsdTokens->clipSets, clipSets);
 }
 
 bool 
