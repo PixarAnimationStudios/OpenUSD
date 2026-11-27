@@ -163,7 +163,8 @@ public:
         // since some are for batch processing purposes.
         static TfTokenVector names = {
             UsdRenderTokens->passType,
-            UsdRenderTokens->renderSource };
+            UsdRenderTokens->renderSource,
+            HdRenderPassSchemaTokens->namespacedSettings };
         return names;
     }
 
@@ -191,6 +192,12 @@ public:
                 }
             }
             return nullptr;
+        } else if (name == HdRenderPassSchemaTokens->namespacedSettings) {
+            return _DataSourceNamespacedSettings::New(
+                _sceneIndexPath,
+                _usdRenderPass.GetPrim(),
+                _stageGlobals,
+                HdRenderPassSchema::GetNamespacedSettingsLocator());
         }
         return nullptr;
     }
@@ -266,6 +273,12 @@ UsdImagingDataSourceRenderPassPrim::Invalidate(
             locators.insert(
                 HdRenderPassSchema::GetDefaultLocator()
                     .Append(propertyName));
+        } else {
+            // It is likely that the property is an attribute that's
+            // aggregated under "namespaced settings". For performance, skip
+            // validating whether that is the case.
+            locators.insert(
+                HdRenderPassSchema::GetNamespacedSettingsLocator());
         }
         // Note: Skip UsdImagingDataSourcePrim::Invalidate(...)
         // since none of the "base" set of properties are relevant here.
