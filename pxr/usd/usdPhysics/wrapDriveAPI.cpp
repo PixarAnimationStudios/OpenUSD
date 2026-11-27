@@ -87,7 +87,7 @@ _Repr(const UsdPhysicsDriveAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdPhysics.DriveAPI(%s, '%s')",
+        "UsdPhysics.DriveAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 

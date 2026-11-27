@@ -52,7 +52,7 @@ _Repr(const UsdSemanticsLabelsAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdSemantics.LabelsAPI(%s, '%s')",
+        "UsdSemantics.LabelsAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
