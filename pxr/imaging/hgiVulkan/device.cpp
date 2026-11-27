@@ -63,6 +63,10 @@ _SupportsPresentation(
                     physicalDevice, familyIndex);
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
         Display* dsp = XOpenDisplay(nullptr);
+        // Allow headless rendering
+        if (dsp == nullptr) {
+            return true;
+        }
         VisualID visualID = XVisualIDFromVisual(
             DefaultVisual(dsp, DefaultScreen(dsp)));
         return vkGetPhysicalDeviceXlibPresentationSupportKHR(
