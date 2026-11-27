@@ -31,7 +31,7 @@ template <
     typename ChildExecutorType,
     typename SpeculationExecutorType
     >
-class VdfExecutorFactory : public VdfExecutorFactoryBase
+class VdfExecutorFactory final : public VdfExecutorFactoryBase
 {
 public:
 

@@ -28,7 +28,7 @@ class VdfSpeculationNode;
 namespace {
 
 // Simple executor factory.
-struct _SimpleExecutorFactory : public VdfExecutorFactoryBase {
+struct _SimpleExecutorFactory final : public VdfExecutorFactoryBase {
     // The speculation executor type to manufacture.
     using SpeculationExecutorType =
         VdfSpeculationExecutor<
