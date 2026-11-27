@@ -125,7 +125,7 @@ removes the need for their dependencies when building USD.
 
 Some optional USD components use Python:
 - [The USD Toolset](https://graphics.pixar.com/usd/docs/USD-Toolset.html)
-- [Third Party Plugins](https://graphics.pixar.com/usd/docs/USD-3rd-Party-Plugins.html)
+- [Third Party Plugins](https://openusd.org/release/plugins.html)
 - Python language bindings for the USD C++ API
 - Unit tests using Python
 
@@ -362,13 +362,13 @@ The additional dependencies that must be supplied when invoking cmake are:
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-More documentation is available [here](http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html).
+More documentation is available [here](https://openusd.org/release/plugins_renderman.html).
 
 ## Third Party Plugins
 
 USD provides several plugins for integration with third-party software packages. 
 There is additional documentation on each plugin
-[here](http://openusd.org/docs/USD-3rd-Party-Plugins.html).
+[here](https://openusd.org/release/plugins.html).
 These plugins are not built by default and must be enabled via the instructions below.
 
 The USD Maya plugins can be found in the Autodesk-supported repo available
@@ -386,7 +386,7 @@ The additional dependencies that must be supplied when invoking cmake are:
 
 | Dependency Name                   | Description                                       |
 | ----------------------------------|-------------------------------------------------- |
-| ALEMBIC_DIR                       | The location of [Alembic](https://https://github.com/alembic/alembic)   | 
+| ALEMBIC_DIR                       | The location of [Alembic](https://github.com/alembic/alembic)   | 
 | Imath_DIR                         | Path to the CMake package config of a Imath SDK install. |
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
@@ -399,7 +399,7 @@ following dependencies:
 | ------------------ |---------------- |
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
 
-For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
+For further information see the documentation on the Alembic plugin [here](https://openusd.org/release/plugins_alembic.html).
 
 ##### Draco Plugin
 
@@ -584,7 +584,7 @@ USD generates some code through a process called [schema
 generation]. This process requires the following python modules be installed
 and available on the syspath. You can learn more about Schemas and why you
 might want to generate them
-[here](http://openusd.org//docs/Generating-New-Schema-Classes.html).
+[here](https://openusd.org/release/tut_generating_new_schema.html).
 
 | Python Module Name                         | Description                    |
 | ------------------------------------------ |------------------------------- |
@@ -609,7 +609,7 @@ This variable should be set to a path to a shared object for the allocator. For 
 ```
 
 If none are specified, the default allocator will be used. More information on getting the most out of
-USD can be found [Getting the Best Performance with USD](http://openusd.org/docs/Maximizing-USD-Performance.html).
+USD can be found [Getting the Best Performance with USD](https://openusd.org/release/maxperf.html).
 
 ## Linker Options
 

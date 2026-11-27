@@ -18,15 +18,15 @@ Build Status
 Additional Documentation
 ------------------------
 
-* [User Documentation and Tutorials](http://openusd.org/docs/index.html)
-* [API Documentation](http://openusd.org/docs/api/index.html)
+* [User Documentation and Tutorials](https://openusd.org/release/index.html)
+* [API Documentation](https://openusd.org/release/api/index.html)
 * [Advanced Build Configuration](BUILDING.md)
 
 Getting Help
 ------------
 
 Need help understanding certain concepts in USD? See
-[Getting Help with USD](http://openusd.org/docs/Getting-Help-with-USD.html) or
+[Getting Help with USD](https://openusd.org/release/usdfaq.html) or
 visit our [forum](https://groups.google.com/forum/#!forum/usd-interest).
 
 If you are experiencing undocumented problems with the software, please 
