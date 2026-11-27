@@ -200,6 +200,7 @@ function(pxr_cpp_bin BIN_NAME)
 
     install(
         TARGETS ${BIN_NAME}
+        EXPORT pxrTargets
         DESTINATION ${installDir}
     )
 endfunction()
