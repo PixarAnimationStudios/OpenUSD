@@ -1033,7 +1033,8 @@ HgiMetalShaderStageEntryPoint::HgiMetalShaderStageEntryPoint(
     _scopePostfix(scopePostfix),
     _entryPointStageName(entryPointStageName),
     _outputTypeName(outputTypeName),
-    _entryPointFunctionName(entryPointFunctionName)
+    _entryPointFunctionName(entryPointFunctionName),
+    _entryPointAttributes(entryPointAttributes)
 {
     _Init(
         stageData.GetConstantParams(),
