@@ -3031,15 +3031,6 @@ _ReadGprim(_PrimReaderContext* context)
 
 static
 void
-_ReadArbGeomParams(_PrimReaderContext* context)
-{
-    // Add primvars.
-    context->AddOutOfSchemaProperty(
-        UsdAbcPropertyNames->primvars, context->ExtractSchema(".arbGeomParams"));
-}
-
-static
-void
 _ReadUserProperties(_PrimReaderContext* context)
 {
     // Add userProperties.
@@ -3106,6 +3097,137 @@ _ReadProperty(_PrimReaderContext* context, const char* name, TfToken propName, S
             propName,
             typeName,
             _CopyGeneric<T, UsdValueType>(prop));
+    }
+}
+
+template<class T, class UsdValueType>
+void
+_ReadProperty(
+    _PrimReaderContext* context,
+    const AlembicProperty &prop,
+    const TfToken propName,
+    const SdfValueTypeName typeName)
+{
+    if (prop.Cast<T>().isIndexed()) {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType, false>(prop));
+        context->AddProperty(
+            TfToken(SdfPath::JoinIdentifier(propName, UsdGeomTokens->indices)),
+            SdfValueTypeNames->IntArray,
+            _CopyIndices<T>(prop));
+    } else {
+        context->AddProperty(
+            propName,
+            typeName,
+            _CopyGeneric<T, UsdValueType>(prop));
+    }
+}
+
+static
+void
+_AddArbGeomProperty(
+    _PrimReaderContext *context,
+    const TfToken& propName,
+    const AlembicProperty& property)
+{
+    if (property.Cast<IFloatGeomParam>().valid()) {
+        _ReadProperty<IFloatGeomParam, float>(
+            context, property, propName, SdfValueTypeNames->FloatArray);
+    }
+    else if (property.Cast<IDoubleGeomParam>().valid()) {
+        _ReadProperty<IDoubleGeomParam, double>(
+            context, property, propName, SdfValueTypeNames->DoubleArray);
+    }
+    else if (property.Cast<IV3dGeomParam>().valid()) {
+        _ReadProperty<IV3dGeomParam, GfVec3d>(
+            context, property, propName, SdfValueTypeNames->Vector3dArray);
+    }
+    else if(property.Cast<IStringGeomParam>().valid()) {
+        _ReadProperty<IStringGeomParam, std::string>(
+            context, property, propName, SdfValueTypeNames->StringArray);
+    }
+    else if (property.Cast<IV2fGeomParam>().valid()) {
+        _ReadProperty<IV2fGeomParam, GfVec2f>(
+            context, property, propName, SdfValueTypeNames->TexCoord2fArray);
+    }
+    else if (property.Cast<IV3fGeomParam>().valid()) {
+        _ReadProperty<IV3fGeomParam, GfVec3f>(
+            context, property, propName, SdfValueTypeNames->Vector3fArray);
+    }
+    else if (property.Cast<IC3fGeomParam>().valid()) {
+        _ReadProperty<IC3fGeomParam, GfVec3f>(
+            context, property, propName, SdfValueTypeNames->Color3fArray);
+    }
+    else if (property.Cast<IC4fGeomParam>().valid()) {
+        _ReadProperty<IC4fGeomParam, GfVec4f>(
+            context, property, propName, SdfValueTypeNames->Color4fArray);
+    }
+    else if(property.Cast<IN3fGeomParam>().valid()) {
+        _ReadProperty<IN3fGeomParam, GfVec3f>(
+            context, property, propName, SdfValueTypeNames->Normal3fArray);
+    }
+    else if (property.Cast<IP3fGeomParam>().valid()) {
+        _ReadProperty<IP3fGeomParam, GfVec3f>(
+            context, property, propName, SdfValueTypeNames->Point3fArray);
+    }
+    else if (property.Cast<IBoolGeomParam>().valid()) {
+        _ReadProperty<IBoolGeomParam, bool>(
+            context, property, propName, SdfValueTypeNames->BoolArray);
+    }
+    else if (property.Cast<IQuatfGeomParam>().valid()) {
+        _ReadProperty<IQuatfGeomParam, GfQuatf>(
+            context, property, propName, SdfValueTypeNames->QuatfArray);
+    }
+    else if (property.Cast<IQuatdGeomParam>().valid()) {
+        _ReadProperty<IQuatdGeomParam, GfQuatd>(
+            context, property, propName, SdfValueTypeNames->QuatdArray);
+    }
+}
+
+static
+void
+_ReadArbGeomParams(_PrimReaderContext* context)
+{
+    // Get property info.
+    std::string name(UsdAbcPropertyNames->primvars);
+    const AlembicProperty& property = context->ExtractSchema(".arbGeomParams");
+    const PropertyHeader* header = property.GetHeader();
+    if (!header) {
+        // No such property.
+        return;
+    }
+
+    // .ArbGeomParams is a compound
+    if (!header->isCompound()) {
+        return;
+    }
+
+    ICompoundProperty compound = property.Cast<ICompoundProperty>();
+
+    // Fill usedNames.
+    std::set<std::string> usedNames;
+    for (size_t i = 0, n = compound.getNumProperties(); i != n; ++i) {
+        usedNames.insert(compound.getPropertyHeader(i).getName());
+    }
+
+    // Add each geom property
+    for (size_t i = 0, n = compound.getNumProperties(); i != n; ++i) {
+        const std::string rawName =
+            compound.getPropertyHeader(i).getName();
+        const std::string cleanName =
+            _CleanName(rawName, " .", usedNames,
+                        _AlembicFixName(),
+                        &SdfPath::IsValidIdentifier);
+        const TfToken namespacedName =
+            TfToken(SdfPath::JoinIdentifier(name, cleanName));
+        const SdfPath childPath = context->GetPath().AppendProperty(namespacedName);
+
+        _AddArbGeomProperty(
+            context,
+            namespacedName,
+            AlembicProperty(childPath, rawName, compound));
     }
 }
 
