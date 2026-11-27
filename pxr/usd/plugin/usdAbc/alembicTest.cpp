@@ -330,20 +330,5 @@ UsdAbc_TestAlembic(const std::string& pathname)
     return false;
 }
 
-bool
-UsdAbc_WriteAlembic(const std::string& srcPathname, const std::string& dstPathname)
-{
-    SdfLayerRefPtr layer = SdfLayer::OpenAsAnonymous(srcPathname);
-    if (!layer) {
-        fprintf(stderr, "Can't open '%s'\n", srcPathname.c_str());
-        return false;
-    }
-
-    // Write the file back out in the cwd.
-    return
-        SdfFileFormat::FindByExtension(".abc")->
-            WriteToFile(*get_pointer(layer), dstPathname);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
