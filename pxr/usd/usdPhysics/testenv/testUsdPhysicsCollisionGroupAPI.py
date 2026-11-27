@@ -109,6 +109,32 @@ class TestUsdPhysicsCollisionGroupAPI(unittest.TestCase):
         self.assertFalse(table.IsCollisionEnabled(grpA, grpXCollider))
         self.assertFalse(table.IsCollisionEnabled(grpA, allOthers))
 
+    def test_collision_group_unmerged(self):
+        for mergeNames in ((None, None), ("", ""), ("mergeA", "mergeB")):
+            with self.subTest(mergeNames=mergeNames):
+                stage = Usd.Stage.CreateInMemory()
+                a = UsdPhysics.CollisionGroup.Define(stage, "/a")
+                b = UsdPhysics.CollisionGroup.Define(stage, "/b")
+                c = UsdPhysics.CollisionGroup.Define(stage, "/c")
+
+                a.CreateFilteredGroupsRel().AddTarget(c.GetPath())
+                for group, name in zip((a, b), mergeNames):
+                    if name is not None:
+                        group.CreateMergeGroupNameAttr().Set(name)
+
+                table = UsdPhysics.CollisionGroup.ComputeCollisionGroupTable(
+                    stage)
+
+                # Unauthored, empty and distinct names keep A and B separate:
+                # A's filter against C must not affect B.
+                self.assertTrue(table.IsCollisionEnabled(a, a))
+                self.assertTrue(table.IsCollisionEnabled(a, b))
+                self.assertFalse(table.IsCollisionEnabled(a, c))
+                self.assertTrue(table.IsCollisionEnabled(b, b))
+                self.assertTrue(table.IsCollisionEnabled(b, c))
+                self.assertTrue(table.IsCollisionEnabled(c, c))
+                self.validate_table_symmetry(table)
+
     def test_collision_group_simple_merging(self):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
