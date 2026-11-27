@@ -1,0 +1,220 @@
+#usda 1.0
+(
+    "This file describes the USD Text schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdText"
+        string libraryPath      = "pxr/usd/usdText"
+        dictionary libraryTokens = {
+        }
+    }
+)
+{
+}
+
+
+class TextStyle "TextStyle" (
+    inherits = </Typed>
+    doc = """This class includes the properties of the font and character."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform string font:typeface (
+        doc = """The typeface of the font."""
+    )
+
+    uniform string font:format = "none" (
+        allowedTokens = ["none", "ttf/cff/otf", "fon", "pcf", "shx", "pfa/pfb", "bdf"]
+        doc = """The font format. When this value is \"none\", it means the font format is the default format. User
+        can define the default format. For example, on Windows you can define the default format is \"ttf/cff/otf\"."""
+    )
+
+    uniform string font:altTypeface (
+        doc = """An alternate typeface. It will be used if the 'typeface' is not available in the system."""
+    )
+
+    uniform string font:altFormat = "none" (
+        allowedTokens = ["none", "ttf/cff/otf", "fon", "pcf", "shx", "pfa/pfb", "bdf"]
+        doc = """The font format for the alternate typeface. When this value is \"none\", it means the font format 
+        is the default format. User can define the default format. For example, on Windows you can define the default 
+        format is \"ttf/cff/otf\"."""
+    )
+
+    uniform bool font:bold = false (
+        doc = """Whether the font style contains bold style. It is valid only when font:weight is zero or negative."""
+    )
+
+    uniform bool font:italic = false (
+        doc = """Whether the font style contains italic style."""
+    )    
+
+    uniform int font:weight = 0 (
+        doc = """The weight of the stroke. If it is zero or negative, it means this property is ignored. Otherwise, 
+        the definition of the weight value is the same as the definition of weight in CSS. 
+
+        This is how the weight is mapped to a font style in CSS.
+        weight value   | font style
+        -------------- | -----------
+        100            | Thin
+        200            | Extra Light
+        300            | Light
+        400            | Normal(Regular)
+        500            | Medium
+        600            | Semi Bold
+        700            | Bold
+        800            | Extra Bold
+        900            | Ultra Bold
+
+        If the value is not in the table, we will find a nearest value in the table, and the style will be the 
+        corresponding font style.
+        """
+    )    
+
+    uniform int charHeight (
+        doc = """The height of the character."""
+    )
+
+    uniform float charWidthFactor = 1.0 (
+        doc = """The factor how a character's width is enlarged. If the width of a normal character is 1.0, and this
+        factor is 0.5, the final width of the character will be 0.5."""
+    )
+
+    #obliqueAngle
+    uniform float obliqueAngle = 0.0 (
+        doc = """The slant angle of the character. It is often achieved by applying a skew matrix to the original
+        character."""
+    )
+
+    #Charspacing
+    uniform float charSpacingFactor = 1.0 (
+        doc = """The factor how the character space is enlarged."""
+    )
+
+    #UnderlineType
+    uniform string underlineType = "none" (
+        allowedTokens = ["none", "normal"]
+        doc = """The type of underline."""
+    )
+
+    #OverlineType
+    uniform string overlineType = "none" (
+        allowedTokens = ["none", "normal"]
+        doc = """The type of overline."""
+    )
+
+    #StrikethroughType
+    uniform string strikethroughType = "none" (
+        allowedTokens = ["none", "normal", "doubleLines"]
+        doc = """The type of strikethrough."""
+    )
+}
+
+class "TextStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """UsdTextTextStyleAPI is an API schema that provides an interface for binding text style to a text 
+    primitive.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/textStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary textStyleBinding = {
+                string value = "textStyle:binding"
+                string doc = """
+                The relationship name to denote a binding to a UsdTextTextStyle.
+                """
+            }
+        }
+    }
+) {
+}
+
+class "TextLayoutAPI" (
+    inherits = </APISchemaBase>
+    doc = """UsdTextTextLayoutAPI is an API schema that provides an interface for setting the layout of a text 
+    primitive."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+        token apiSchemaType = "singleApply"
+    }
+) {
+    uniform token layout:baselineDirection = "upToImpl" (
+        allowedTokens = ["upToImpl", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the baseline."""
+    )
+
+    uniform token layout:linesStackDirection = "upToImpl" (
+        allowedTokens = ["upToImpl", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the line stacking.
+        If layout:baselineDirection is 'leftToRight' or 'rightToLeft', the layout:linesStackDirection can not be
+        'leftToRight' or 'rightToLeft'. If layout:baselineDirection is 'topToBottom' or 'bottomToTop', the 
+        layout:linesStackDirection can not be 'topToBottom' or 'bottomToTop'."""
+    )
+}
+
+class SimpleText "SimpleText" (
+    doc = """Class for single line single style text.
+    'Single line' means that the baseline of the characters is straight and there is no line break. 
+    'Single style' means the appearance style for the characters are assumed to be the same. Here, 
+    we use 'assume' because the user would like that the style is the same, but in the implementation, 
+    a part of the characters may not be supported so it may use an alternate style to display the 
+    characters. That is, although in schema level we use one text style for the SimpleText, on the 
+    screen some characters may still be rendered with a different style."""
+    
+    inherits = </Gprim>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+        string extraIncludes ="""
+#include <utility>
+#include "pxr/usd/usdText/textStyle.h"
+        """
+    }
+) {
+    # textData
+    uniform string textData (
+        doc = """The text string data."""
+    )
+
+    uniform color3f primvars:backgroundColor (
+        customData = {
+            string apiName = "backgroundColor"
+        }
+        doc = """Background color for the text."""
+    )
+    uniform float primvars:backgroundOpacity = 0.0 (
+        customData = {
+            string apiName = "backgroundOpacity"
+        }
+        doc = """Background opacity for the text."""
+    )
+    uniform token textMetricsUnit = "worldUnit" (
+        customData = {
+            string apiName = "textMetricsUnit"
+        }
+        allowedTokens = ["worldUnit", "publishingPoint", "pixel"]
+        doc = """The unit for the text related metrics, such as the unit of charHeight.
+        If the value is 'pixel', the unit of text metrics will be the same as a pixel in the framebuffer. 
+        If the value is 'publishingPoint', the unit will be the same as desktop publishing point, or 1/72
+        of an inch on a screen's physical display. If textMetricsUnit is 'worldUnit'", the unit will be 
+        the same as the unit of the world space. 
+        If the text primitive has billboard, the textMetricsUnit can only be 'pixel' or 'publishingPoint'.
+        Otherwise, the textMetricsUnit can only be 'worldUnit'.
+        """
+    )
+}
