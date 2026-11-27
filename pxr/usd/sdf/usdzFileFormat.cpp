@@ -77,11 +77,11 @@ SdfUsdzFileFormat::InitData(const FileFormatArguments& args) const
 }
 
 bool
-SdfUsdzFileFormat::CanRead(const std::string& filePath) const
+SdfUsdzFileFormat::CanRead(const std::string& resolvedPath) const
 {
     TRACE_FUNCTION();
 
-    const std::string firstFile = _GetFirstFileInZipFile(filePath);
+    const std::string firstFile = _GetFirstFileInZipFile(resolvedPath);
     if (firstFile.empty()) {
         return false;
     }
@@ -93,7 +93,7 @@ SdfUsdzFileFormat::CanRead(const std::string& filePath) const
     }
 
     const std::string packageRelativePath = 
-        ArJoinPackageRelativePath(filePath, firstFile);
+        ArJoinPackageRelativePath(resolvedPath, firstFile);
     return packagedFileFormat->CanRead(packageRelativePath);
 }
 

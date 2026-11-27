@@ -37,7 +37,7 @@ public:
     virtual SdfAbstractDataRefPtr InitData(
         const FileFormatArguments& args) const override;
 
-    virtual bool CanRead(const string &file) const override;
+    virtual bool CanRead(const string &resolvedPath) const override;
 
     virtual bool Read(
         SdfLayer* layer,

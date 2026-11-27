@@ -69,9 +69,9 @@ SdfUsdcFileFormat::_InitDetachedData(const FileFormatArguments& args) const
 }
 
 bool
-SdfUsdcFileFormat::CanRead(const string& filePath) const
+SdfUsdcFileFormat::CanRead(const string& resolvedPath) const
 {
-    return Sdf_CrateData::CanRead(filePath);
+    return Sdf_CrateData::CanRead(resolvedPath);
 }
 
 bool
