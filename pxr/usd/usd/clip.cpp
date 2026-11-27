@@ -31,6 +31,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/arrayEdit.h"
 
+#include <array>
 #include <optional>
 #include <ostream>
 #include <string>
