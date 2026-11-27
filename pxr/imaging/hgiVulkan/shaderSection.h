@@ -51,6 +51,8 @@ public:
     virtual bool VisitGlobalMemberDeclarations(std::ostream &ss);
     HGIVULKAN_API
     virtual bool VisitGlobalFunctionDefinitions(std::ostream &ss);
+    HGIVULKAN_API
+    virtual bool VisitWorkGroupLocalDeclarations(std::ostream &ss);
 
 protected:
     const std::string _storageQualifier;
@@ -314,6 +316,32 @@ private:
 
     const std::string _qualifier;
     const HgiVulkanMemberShaderSectionPtrVector _members;
+};
+
+/// \class HgiVulkanWorkGroupLocalShaderSection
+///
+/// For writing shared global variables.
+///
+class HgiVulkanWorkGroupLocalShaderSection final: public HgiVulkanShaderSection
+{
+public:
+    HGIVULKAN_API
+    explicit HgiVulkanWorkGroupLocalShaderSection(
+            const std::string &identifier,
+            const std::string &type,
+            const std::string &arraySize);
+
+    HGIVULKAN_API
+    ~HgiVulkanWorkGroupLocalShaderSection() override;
+
+    HGIVULKAN_API
+    void WriteType(std::ostream &ss) const override;
+
+    HGIVULKAN_API
+    bool VisitWorkGroupLocalDeclarations(std::ostream &ss) override;
+
+private:
+    const std::string _type;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

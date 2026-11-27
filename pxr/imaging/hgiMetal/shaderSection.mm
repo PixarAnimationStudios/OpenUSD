@@ -48,6 +48,12 @@ HgiMetalShaderSection::VisitEntryPointParameterDeclarations(std::ostream &ss)
 }
 
 bool
+HgiMetalShaderSection::VisitWorkGroupLocalDeclarations(std::ostream &ss)
+{
+    return false;
+}
+
+bool
 HgiMetalShaderSection::VisitScopeConstructorInstantiation(std::ostream &ss)
 {
     return false;
@@ -786,6 +792,86 @@ HgiMetalBufferShaderSection::VisitScopeConstructorInstantiation(
     }
 
     WriteIdentifier(ss);
+    return true;
+}
+
+HgiMetalWorkGroupLocalShaderSection::HgiMetalWorkGroupLocalShaderSection(
+    const std::string &samplerSharedIdentifier,
+    const std::string &type,
+    const std::string &arraySize,
+    const HgiShaderSectionAttributeVector &attributes)
+  : HgiMetalShaderSection(
+      samplerSharedIdentifier,
+      attributes,
+      "")
+  , _type(type)
+  , _arraySize(arraySize)
+{
+}
+
+void
+HgiMetalWorkGroupLocalShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _type;
+}
+
+bool
+HgiMetalWorkGroupLocalShaderSection::VisitScopeMemberDeclarations(std::ostream &ss)
+{
+    ss << "using _type_";
+    WriteIdentifier(ss);
+    ss << " = ";
+    WriteType(ss);
+    ss << _arraySize;
+    ss << ";\n";
+
+    ss << "threadgroup ";
+    ss << "_type_";
+    WriteIdentifier(ss);
+    ss << "& ";
+    WriteIdentifier(ss);
+    ss << ";\n";
+
+    return true;
+}
+
+bool
+HgiMetalWorkGroupLocalShaderSection::VisitScopeConstructorDeclarations(std::ostream &ss)
+{
+    ss << "threadgroup _type_";
+    WriteIdentifier(ss);
+    ss << "& _";
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalWorkGroupLocalShaderSection::VisitScopeConstructorInitialization(std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    ss << "(_";
+    WriteIdentifier(ss);
+    ss << ")";
+    return true;
+}
+
+bool
+HgiMetalWorkGroupLocalShaderSection::VisitScopeConstructorInstantiation(
+    std::ostream &ss)
+{
+    WriteIdentifier(ss);
+    return true;
+}
+
+bool
+HgiMetalWorkGroupLocalShaderSection::VisitWorkGroupLocalDeclarations(
+    std::ostream &ss)
+{
+    ss << "threadgroup ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << _arraySize;
     return true;
 }
 
