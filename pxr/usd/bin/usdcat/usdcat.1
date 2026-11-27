@@ -1,0 +1,86 @@
+.\" Copyright 2024 Apple
+.\"
+.\" Licensed under the terms set forth in the LICENSE.txt file available at
+.\" https://openusd.org/license.
+.\"
+
+.ft 1
+..
+
+.TH USDCAT
+.SH NAME
+usdcat - Write usd file(s) either as text to stdout or to a specified output file.
+.SH SYNOPSIS
+usdcat [inputFiles]
+.SH DESCRIPTION
+\f[B]usdcat\f[R] is a utility that is used to convert the contents of input files to
+other supported formats, or display them as text to stdout.
+
+.TP
+\f[V]-h\f[R], \f[V]--help\f[R]
+Prints out a help message and exits
+
+.TP
+\f[V]-o\f[R], \f[V]--output\f[R]
+Write a single input file to this output file instead of stdout.
+
+.TP
+\f[V]--usdFormat\f[R] [usda | usdc]
+Use this underlying file format for output files
+with the extension 'usd'. For example, passing
+'-o output.usd --usdformat usda' will create
+output.usd as a text file. The USD_DEFAULT_FILE_FORMAT
+environment variable is another way to achieve this.
+
+.TP
+\f[V]-l\f[R], \f[V]--loadOnly\f[R]
+Attempt to load the specified input files and report 'OK'
+or 'ERR' for each one. After all files are processed, this
+script will exit with a non-zero exit code if any files
+failed to load.
+
+.TP
+\f[V]-f\f[R], \f[V]--flatten\f[R]
+Compose stages with the input files as root layers
+
+.TP
+\f[V]--flattenLayerStack\f[R]
+Flatten the layer stack with the given root layer, and
+write out the results. Unlike --flatten, this does not flatten
+composition arcs (such as references).
+
+.TP
+\f[V]--skipSourceFileComment\f[R]
+If --flatten is specified, skip adding a comment regarding the
+source of the flattened layer in the documentation field of the
+output layer.
+
+.TP
+\f[V]--mask\f[R] [PRIMPATH...]
+Limit stage population to these prims, their descendants and
+ancestors. To specify multiple paths, either use commas with no
+spaces, or quote the argument and separate paths by commas
+and/or spaces. Requires --flatten.
+
+.TP
+\f[V]--layerMetadata\f[R]
+Load only layer metadata in the USD file.
+This option cannot be combined with either --flatten or
+--flattenLayerStack
+
+.SH NOTES
+
+.TP
+The multi-file input to usdcat does not perform any kind of merge of the content in the separate
+files (and there is no such utility to do so,yet… parameterizing that problem is an interesting challenge!);
+it simply dumps the contents of each file, sequentially.
+
+.TP
+The \f[B]--flatten\f[R] option uses the stage \f[B]Export\f[R] , which, as one might expect,
+“bakes in” the effects of all composition operators, simultaneously removing the operators themselves,
+in the result; this applies both to namespace operators like references, sublayers, and variants,
+and also to value-resolution operators like layer and reference time offsets.
+Flattening a stage does preserve USD native instancing by flattening each prototype into the generated layer
+and adding references on each instance to its corresponding prototype.
+Thus, the exported data may appear structurally different than in the participating source files,
+but should evaluate/compute identically to that of the source files.
