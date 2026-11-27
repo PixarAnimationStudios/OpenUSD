@@ -87,6 +87,7 @@ HdSt_ShaderKey::ComputeHash() const
     }
     hash = TfHash::Combine(
         hash,
+        UseMetalTessellation(),
         GetPolygonMode(),
         IsFrustumCullingPass(),
         GetLineWidth(),
