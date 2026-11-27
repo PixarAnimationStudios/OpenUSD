@@ -2166,5 +2166,40 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
     }
 }
 
+// These lookups live in the implementation rather than in the class body:
+// their bodies instantiate map value types that own a unique_ptr to the
+// incomplete UsdPrimDefinition. When a C++20 translation unit parses the
+// header, libstdc++'s explicitly-defaulted pair constructor evaluates the
+// value types' destructibility, which requires a complete UsdPrimDefinition.
+const UsdPrimDefinition*
+UsdSchemaRegistry::FindAbstractPrimDefinition(const TfToken &typeName) const
+{
+    const auto it = _abstractTypedPrimDefinitions.find(typeName);
+    return it != _abstractTypedPrimDefinitions.end() ?
+        it->second.get() : nullptr;
+}
+
+const UsdPrimDefinition*
+UsdSchemaRegistry::FindConcretePrimDefinition(const TfToken &typeName) const
+{
+    const auto it = _concreteTypedPrimDefinitions.find(typeName);
+    return it != _concreteTypedPrimDefinitions.end() ?
+        it->second.get() : nullptr;
+}
+
+const UsdPrimDefinition *
+UsdSchemaRegistry::FindAppliedAPIPrimDefinition(const TfToken &typeName) const
+{
+    const auto it = _appliedAPIPrimDefinitions.find(typeName);
+    return it != _appliedAPIPrimDefinitions.end() ?
+        it->second.primDef.get() : nullptr;
+}
+
+const UsdPrimDefinition *
+UsdSchemaRegistry::GetEmptyPrimDefinition() const
+{
+    return _emptyPrimDefinition;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
