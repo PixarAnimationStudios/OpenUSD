@@ -490,7 +490,9 @@ public:
             UsdSkelImagingResolvedSkeletonSchemaTokens->skinningTransforms,
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapes,
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeWeights,
-            UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges };
+            UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges,
+            UsdSkelImagingResolvedSkeletonSchemaTokens->numAnimationSources,
+            UsdSkelImagingResolvedSkeletonSchemaTokens->numSkeletonJoints };
 
         return names;
     }
@@ -524,6 +526,18 @@ public:
         if (name == UsdSkelImagingResolvedSkeletonSchemaTokens
             ->blendShapeRanges) {
             return _resolvedSkeletonSource->GetBlendShapeRanges();
+        }
+        if (name == UsdSkelImagingResolvedSkeletonSchemaTokens
+            ->numAnimationSources) {
+            return HdRetainedTypedSampledDataSource<int>::New(
+                static_cast<int>(
+                    _resolvedSkeletonSource->GetAnimationSource().size()));
+        }
+        if (name == UsdSkelImagingResolvedSkeletonSchemaTokens
+            ->numSkeletonJoints) {
+            return HdRetainedTypedSampledDataSource<int>::New(
+                static_cast<int>(
+                    _resolvedSkeletonSource->GetSkelData()->topology.size()));
         }
         return nullptr;
     }
@@ -1062,6 +1076,9 @@ _ProcessSkeletonDirtyLocators(
             newDirtyLocators->insert(
                 UsdSkelImagingResolvedSkeletonSchema::
                 GetSkinningTransformsLocator());
+            newDirtyLocators->insert(
+                UsdSkelImagingResolvedSkeletonSchema::
+                GetNumSkeletonJointsLocator());
             newDirtyLocators->insert(
                 HdMeshSchema::GetTopologyLocator());
             newDirtyLocators->insert(
